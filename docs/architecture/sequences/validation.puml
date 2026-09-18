@@ -1,0 +1,24 @@
+@startuml
+skinparam shadowing false
+actor Developer
+participant "tools/validate.ps1" as Validation
+participant "Godot" as Godot
+participant "GUT + gut_report.gd" as GUT
+participant "PlantUML" as PlantUML
+
+Developer -> Validation : Run from PowerShell 7
+Validation -> Validation : Verify pins and discover project scripts/tests
+Validation -> Godot : Headless import
+Validation -> Godot : Parse every project script
+Validation -> Godot : Bounded startup of configured main scene
+Validation -> GUT : Full recursive test run; tracking enabled
+GUT --> Validation : Diagnostics, JSON and JUnit XML
+Validation -> Validation : Check expected discovery, all statuses and errors
+alt Missing tests, unexpected error, failure, skip or timeout
+  Validation --> Developer : Exit 1; failure report and logs
+else All runtime and test checks pass
+  Validation -> PlantUML : Render every architecture source
+  PlantUML --> Validation : Diagrams or error
+  Validation --> Developer : Exit 0 only when rendering also succeeds
+end
+@enduml

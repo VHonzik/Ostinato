@@ -1,0 +1,19 @@
+{
+  "dirs": [
+    "res://test"
+  ],
+  "include_subdirs": true,
+  "prefix": "test_",
+  "suffix": ".gd",
+  "should_exit": true,
+  "disable_colors": true,
+  "no_error_tracking": false,
+  "failure_error_types": [
+    "engine",
+    "gut",
+    "push_error"
+  ],
+  "post_run_script": "res://tools/gut_report.gd",
+  "junit_xml_file": "res://reports/gut.xml",
+  "junit_xml_timestamp": false
+}

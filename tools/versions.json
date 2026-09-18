@@ -1,0 +1,22 @@
+{
+  "godot": {
+    "version": "4.7.2.stable.official.ed1daf0bf",
+    "executable": "bin/Godot_v4.7.2-stable_win64.exe",
+    "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+    "console_executable": "bin/Godot_v4.7.2-stable_win64_console.exe",
+    "console_sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+    "download_url": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip",
+    "export_templates_version": "4.7.2.stable"
+  },
+  "gut": {
+    "version": "9.7.1",
+    "download_url": "https://github.com/bitwes/Gut/archive/refs/tags/v9.7.1.zip",
+    "archive_sha256": "14969aa46adc84aa08cdd21b9f6d1a64addd92ae60b36f02d0521ed305aa4086"
+  },
+  "plantuml": {
+    "version": "1.2026.8",
+    "jar": "bin/plantuml-1.2026.8.jar",
+    "download_url": "https://github.com/plantuml/plantuml/releases/download/v1.2026.8/plantuml.jar",
+    "sha256": "5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462"
+  }
+}
