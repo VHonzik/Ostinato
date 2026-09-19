@@ -1,0 +1,44 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant MovementGame as Game
+participant GridWorld as World
+participant "GridActor\n(stable array order)" as NPC
+participant "GridView + Camera2D + HUD" as View
+
+Player -> Game : Movement key(s) or Wait
+alt UI owns focus, key echo, or unrelated input
+  Game --> Player : No simulation action
+else Gameplay input
+  Game -> Game : Collect arrow chord in this frame
+  alt Wait
+    Game -> World : wait_turn()
+    World -> World : Accept exactly one turn
+  else Move
+    Game -> World : move_player(direction)
+    World -> World : Check initial destination
+    alt Blocked or outside map
+      World --> Game : false; no time, credit, or RNG change
+    else Legal
+      World -> World : Add movement_speed to credit
+      loop Credit >= 1 and next destination legal
+        World -> World : Move one tile; spend one credit
+      end
+      note right of World
+        Retain fractional and blocked extra-step credit.
+        Speed < 1 can accept a turn without changing tile.
+      end note
+    end
+  end
+  opt Accepted move or Wait
+    loop Each living wanderer, once
+      World -> NPC : Find free adjacent tiles inside wander_area
+      World -> World : Choose using simulation RNG
+      World -> NPC : Claim destination, or stay if no legal step
+    end
+    World -> World : Increment turn_count once
+  end
+  Game -> View : Redraw; center camera; show turn and credit
+end
+@enduml

@@ -1,0 +1,57 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+class MovementGame <<Node2D>> {
+  world: GridWorld
+  _unhandled_key_input(event)
+  _process(delta)
+  reset_fixture()
+  refresh_view()
+}
+class MovementFixture <<RefCounted>> {
+  {static} create_world(): GridWorld
+}
+class GridWorld <<RefCounted>> {
+  bounds: Rect2i
+  blocked_tiles: Dictionary
+  player_tile: Vector2i
+  movement_speed: float
+  movement_credit: float
+  turn_count: int
+  random: RandomNumberGenerator
+  is_open(tile): bool
+  move_player(direction): bool
+  wait_turn()
+  _finish_turn()
+}
+class GridActor <<RefCounted>> {
+  tile: Vector2i
+  alive: bool
+  wander_area: Rect2i
+}
+class GridView <<Node2D>> {
+  world: GridWorld
+  _draw()
+}
+class Camera2D <<Godot>>
+class SubViewportContainer <<Godot>>
+class SubViewport <<Godot>>
+
+SubViewportContainer *-- SubViewport : whole-pixel scale
+SubViewport *-- MovementGame
+MovementGame --> MovementFixture : creates fixture
+MovementFixture ..> GridWorld : builds
+MovementGame *-- GridView
+MovementGame *-- Camera2D : centers on player
+MovementGame --> GridWorld : owns current world
+GridView --> GridWorld : reads
+GridWorld *-- "0..*" GridActor : stable array order
+
+note bottom of GridActor
+Empty wander_area: fixed.
+alive = false: non-blocking remains.
+end note
+@enduml

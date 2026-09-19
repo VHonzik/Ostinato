@@ -2,26 +2,34 @@
 !pragma layout smetana
 skinparam componentStyle rectangle
 skinparam shadowing false
-skinparam nodesep 90
-skinparam ranksep 60
+skinparam nodesep 55
+skinparam ranksep 45
 
-component "Godot 4.7.2\nproject.godot" as Godot
-component "Startup scene\nscenes/main.tscn\nVisible title; responsive layout" as Main
-component "GUT 9.7.1\ntest/unit/test_main_scene.gd" as Tests
+component "Godot 4.7.2\nproject.godot\nCompatibility; movement InputMap" as Godot
+component "Main / pixel_viewport.gd\nInteger-scaled SubViewportContainer\nExpands logical view on resize" as Main
+component "MovementGame\nInput, fixture controls, HUD\nCentered Camera2D" as Game
+component "GridView\nDraws tiles and existing sprites" as View
+component "GridWorld + GridActor\nBlocking, movement credit\nShared ordered wandering phase" as World
+component "MovementFixture\nFixed grounds and seeded wanderers" as Fixture
+component "GUT 9.7.1\ntest/unit/" as Tests
 component "Validation\ntools/validate.ps1" as Validation
-component "GUT report hook\ntools/gut_report.gd" as Hook
 artifact "reports/\nLogs, JSON, JUnit XML, diagrams" as Reports
 
 Godot --> Main : loads
-Tests --> Main : instantiates and resizes
-Validation --> Godot : imports, checks scripts, starts
-Validation --> Tests : runs full suite
-Tests --> Hook : after suite
-Hook --> Reports : writes detailed test results
-Validation --> Reports : checks results and writes evidence
+Main --> Game : contains in SubViewport
+Game --> Fixture : reset / startup
+Fixture --> World : constructs
+Game --> World : move / wait
+Game --> View : refresh after action
+View --> World : reads tiles and actors
+Validation --> Godot : imports, parses, starts
+Validation --> Tests : full suite
+Tests --> Game : input, camera, UI
+Tests --> World : movement and ordering
+Validation --> Reports : checks results; renders diagrams
 
-note bottom of Main
-Development setup only.
-Gameplay systems are not implemented.
+note bottom of World
+Milestone 1 implements movement and wandering.
+Combat, pursuit, stats, and Loop lifecycle follow later.
 end note
 @enduml

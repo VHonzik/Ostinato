@@ -66,6 +66,10 @@ Use the same validation entry point locally and in CI. Missing tools, timeouts, 
 
 ## PRs and human QA
 
+Agents have standing authorization to push feature branches to this project's `origin` (`https://github.com/VHonzik/Ostinato.git`) and to create or update PRs, including draft PRs and their milestone metadata. Do not ask for confirmation again for these actions.
+
+Agents must never merge PRs into `main`, enable auto-merge into `main`, or push directly to `main`. These actions are reserved for humans.
+
 Deliver features in small, runnable PRs with a milestone associated in PR metadata. Each feature must be testable without a later PR.
 
 Use `.github/pull_request_template.md` for:
@@ -74,7 +78,7 @@ Use `.github/pull_request_template.md` for:
 - Automated commands, results, and limitations. Refresh affected checks after changes; link logs instead of copying full reports.
 - Brief feature QA steps and expected outcomes. Include extra launch, scene, fixture, reset, or boundary-case details only when needed to try the change.
 
-Humans decide QA scope, any QA documentation, acceptance, and merging. Do not require forms, checklists, test matrices, or acceptance reports, or claim human QA results/approval on their behalf. Passing checks does not authorize an agent to merge; merging requires explicit human direction.
+Humans decide QA scope, any QA documentation, acceptance, and merging. Do not require forms, checklists, test matrices, or acceptance reports, or claim human QA results/approval on their behalf.
 
 Bootstrap, tooling, and documentation maintenance are not feature work. Keep useful operational documentation and automated checks, without inventing feature requirements, milestones, or formal QA procedures. Include manual checks only when useful.
 
