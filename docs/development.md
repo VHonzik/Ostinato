@@ -148,6 +148,11 @@ Inspect changed diagrams for readability.
 
 ## Pull requests
 
+Agents may push feature branches to this project's `origin` and create or update PRs
+without asking for confirmation. Agents must never merge PRs into `main`, enable
+auto-merge into `main`, or push directly to `main`; those actions are reserved for humans.
+See the standing authorization in [AGENTS.md](../AGENTS.md#prs-and-human-qa).
+
 Use the [PR template](../.github/pull_request_template.md) for a short change summary,
 automated results, and feature QA steps. Include extra scene/setup/reset details only when
 needed to try the change. Human reviewers decide QA scope, any QA records, acceptance, and
