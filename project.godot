@@ -86,6 +86,15 @@ wait={
 ])
 }
 
+character={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":80)]
+}
+spell_book={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":75)]
+}
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

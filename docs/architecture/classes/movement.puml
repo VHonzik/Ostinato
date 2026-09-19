@@ -15,6 +15,7 @@ class MovementFixture <<RefCounted>> {
   {static} create_world(): GridWorld
 }
 class GridWorld <<RefCounted>> {
+  hero: HeroState
   bounds: Rect2i
   blocked_tiles: Dictionary
   player_tile: Vector2i
@@ -36,6 +37,7 @@ class GridView <<Node2D>> {
   world: GridWorld
   _draw()
 }
+class HeroState <<RefCounted>>
 class Camera2D <<Godot>>
 class SubViewportContainer <<Godot>>
 class SubViewport <<Godot>>
@@ -48,6 +50,7 @@ MovementGame *-- GridView
 MovementGame *-- Camera2D : centers on player
 MovementGame --> GridWorld : owns current world
 GridView --> GridWorld : reads
+GridWorld *-- HeroState : progression (see hero.puml)
 GridWorld *-- "0..*" GridActor : stable array order
 
 note bottom of GridActor

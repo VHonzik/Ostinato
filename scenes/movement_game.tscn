@@ -1,7 +1,9 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/movement_game.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
+
+[ext_resource type="Script" path="res://scripts/hero/hero_panel.gd" id="3"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 12
@@ -45,7 +47,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.91, 0.83, 0.62, 1)
 theme_override_font_sizes/font_size = 14
-text = "OSTINATO / Training grounds"
+text = "OSTINATO / Hero emerges"
 
 [node name="Slow" type="Button" parent="HUD/Top/Rows/Heading"]
 layout_mode = 2
@@ -74,6 +76,28 @@ text = "Reset"
 layout_mode = 2
 text = "Turn 0"
 
+[node name="HeroStatus" type="Label" parent="HUD/Top/Rows"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 26)
+text = "Mage"
+
+[node name="Character" type="Button" parent="HUD/Top/Rows/HeroStatus"]
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -186.0
+offset_right = -88.0
+offset_bottom = 24.0
+text = "Character (P)"
+
+[node name="Spells" type="Button" parent="HUD/Top/Rows/HeroStatus"]
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -84.0
+offset_bottom = 24.0
+text = "Spells (K)"
+
 [node name="Bottom" type="PanelContainer" parent="HUD"]
 anchors_preset = 12
 anchor_top = 1.0
@@ -94,6 +118,13 @@ layout_mode = 2
 text = "Movement fixture"
 mouse_filter = 2
 
+[node name="Chat" type="RichTextLabel" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 42)
+scroll_following = true
+focus_mode = 2
+text = "Welcome, mage."
+
 [node name="Controls" type="Label" parent="HUD/Bottom/Rows"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
@@ -103,5 +134,15 @@ mouse_filter = 2
 [node name="Legend" type="Label" parent="HUD/Bottom/Rows"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
-text = "Green: fixed   ·   Gold: wandering   ·   Tab: fixture controls   ·   Esc: return"
+text = "P: character   ·   K: spells   ·   Tab: controls   ·   Esc: return"
 mouse_filter = 2
+
+[node name="HeroPanel" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_fixture")
+script = ExtResource("3")

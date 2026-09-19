@@ -1,0 +1,71 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+class MovementGame <<Node2D>> {
+  world: GridWorld
+  hero_panel: HeroPanel
+  _input(event)
+  _cast_skill(identifier)
+  refresh_view()
+}
+class HeroPanel <<Control>> {
+  cast_requested(identifier)
+  open(hero, spell_book)
+  close()
+  navigate(forward)
+  change_tab(direction)
+}
+class GridWorld <<RefCounted>> {
+  hero: HeroState
+  messages: PackedStringArray
+  message_added(message)
+  cast_skill(identifier): bool
+  add_message(message)
+  _finish_turn()
+}
+class HeroState <<RefCounted>> {
+  level: int
+  experience: int
+  strength, agility, stamina: int
+  intellect, spirit: int
+  health, mana: int
+  max_health, max_mana: int
+  learned_skills: Array
+  add_experience(amount): PackedInt32Array
+  learn_skill(skill): bool
+  find_skill(identifier): SkillRank
+}
+class HeroData <<RefCounted>> {
+  {static} LEVEL_STATS
+  {static} EXPERIENCE
+  {static} stats_for_level(level): PackedInt32Array
+}
+class SkillRank <<RefCounted>> {
+  id: StringName
+  title, description: String
+  class_tab: StringName
+  rank, training_level: int
+  effect: Effect
+  development_only: bool
+}
+MovementGame --> GridWorld : owns
+MovementGame *-- HeroPanel : modal UI
+HeroPanel --> HeroState : reads
+HeroPanel --> MovementGame : cast_requested
+GridWorld *-- HeroState
+HeroState --> HeroData : numeric baseline
+HeroState *-- "2..*" SkillRank : explicit learned ranks
+
+note bottom of HeroData
+DATA-001/002: Vanilla mage rows through 60.
+FR-016: repeat final growth/XP above that range.
+end note
+note bottom of SkillRank
+Mage: Fireball / Frost Armor previews.
+Development: Practice / XP / Death trigger.
+Development ranks omitted from release builds.
+end note
+@enduml

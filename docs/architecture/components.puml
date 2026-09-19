@@ -5,11 +5,13 @@ skinparam shadowing false
 skinparam nodesep 55
 skinparam ranksep 45
 
-component "Godot 4.7.2\nproject.godot\nCompatibility; movement InputMap" as Godot
+component "Godot 4.7.2\nproject.godot\nCompatibility; movement + hero InputMap" as Godot
 component "Main / pixel_viewport.gd\nInteger-scaled SubViewportContainer\nExpands logical view on resize" as Main
-component "MovementGame\nInput, fixture controls, HUD\nCentered Camera2D" as Game
+component "MovementGame\nInput, fixture controls, chat, HUD\nCentered Camera2D" as Game
 component "GridView\nDraws tiles and existing sprites" as View
 component "GridWorld + GridActor\nBlocking, movement credit\nShared ordered wandering phase" as World
+component "HeroState + HeroData + SkillRank\nMage baseline, XP, learned ranks" as Hero
+component "HeroPanel\nCharacter / spell book modal" as Panel
 component "MovementFixture\nFixed grounds and seeded wanderers" as Fixture
 component "GUT 9.7.1\ntest/unit/" as Tests
 component "Validation\ntools/validate.ps1" as Validation
@@ -19,7 +21,12 @@ Godot --> Main : loads
 Main --> Game : contains in SubViewport
 Game --> Fixture : reset / startup
 Fixture --> World : constructs
-Game --> World : move / wait
+Game --> World : move / wait / cast
+World --> Hero : owns; applies XP
+Game --> Panel : opens / refreshes
+Panel --> Game : cast requested
+Panel --> Hero : reads
+World --> Game : chat message
 Game --> View : refresh after action
 View --> World : reads tiles and actors
 Validation --> Godot : imports, parses, starts
@@ -29,7 +36,7 @@ Tests --> World : movement and ordering
 Validation --> Reports : checks results; renders diagrams
 
 note bottom of World
-Milestone 1 implements movement and wandering.
-Combat, pursuit, stats, and Loop lifecycle follow later.
+Milestones 1–2: movement, wandering, hero progression, dummy skills.
+Combat, pursuit, real spells, and Loop lifecycle follow later.
 end note
 @enduml
