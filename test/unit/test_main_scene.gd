@@ -46,21 +46,22 @@ func test_title_and_controls_fit_at_minimum_window_size() -> void:
 func test_resizing_uses_whole_pixels_and_expands_the_centered_world() -> void:
 	var container := _main.get_node("GameContainer") as SubViewportContainer
 	for scenario in [
-		[Vector2i(640, 360), Vector2i(640, 360), 1],
-		[Vector2i(1280, 720), Vector2i(640, 360), 2],
-		[Vector2i(1280, 800), Vector2i(640, 400), 2],
-		[Vector2i(1920, 1080), Vector2i(640, 360), 3],
-		[Vector2i(1366, 768), Vector2i(683, 384), 2],
-		[Vector2i(1283, 803), Vector2i(641, 401), 2],
+		[Vector2i(640, 360), Vector2i(640, 360), 1, Vector2.ZERO],
+		[Vector2i(1279, 719), Vector2i(1279, 719), 1, Vector2.ZERO],
+		[Vector2i(1280, 720), Vector2i(640, 360), 2, Vector2.ZERO],
+		[Vector2i(1280, 800), Vector2i(640, 400), 2, Vector2.ZERO],
+		[Vector2i(1919, 1079), Vector2i(959, 539), 2, Vector2.ZERO],
+		[Vector2i(1920, 1080), Vector2i(640, 360), 3, Vector2.ZERO],
+		[Vector2i(1922, 1082), Vector2i(640, 360), 3, Vector2.ONE],
+		[Vector2i(1366, 768), Vector2i(683, 384), 2, Vector2.ZERO],
+		[Vector2i(1283, 803), Vector2i(641, 401), 2, Vector2.ZERO],
 	]:
 		_viewport.size = scenario[0]
 		await get_tree().process_frame
 		await get_tree().process_frame
 		assert_eq(_game_viewport.size, scenario[1])
 		assert_eq(container.scale, Vector2.ONE * scenario[2])
-		var remainder: Vector2 = Vector2(scenario[0]) - Vector2(scenario[1]) * scenario[2]
-		assert_true(container.position.x >= 0 and container.position.x <= remainder.x)
-		assert_true(container.position.y >= 0 and container.position.y <= remainder.y)
+		assert_eq(container.position, scenario[3], "Remainders split on whole physical pixels.")
 		assert_eq(_game.world.turn_count, 0, "Resizing never advances simulation.")
 		_assert_camera_centered()
 
