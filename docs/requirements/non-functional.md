@@ -50,8 +50,8 @@ Acceptance:
 - Existing sprite sheets are used where suitable; initial tile/sprite art is tentatively
   16 × 16 pixels. Pixel dimensions do not determine the 5-yard gameplay conversion in FR-025.
 
-The bootstrap currently uses 960 × 540 and canvas-items stretching; it does not yet implement
-this target. Final visual acceptance is performed on gameplay UI, not inferred from startup.
+Milestone 1 implements the display geometry in its movement fixture. Final visual acceptance
+is performed on the completed gameplay UI, not inferred from startup or geometry tests.
 
 ### NFR-003 — Minimum window and readable interface
 

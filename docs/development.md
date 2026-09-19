@@ -1,6 +1,6 @@
 # Development
 
-The project currently runs a title scene on Windows with Godot's Compatibility renderer.
+The project runs the milestone-1 movement fixture on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -46,12 +46,56 @@ pwsh -NoProfile -File tools/godot.ps1
 ```
 
 The wrapper locates the project and pinned console launcher and forwards Godot arguments.
-In the editor, F5 runs the main scene and F6 the open scene. The current title scene needs
-no fixtures or save data.
+In the editor, F5 runs the main scene and F6 the open scene. The current main scene needs
+no save data; it creates the movement fixture on startup.
+
+## Milestone 1: movement fixture
+
+Launch with F5 or the normal wrapper command. Tap a key for one action; holding a key
+does not repeat turns. The controls are W/A/S/D, Q/E/Z/C for diagonals, arrow keys
+(including orthogonal chords), and numpad 1–9 excluding 5. Period or numpad 5 waits.
+Top-row numbers do not move the player. Input bindings live in `project.godot`.
+
+The blue outline marks the player. Green NPCs are fixed; gold NPCs wander inside the
+gridded meadow. Trees, courtyard walls, map edges, and living NPCs block entry. The
+remains immediately west of spawn do not block. The two trees north and east of spawn
+leave a legal northeast diagonal. Turn, tile, speed, and movement credit are always shown.
+Walking into a blocker leaves NPCs, time, and credit unchanged.
+
+The fixture's 0.5× / 1× / 1.5× controls change speed without spending time or clearing
+credit. At 0.5×, two clear movement actions move one tile; at 1.5×, they move one then two.
+Tab reaches these controls; Enter/Space activates them, and Esc releases UI focus to
+resume movement. Gameplay keys do not also act while a fixture control owns focus.
+Reset restores the same map, seed, actor positions, default speed, turn zero, and zero
+credit. These controls are development fixtures, not global Options or the Loop lifecycle.
+
+Implemented scope: [FR-007/008/010/011/013](requirements/functional.md#movement-and-simulation-time),
+the wandering portion of [FR-023](requirements/functional.md#fr-023--wandering-and-crowded-pursuit),
+movement bindings from [FR-043](requirements/functional.md#fr-043--options-and-keybindings), and
+[FR-044](requirements/functional.md#fr-044--player-centered-camera).
+Combat, hostile bumps, aggro, pursuit, and other timed systems arrive in later milestones.
+The fixture is not the final Northshire map.
+
+`GridWorld` holds the small grid simulation separately from `MovementGame` input/UI.
+Keeping every rule in the scene would couple turn tests to rendering; one ordinary
+RefCounted model and typed NPC records let tests exercise movement and deterministic
+ordering directly. There is no global manager or event bus.
+See the [class diagram](architecture/classes/movement.puml) and
+[turn sequence](architecture/sequences/movement_turn.puml).
+
+For [NFR-002/003](requirements/non-functional.md#platform-rendering-and-display),
+`pixel_viewport.gd` uses a built-in SubViewportContainer: choose the largest integer scale
+fitting 640×360, then expand its child SubViewport to all remaining whole logical pixels.
+This small resize helper makes both leftover world space and clear-color edge remainders
+explicit, rather than depending on stretch presets' letterboxing. At 1280×800 the view
+is 640×400 at 2×. The camera stays centered at map edges, and existing 16×16 sprites
+use nearest filtering. UI geometry is tested at the minimum size; final human readability,
+platform compatibility, and reference-hardware performance are not established by these tests.
 
 ## Project layout
 
-- `scenes/main.tscn`: startup scene.
+- `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: playable fixture.
+- `scripts/world/`: grid rules, NPC state, fixture layout, and sprite rendering.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.
 - `tools/`: setup, launch, validation, dependency pins, and GUT report hook.
 - `docs/architecture/`: PlantUML sources for implemented systems.

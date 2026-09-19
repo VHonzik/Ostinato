@@ -1,0 +1,107 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/movement_game.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
+
+[sub_resource type="Theme" id="Theme_fixture"]
+default_font_size = 12
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.055, 0.09, 0.085, 0.97)
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
+
+[node name="MovementGame" type="Node2D"]
+script = ExtResource("1")
+texture_filter = 1
+
+[node name="GridView" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(328, 232)
+position_smoothing_enabled = false
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Top" type="PanelContainer" parent="HUD"]
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+mouse_filter = 1
+theme = SubResource("Theme_fixture")
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Rows" type="VBoxContainer" parent="HUD/Top"]
+layout_mode = 2
+
+[node name="Heading" type="HBoxContainer" parent="HUD/Top/Rows"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HUD/Top/Rows/Heading"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.91, 0.83, 0.62, 1)
+theme_override_font_sizes/font_size = 14
+text = "OSTINATO / Training grounds"
+
+[node name="Slow" type="Button" parent="HUD/Top/Rows/Heading"]
+layout_mode = 2
+tooltip_text = "Fixture speed: 0.5 tiles per turn. Esc returns to movement."
+toggle_mode = true
+text = "0.5×"
+
+[node name="Normal" type="Button" parent="HUD/Top/Rows/Heading"]
+layout_mode = 2
+tooltip_text = "Fixture speed: 1 tile per turn. Esc returns to movement."
+toggle_mode = true
+text = "1×"
+
+[node name="Fast" type="Button" parent="HUD/Top/Rows/Heading"]
+layout_mode = 2
+tooltip_text = "Fixture speed: 1.5 tiles per turn. Esc returns to movement."
+toggle_mode = true
+text = "1.5×"
+
+[node name="Reset" type="Button" parent="HUD/Top/Rows/Heading"]
+layout_mode = 2
+tooltip_text = "Restore the fixture, NPC positions, seed, turns and credit. Esc resumes movement."
+text = "Reset"
+
+[node name="Status" type="Label" parent="HUD/Top/Rows"]
+layout_mode = 2
+text = "Turn 0"
+
+[node name="Bottom" type="PanelContainer" parent="HUD"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme = SubResource("Theme_fixture")
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Rows" type="VBoxContainer" parent="HUD/Bottom"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Feedback" type="Label" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+text = "Movement fixture"
+mouse_filter = 2
+
+[node name="Controls" type="Label" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
+text = "Move: WASD + QEZC / arrows / numpad   ·   Wait: . / numpad 5"
+mouse_filter = 2
+
+[node name="Legend" type="Label" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
+text = "Green: fixed   ·   Gold: wandering   ·   Tab: fixture controls   ·   Esc: return"
+mouse_filter = 2
