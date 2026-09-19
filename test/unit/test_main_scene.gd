@@ -197,3 +197,119 @@ func _send_key(key: Key, pressed: bool, echo: bool = false) -> void:
 	event.pressed = pressed
 	event.echo = echo
 	_viewport.push_input(event)
+
+
+func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
+	await _tap_key(KEY_P)
+	assert_true(_game.hero_panel.visible)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_ESCAPE)
+	await _tap_key(KEY_K)
+	assert_true(_game.hero_panel.visible)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Fireball")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.turn_count, 0, "Starting spells are informational previews.")
+	await _tap_key(KEY_D)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Practice")
+	await _tap_key(KEY_S)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "450 XP")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.turn_count, 1)
+	assert_eq([_game.world.hero.level, _game.world.hero.experience], [2, 50])
+	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
+	assert_string_contains(chat.text, "450 XP")
+	assert_string_contains(chat.text, "level 2")
+	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
+	assert_string_contains(status.text, "Lv 2")
+	assert_string_contains(status.text, "Mana 250/250")
+	await _tap_key(KEY_ESCAPE)
+	assert_false(_game.hero_panel.visible)
+	assert_null(_game_viewport.gui_get_focus_owner())
+	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.world.turn_count, 2)
+
+
+func test_opening_panel_cancels_queued_movement_and_modal_focus_cannot_escape() -> void:
+	_send_key(KEY_S, true)
+	_send_key(KEY_K, true)
+	await get_tree().process_frame
+	_send_key(KEY_S, false)
+	_send_key(KEY_K, false)
+	assert_true(_game.hero_panel.visible)
+	assert_eq(_game.world.turn_count, 0)
+	for index in range(12):
+		await _tap_key(KEY_TAB)
+		assert_true(_game.hero_panel.is_ancestor_of(_game_viewport.gui_get_focus_owner()))
+	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_KP_5)
+	await _tap_key(KEY_Q)
+	await _tap_key(KEY_C)
+	assert_eq(_game.world.turn_count, 0)
+	await wait_seconds(0.1)
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_mouse_buttons_open_panels_and_reset_clears_hero_and_chat() -> void:
+	(_game.get_node("HUD/Top/Rows/HeroStatus/Spells") as Button).pressed.emit()
+	assert_true(_game.hero_panel.visible)
+	_game.hero_panel.change_tab(1)
+	for button: Button in _game.hero_panel.find_children("*", "Button", true, false):
+		if button.text.begins_with("Gain 450"):
+			button.pressed.emit()
+	assert_eq(_game.world.hero.level, 2)
+	_game.hero_panel.close()
+	(_game.get_node("HUD/Top/Rows/Heading/Reset") as Button).pressed.emit()
+	assert_eq([_game.world.hero.level, _game.world.hero.experience], [1, 0])
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_game.world.messages.size(), 1)
+	assert_false(_game.hero_panel.visible)
+	(_game.get_node("HUD/Top/Rows/HeroStatus/Character") as Button).pressed.emit()
+	assert_true(_game.hero_panel.visible)
+
+	await get_tree().process_frame
+
+
+func test_hero_panels_and_hud_fit_at_minimum_content_size() -> void:
+	var area := Rect2(0, 0, 640, 360)
+	for path in ["HUD/Top/Rows/HeroStatus", "HUD/Top/Rows/HeroStatus/Character",
+		"HUD/Top/Rows/HeroStatus/Spells", "HUD/Bottom/Rows/Chat"]:
+		var control := _game.get_node(path) as Control
+		assert_true(area.encloses(control.get_global_rect()), path)
+	_game.hero_panel.open(_game.world.hero, false)
+	for tab in range(3):
+		await get_tree().process_frame
+		await get_tree().process_frame
+		for control: Control in _game.hero_panel.find_children("*", "Control", true, false):
+			if control.is_visible_in_tree():
+				assert_true(area.encloses(control.get_global_rect()), control.name)
+				if control is Label or control is Button:
+					assert_gte(control.size.x, control.get_minimum_size().x, control.name)
+		_game.hero_panel.change_tab(1)
+
+
+func test_release_spell_book_has_no_development_tab_or_controls() -> void:
+	_game.hero_panel.open(HeroState.new(false), true)
+	var tabs := _game.hero_panel.find_children("*", "TabContainer", true, false)[0] as TabContainer
+	assert_eq(tabs.get_tab_count(), 2)
+	assert_eq(tabs.get_tab_title(1), "Mage")
+	for button: Button in _game.hero_panel.find_children("*", "Button", true, false):
+		assert_false(button.text.contains("450 XP"))
+		assert_false(button.text.contains("Death trigger"))
+
+
+func test_shift_tab_navigates_backward_inside_the_panel() -> void:
+	await _tap_key(KEY_K)
+	var focused := _game_viewport.gui_get_focus_owner()
+	await _tap_key(KEY_TAB)
+	var event := InputEventKey.new()
+	event.keycode = KEY_TAB
+	event.physical_keycode = KEY_TAB
+	event.shift_pressed = true
+	event.pressed = true
+	_viewport.push_input(event)
+	await get_tree().process_frame
+	event.pressed = false
+	_viewport.push_input(event)
+	assert_same(_game_viewport.gui_get_focus_owner(), focused)
+	assert_eq(_game.world.turn_count, 0)

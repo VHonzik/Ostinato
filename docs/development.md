@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestone-1 movement fixture on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–2 training fixture on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -47,7 +47,7 @@ pwsh -NoProfile -File tools/godot.ps1
 
 The wrapper locates the project and pinned console launcher and forwards Godot arguments.
 In the editor, F5 runs the main scene and F6 the open scene. The current main scene needs
-no save data; it creates the movement fixture on startup.
+no save data; it creates the training fixture and a fresh level-1 mage on startup.
 
 ## Milestone 1: movement fixture
 
@@ -92,10 +92,44 @@ is 640×400 at 2×. The camera stays centered at map edges, and existing 16×16 
 use nearest filtering. UI geometry is tested at the minimum size; final human readability,
 platform compatibility, and reference-hardware performance are not established by these tests.
 
+## Milestone 2: Hero emerges
+
+Launch the same main scene. **P** or **Character** opens the character sheet; **K** or
+**Spells** opens the spell book. The HUD always shows level, current/required XP, health,
+and mana. The starting mage has 20/20/20/23/22 primary attributes, 51 health, and 165 mana.
+The [DATA-001/002 source record](data/hero-baseline.md) explains the selected Vanilla values,
+racial removal, growth, XP table, resource refill, and beyond-level-60 extension.
+
+The Mage tab shows learned Fireball and Frost Armor rank 1. These are explicitly labeled
+previews; activating them explains that real effects arrive later and spends no time.
+In a development build, the Development tab offers **Practice**, **Gain 450 XP**, and
+**Death trigger**. Each costs exactly one turn and no mana. Practice reports success;
+450 XP reaches level 2 with 50/900 XP and updated stats; Death trigger reports its invocation
+without changing health or resetting anything. The temporary death state is milestone 3.
+Release builds omit development ranks and their tab.
+
+Click a skill or use Enter on the focused skill. A/D or left/right switches panel tabs;
+W/S, diagonals, or Tab cycles controls inside the panel; Esc closes it. Hover a skill for
+its description. Previewing, switching tabs, and waiting in the UI spend no time, and
+movement/wait keys cannot also act on the world. Successful dummy casts grant wanderers
+exactly one shared phase, preserving movement credit. Chat shows the most recent 100
+messages, including XP and every gained level; scroll to inspect earlier messages.
+Fixture Reset also restores the fresh hero and clears chat. No save or Loop is implied.
+
+Implemented scope is the milestone-2 portion of FR-015/016/017/046/048/050. Secondary combat
+stats, real resource spending/regeneration, equipment, training services, and real spell
+effects remain later dependencies. The five primary stats, resources, sourced growth,
+learned ranks, and one-turn fixtures are executable now. The existing movement tests
+remain in the complete suite alongside progression, skill/turn, and UI tests.
+See the [hero class diagram](architecture/classes/hero.puml) and
+[skill sequence](architecture/sequences/hero_skill.puml).
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: playable fixture.
 - `scripts/world/`: grid rules, NPC state, fixture layout, and sprite rendering.
+- `scripts/hero/`: sourced mage growth, progression, learned ranks, and the character/spell panel.
+- `docs/data/`: versioned data selections and adaptations.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.
 - `tools/`: setup, launch, validation, dependency pins, and GUT report hook.
 - `docs/architecture/`: PlantUML sources for implemented systems.
