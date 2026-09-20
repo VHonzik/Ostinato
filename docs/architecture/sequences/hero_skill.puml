@@ -31,13 +31,19 @@ else One-turn development skill
       Hero -> Hero : Retain excess, apply mage growth, refill resources
     end
     World -> World : Log award and each level gained
-  else Practice / death trigger
-    World -> World : Log invocation (no damage or Loop)
+  else Death trigger
+    World -> Hero : health = 0
+    World -> World : Log death; discard remaining phase
+  else Practice
+    World -> World : Log harmless cast
   end
   World -> View : message_added
-  World -> World : _finish_turn(): one shared NPC phase
+  World -> World : _finish_turn(): count turn; NPC phase only if alive
   World --> Game : true
 end
 Game -> View : refresh_view(): level, XP, HP, mana, turn
-Game -> Panel : refresh()
+Game -> Panel : refresh() / close on death
+opt Player died
+  Game -> View : Show CombatPanel death overlay; block gameplay
+end
 @enduml

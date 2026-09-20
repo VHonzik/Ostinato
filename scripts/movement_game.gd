@@ -6,14 +6,20 @@ const MOVE_ACTIONS: Array[StringName] = [
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
 ]
 
+## Brief presentation gap makes FR-010 cancellation possible without another confirmation.
+const MELEE_BOUNDARY_SECONDS: float = 0.18
+
 var world: GridWorld
 var _pending_action: bool = false
 var _pending_direction := Vector2i.ZERO
 var _pending_arrow: bool = false
+var _melee_delay_seconds: float = 0.0
 
 @onready var grid_view: GridView = $GridView
 @onready var camera: Camera2D = $Camera2D
+@onready var combat_panel: CombatPanel = $HUD/CombatPanel
 @onready var hero_panel: HeroPanel = $HUD/HeroPanel
+@onready var _cancel_attack: Button = $HUD/Top/Rows/Heading/CancelAttack
 @onready var _status: Label = $HUD/Top/Rows/Status
 @onready var _hero_status: Label = $HUD/Top/Rows/HeroStatus
 @onready var _chat: RichTextLabel = $HUD/Bottom/Rows/Chat
@@ -24,6 +30,11 @@ var _pending_arrow: bool = false
 
 
 func _ready() -> void:
+	_cancel_attack.pressed.connect(_cancel_pending_melee)
+	combat_panel.action_taken.connect(refresh_view)
+	combat_panel.visibility_changed.connect(_on_combat_panel_visibility_changed)
+	combat_panel.reset_requested.connect(reset_fixture)
+	combat_panel.selection_changed.connect(_select_actor)
 	hero_panel.cast_requested.connect(_cast_skill)
 	hero_panel.visibility_changed.connect(_on_hero_panel_visibility_changed)
 	$HUD/Top/Rows/HeroStatus/Character.pressed.connect(_open_hero_panel.bind(false))
@@ -34,11 +45,21 @@ func _ready() -> void:
 	$HUD/Top/Rows/Heading/Reset.pressed.connect(reset_fixture)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if world.pending_melee != null:
+		_melee_delay_seconds -= delta
+		if _melee_delay_seconds <= 0.0:
+			world.continue_melee()
+			if world.pending_melee == null:
+				_feedback.text = "Attack ended. Choose your next action."
+			refresh_view()
+		return
 	if not _pending_action:
 		return
 	_pending_action = false
-	if hero_panel.visible or get_viewport().gui_get_focus_owner() != null:
+	if (world.is_player_dead() or world.pending_melee != null
+		or combat_panel.visible or hero_panel.visible
+		or get_viewport().gui_get_focus_owner() != null):
 		return
 	var direction := _pending_direction
 	if _pending_arrow:
@@ -52,13 +73,23 @@ func _process(_delta: float) -> void:
 		world.wait_turn()
 		_feedback.text = "Waited one turn. The meadow stirs."
 	elif world.move_player(direction):
-		_feedback.text = "Movement turn complete. The meadow stirs."
+		_feedback.text = "Action complete. F interacts; hostile bumps request melee."
 	else:
 		_feedback.text = "Blocked. No time or movement credit spent."
 	refresh_view()
 
 
 func _input(event: InputEvent) -> void:
+	if world.pending_melee != null:
+		_pending_action = false
+		if event is InputEventKey and event.is_pressed():
+			if not event.is_echo() and event.is_action_pressed("ui_cancel"):
+				_cancel_pending_melee()
+			get_viewport().set_input_as_handled()
+		return
+	if combat_panel.visible:
+		_handle_combat_input(event)
+		return
 	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
 		return
 	if hero_panel.visible:
@@ -87,7 +118,7 @@ func _input(event: InputEvent) -> void:
 			if not matched:
 				return
 		get_viewport().set_input_as_handled()
-	elif get_viewport().gui_get_focus_owner() == null:
+	elif not world.is_player_dead() and get_viewport().gui_get_focus_owner() == null:
 		if event.is_action_pressed("character") or event.is_action_pressed("spell_book"):
 			_open_hero_panel(event.is_action_pressed("spell_book"))
 			get_viewport().set_input_as_handled()
@@ -103,7 +134,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_pending_action = false
 		get_viewport().set_input_as_handled()
 		return
-	if hero_panel.visible or get_viewport().gui_get_focus_owner() != null:
+	if (world.is_player_dead() or world.pending_melee != null
+		or combat_panel.visible or hero_panel.visible
+		or get_viewport().gui_get_focus_owner() != null):
+		return
+	if event.is_action_pressed("interact"):
+		_pending_action = false
+		combat_panel.open_interaction(world)
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("wait"):
 		_pending_direction = Vector2i.ZERO
@@ -126,17 +164,33 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func reset_fixture() -> void:
 	hero_panel.close()
+	combat_panel.close()
 	world = MovementFixture.create_world()
 	world.message_added.connect(_refresh_chat)
-	world.add_message("Welcome, mage. Open Character (P) or Spell book (K).")
+	world.add_message("Welcome, mage. F interacts. Neutral wolf south; hostile wolves east.")
 	grid_view.world = world
 	_pending_action = false
+	_melee_delay_seconds = 0.0
 	_feedback.text = "You are the blue outline. Walk over the remains just west of you."
 	_update_speed_buttons()
 	refresh_view()
 
 
 func refresh_view() -> void:
+	if world.is_player_dead():
+		_pending_action = false
+		hero_panel.close()
+		combat_panel.show_death()
+	elif world.pending_melee != null:
+		_pending_action = false
+		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
+		_select_actor(world.pending_melee)
+		_feedback.text = "Attacking %s. Waiting for swing; Esc cancels." % world.pending_melee.title
+	else:
+		_melee_delay_seconds = 0.0
+		if not combat_panel.visible:
+			_select_actor(null)
+	_cancel_attack.visible = world.pending_melee != null
 	camera.position = GridView.tile_center(world.player_tile)
 	camera.force_update_scroll()
 	grid_view.queue_redraw()
@@ -153,6 +207,8 @@ func refresh_view() -> void:
 
 
 func _set_speed(speed: float) -> void:
+	if world.is_player_dead() or world.pending_melee != null:
+		return
 	world.movement_speed = speed
 	_update_speed_buttons()
 	_feedback.text = "Speed changed; credit retained. Press Esc to return to movement."
@@ -167,6 +223,8 @@ func _update_speed_buttons() -> void:
 
 
 func _open_hero_panel(spell_book: bool) -> void:
+	if world.is_player_dead() or world.pending_melee != null or combat_panel.visible:
+		return
 	_pending_action = false
 	hero_panel.open(world.hero, spell_book)
 
@@ -190,3 +248,40 @@ func _on_hero_panel_visibility_changed() -> void:
 		if hero_panel.visible else
 		"Move: WASD + QEZC / arrows / numpad   ·   Wait: . / numpad 5"
 	)
+
+
+func _select_actor(actor: GridActor) -> void:
+	grid_view.selected = actor
+	grid_view.queue_redraw()
+
+
+func _handle_combat_input(event: InputEvent) -> void:
+	_pending_action = false
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var tile := Vector2i((get_global_mouse_position() / GridView.TILE_SIZE).floor())
+		combat_panel.select_tile(tile)
+		return
+	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
+		return
+	if event.is_action_pressed("ui_cancel"):
+		combat_panel.cancel()
+	elif event.is_action_pressed("ui_accept"):
+		combat_panel.confirm()
+	else:
+		for index in range(MOVE_ACTIONS.size()):
+			if event.is_action_pressed(MOVE_ACTIONS[index]):
+				combat_panel.navigate(GridWorld.DIRECTIONS[index])
+				break
+	get_viewport().set_input_as_handled()
+
+
+func _on_combat_panel_visibility_changed() -> void:
+	$HUD/Bottom.visible = not combat_panel.visible
+
+
+func _cancel_pending_melee() -> void:
+	world.cancel_melee()
+	_pending_action = false
+	_melee_delay_seconds = 0.0
+	_feedback.text = "Attack canceled. Elapsed turns remain spent."
+	refresh_view()

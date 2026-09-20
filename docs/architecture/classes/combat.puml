@@ -1,0 +1,77 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+class MovementGame <<Node2D>> {
+  _melee_delay_seconds: float
+  _process(delta)
+  refresh_view()
+  _cancel_pending_melee()
+}
+class CombatPanel <<Control>> {
+  mode: SELECT / CONFIRM_ATTACK / DEAD
+  selected: GridActor
+  open_interaction(world)
+  navigate(direction)
+  confirm()
+  cancel()
+}
+class GridWorld <<RefCounted>> {
+  actors: Array<GridActor>
+  pending_melee: GridActor
+  combat_random: RandomNumberGenerator
+  request_melee(target): bool
+  continue_melee(): bool
+  has_sight(start, end): bool
+  _route(start, goals, avoid_actors, toward)
+  _finish_turn()
+}
+class GridActor <<RefCounted>> {
+  tile, home_tile, facing: Vector2i
+  relationship: Relationship
+  engaged, returning_home: bool
+  blocked_turns: int
+  health, max_health: int
+  died_on_turn: int
+}
+class HeroState <<RefCounted>> {
+  health, mana: int
+  facing: Vector2i
+  add_experience(amount)
+}
+class MeleeProfile <<RefCounted>> {
+  level, armor, attack_power: int
+  player: bool
+  damage_min, damage_max, interval: float
+  dodge, critical: float
+}
+class SwingTimer <<RefCounted>> {
+  remaining: float
+  advance(active, interval): int
+}
+class MeleeRules <<RefCounted>> {
+  {static} outcome(attacker, defender, behind, roll)
+  {static} damage(attacker, defender, result, rolls)
+  {static} kill_experience(player_level, npc_level)
+}
+
+MovementGame *-- CombatPanel
+MovementGame --> GridWorld : automatic melee boundaries
+CombatPanel --> GridWorld : requests / reads
+CombatPanel --> GridActor : selects
+GridWorld *-- GridActor : stable order
+GridWorld *-- HeroState
+GridWorld --> MeleeRules : arithmetic
+GridActor *-- MeleeProfile
+HeroState *-- MeleeProfile
+GridActor *-- SwingTimer
+HeroState *-- SwingTimer
+MeleeRules ..> MeleeProfile : reads
+
+note bottom of SwingTimer
+One ready initial swing; fractional active delay.
+Idle readiness caps at one swing.
+end note
+@enduml

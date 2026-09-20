@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestones 1–2 training fixture on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–3 training fixture on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -73,7 +73,7 @@ Implemented scope: [FR-007/008/010/011/013](requirements/functional.md#movement-
 the wandering portion of [FR-023](requirements/functional.md#fr-023--wandering-and-crowded-pursuit),
 movement bindings from [FR-043](requirements/functional.md#fr-043--options-and-keybindings), and
 [FR-044](requirements/functional.md#fr-044--player-centered-camera).
-Combat, hostile bumps, aggro, pursuit, and other timed systems arrive in later milestones.
+Milestone 3 adds combat, hostile bumps, aggro, and pursuit to these grounds.
 The fixture is not the final Northshire map.
 
 `GridWorld` holds the small grid simulation separately from `MovementGame` input/UI.
@@ -105,29 +105,78 @@ previews; activating them explains that real effects arrive later and spends no 
 In a development build, the Development tab offers **Practice**, **Gain 450 XP**, and
 **Death trigger**. Each costs exactly one turn and no mana. Practice reports success;
 450 XP reaches level 2 with 50/900 XP and updated stats; Death trigger reports its invocation
-without changing health or resetting anything. The temporary death state is milestone 3.
+and now kills the player through milestone 3's temporary death overlay.
 Release builds omit development ranks and their tab.
 
 Click a skill or use Enter on the focused skill. A/D or left/right switches panel tabs;
 W/S, diagonals, or Tab cycles controls inside the panel; Esc closes it. Hover a skill for
 its description. Previewing, switching tabs, and waiting in the UI spend no time, and
-movement/wait keys cannot also act on the world. Successful dummy casts grant wanderers
+movement/wait keys cannot also act on the world. Successful Practice/XP casts grant wanderers
 exactly one shared phase, preserving movement credit. Chat shows the most recent 100
 messages, including XP and every gained level; scroll to inspect earlier messages.
 Fixture Reset also restores the fresh hero and clears chat. No save or Loop is implied.
 
-Implemented scope is the milestone-2 portion of FR-015/016/017/046/048/050. Secondary combat
-stats, real resource spending/regeneration, equipment, training services, and real spell
-effects remain later dependencies. The five primary stats, resources, sourced growth,
+Implemented scope is the milestone-2 portion of FR-015/016/017/046/048/050. Milestone 3 adds secondary melee stats. Resource spending/regeneration, equipment,
+training services, and real spell effects remain later dependencies. The five primary stats, resources, sourced growth,
 learned ranks, and one-turn fixtures are executable now. The existing movement tests
 remain in the complete suite alongside progression, skill/turn, and UI tests.
 See the [hero class diagram](architecture/classes/hero.puml) and
 [skill sequence](architecture/sequences/hero_skill.puml).
 
+## Milestone 3: Fight!
+
+Launch the same main scene. Move southwest, then south from spawn to stand beside the yellow
+**Young Wolf**. A neutral bump blocks without time. Press **F**: a lone neutral opens
+**Attack Young Wolf?**, with **Attack (Enter)** and **Cancel (Esc)**. A lone hostile
+starts melee immediately. Multiple candidates first use a selector: movement directions
+wrap around, Previous/Next buttons and adjacent world sprites also select, and Enter
+chooses. Choosing a neutral then asks separately for attack confirmation. A corpse
+remains selectable under another actor. Combat prompts use labeled shortcuts or mouse
+clicks; Tab does not change focus. Selection, confirmation, and cancellation spend no
+time until an attack is committed.
+
+Friendly **Groundskeeper Mira** is two tiles northwest of spawn. Her greeting and empty
+corpse results go straight to chat, with no dialogue to dismiss. A single candidate
+skips selection for these interactions too. Open windows never advance simulation.
+
+Red **Timber Wolves** wait to the east at (32,12), (33,14), and (34,16). Approach to
+within five tiles with clear sight to provoke them. They follow a shortest terrain
+route around trees/walls, approaching directly when shortest routes tie. They only
+spread around other actors when the next step is occupied, and swing immediately
+when ready on entering range. Wandering meadow wolves remain neutral until engaged. Relationship colors
+are accompanied by text in the selector; alternate palettes remain milestone 8.
+
+Bumping a hostile or confirming an attack spends at least one turn. The temporary
+Bent Staff swings every 2.9 simulation seconds. If it is not ready, the committed
+attack automatically advances the necessary turns, including each NPC phase. A brief
+presentation gap between boundaries allows **Esc** or **Cancel attack (Esc)** to stop
+the request without refunding elapsed turns. There is no Continue prompt. The request
+ends once its swing resolves; idle time does not start another attack. Movement and
+Wait also advance swing timers but do not automatically attack. Chat reports
+each attack outcome/damage and kill XP; the HUD always shows current/max health and
+mana. P now shows attack power, armor, critical and dodge percentages.
+
+A killed wolf leaves a nonblocking, selectable corpse with an explicit empty-loot
+message; loot rewards arrive in milestone 5. Kill XP is granted once, including
+ordinary level-up/refill when crossing a threshold. Corpses expire after 300 turns.
+Player death immediately stops the remaining phase and opens **You died**. Gameplay
+keys cannot continue the attempt; **Reset fixture** or Enter restores a fresh fixture.
+The Development death trigger follows this same path. Reset is still a development
+control; the persistent Loop starts in milestone 4.
+
+Scope: the initial melee/interaction portions of FR-009/014/020–027/049, FR-016 kill
+XP, and updated FR-048/050 feedback. See [DATA-002 melee selection](data/melee-baseline.md)
+for formulas, source limitations, explicit fixture adaptations, and deferred mechanics.
+No targeted real spell, inventory loot, regeneration, or full combat formula coverage
+is claimed. Existing Fireball/Frost Armor remain previews. See the
+[combat classes](architecture/classes/combat.puml) and
+[combat sequence](architecture/sequences/combat_turn.puml).
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: playable fixture.
 - `scripts/world/`: grid rules, NPC state, fixture layout, and sprite rendering.
+- `scripts/combat/`: melee calculations, fractional swing timing, and interaction/death UI.
 - `scripts/hero/`: sourced mage growth, progression, learned ranks, and the character/spell panel.
 - `docs/data/`: versioned data selections and adaptations.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.

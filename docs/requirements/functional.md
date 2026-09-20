@@ -198,7 +198,9 @@ Acceptance:
 - A Wait grants every applicable system exactly one turn, regardless of NPC count.
 - A rejected equip/use/cast changes neither simulation time nor resources.
 - A multi-turn action permits cancellation between boundaries; each completed boundary
-  still grants NPCs their phase. Real-time animation may continue while simulation is paused.
+  still grants NPCs their phase. A committed melee request advances these boundaries
+  automatically without repeated confirmation, while Escape can cancel before the next
+  boundary. Real-time animation may continue while simulation is paused.
 
 ### FR-011 — Fractional movement
 
@@ -263,7 +265,9 @@ Acceptance:
 All eight adjacent tiles shall be melee range. Swing timers shall advance with simulation
 time even outside melee range. A ready NPC entering melee shall attack in the same phase.
 A hostile bump or confirmed neutral attack shall spend whole turns until at least one
-swing can resolve, provided the target remains valid and adjacent.
+swing can resolve, provided the target remains valid and adjacent. After that request,
+waiting turns advance automatically with no additional confirmation menu. Input may cancel
+between boundaries under FR-010; simulation stops again when the requested swing resolves.
 
 Fractional swing progress shall persist between turns. Resolve all swings due in a phase
 in order while the target is alive and adjacent; faster weapons can produce multiple
@@ -417,16 +421,25 @@ required by this reservation.
 
 ### FR-021 — NPC interaction
 
-F shall select interactable NPCs/corpses at tile distance 1, and corpses on the player's
-own tile. One candidate is preselected; several use the directional selector. Enter confirms,
-Escape cancels. No candidate gives feedback without advancing time.
+F shall interact with NPCs/corpses at tile distance 1, and corpses on the player's own tile.
+With exactly one candidate, skip target selection and request its interaction immediately.
+With several candidates, preselect the closest and use the directional selector; Enter
+chooses the target and Escape cancels. A neutral living NPC always requires a separate,
+explicit attack confirmation naming the target, including when it is the only candidate.
+No candidate gives feedback without advancing time. This single-candidate shortcut applies
+to Interaction, not targeted skills under FR-024.
 
 Acceptance:
 
-- An available friendly NPC opens basic conversation and its applicable quest, trade,
-  training, or class-selection choices; a corpse opens remaining loot.
-- Confirming a neutral or hostile living target requests melee rather than conversation.
-  Previewing or canceling a neutral target does not make it hostile.
+- Friendly NPCs expose their applicable conversation, quest, trade, training, or
+  class-selection choices; corpses expose remaining loot choices. If an interaction offers
+  no player choice, write its result in chat and open no dialogue.
+- Choosing a hostile living target requests melee immediately. Choosing a neutral living
+  target first shows “Attack <name>?” with an Attack control bound to Enter and a Cancel
+  control bound to Escape. Previewing or canceling either selection or confirmation
+  changes neither hostility nor simulation time.
+- Interaction prompts use visible keyboard shortcuts and mouse buttons. Tab does not move
+  focus through these prompts; Enter cannot activate a different action than its label.
 - Conversation, services, and looting are allowed in combat and cost no time. Equipping,
   consuming, and attacking retain their ordinary time costs.
 - A corpse beneath another actor remains selectable if in range. Menus never grant
@@ -456,8 +469,11 @@ to use available positions around the player when space is limited.
 Acceptance:
 
 - Repeated waits let a wandering NPC change tiles within its allowed area, respecting blocking.
-- Multiple pursuers with reachable free melee positions attempt to occupy those positions
-  without overlapping or entering blocked tiles.
+- Pursuers first follow a shortest terrain route to melee range, ignoring actors beyond
+  their next step. Among equally short routes prefer approaching the player's tile directly,
+  with stable tie handling. Only when the chosen next step is occupied by another living
+  actor do they seek an alternate route/free melee position. They never overlap or enter
+  blocked terrain.
 - With no legal step, an NPC remains on a legal tile.
 
 Movement conflict ordering follows FR-013. No optimal formation or specific navigation

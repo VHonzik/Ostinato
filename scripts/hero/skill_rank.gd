@@ -1,7 +1,7 @@
 class_name SkillRank
 extends RefCounted
 
-## Initial FR-017/046/050 rank records. Real spell execution arrives with combat.
+## Initial FR-017/046/050 rank records. Real spell execution arrives in milestone 4.
 enum Effect { PREVIEW, PRACTICE, EXPERIENCE, DEATH_NOTICE }
 
 var id: StringName
@@ -45,6 +45,6 @@ static func development_skills() -> Array[SkillRank]:
 		SkillRank.new(&"experience_1", "Gain 450 XP", &"Development", 1, 1,
 			"One turn; 0 mana. Awards 450 XP through ordinary leveling.", Effect.EXPERIENCE, true),
 		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
-			"One turn; 0 mana. Reports invocation; death state arrives in milestone 3.",
+			"One turn; 0 mana. Kills the player and opens the temporary death overlay.",
 			Effect.DEATH_NOTICE, true),
 	]

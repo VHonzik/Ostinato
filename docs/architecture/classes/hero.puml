@@ -33,6 +33,9 @@ class HeroState <<RefCounted>> {
   intellect, spirit: int
   health, mana: int
   max_health, max_mana: int
+  melee: MeleeProfile
+  swing: SwingTimer
+  facing: Vector2i
   learned_skills: Array
   add_experience(amount): PackedInt32Array
   learn_skill(skill): bool
@@ -66,6 +69,7 @@ end note
 note bottom of SkillRank
 Mage: Fireball / Frost Armor previews.
 Development: Practice / XP / Death trigger.
+Death trigger opens the temporary death overlay.
 Development ranks omitted from release builds.
 end note
 @enduml
