@@ -85,15 +85,21 @@ rounding and random streams are fixed for reproducibility within this build.
 FR-014 converts seconds to elapsed turns using a separate `SwingTimer`. A ready
 initial swing costs one player turn; an NPC entering adjacency swings in that phase.
 Active fractional delay is retained, and faster weapons can swing multiple times.
-Inactive time caps readiness at one swing. Pending player attacks expose each
-boundary with **Continue (Enter)** and **Cancel (Esc)**; waiting never advances real
-time automatically. Movement/cast credit cannot pay for melee.
+Inactive time caps readiness at one swing. Committed player attacks automatically
+advance until a swing resolves, keeping every NPC phase. `MovementGame` leaves a
+0.18-second presentation gap before each additional boundary for **Esc** or the
+**Cancel attack** button; this gap changes no simulation duration. Cancellation retains
+spent turns, and completion never starts another attack. Reset discards the pending
+request and presentation delay. Movement/cast credit cannot pay for melee.
 
 Facing follows committed movement/attack. Relative directions quantize to eight
 sectors with clockwise half-sector ties; the three opposite sectors are behind.
 NPC action order is the append-only actor array. Navigation uses breadth-first
-search in N/NE/E/SE/S/SW/W/NW order, checking static reachability independently of
-living occupancy. After five static failures, return home and heal on arrival;
+search for a shortest terrain route, checking static reachability independently of
+living occupancy. Among equal-length routes, expansion prefers squared distance to
+the player (or home), then N/NE/E/SE/S/SW/W/NW for stable ties. Only an occupied next
+step triggers an occupancy-aware route search; a farther occupied step or melee tile
+does not cause early spreading. After five static failures, return home and heal on arrival;
 if home is statically unreachable, idle legally. Corpses stop acting and blocking,
 remain selectable (including under occupants), and disappear after 300 turns.
 The fixture exposes an empty-loot message; it grants no items or duplicate XP.
@@ -101,8 +107,14 @@ The fixture exposes an empty-loot message; it grants no items or duplicate XP.
 Selection sorts by Chebyshev distance then stable actor index. Directional input
 prefers a candidate ahead with the smallest forward + twice lateral displacement;
 otherwise it wraps from the opposite edge, breaking ties by that same candidate
-order. It consumes no randomness. Harmful confirmation engages before the first
-boundary; previews/cancellation remain free. No targeted spells are introduced,
+order. It consumes no randomness. A single interaction candidate skips selection.
+Neutral NPCs always require an explicit **Attack <name>?** confirmation; hostiles can
+be attacked directly. Greetings and empty-corpse results go to chat without another
+window. Combat prompts disable Tab focus and use labeled shortcuts or mouse clicks.
+Committing harm engages before the first boundary; previews/cancellation remain free.
+These interaction and pursuit decisions follow the owner's
+[PR #3 QA feedback](https://github.com/VHonzik/Ostinato/pull/3#issuecomment-5750943924)
+and the revised FR-010/014/021/023. No targeted spells are introduced,
 so full spell targeting and completion revalidation remain with milestone 4.
 
 Death consumes its accepted action boundary and discards remaining NPC work. The

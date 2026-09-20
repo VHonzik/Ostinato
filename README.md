@@ -31,8 +31,11 @@ Move with WASD + QEZC, arrows, or the numpad; wait with period or numpad 5.
 Open Character with P or the spell book with K. In the Development tab, cast Gain 450 XP
 to reach level 2 with 50 XP left over. Use the fixture speed controls to try fractional
 movement, and Esc to return focus to play.
-Use F to select an adjacent NPC, Enter to confirm, and Esc to cancel. Hostile bumps
-request melee; continue a pending swing with Enter. Reset restarts after death.
+Use F to interact with an adjacent NPC; a lone candidate skips selection. Neutral
+attacks explicitly ask for confirmation with Enter; Esc cancels. Hostile bumps request
+melee, automatically waiting until the swing is ready. Esc or Cancel attack stops a
+pending attack between turns. Interactions with no choices report in chat. Reset
+restarts after death.
 The [development guide](docs/development.md#milestone-3-fight) describes the fixture.
 The repository is hosted at [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato).
 CI and export builds remain to be established.

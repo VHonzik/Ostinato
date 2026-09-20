@@ -1,12 +1,12 @@
 class_name CombatPanel
 extends Control
 
-## Adjacent interaction, cancellation boundaries, and temporary milestone-3 death UI.
+## Interaction selection, explicit neutral attack confirmation, and temporary death UI.
 signal action_taken
 signal selection_changed(actor: GridActor)
 signal reset_requested
 
-enum Mode { SELECT, CONVERSATION, PENDING, DEAD }
+enum Mode { SELECT, CONFIRM_ATTACK, DEAD }
 
 var mode: Mode = Mode.SELECT
 var selected: GridActor
@@ -51,35 +51,25 @@ func _ready() -> void:
 	rows.add_child(buttons)
 	_previous = _button(buttons, "Previous", func() -> void: navigate(Vector2i.LEFT))
 	_next = _button(buttons, "Next", func() -> void: navigate(Vector2i.RIGHT))
-	_confirm = _button(buttons, "Confirm (Enter)", confirm)
+	_confirm = _button(buttons, "Choose (Enter)", confirm)
 	_cancel = _button(buttons, "Cancel (Esc)", cancel)
 	hide()
 
 
 func open_interaction(world: GridWorld) -> void:
+	close()
 	_world = world
 	_candidates = world.interaction_candidates()
 	if _candidates.is_empty():
 		world.add_message("No one is within interaction range.")
 		return
-	mode = Mode.SELECT
 	selected = _candidates[0]
-	show()
-	_update_selection()
-	_confirm.grab_focus()
-
-
-func show_pending(world: GridWorld) -> void:
-	_world = world
-	mode = Mode.PENDING
-	selected = world.pending_melee
-	show()
-	_heading.text = "Waiting for your next swing"
-	_detail.text = ("Target: %s. Each Continue advances one turn. "
-		+ "Esc cancels; elapsed time stays spent.") % selected.title
-	_configure_buttons(false, "Continue (Enter)", true)
-	_confirm.grab_focus()
-	selection_changed.emit(selected)
+	if _candidates.size() == 1:
+		_choose_selected()
+	else:
+		mode = Mode.SELECT
+		show()
+		_update_selection()
 
 
 func show_death() -> void:
@@ -90,7 +80,6 @@ func show_death() -> void:
 	_detail.text = ("This attempt has ended. Reset the training fixture to try again. "
 		+ "The Loop arrives in milestone 4.")
 	_configure_buttons(false, "Reset fixture", false)
-	_confirm.grab_focus()
 	selection_changed.emit(null)
 
 
@@ -106,31 +95,16 @@ func close() -> void:
 func confirm() -> void:
 	match mode:
 		Mode.SELECT:
-			var message := _world.interact(selected)
-			if not message.is_empty():
-				mode = Mode.CONVERSATION
-				_heading.text = "%s / %s" % [selected.title, selected.relationship_name()]
-				_detail.text = message
-				_configure_buttons(false, "Close (Enter)", true)
-			else:
-				close()
-				action_taken.emit()
-		Mode.PENDING:
-			_world.continue_melee()
-			close()
-			action_taken.emit()
-		Mode.CONVERSATION:
-			close()
+			_choose_selected()
+		Mode.CONFIRM_ATTACK:
+			_interact_selected()
 		Mode.DEAD:
 			reset_requested.emit()
 
 
 func cancel() -> void:
-	if mode == Mode.DEAD:
-		return
-	if mode == Mode.PENDING:
-		_world.cancel_melee()
-	close()
+	if mode != Mode.DEAD:
+		close()
 
 
 func navigate(direction: Vector2i) -> void:
@@ -163,27 +137,39 @@ func select_tile(tile: Vector2i) -> void:
 			return
 
 
-func focus_next(backward: bool) -> void:
-	var controls: Array[Button] = []
-	for button in [_previous, _next, _confirm, _cancel]:
-		if button.visible:
-			controls.append(button)
-	var index := controls.find(get_viewport().gui_get_focus_owner())
-	controls[posmod(index + (-1 if backward else 1), controls.size())].grab_focus()
+func _choose_selected() -> void:
+	if selected.alive and selected.relationship == GridActor.Relationship.NEUTRAL:
+		mode = Mode.CONFIRM_ATTACK
+		show()
+		_heading.text = "Attack %s?" % selected.title
+		_detail.text = ("This NPC is neutral. Attacking will make it hostile. "
+			+ "Enter attacks; Esc cancels without spending time.")
+		_configure_buttons(false, "Attack (Enter)", true)
+		selection_changed.emit(selected)
+	else:
+		_interact_selected()
+
+
+func _interact_selected() -> void:
+	var message := _world.interact(selected)
+	if not message.is_empty():
+		_world.add_message(message)
+	close()
+	action_taken.emit()
 
 
 func _update_selection() -> void:
 	_heading.text = "%s / %s" % [selected.title, selected.relationship_name()]
-	_detail.text = "Level %d   Health %d/%d. Directions select; Enter confirms; Esc cancels." % [
+	_detail.text = "Level %d   Health %d/%d. Directions select; Enter chooses; Esc cancels." % [
 		selected.melee.level, selected.health if selected.alive else 0, selected.max_health,
 	]
-	_configure_buttons(_candidates.size() > 1, "Confirm (Enter)", true)
+	_configure_buttons(_candidates.size() > 1, "Choose (Enter)", true)
 	selection_changed.emit(selected)
 
 
 func _configure_buttons(multiple: bool, confirm_text: String, cancel_visible: bool) -> void:
-	# Keep adjacent world targets visible while selecting or waiting for a swing.
-	var show_world := mode == Mode.SELECT or mode == Mode.PENDING
+	# Keep adjacent world targets visible during selection and attack confirmation.
+	var show_world := mode != Mode.DEAD
 	_panel.position = size * 0.5 + Vector2(-224, 56 if show_world else -76)
 	_panel.size = Vector2(448, 116 if show_world else 152)
 	_previous.visible = multiple
@@ -195,6 +181,7 @@ func _configure_buttons(multiple: bool, confirm_text: String, cancel_visible: bo
 func _button(parent: Node, title: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = title
+	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(callback)
 	parent.add_child(button)
 	return button

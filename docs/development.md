@@ -125,24 +125,34 @@ See the [hero class diagram](architecture/classes/hero.puml) and
 
 ## Milestone 3: Fight!
 
-Launch the same main scene. Move south once from spawn to stand beside the yellow
-**Young Wolf**. A neutral bump blocks without time. Press **F**, inspect the selected
-name/relationship/health, then **Enter** to engage or **Esc** to cancel. Multiple
-candidates use movement directions with wraparound; Previous/Next buttons and clicking
-an adjacent world sprite also select. A corpse remains selectable under another actor.
-Friendly **Groundskeeper Mira** is two tiles northwest of spawn; F/Enter opens her
-conversation without spending time. Open windows never advance simulation.
+Launch the same main scene. Move southwest, then south from spawn to stand beside the yellow
+**Young Wolf**. A neutral bump blocks without time. Press **F**: a lone neutral opens
+**Attack Young Wolf?**, with **Attack (Enter)** and **Cancel (Esc)**. A lone hostile
+starts melee immediately. Multiple candidates first use a selector: movement directions
+wrap around, Previous/Next buttons and adjacent world sprites also select, and Enter
+chooses. Choosing a neutral then asks separately for attack confirmation. A corpse
+remains selectable under another actor. Combat prompts use labeled shortcuts or mouse
+clicks; Tab does not change focus. Selection, confirmation, and cancellation spend no
+time until an attack is committed.
+
+Friendly **Groundskeeper Mira** is two tiles northwest of spawn. Her greeting and empty
+corpse results go straight to chat, with no dialogue to dismiss. A single candidate
+skips selection for these interactions too. Open windows never advance simulation.
 
 Red **Timber Wolves** wait to the east at (32,12), (33,14), and (34,16). Approach to
-within five tiles with clear sight to provoke them. They pursue around trees/walls,
-spread into free adjacent positions, and swing immediately when ready on entering
-range. Wandering meadow wolves remain neutral until engaged. Relationship colors
+within five tiles with clear sight to provoke them. They follow a shortest terrain
+route around trees/walls, approaching directly when shortest routes tie. They only
+spread around other actors when the next step is occupied, and swing immediately
+when ready on entering range. Wandering meadow wolves remain neutral until engaged. Relationship colors
 are accompanied by text in the selector; alternate palettes remain milestone 8.
 
 Bumping a hostile or confirming an attack spends at least one turn. The temporary
-Bent Staff swings every 2.9 simulation seconds. If it is not ready, **Continue (Enter)**
-advances the next boundary; **Esc** cancels without refunding elapsed turns. Movement
-and Wait also advance swing timers but do not automatically attack. Chat reports
+Bent Staff swings every 2.9 simulation seconds. If it is not ready, the committed
+attack automatically advances the necessary turns, including each NPC phase. A brief
+presentation gap between boundaries allows **Esc** or **Cancel attack (Esc)** to stop
+the request without refunding elapsed turns. There is no Continue prompt. The request
+ends once its swing resolves; idle time does not start another attack. Movement and
+Wait also advance swing timers but do not automatically attack. Chat reports
 each attack outcome/damage and kill XP; the HUD always shows current/max health and
 mana. P now shows attack power, armor, critical and dodge percentages.
 

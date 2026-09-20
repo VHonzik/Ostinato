@@ -51,6 +51,12 @@ theme_override_colors/font_color = Color(0.91, 0.83, 0.62, 1)
 theme_override_font_sizes/font_size = 14
 text = "OSTINATO / Fight!"
 
+[node name="CancelAttack" type="Button" parent="HUD/Top/Rows/Heading"]
+visible = false
+layout_mode = 2
+focus_mode = 0
+text = "Cancel attack (Esc)"
+
 [node name="Slow" type="Button" parent="HUD/Top/Rows/Heading"]
 layout_mode = 2
 tooltip_text = "Fixture speed: 0.5 tiles per turn. Esc returns to movement."

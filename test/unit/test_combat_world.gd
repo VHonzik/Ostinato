@@ -130,6 +130,46 @@ func test_pursuit_survives_lost_sight_and_navigates_static_obstacles() -> void:
 	assert_eq(actor.blocked_turns, 0)
 
 
+func test_pursuers_follow_player_west_without_preemptive_spreading() -> void:
+	var first := _actor(Vector2i(13, 10))
+	var second := _actor(Vector2i(15, 10))
+	first.engaged = true
+	second.engaged = true
+	var random_before := _world.random.state
+	for step in range(1, 5):
+		assert_true(_world.move_player(Vector2i.LEFT))
+		assert_eq(first.tile, Vector2i(13 - step, 10))
+		assert_eq(second.tile, Vector2i(15 - step, 10))
+	assert_eq(_world.random.state, random_before)
+
+
+func test_occupied_future_step_does_not_divert_a_clear_next_step() -> void:
+	_actor(Vector2i(12, 10), GridActor.Relationship.FRIENDLY)
+	var pursuer := _actor(Vector2i(14, 10))
+	pursuer.engaged = true
+	_world.wait_turn()
+	assert_eq(pursuer.tile, Vector2i(13, 10), "Approach directly until physically blocked.")
+	_world.wait_turn()
+	assert_eq(pursuer.tile, Vector2i(12, 11), "An occupied next step allows spreading; SW wins the stable tie.")
+	_world.wait_turn()
+	assert_eq(GridWorld.tile_distance(pursuer.tile, _world.player_tile), 1)
+	assert_eq(pursuer.blocked_turns, 0, "Actor congestion is not static failure.")
+
+
+func test_pursuit_takes_shortest_terrain_route_even_when_it_initially_moves_away() -> void:
+	var pursuer := _actor(Vector2i(14, 10))
+	pursuer.engaged = true
+	for y in range(7, 14):
+		_world.blocked_tiles[Vector2i(12, y)] = true
+		_world.sight_blockers[Vector2i(12, y)] = true
+	for turn in range(6):
+		_world.wait_turn()
+		assert_gt(GridWorld.tile_distance(pursuer.tile, _world.player_tile), 1)
+	_world.wait_turn()
+	assert_eq(GridWorld.tile_distance(pursuer.tile, _world.player_tile), 1,
+		"Going around either end of this seven-tile wall takes seven legal steps.")
+
+
 func test_crowded_pursuers_fill_available_melee_tiles_without_overlap_or_leash() -> void:
 	_world.hero.health = 10000
 	for tile in [Vector2i(6, 6), Vector2i(10, 6), Vector2i(14, 6), Vector2i(14, 10),

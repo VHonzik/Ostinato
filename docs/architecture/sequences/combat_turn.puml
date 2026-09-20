@@ -2,47 +2,66 @@
 !pragma layout smetana
 skinparam shadowing false
 actor Player
-participant "MovementGame / CombatPanel" as UI
+participant MovementGame as Game
+participant CombatPanel as Panel
 participant GridWorld as World
 participant "HeroState / SwingTimer" as Hero
 participant "GridActor / SwingTimer" as NPC
 participant MeleeRules as Rules
 
-Player -> UI : F: select adjacent target
-UI -> World : interaction_candidates()
-World --> UI : closest; stable ties
-alt Preview / cancel / conversation / corpse
-  UI --> Player : No time or hostility change
-else Confirm harmful target (or hostile bump)
-  UI -> World : request_melee(target)
+Player -> Game : F: interact
+Game -> Panel : open_interaction(world)
+Panel -> World : interaction_candidates()
+World --> Panel : closest; stable ties
+opt Multiple candidates
+  Panel --> Player : Directions / mouse select; Enter chooses; Esc cancels
+  Player -> Panel : choose candidate
+end
+alt Friendly / empty corpse / no candidate
+  Panel -> World : add_message(result)
+  Panel --> Player : Chat; no dialogue or elapsed time
+else Neutral / hostile
+  opt Neutral
+    Panel --> Player : Attack <name>? Enter attacks; Esc cancels
+    Player -> Panel : confirm attack
+  end
+  Panel -> World : request_melee(target)
+  note over Game, World : A hostile bump also requests melee directly.
   World -> World : Validate target; engage; face target
-  loop One boundary per confirmation, until swing or cancellation
+  loop Committed boundaries until swing, cancellation, invalid target, or death
     World -> Hero : advance(active=true, interval)
     opt Swing(s) due
       World -> Rules : outcome + damage (combat random stream)
       World -> NPC : apply damage
       opt NPC dies
-        World -> NPC : stop acting; leave nonblocking corpse
+        World -> NPC : nonblocking corpse; stop acting
         World -> Rules : kill_experience()
-        World -> Hero : award once; ordinary level progression
+        World -> Hero : award once; ordinary progression
       end
     end
     World -> World : Increment elapsed turn
-    loop Living NPCs in stable order; stop immediately on player death
-      World -> NPC : static route? pursue / return / wander
-      World -> NPC : advance swing timer
-      opt Adjacent and swing ready
+    loop Living NPCs in stable order; stop on player death
+      World -> NPC : shortest terrain route; reroute only if next step occupied
+      World -> NPC : advance swing timer; attack if ready and adjacent
+      opt Attack
         World -> Rules : outcome + damage
         World -> Hero : apply damage
       end
     end
-    World --> UI : resources / chat / pending target / death
+    World --> Game : resources / chat / pending target / death
     alt Player died
-      UI --> Player : Death overlay; gameplay blocked; Reset available
+      Game -> Panel : show_death()
+      Panel --> Player : Gameplay blocked; Reset available
     else Swing still pending
-      UI --> Player : Continue (one boundary) / Cancel (free)
-      Player -> UI : Enter / Esc
-      UI -> World : continue_melee() / cancel_melee()
+      Game --> Player : Waiting for swing; Esc / Cancel attack available
+      alt Cancel or Reset before next boundary
+        Player -> Game : Esc / Cancel attack / Reset
+        Game -> World : cancel_melee() or replace fixture
+      else Presentation gap elapsed
+        Game -> World : continue_melee()
+      end
+    else Swing resolved or target invalid
+      Game --> Player : Ready for next action; no automatic repeat
     end
   end
 end

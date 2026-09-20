@@ -5,11 +5,13 @@ skinparam classAttributeIconSize 0
 hide empty members
 
 class MovementGame <<Node2D>> {
+  _melee_delay_seconds: float
+  _process(delta)
   refresh_view()
-  _handle_combat_input(event)
+  _cancel_pending_melee()
 }
 class CombatPanel <<Control>> {
-  mode: SELECT / CONVERSATION / PENDING / DEAD
+  mode: SELECT / CONFIRM_ATTACK / DEAD
   selected: GridActor
   open_interaction(world)
   navigate(direction)
@@ -23,7 +25,7 @@ class GridWorld <<RefCounted>> {
   request_melee(target): bool
   continue_melee(): bool
   has_sight(start, end): bool
-  _route(start, goals, avoid_actors)
+  _route(start, goals, avoid_actors, toward)
   _finish_turn()
 }
 class GridActor <<RefCounted>> {
@@ -56,7 +58,7 @@ class MeleeRules <<RefCounted>> {
 }
 
 MovementGame *-- CombatPanel
-MovementGame --> GridWorld
+MovementGame --> GridWorld : automatic melee boundaries
 CombatPanel --> GridWorld : requests / reads
 CombatPanel --> GridActor : selects
 GridWorld *-- GridActor : stable order

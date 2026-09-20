@@ -244,8 +244,8 @@ func _acquire_hostiles() -> void:
 
 func _act_npc(actor: GridActor) -> void:
 	if actor.returning_home:
-		if not _route(actor.tile, [actor.home_tile], false).is_empty():
-			_step_toward(actor, [actor.home_tile])
+		if not _route(actor.tile, [actor.home_tile], false, actor.home_tile).is_empty():
+			_step_toward(actor, [actor.home_tile], actor.home_tile)
 		if actor.tile == actor.home_tile:
 			actor.returning_home = false
 			actor.health = actor.max_health
@@ -256,7 +256,7 @@ func _act_npc(actor: GridActor) -> void:
 			var tile := player_tile + direction
 			if _terrain_open(tile) and has_sight(tile, player_tile):
 				goals.append(tile)
-		var static_path := _route(actor.tile, goals, false)
+		var static_path := _route(actor.tile, goals, false, player_tile)
 		if static_path.is_empty():
 			actor.blocked_turns += 1
 			if actor.blocked_turns >= 5:
@@ -265,7 +265,7 @@ func _act_npc(actor: GridActor) -> void:
 				add_message("%s cannot reach you and returns home." % actor.title)
 		else:
 			actor.blocked_turns = 0
-			_step_toward(actor, goals)
+			_step_toward(actor, goals, player_tile, static_path)
 	else:
 		_wander(actor)
 	var in_melee := (actor.engaged and tile_distance(actor.tile, player_tile) == 1
@@ -323,8 +323,18 @@ func _terrain_open(tile: Vector2i) -> bool:
 	return bounds.has_point(tile) and not blocked_tiles.has(tile) and tile != player_tile
 
 
-func _step_toward(actor: GridActor, goals: Array[Vector2i]) -> void:
-	var route := _route(actor.tile, goals, true)
+func _step_toward(
+	actor: GridActor, goals: Array[Vector2i], toward: Vector2i,
+	terrain_route: Array[Vector2i] = []
+) -> void:
+	var route := terrain_route
+	if route.is_empty():
+		route = _route(actor.tile, goals, false, toward)
+	if route.size() <= 1:
+		return
+	# Follow the terrain route until its next step is physically occupied.
+	if not is_open(route[1]):
+		route = _route(actor.tile, goals, true, toward)
 	if route.size() > 1:
 		_move_actor(actor, route[1])
 
@@ -334,7 +344,9 @@ func _move_actor(actor: GridActor, tile: Vector2i) -> void:
 	actor.tile = tile
 
 
-func _route(start: Vector2i, goals: Array[Vector2i], avoid_actors: bool) -> Array[Vector2i]:
+func _route(
+	start: Vector2i, goals: Array[Vector2i], avoid_actors: bool, toward: Vector2i
+) -> Array[Vector2i]:
 	# Breadth-first search separates static failure from temporary actor congestion.
 	var queue: Array[Vector2i] = [start]
 	var parents: Dictionary[Vector2i, Vector2i] = {start: start}
@@ -353,7 +365,13 @@ func _route(start: Vector2i, goals: Array[Vector2i], avoid_actors: bool) -> Arra
 		if distance < best_distance:
 			best = tile
 			best_distance = distance
-		for direction in DIRECTIONS:
+		var directions: Array[Vector2i] = DIRECTIONS.duplicate()
+		directions.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+			var first := (tile + a - toward).length_squared()
+			var second := (tile + b - toward).length_squared()
+			return DIRECTIONS.find(a) < DIRECTIONS.find(b) if first == second else first < second
+		)
+		for direction in directions:
 			var next := tile + direction
 			if parents.has(next) or not _terrain_open(next):
 				continue

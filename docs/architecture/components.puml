@@ -7,12 +7,12 @@ skinparam ranksep 45
 
 component "Godot 4.7.2\nproject.godot\nCompatibility; movement + hero InputMap" as Godot
 component "Main / pixel_viewport.gd\nInteger-scaled SubViewportContainer\nExpands logical view on resize" as Main
-component "MovementGame\nInput, fixture controls, chat, HUD\nCentered Camera2D" as Game
+component "MovementGame\nInput, HUD, automatic melee boundaries\nCentered Camera2D" as Game
 component "GridView\nDraws tiles and existing sprites" as View
 component "GridWorld + GridActor\nBlocking, movement credit\nOrdered wandering / pursuit / combat" as World
 component "HeroState + HeroData + SkillRank\nMage baseline, XP, learned ranks" as Hero
 component "MeleeRules + MeleeProfile + SwingTimer\nSourced physical outcomes / timing" as Combat
-component "CombatPanel\nInteraction / swing boundaries / death" as CombatUI
+component "CombatPanel\nSelection / neutral confirmation / death" as CombatUI
 component "HeroPanel\nCharacter / spell book modal" as Panel
 component "MovementFixture\nFixed grounds and seeded wanderers" as Fixture
 component "GUT 9.7.1\ntest/unit/" as Tests
@@ -26,7 +26,7 @@ Fixture --> World : constructs
 Game --> World : move / wait / cast / melee
 World --> Combat : resolves attacks
 Game --> CombatUI : opens / refreshes
-CombatUI --> World : select / interact / continue
+CombatUI --> World : select / interact
 CombatUI --> Game : action / selection / reset
 World --> Hero : owns; applies XP
 Game --> Panel : opens / refreshes
