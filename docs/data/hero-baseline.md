@@ -1,5 +1,8 @@
 # DATA-001 / DATA-002 — Milestone 2 hero baseline
 
+Milestone 3 supersedes the temporary death notice and adds melee through
+[DATA-002 melee selection](melee-baseline.md). The selections below describe the milestone-2 baseline.
+
 Selected 2026-09-19 for FR-015/016/017/046/048/050. This record supplies the
 starting attributes, resources, mage growth, starting spell identities, and XP portion
 needed by milestone 2. Combat formulas, resource spending/regeneration, complete starter

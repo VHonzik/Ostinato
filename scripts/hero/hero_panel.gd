@@ -72,11 +72,12 @@ func refresh() -> void:
 		+ "Health %d / %d     Mana %d / %d\n"
 		+ "Strength %d     Agility %d     Stamina %d\n"
 		+ "Intellect %d     Spirit %d\n"
-		+ "Human-mage baseline without racials. Equipment arrives later."
+		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%"
 	) % [
 		_hero.level, _hero.experience, _hero.experience_to_next_level(),
 		_hero.health, _hero.max_health, _hero.mana, _hero.max_mana,
 		_hero.strength, _hero.agility, _hero.stamina, _hero.intellect, _hero.spirit,
+		_hero.melee.attack_power, _hero.melee.armor, _hero.melee.critical, _hero.melee.dodge,
 	]
 
 

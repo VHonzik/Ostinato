@@ -3,7 +3,7 @@ extends RefCounted
 
 signal message_added(message: String)
 
-## Movement and the shared wandering phase: FR-007/008/010/011/013/023.
+## Player-driven movement and combat: FR-007 through FR-027 (milestone subset).
 const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(1, 1),
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1),
@@ -15,6 +15,9 @@ var hero: HeroState
 var messages: PackedStringArray = []
 var bounds: Rect2i
 var blocked_tiles: Dictionary[Vector2i, bool] = {}
+var sight_blockers: Dictionary[Vector2i, bool] = {}
+var pending_melee: GridActor
+var combat_random := RandomNumberGenerator.new()
 var actors: Array[GridActor] = []
 var player_tile: Vector2i
 var movement_speed: float = 1.0
@@ -31,6 +34,7 @@ func _init(
 	bounds = map_bounds
 	player_tile = spawn
 	random.seed = world_seed
+	combat_random.seed = world_seed ^ 15485863
 
 
 func is_open(tile: Vector2i) -> bool:
@@ -43,24 +47,34 @@ func is_open(tile: Vector2i) -> bool:
 
 
 func move_player(direction: Vector2i) -> bool:
+	if is_player_dead() or pending_melee != null:
+		return false
 	if not DIRECTIONS.has(direction) or movement_speed <= 0.0:
 		return false
+	var occupant := actor_at(player_tile + direction)
+	if occupant != null and occupant.relationship == GridActor.Relationship.HOSTILE:
+		return request_melee(occupant)
 	# Reject before granting time or credit. Only the destination blocks a diagonal.
 	if not is_open(player_tile + direction):
 		return false
 	movement_credit += movement_speed
 	while movement_credit >= 1.0 and is_open(player_tile + direction):
 		player_tile += direction
+		hero.facing = direction
 		movement_credit -= 1.0
+		_acquire_hostiles()
 	_finish_turn()
 	return true
 
 
 func wait_turn() -> void:
-	_finish_turn()
+	if not is_player_dead() and pending_melee == null:
+		_finish_turn()
 
 
 func cast_skill(identifier: StringName) -> bool:
+	if is_player_dead() or pending_melee != null:
+		return false
 	var skill := hero.find_skill(identifier)
 	if skill == null:
 		add_message("Cannot cast: that rank is not learned.")
@@ -78,7 +92,8 @@ func cast_skill(identifier: StringName) -> bool:
 			for gained_level in hero.add_experience(450):
 				add_message("Level up! You are now level %d. Health and mana restored." % gained_level)
 		SkillRank.Effect.DEATH_NOTICE:
-			add_message("Death trigger invoked. Death state arrives in milestone 3; keep exploring.")
+			hero.health = 0
+			add_message("Death trigger invoked. You died. Reset the fixture to try again.")
 	_finish_turn()
 	return true
 
@@ -90,16 +105,273 @@ func add_message(message: String) -> void:
 	message_added.emit(message)
 
 
-func _finish_turn() -> void:
-	# One shared phase, regardless of actor count. Earlier actors claim tiles first.
+func is_player_dead() -> bool:
+	return hero.health <= 0
+
+
+func actor_at(tile: Vector2i) -> GridActor:
 	for actor in actors:
-		if not actor.alive or not actor.wander_area.has_area():
-			continue
-		var candidates: Array[Vector2i] = []
-		for direction in DIRECTIONS:
-			var destination := actor.tile + direction
-			if actor.wander_area.has_point(destination) and is_open(destination):
-				candidates.append(destination)
-		if not candidates.is_empty():
-			actor.tile = candidates[random.randi_range(0, candidates.size() - 1)]
+		if actor.alive and actor.tile == tile:
+			return actor
+	return null
+
+
+static func tile_distance(first: Vector2i, second: Vector2i) -> int:
+	var difference := (first - second).abs()
+	return maxi(difference.x, difference.y)
+
+
+func has_sight(start: Vector2i, end: Vector2i) -> bool:
+	# Open rectangle intersection: merely touching a corner does not obstruct sight.
+	var origin := Vector2(start) + Vector2.ONE * 0.5
+	var offset := Vector2(end - start)
+	for tile in sight_blockers:
+		var entry := 0.0
+		var leave := 1.0
+		for axis in range(2):
+			if is_zero_approx(offset[axis]):
+				if origin[axis] <= tile[axis] or origin[axis] >= tile[axis] + 1:
+					leave = -1.0
+					break
+			else:
+				var first := (tile[axis] - origin[axis]) / offset[axis]
+				var second := (tile[axis] + 1 - origin[axis]) / offset[axis]
+				entry = maxf(entry, minf(first, second))
+				leave = minf(leave, maxf(first, second))
+		if entry < leave - 0.000001:
+			return false
+	return true
+
+
+func interaction_candidates() -> Array[GridActor]:
+	var candidates: Array[GridActor] = []
+	for actor in actors:
+		var distance := tile_distance(player_tile, actor.tile)
+		if distance <= 1 and (actor.alive or actor.corpse_visible):
+			candidates.append(actor)
+	# Stable array identity breaks equal-distance ties.
+	candidates.sort_custom(func(a: GridActor, b: GridActor) -> bool:
+		var first := tile_distance(player_tile, a.tile)
+		var second := tile_distance(player_tile, b.tile)
+		return actors.find(a) < actors.find(b) if first == second else first < second
+	)
+	return candidates
+
+
+func interact(actor: GridActor) -> String:
+	if is_player_dead() or not interaction_candidates().has(actor):
+		return "That target is no longer available."
+	if not actor.alive:
+		return "%s: no loot in this combat fixture. Loot arrives in milestone 5." % actor.title
+	if actor.relationship == GridActor.Relationship.FRIENDLY:
+		return "%s: Welcome to the training grounds. Wolves roam to the east. Stay alert!" % actor.title
+	request_melee(actor)
+	return ""
+
+
+func request_melee(target: GridActor) -> bool:
+	if is_player_dead() or pending_melee != null or not _valid_melee(target):
+		return false
+	target.relationship = GridActor.Relationship.HOSTILE
+	target.engaged = true
+	target.returning_home = false
+	hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
+	pending_melee = target
+	continue_melee()
+	return true
+
+
+func continue_melee() -> bool:
+	if is_player_dead() or not _valid_melee(pending_melee):
+		pending_melee = null
+		return false
+	var target := pending_melee
+	var swings := hero.swing.advance(true, hero.melee.interval)
+	for index in range(swings):
+		if not _valid_melee(target) or is_player_dead():
+			break
+		_player_swing(target)
+	if swings > 0:
+		pending_melee = null
+	_finish_turn(true)
+	if is_player_dead() or not _valid_melee(pending_melee):
+		pending_melee = null
+	return true
+
+
+func cancel_melee() -> void:
+	pending_melee = null
+
+
+func _valid_melee(target: GridActor) -> bool:
+	return (target != null and actors.has(target) and target.alive
+		and target.relationship != GridActor.Relationship.FRIENDLY
+		and tile_distance(player_tile, target.tile) == 1
+		and has_sight(player_tile, target.tile))
+
+
+func _finish_turn(player_timer_advanced: bool = false) -> void:
+	# Terminal player effects consume their turn but discard its remaining stages.
 	turn_count += 1
+	if is_player_dead():
+		pending_melee = null
+		return
+	if not player_timer_advanced:
+		hero.swing.advance(false, hero.melee.interval)
+	_acquire_hostiles()
+	for actor in actors:
+		if not actor.alive:
+			continue
+		_act_npc(actor)
+		if is_player_dead():
+			pending_melee = null
+			return
+	for actor in actors:
+		if not actor.alive and actor.died_on_turn >= 0:
+			if turn_count - actor.died_on_turn >= 300:
+				actor.corpse_visible = false
+
+
+func _acquire_hostiles() -> void:
+	for actor in actors:
+		if (actor.alive and actor.relationship == GridActor.Relationship.HOSTILE
+			and not actor.returning_home and not actor.engaged
+			and tile_distance(actor.tile, player_tile) <= actor.aggro_range
+			and has_sight(actor.tile, player_tile)):
+			actor.engaged = true
+			add_message("%s engages you." % actor.title)
+
+
+func _act_npc(actor: GridActor) -> void:
+	if actor.returning_home:
+		if not _route(actor.tile, [actor.home_tile], false).is_empty():
+			_step_toward(actor, [actor.home_tile])
+		if actor.tile == actor.home_tile:
+			actor.returning_home = false
+			actor.health = actor.max_health
+			actor.blocked_turns = 0
+	elif actor.engaged:
+		var goals: Array[Vector2i] = []
+		for direction in DIRECTIONS:
+			var tile := player_tile + direction
+			if _terrain_open(tile) and has_sight(tile, player_tile):
+				goals.append(tile)
+		var static_path := _route(actor.tile, goals, false)
+		if static_path.is_empty():
+			actor.blocked_turns += 1
+			if actor.blocked_turns >= 5:
+				actor.engaged = false
+				actor.returning_home = true
+				add_message("%s cannot reach you and returns home." % actor.title)
+		else:
+			actor.blocked_turns = 0
+			_step_toward(actor, goals)
+	else:
+		_wander(actor)
+	var in_melee := (actor.engaged and tile_distance(actor.tile, player_tile) == 1
+		and has_sight(actor.tile, player_tile))
+	var swings := actor.swing.advance(in_melee, actor.melee.interval)
+	for index in range(swings):
+		if is_player_dead():
+			return
+		actor.facing = MeleeRules.facing_toward(player_tile - actor.tile)
+		var result := MeleeRules.outcome(actor.melee, hero.melee,
+			MeleeRules.is_behind(hero.facing, actor.tile - player_tile),
+			combat_random.randf() * 100.0)
+		var amount := MeleeRules.damage(actor.melee, hero.melee, result,
+			combat_random.randf(), combat_random.randf())
+		hero.health = maxi(0, hero.health - amount)
+		add_message("%s -> You: %s, %d damage." % [actor.title, result, amount])
+		if is_player_dead():
+			add_message("You died. Reset the fixture to try again.")
+
+
+func _player_swing(target: GridActor) -> void:
+	var result := MeleeRules.outcome(hero.melee, target.melee,
+		MeleeRules.is_behind(target.facing, player_tile - target.tile),
+		combat_random.randf() * 100.0)
+	var amount := MeleeRules.damage(hero.melee, target.melee, result,
+		combat_random.randf(), combat_random.randf())
+	target.health = maxi(0, target.health - amount)
+	add_message("You -> %s: %s, %d damage." % [target.title, result, amount])
+	if target.health == 0:
+		target.alive = false
+		target.engaged = false
+		target.returning_home = false
+		target.died_on_turn = turn_count + 1
+		var xp := MeleeRules.kill_experience(hero.level, target.melee.level)
+		if not target.awards_experience:
+			xp = 0
+		add_message("%s dies. Gained %d XP." % [target.title, xp])
+		for gained_level in hero.add_experience(xp):
+			add_message("Level up! You are now level %d. Health and mana restored." % gained_level)
+
+
+func _wander(actor: GridActor) -> void:
+	if not actor.wander_area.has_area():
+		return
+	var candidates: Array[Vector2i] = []
+	for direction in DIRECTIONS:
+		var destination := actor.tile + direction
+		if actor.wander_area.has_point(destination) and is_open(destination):
+			candidates.append(destination)
+	if not candidates.is_empty():
+		_move_actor(actor, candidates[random.randi_range(0, candidates.size() - 1)])
+
+
+func _terrain_open(tile: Vector2i) -> bool:
+	return bounds.has_point(tile) and not blocked_tiles.has(tile) and tile != player_tile
+
+
+func _step_toward(actor: GridActor, goals: Array[Vector2i]) -> void:
+	var route := _route(actor.tile, goals, true)
+	if route.size() > 1:
+		_move_actor(actor, route[1])
+
+
+func _move_actor(actor: GridActor, tile: Vector2i) -> void:
+	actor.facing = MeleeRules.facing_toward(tile - actor.tile)
+	actor.tile = tile
+
+
+func _route(start: Vector2i, goals: Array[Vector2i], avoid_actors: bool) -> Array[Vector2i]:
+	# Breadth-first search separates static failure from temporary actor congestion.
+	var queue: Array[Vector2i] = [start]
+	var parents: Dictionary[Vector2i, Vector2i] = {start: start}
+	var cursor := 0
+	var best := start
+	var best_distance := _distance_to_goals(start, goals)
+	var reached := false
+	while cursor < queue.size():
+		var tile := queue[cursor]
+		cursor += 1
+		if goals.has(tile):
+			best = tile
+			reached = true
+			break
+		var distance := _distance_to_goals(tile, goals)
+		if distance < best_distance:
+			best = tile
+			best_distance = distance
+		for direction in DIRECTIONS:
+			var next := tile + direction
+			if parents.has(next) or not _terrain_open(next):
+				continue
+			if avoid_actors and not is_open(next):
+				continue
+			parents[next] = tile
+			queue.append(next)
+	if not reached and not avoid_actors:
+		return []
+	var route: Array[Vector2i] = [best]
+	while route[-1] != start:
+		route.append(parents[route[-1]])
+	route.reverse()
+	return route
+
+
+func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
+	var distance := 2147483647
+	for goal in goals:
+		distance = mini(distance, tile_distance(tile, goal))
+	return distance

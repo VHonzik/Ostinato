@@ -31,6 +31,8 @@ class GridWorld <<RefCounted>> {
 class GridActor <<RefCounted>> {
   tile: Vector2i
   alive: bool
+  relationship: Relationship
+  engaged, returning_home: bool
   wander_area: Rect2i
 }
 class GridView <<Node2D>> {
@@ -54,7 +56,8 @@ GridWorld *-- HeroState : progression (see hero.puml)
 GridWorld *-- "0..*" GridActor : stable array order
 
 note bottom of GridActor
-Empty wander_area: fixed.
+Idle actors wander only inside wander_area.
+Engaged actors pursue; see combat.puml.
 alive = false: non-blocking remains.
 end note
 @enduml

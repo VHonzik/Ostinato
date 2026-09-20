@@ -9,8 +9,10 @@ component "Godot 4.7.2\nproject.godot\nCompatibility; movement + hero InputMap" 
 component "Main / pixel_viewport.gd\nInteger-scaled SubViewportContainer\nExpands logical view on resize" as Main
 component "MovementGame\nInput, fixture controls, chat, HUD\nCentered Camera2D" as Game
 component "GridView\nDraws tiles and existing sprites" as View
-component "GridWorld + GridActor\nBlocking, movement credit\nShared ordered wandering phase" as World
+component "GridWorld + GridActor\nBlocking, movement credit\nOrdered wandering / pursuit / combat" as World
 component "HeroState + HeroData + SkillRank\nMage baseline, XP, learned ranks" as Hero
+component "MeleeRules + MeleeProfile + SwingTimer\nSourced physical outcomes / timing" as Combat
+component "CombatPanel\nInteraction / swing boundaries / death" as CombatUI
 component "HeroPanel\nCharacter / spell book modal" as Panel
 component "MovementFixture\nFixed grounds and seeded wanderers" as Fixture
 component "GUT 9.7.1\ntest/unit/" as Tests
@@ -21,7 +23,11 @@ Godot --> Main : loads
 Main --> Game : contains in SubViewport
 Game --> Fixture : reset / startup
 Fixture --> World : constructs
-Game --> World : move / wait / cast
+Game --> World : move / wait / cast / melee
+World --> Combat : resolves attacks
+Game --> CombatUI : opens / refreshes
+CombatUI --> World : select / interact / continue
+CombatUI --> Game : action / selection / reset
 World --> Hero : owns; applies XP
 Game --> Panel : opens / refreshes
 Panel --> Game : cast requested
@@ -36,7 +42,7 @@ Tests --> World : movement and ordering
 Validation --> Reports : checks results; renders diagrams
 
 note bottom of World
-Milestones 1–2: movement, wandering, hero progression, dummy skills.
-Combat, pursuit, real spells, and Loop lifecycle follow later.
+Milestones 1–3: movement, hero, melee, pursuit, interaction, death overlay.
+Real spells, equipment/loot, and Loop lifecycle follow later.
 end note
 @enduml

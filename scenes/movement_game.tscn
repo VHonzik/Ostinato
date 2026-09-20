@@ -1,9 +1,11 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/movement_game.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
 
 [ext_resource type="Script" path="res://scripts/hero/hero_panel.gd" id="3"]
+
+[ext_resource type="Script" path="res://scripts/combat/combat_panel.gd" id="4"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 12
@@ -47,7 +49,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.91, 0.83, 0.62, 1)
 theme_override_font_sizes/font_size = 14
-text = "OSTINATO / Hero emerges"
+text = "OSTINATO / Fight!"
 
 [node name="Slow" type="Button" parent="HUD/Top/Rows/Heading"]
 layout_mode = 2
@@ -134,7 +136,7 @@ mouse_filter = 2
 [node name="Legend" type="Label" parent="HUD/Bottom/Rows"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
-text = "P: character   ·   K: spells   ·   Tab: controls   ·   Esc: return"
+text = "F: interact   ·   P: character   ·   K: spells   ·   Esc: return"
 mouse_filter = 2
 
 [node name="HeroPanel" type="Control" parent="HUD"]
@@ -146,3 +148,13 @@ grow_horizontal = 2
 grow_vertical = 2
 theme = SubResource("Theme_fixture")
 script = ExtResource("3")
+
+[node name="CombatPanel" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_fixture")
+script = ExtResource("4")

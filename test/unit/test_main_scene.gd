@@ -313,3 +313,126 @@ func test_shift_tab_navigates_backward_inside_the_panel() -> void:
 	_viewport.push_input(event)
 	assert_same(_game_viewport.gui_get_focus_owner(), focused)
 	assert_eq(_game.world.turn_count, 0)
+
+
+func test_interaction_keyboard_preselection_wrap_and_cancel_are_free() -> void:
+	_game.world.actors.clear()
+	var north := GridActor.new(_game.world.player_tile + Vector2i.UP)
+	var south := GridActor.new(_game.world.player_tile + Vector2i.DOWN)
+	north.relationship = GridActor.Relationship.NEUTRAL
+	south.relationship = GridActor.Relationship.NEUTRAL
+	_game.world.actors.assign([north, south])
+	await _tap_key(KEY_F)
+	assert_true(_game.combat_panel.visible)
+	assert_same(_game.combat_panel.selected, north)
+	await _tap_key(KEY_S)
+	assert_same(_game.combat_panel.selected, south)
+	await _tap_key(KEY_S)
+	assert_same(_game.combat_panel.selected, north, "Directional edge wraps.")
+	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_K)
+	for index in range(8):
+		await _tap_key(KEY_TAB)
+		assert_true(_game.combat_panel.is_ancestor_of(_game_viewport.gui_get_focus_owner()))
+	assert_eq(_game.world.turn_count, 0)
+	assert_false(north.engaged)
+	assert_false(south.engaged)
+	assert_false(_game.hero_panel.visible)
+	await _tap_key(KEY_ESCAPE)
+	assert_false(_game.combat_panel.visible)
+	assert_null(_game.grid_view.selected)
+	assert_null(_game_viewport.gui_get_focus_owner())
+
+
+func test_neutral_confirm_pending_continue_and_cancel_route_only_to_combat() -> void:
+	_game.world.actors.clear()
+	var actor := GridActor.new(_game.world.player_tile + Vector2i.DOWN)
+	actor.relationship = GridActor.Relationship.NEUTRAL
+	_game.world.actors.append(actor)
+	_game.world.hero.swing.remaining = 3.5
+	await _tap_key(KEY_F)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.turn_count, 1)
+	assert_true(actor.engaged)
+	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.PENDING)
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.world.turn_count, 1)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.turn_count, 2)
+	await _tap_key(KEY_ESCAPE)
+	assert_null(_game.world.pending_melee)
+	assert_false(_game.combat_panel.visible)
+	assert_eq(_game.world.turn_count, 2)
+
+
+func test_friendly_conversation_and_no_candidate_feedback_cost_no_time() -> void:
+	_game.world.actors.clear()
+	await _tap_key(KEY_F)
+	assert_false(_game.combat_panel.visible)
+	assert_string_contains(_game.world.messages[-1], "No one")
+	var actor := GridActor.new(_game.world.player_tile + Vector2i.DOWN)
+	_game.world.actors.append(actor)
+	await _tap_key(KEY_F)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.CONVERSATION)
+	await _tap_key(KEY_S)
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	await _tap_key(KEY_ENTER)
+	assert_false(_game.combat_panel.visible)
+
+
+func test_death_overlay_blocks_gameplay_and_reset_restores_playable_fixture() -> void:
+	_game.world.cast_skill(&"death_1")
+	_game.refresh_view()
+	assert_true(_game.combat_panel.visible)
+	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.DEAD)
+	for key in [KEY_S, KEY_F, KEY_P, KEY_K, KEY_PERIOD, KEY_ESCAPE]:
+		await _tap_key(key)
+	assert_true(_game.combat_panel.visible)
+	assert_false(_game.hero_panel.visible)
+	assert_eq(_game.world.turn_count, 1)
+	assert_eq(_game.world.hero.health, 0)
+	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
+	assert_true(status.is_visible_in_tree())
+	assert_string_contains(status.text, "HP 0/51")
+	assert_string_contains(status.text, "Mana 165/165")
+	await _tap_key(KEY_ENTER)
+	assert_false(_game.combat_panel.visible)
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_game.world.hero.health, 51)
+	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.world.turn_count, 1)
+
+
+func test_combat_panels_fit_minimum_viewport_and_mouse_buttons_work() -> void:
+	_game.world.actors.clear()
+	var first := GridActor.new(_game.world.player_tile + Vector2i.LEFT)
+	var second := GridActor.new(_game.world.player_tile + Vector2i.RIGHT)
+	_game.world.actors.assign([first, second])
+	_game.combat_panel.open_interaction(_game.world)
+	_game.combat_panel.select_tile(second.tile)
+	assert_same(_game.combat_panel.selected, second)
+	var area := Rect2(0, 0, 640, 360)
+	for mode in range(4):
+		await get_tree().process_frame
+		await get_tree().process_frame
+		for control: Control in _game.combat_panel.find_children("*", "Control", true, false):
+			if control.is_visible_in_tree():
+				assert_true(area.encloses(control.get_global_rect()), control.name)
+				if control is Button:
+					assert_gte(control.size.x, control.get_minimum_size().x, control.text)
+		if mode == 0:
+			for button: Button in _game.combat_panel.find_children("*", "Button", true, false):
+				if button.text.begins_with("Confirm"):
+					button.pressed.emit()
+			assert_eq(_game.combat_panel.mode, CombatPanel.Mode.CONVERSATION)
+		elif mode == 1:
+			_game.world.pending_melee = first
+			_game.refresh_view()
+		elif mode == 2:
+			_game.world.cancel_melee()
+			_game.world.cast_skill(&"death_1")
+			_game.refresh_view()
+	assert_eq(_game.world.turn_count, 1)

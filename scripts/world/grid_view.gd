@@ -10,6 +10,7 @@ const ENVIRONMENT: Texture2D = preload(
 )
 
 var world: GridWorld
+var selected: GridActor
 
 
 static func tile_center(tile: Vector2i) -> Vector2:
@@ -38,14 +39,23 @@ func _draw() -> void:
 				)
 	# Corpses remain visible under living occupants.
 	for actor in world.actors:
-		if not actor.alive:
+		if not actor.alive and actor.corpse_visible:
 			var center := tile_center(actor.tile)
 			draw_line(center + Vector2(-5, 2), center + Vector2(5, 2), Color("#a09a81"), 2)
 			draw_line(center + Vector2(-2, -1), center + Vector2(2, 5), Color("#a09a81"), 2)
 	for actor in world.actors:
 		if actor.alive:
-			var color := Color("#9acd95") if not actor.wander_area.has_area() else Color("#e8c979")
+			var color: Color = [Color("#9acd95"), Color("#e8c979"), Color("#ee7871")][actor.relationship]
 			_draw_character(actor.tile, Vector2i(0, 0), color)
+			var center := tile_center(actor.tile)
+			draw_line(center, center + Vector2(actor.facing) * 6, color, 1)
+			if actor.health < actor.max_health:
+				draw_rect(Rect2(center + Vector2(-7, -9), Vector2(14, 2)), Color("#382524"))
+				draw_rect(Rect2(center + Vector2(-7, -9),
+					Vector2(14.0 * actor.health / actor.max_health, 2)), color)
+	if selected != null:
+		var selection := Rect2(Vector2(selected.tile * TILE_SIZE), Vector2(16, 16))
+		draw_rect(selection.grow(2), Color.WHITE, false, 1)
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2(16, 16))
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_character(world.player_tile, Vector2i(3, 0), Color("#d8f2ef"))

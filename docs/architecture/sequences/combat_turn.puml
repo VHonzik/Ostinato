@@ -1,0 +1,49 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant "MovementGame / CombatPanel" as UI
+participant GridWorld as World
+participant "HeroState / SwingTimer" as Hero
+participant "GridActor / SwingTimer" as NPC
+participant MeleeRules as Rules
+
+Player -> UI : F: select adjacent target
+UI -> World : interaction_candidates()
+World --> UI : closest; stable ties
+alt Preview / cancel / conversation / corpse
+  UI --> Player : No time or hostility change
+else Confirm harmful target (or hostile bump)
+  UI -> World : request_melee(target)
+  World -> World : Validate target; engage; face target
+  loop One boundary per confirmation, until swing or cancellation
+    World -> Hero : advance(active=true, interval)
+    opt Swing(s) due
+      World -> Rules : outcome + damage (combat random stream)
+      World -> NPC : apply damage
+      opt NPC dies
+        World -> NPC : stop acting; leave nonblocking corpse
+        World -> Rules : kill_experience()
+        World -> Hero : award once; ordinary level progression
+      end
+    end
+    World -> World : Increment elapsed turn
+    loop Living NPCs in stable order; stop immediately on player death
+      World -> NPC : static route? pursue / return / wander
+      World -> NPC : advance swing timer
+      opt Adjacent and swing ready
+        World -> Rules : outcome + damage
+        World -> Hero : apply damage
+      end
+    end
+    World --> UI : resources / chat / pending target / death
+    alt Player died
+      UI --> Player : Death overlay; gameplay blocked; Reset available
+    else Swing still pending
+      UI --> Player : Continue (one boundary) / Cancel (free)
+      Player -> UI : Enter / Esc
+      UI -> World : continue_melee() / cancel_melee()
+    end
+  end
+end
+@enduml

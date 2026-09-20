@@ -13,6 +13,9 @@ var max_health: int
 var max_mana: int
 var health: int
 var mana: int
+var swing := SwingTimer.new()
+var melee := MeleeProfile.new()
+var facing := Vector2i.DOWN
 var learned_skills: Array[SkillRank] = []
 
 
@@ -65,6 +68,21 @@ func _apply_level_stats() -> void:
 	spirit = values[4]
 	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
 	max_mana = values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15
+	refresh_melee_stats()
 	# Classic level-up restores resources; no regeneration or spending in this fixture.
 	health = max_health
 	mana = max_mana
+
+
+func refresh_melee_stats() -> void:
+	melee.player = true
+	melee.level = level
+	melee.attack_power = maxi(0, strength - 10)
+	melee.armor = agility * 2
+	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
+	melee.critical = agility / agility_per_percent
+	melee.dodge = 3.25 + melee.critical
+	# Temporary Bent Staff profile; inventory/equipment arrive later.
+	melee.damage_min = 3.0
+	melee.damage_max = 5.0
+	melee.interval = 2.9

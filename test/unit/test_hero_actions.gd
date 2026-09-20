@@ -2,7 +2,7 @@ extends GutTest
 
 
 func test_dummy_casts_have_one_shared_phase_and_keep_movement_credit() -> void:
-	for identifier: StringName in [&"practice_1", &"experience_1", &"death_1"]:
+	for identifier: StringName in [&"practice_1", &"experience_1"]:
 		var world := MovementFixture.create_world()
 		var waiting := MovementFixture.create_world()
 		world.movement_credit = 0.5
@@ -32,19 +32,25 @@ func test_xp_cast_effect_precedes_npc_phase_and_reports_level() -> void:
 	assert_eq(world.turn_count, 1)
 
 
-func test_death_trigger_reports_invocation_without_death_or_reset() -> void:
+func test_death_trigger_ends_attempt_and_discards_remaining_phase() -> void:
 	var world := MovementFixture.create_world()
 	world.move_player(Vector2i.LEFT)
 	world.hero.add_experience(450)
 	var tile_before := world.player_tile
+	var random_before := world.random.state
 	assert_true(world.cast_skill(&"death_1"))
 	assert_eq([world.hero.level, world.hero.experience], [2, 50])
-	assert_eq(world.hero.health, world.hero.max_health)
+	assert_eq(world.hero.health, 0)
+	assert_true(world.is_player_dead())
 	assert_eq(world.player_tile, tile_before)
 	assert_eq(world.turn_count, 2)
+	assert_eq(world.random.state, random_before, "FR-013 discards the ended attempt's phase.")
 	assert_string_contains(world.messages[-1], "Death trigger invoked")
 	world.wait_turn()
-	assert_eq(world.turn_count, 3)
+	assert_false(world.move_player(Vector2i.DOWN))
+	assert_false(world.cast_skill(&"experience_1"))
+	assert_eq(world.turn_count, 2)
+	assert_eq(world.hero.level, 2)
 
 
 func test_unlearned_and_preview_casts_reject_without_simulation_changes() -> void:

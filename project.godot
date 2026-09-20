@@ -95,6 +95,11 @@ spell_book={
 "events": [Object(InputEventKey,"physical_keycode":75)]
 }
 
+interact={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":70)]
+}
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
