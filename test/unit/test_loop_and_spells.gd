@@ -337,3 +337,39 @@ func test_direct_and_periodic_kills_record_the_resolved_turn_for_corpse_expiry()
 		assert_true(target.corpse_visible)
 		world.wait_turn()
 		assert_false(target.corpse_visible)
+
+
+func test_current_class_cannot_consume_the_marshal_choice_or_replace_items() -> void:
+	var game := GameSession.new()
+	game.new_game(11)
+	game.world.hero.health = 0
+	game.restart_after_death()
+	var before := JSON.stringify(SaveCodec.capture(game))
+	assert_false(game.select_class(&"Mage"))
+	assert_eq(JSON.stringify(SaveCodec.capture(game)), before)
+	assert_true(game.can_select_class())
+	assert_true(game.select_class(&"Druid"))
+
+
+func test_fireball_mana_is_checked_at_start_and_again_at_completion() -> void:
+	var world := _spell_world()
+	var target := world.actors[0]
+	target.tile = world.player_tile + Vector2i.RIGHT
+	var skill := world.hero.find_skill(&"fireball_1")
+	world.hero.mana = 29
+	assert_true(world.spell_candidates(skill).has(target), "Mana does not change target eligibility.")
+	assert_false(world.cast_skill(skill.id, target))
+	assert_string_contains(world.messages[-1], "Not enough mana for Fireball")
+	assert_eq(world.turn_count, 0)
+	assert_false(target.engaged)
+	world.hero.mana = 30
+	assert_true(world.cast_skill(skill.id, target))
+	world.hero.mana = 29
+	world.hero.last_mana_turn = world.turn_count
+	assert_true(world.continue_cast())
+	assert_eq(world.turn_count, 2, "Elapsed casting turns remain spent.")
+	assert_eq(world.hero.mana, 29)
+	assert_eq(world.hero.casting_credit, 0.0)
+	assert_eq(target.health, target.max_health)
+	assert_null(world.pending_skill)
+	assert_true(world.periodic_effects.is_empty())

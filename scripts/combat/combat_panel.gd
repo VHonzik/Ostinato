@@ -188,6 +188,10 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	close()
 	_world = world
 	_skill = skill
+	if world.hero.mana < skill.mana_cost:
+		world.add_message("Not enough mana for %s: requires %d, have %d." % [
+			skill.title, skill.mana_cost, world.hero.mana])
+		return
 	_candidates = world.spell_candidates(skill)
 	_self_target = null
 	if skill.target == SkillRank.Target.ALLY and world.valid_spell_target(skill, null):

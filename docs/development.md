@@ -184,7 +184,8 @@ Options persist display, relationship palette, and keybindings separately from s
 A conflicting binding requires an explicit swap. Enter/Tab remain menu controls.
 
 **K** now offers real Fireball and Frost Armor. Damage, healing, and friendly buffs
-use a selector even with one target; **Enter** casts and **Esc** cancels. Casts advance
+use a selector even with one target; **Enter** casts and **Esc** cancels. Fireball can
+target adjacent enemies. Below its 30-mana cost, feedback identifies insufficient mana. Casts advance
 automatically with the same cancellable presentation gap as melee. Their shared
 fractional casting credit, resource costs, periodic effects, and completion failures
 follow [the M4 source record](data/loop-baseline.md). HP/mana remain visible.
@@ -195,7 +196,7 @@ Learned ranks and per-game hotbar state survive. Loop count and turn are in the 
 There is no temporary death overlay or gameplay Reset button.
 
 From Loop 2, move to (19,13), beside Marshal McBride at (18,12), and use **F**.
-Choose druid while still level 1 and before accepting any quest. Selection replaces
+Choose druid while still level 1 and before accepting any quest; the current class is omitted. Selection replaces
 only granted outfit pieces, preserves resources, and grants no skills. The mage
 trainer is at (17,14), and the druid trainer at (17,16). Approach within one tile,
 interact, and learn the free starting ranks. Druid has Wrath, Healing Touch, and

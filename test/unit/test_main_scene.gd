@@ -4,9 +4,13 @@ var _viewport: SubViewport
 var _main: Control
 var _game_viewport: SubViewport
 var _game: MovementGame
+var _original_options: GlobalOptions
+var _options_path: String
 
 
 func before_each() -> void:
+	_original_options = GlobalOptions.new()
+	_options_path = "user://test_scene_options_" + Crypto.new().generate_random_bytes(8).hex_encode() + ".json"
 	_viewport = SubViewport.new()
 	_viewport.size = Vector2i(640, 360)
 	_viewport.notify_mouse_entered()
@@ -17,9 +21,18 @@ func before_each() -> void:
 	_viewport.add_child(_main)
 	_game_viewport = _main.get_node("GameContainer/GameViewport") as SubViewport
 	_game = _game_viewport.get_node("MovementGame") as MovementGame
+	# Gameplay preferences must not change this default-keyboard fixture or be overwritten by it.
+	InputMap.load_from_project_settings()
+	_game.menu.options = GlobalOptions.new(_options_path)
 	_game.start_new_game()
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+
+func after_each() -> void:
+	_original_options.apply_bindings()
+	if FileAccess.file_exists(_options_path):
+		DirAccess.remove_absolute(_options_path)
 
 
 func test_startup_shows_the_game_title_and_playable_fixture() -> void:
@@ -628,7 +641,11 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 	assert_eq(_game.combat_panel.selected.service, &"Marshal")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "marshal")
-	await _tap_key(KEY_S)
+	var choices: Array[String] = []
+	for button: Button in _game.menu.find_children("*", "Button", true, false):
+		choices.append(button.text)
+	assert_eq(choices, ["Choose Druid", "Leave (Esc)"])
+	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Choose Druid")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.selected_class, &"Druid")
 	assert_null(_game.world.hero.find_skill(&"wrath_1"))
@@ -669,3 +686,49 @@ func test_ingame_menus_keep_resources_visible_and_scroll_keyboard_focus_into_vie
 			await _tap_key(KEY_S)
 		assert_eq(_game.world.turn_count, 0)
 	_game.menu.close()
+
+
+func test_fireball_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> void:
+	_game.set_process(false)
+	for direction in GridWorld.DIRECTIONS:
+		_game.session.new_game(11)
+		_game.world.blocked_tiles.clear()
+		_game.world.sight_blockers.clear()
+		_game.world.actors.clear()
+		var target := GridActor.new(_game.world.player_tile + direction)
+		target.relationship = GridActor.Relationship.NEUTRAL
+		target.health = 1000
+		target.max_health = 1000
+		target.swing.remaining = 100.0
+		_game.world.actors.append(target)
+		_game.world.hero.mana = 30
+		_game.world.combat_random.seed = 1
+		await _tap_key(KEY_K)
+		await _tap_key(KEY_ENTER)
+		assert_true(_game.combat_panel.visible)
+		assert_same(_game.combat_panel.selected, target)
+		assert_eq(_game.world.turn_count, 0)
+		assert_false(target.engaged)
+		await _tap_key(KEY_ENTER)
+		assert_eq(_game.world.turn_count, 1)
+		assert_true(target.engaged)
+		_game._process(MovementGame.MELEE_BOUNDARY_SECONDS)
+		assert_eq(_game.world.turn_count, 2)
+		assert_eq(_game.world.hero.mana, 0)
+		assert_lt(target.health, target.max_health)
+		assert_null(_game.world.pending_skill)
+
+
+func test_fireball_with_insufficient_mana_reports_the_cost_instead_of_no_target() -> void:
+	var target := _prepare_melee(GridActor.Relationship.NEUTRAL)
+	_game.world.hero.mana = 29
+	await _tap_key(KEY_K)
+	await _tap_key(KEY_ENTER)
+	assert_false(_game.combat_panel.visible)
+	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
+	assert_string_contains(chat.text, "Not enough mana for Fireball: requires 30, have 29.")
+	assert_false(chat.text.contains("No valid target"))
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_game.world.hero.mana, 29)
+	assert_false(target.engaged)
+	assert_null(_game.world.pending_skill)

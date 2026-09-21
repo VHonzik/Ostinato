@@ -123,6 +123,8 @@ func open_marshal() -> void:
 	_label("The Legion has reached Northshire. Do I know you? These clothes may help.")
 	if session.can_select_class():
 		for category: StringName in [&"Mage", &"Druid"]:
+			if category == session.world.hero.selected_class:
+				continue
 			_button("Choose " + String(category), _select_class.bind(category))
 	else:
 		_label("Class selection: once per Loop from Loop 2, at level 1, before accepting any quest.")

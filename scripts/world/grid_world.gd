@@ -93,8 +93,12 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill == null:
 		add_message("Cannot cast: that rank is not learned.")
 		return false
+	if hero.mana < skill.mana_cost:
+		add_message("Not enough mana for %s: requires %d, have %d." % [
+			skill.title, skill.mana_cost, hero.mana])
+		return false
 	if global_cooldown_until > turn_count or not valid_spell_target(skill, target):
-		add_message("Cannot cast: invalid target, range, sight, mana, or cooldown.")
+		add_message("Cannot cast: invalid target, range, sight, or cooldown.")
 		return false
 	pending_skill = skill
 	pending_target = target
@@ -121,7 +125,7 @@ func continue_cast() -> bool:
 		var skill := pending_skill
 		var target := pending_target
 		cancel_cast()
-		if valid_spell_target(skill, target):
+		if hero.mana >= skill.mana_cost and valid_spell_target(skill, target):
 			hero.casting_credit += cast_turns - maxf(1.0, skill.cast_seconds)
 			hero.mana -= skill.mana_cost
 			if skill.mana_cost > 0:
@@ -139,8 +143,6 @@ func cancel_cast() -> void:
 
 
 func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
-	if hero.mana < skill.mana_cost:
-		return false
 	if skill.target in [SkillRank.Target.NONE, SkillRank.Target.SELF]:
 		return target == null
 	if target == null:

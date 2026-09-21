@@ -58,6 +58,7 @@ are present now; looting, equipping, consuming, and trading arrive with M5's ite
 
 Mage begins knowing Fireball and Frost Armor. The druid trainer teaches Wrath,
 Healing Touch, and level-1 Mark of the Wild free, without quests, following FR-005/036.
+The marshal omits the current class; same-class requests leave the choice and outfit unchanged.
 Class selection teaches nothing. `playercreateinfo_spell` identifies Wrath and
 Healing Touch as druid starting actives; Mark is a level-1 trainer ability.
 Dodge/defense and all proficiencies are inherent under FR-019. Languages, opening,
@@ -74,7 +75,8 @@ buttons. There are no additional starting trainer passives in this subset.
 
 All have learning level 1, no individual cooldown, no consumable prerequisite, and
 the adapted one-turn GCD. Maximum ranges follow floor(yards/5), including Fireball's
-35 yards. Damage/healing base endpoints gain floor((min(level,5)−1) × rate), where
+35 yards. Fireball has no minimum range and includes all eight adjacent tiles.
+Insufficient mana is reported before targeting, separately from target validity. Damage/healing base endpoints gain floor((min(level,5)−1) × rate), where
 the source `EffectRealPointsPerLevel1` rates are 0.6, 0.4, and 0.8 for Fireball,
 Wrath, and Healing Touch respectively. Rank-1 scaling stops at source MaxLevel 5;
 leveling does not grant a new rank.

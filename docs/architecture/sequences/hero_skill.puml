@@ -12,7 +12,11 @@ Game -> Book : open(hero, true)
 Book -> Game : cast_requested(id)
 alt Targeted damage / heal / buff
   Game -> Targeting : open_spell(world, skill)
-  Targeting -> World : spell_candidates(skill)
+  break Insufficient mana
+    Targeting -> World : add_message(resource failure with cost/current mana)
+    Targeting --> Player : Close selector; no time spent
+  end
+  Targeting -> World : spell_candidates(skill): relationship / range / sight
   Targeting --> Player : Closest target; Enter casts / Esc cancels
   Player -> Targeting : Confirm target
   Targeting -> World : cast_skill(id, target)

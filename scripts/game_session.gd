@@ -43,7 +43,8 @@ func can_select_class() -> bool:
 
 
 func select_class(category: StringName) -> bool:
-	if not can_select_class() or category not in [&"Mage", &"Druid"]:
+	if (not can_select_class() or category not in [&"Mage", &"Druid"]
+		or category == world.hero.selected_class):
 		return false
 	if not StarterGear.exchange(world.hero, category):
 		world.add_message("Not enough inventory space. Class selection remains available.")
