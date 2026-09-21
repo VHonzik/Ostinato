@@ -4,7 +4,7 @@ extends GutTest
 func test_level_one_mage_stats_use_the_sourced_staff_and_attributes() -> void:
 	var hero := HeroState.new()
 	assert_eq(hero.melee.attack_power, 10)
-	assert_eq(hero.melee.armor, 40)
+	assert_eq(hero.melee.armor, 45, "Starter robe and pants add 5 armor to the mage baseline.")
 	assert_almost_eq(hero.melee.critical, 1.550388, 0.00001)
 	assert_almost_eq(hero.melee.dodge, 4.800388, 0.00001)
 	assert_eq(hero.melee.interval, 2.9)
@@ -15,7 +15,7 @@ func test_level_one_mage_stats_use_the_sourced_staff_and_attributes() -> void:
 	hero.agility += 10
 	hero.refresh_melee_stats()
 	assert_eq(hero.melee.attack_power, 24)
-	assert_eq(hero.melee.armor, 60)
+	assert_eq(hero.melee.armor, 65)
 	assert_gt(hero.melee.critical, 1.55)
 
 

@@ -17,10 +17,18 @@ var swing := SwingTimer.new()
 var melee := MeleeProfile.new()
 var facing := Vector2i.DOWN
 var learned_skills: Array[SkillRank] = []
+var selected_class: StringName = &"Mage"
+var equipment: Dictionary = {}
+var inventory: Array[Dictionary] = []
+var copper: int = 0
+var buffs: Dictionary = {}
+var casting_credit: float = 0.0
+var last_mana_turn: int = -5
 
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
 	_apply_level_stats()
+	StarterGear.equip_outfit(self)
 	for skill in SkillRank.starting_skills():
 		learn_skill(skill)
 	if development_build:
@@ -69,7 +77,7 @@ func _apply_level_stats() -> void:
 	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
 	max_mana = values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15
 	refresh_melee_stats()
-	# Classic level-up restores resources; no regeneration or spending in this fixture.
+	# Classic level-up restores resources, including when using retained skills.
 	health = max_health
 	mana = max_mana
 
@@ -79,10 +87,14 @@ func refresh_melee_stats() -> void:
 	melee.level = level
 	melee.attack_power = maxi(0, strength - 10)
 	melee.armor = agility * 2
+	for item in equipment.values():
+		melee.armor += int(StarterGear.ITEMS[int(item.id)].armor)
+	for buff in buffs.values():
+		melee.armor += int(buff.armor)
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
 	melee.critical = agility / agility_per_percent
 	melee.dodge = 3.25 + melee.critical
-	# Temporary Bent Staff profile; inventory/equipment arrive later.
+	# Both current starter outfits include the Bent Staff.
 	melee.damage_min = 3.0
 	melee.damage_max = 5.0
 	melee.interval = 2.9

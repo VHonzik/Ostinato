@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestones 1–3 training fixture on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–4 training fixture on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -46,8 +46,11 @@ pwsh -NoProfile -File tools/godot.ps1
 ```
 
 The wrapper locates the project and pinned console launcher and forwards Godot arguments.
-In the editor, F5 runs the main scene and F6 the open scene. The current main scene needs
-no save data; it creates the training fixture and a fresh level-1 mage on startup.
+In the editor, F5 runs the main scene and F6 the open scene. The main scene opens the main menu. New Game creates a fresh seed and level-1 mage.
+Existing saves are loaded only through the five-slot interface.
+
+The milestones 1–3 sections below record their original review fixtures. Milestone 4
+supersedes their preview, startup, Reset-button, and death-overlay behavior.
 
 ## Milestone 1: movement fixture
 
@@ -172,11 +175,64 @@ is claimed. Existing Fireball/Frost Armor remain previews. See the
 [combat classes](architecture/classes/combat.puml) and
 [combat sequence](architecture/sequences/combat_turn.puml).
 
+## Milestone 4: Here we go again...
+
+Launch the main scene and choose **New Game**. **Esc** from idle gameplay or the
+**Options** button opens options; menus never advance simulation. The bottom menu
+labels show the checked-out short Git hash and copyright. **F11** toggles fullscreen.
+Options persist display, relationship palette, and keybindings separately from saves.
+A conflicting binding requires an explicit swap. Enter/Tab remain menu controls.
+
+**K** now offers real Fireball and Frost Armor. Damage, healing, and friendly buffs
+use a selector even with one target; **Enter** casts and **Esc** cancels. Casts advance
+automatically with the same cancellable presentation gap as melee. Their shared
+fractional casting credit, resource costs, periodic effects, and completion failures
+follow [the M4 source record](data/loop-baseline.md). HP/mana remain visible.
+
+**K → Development → Death trigger** starts the next Loop immediately. All transient
+state is rebuilt, including level, outfit, resources, actors, timers, and arrivals.
+Learned ranks and per-game hotbar state survive. Loop count and turn are in the HUD.
+There is no temporary death overlay or gameplay Reset button.
+
+From Loop 2, move to (19,13), beside Marshal McBride at (18,12), and use **F**.
+Choose druid while still level 1 and before accepting any quest. Selection replaces
+only granted outfit pieces, preserves resources, and grants no skills. The mage
+trainer is at (17,14), and the druid trainer at (17,16). Approach within one tile,
+interact, and learn the free starting ranks. Druid has Wrath, Healing Touch, and
+Mark of the Wild. Die again and use those retained spells from the mage baseline.
+**I** shows the outfit and occupied inventory slots; full item operations follow in M5.
+
+The eastern gate is at (54,14). At turn 15 a level-20 stalker enters, kills the guard,
+and idles until ordinary aggro. Blocking the entry delays it until a free boundary.
+Its announcement, actor state, and pending arrival survive load and reset each Loop.
+This is the first-arrival subset; reinforcements and completion remain M8.
+
+**Options → Save / Load** offers five slots. Occupied saves show UTC timestamp and
+Loop; overwrite asks for confirmation. Saving is disabled in combat or during a
+pending action. Loading remains available and cancels the abandoned continuation.
+Unsaved Load/Main Menu/Exit requires discard confirmation. Slot copies retain the
+same seed. Saved state includes both RNG streams, fractional progress, effects,
+outfits, class eligibility, corpses, and schedule progress.
+
+Files live under Godot's user-data directory: on Windows, normally
+`%APPDATA%/Godot/app_userdata/Ostinato/saves/slot_1.json` through `slot_5.json`.
+Global settings are `options.json` alongside the saves directory. Tests use isolated
+temporary directories and do not overwrite gameplay slots. Saves use `demo` revision 1.
+Damaged saves are retained with a `.damaged-UTC-unique` suffix, and unsupported
+revisions remain unchanged. File failures are visible; a failed overwrite preserves
+the previous save.
+
+See [Loop/save classes](architecture/classes/loop_save.puml) and
+[Loop/save sequence](architecture/sequences/loop_save.puml). Automated coverage
+includes repeated resets, trainer/class restrictions, spell timing, save failures,
+deterministic continuation, options conflicts, and UI geometry. Human visual,
+platform, and benchmark acceptance is not inferred from those automated checks.
+
 ## Project layout
 
-- `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: playable fixture.
+- `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: menus and playable fixture.
 - `scripts/world/`: grid rules, NPC state, fixture layout, and sprite rendering.
-- `scripts/combat/`: melee calculations, fractional swing timing, and interaction/death UI.
+- `scripts/combat/`: melee calculations, fractional swing timing, and interaction/targeting UI.
 - `scripts/hero/`: sourced mage growth, progression, learned ranks, and the character/spell panel.
 - `docs/data/`: versioned data selections and adaptations.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.

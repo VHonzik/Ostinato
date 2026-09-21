@@ -2,47 +2,47 @@
 !pragma layout smetana
 skinparam componentStyle rectangle
 skinparam shadowing false
-skinparam nodesep 55
-skinparam ranksep 45
-
-component "Godot 4.7.2\nproject.godot\nCompatibility; movement + hero InputMap" as Godot
-component "Main / pixel_viewport.gd\nInteger-scaled SubViewportContainer\nExpands logical view on resize" as Main
-component "MovementGame\nInput, HUD, automatic melee boundaries\nCentered Camera2D" as Game
-component "GridView\nDraws tiles and existing sprites" as View
-component "GridWorld + GridActor\nBlocking, movement credit\nOrdered wandering / pursuit / combat" as World
-component "HeroState + HeroData + SkillRank\nMage baseline, XP, learned ranks" as Hero
-component "MeleeRules + MeleeProfile + SwingTimer\nSourced physical outcomes / timing" as Combat
-component "CombatPanel\nSelection / neutral confirmation / death" as CombatUI
-component "HeroPanel\nCharacter / spell book modal" as Panel
-component "MovementFixture\nFixed grounds and seeded wanderers" as Fixture
-component "GUT 9.7.1\ntest/unit/" as Tests
-component "Validation\ntools/validate.ps1" as Validation
-artifact "reports/\nLogs, JSON, JUnit XML, diagrams" as Reports
-
-Godot --> Main : loads
-Main --> Game : contains in SubViewport
-Game --> Fixture : reset / startup
+component "Godot 4.7.2\nCompatibility / InputMap" as Godot
+component "Main / pixel_viewport.gd\nInteger-scaled viewport" as Main
+component "MovementGame\nInput, HUD, paced action boundaries\nCentered camera" as Game
+component "GameSession\nGame seed / Loop / world replacement" as Session
+component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / first stalker" as World
+component "MovementFixture\nTraining grounds / gate / services" as Fixture
+component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell data" as Hero
+component "StarterGear\nOutfit exchange / provenance" as Gear
+component "MeleeRules + MeleeProfile + SwingTimer" as Combat
+component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
+component "MenuPanel + GlobalOptions\nMain / services / slots / keybindings" as Menu
+component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
+component "GridView\nSprites / relationships / selected target" as View
+component "Validation\nHeadless import, scripts, startup\nGUT 9.7.1 / PlantUML" as Tests
+artifact "user://\nSaves and global options" as Files
+Godot --> Main
+Main --> Game
+Game --> Session
+Session --> Fixture : new game / death
 Fixture --> World : constructs
-Game --> World : move / wait / cast / melee
-World --> Combat : resolves attacks
-Game --> CombatUI : opens / refreshes
-CombatUI --> World : select / interact
-CombatUI --> Game : action / selection / reset
-World --> Hero : owns; applies XP
-Game --> Panel : opens / refreshes
-Panel --> Game : cast requested
-Panel --> Hero : reads
-World --> Game : chat message
-Game --> View : refresh after action
-View --> World : reads tiles and actors
-Validation --> Godot : imports, parses, starts
-Validation --> Tests : full suite
-Tests --> Game : input, camera, UI
-Tests --> World : movement and ordering
-Validation --> Reports : checks results; renders diagrams
-
+Session --> World : owns current attempt
+Game --> World : input / next boundary
+World --> Hero
+Hero --> Gear
+World --> Combat
+Game --> Panels
+Panels --> World : cast / interact
+Game --> Menu
+Menu --> Session : class choice / new game
+Menu --> Saves : save / load
+Saves --> Session : replace validated world
+Saves --> World : capture / restore
+Menu --> Files : global options
+Saves --> Files : demo revision 1
+Game --> View
+View --> World
+Tests --> Godot
+Tests --> Session
+Tests --> Saves
 note bottom of World
-Milestones 1–3: movement, hero, melee, pursuit, interaction, death overlay.
-Real spells, equipment/loot, and Loop lifecycle follow later.
+M4: starting mage/druid spells, Loops, save/load, first arrival.
+Higher-rank training and item services follow in M5.
 end note
 @enduml

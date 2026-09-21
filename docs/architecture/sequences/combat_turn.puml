@@ -50,13 +50,13 @@ else Neutral / hostile
     end
     World --> Game : resources / chat / pending target / death
     alt Player died
-      Game -> Panel : show_death()
-      Panel --> Player : Gameplay blocked; Reset available
+      Game -> Game : GameSession.restart_after_death()
+      Game --> Player : Next Loop; learned ranks retained
     else Swing still pending
       Game --> Player : Waiting for swing; Esc / Cancel attack available
-      alt Cancel or Reset before next boundary
-        Player -> Game : Esc / Cancel attack / Reset
-        Game -> World : cancel_melee() or replace fixture
+      alt Cancel before next boundary
+        Player -> Game : Esc / Cancel attack
+        Game -> World : cancel_melee()
       else Presentation gap elapsed
         Game -> World : continue_melee()
       end

@@ -11,6 +11,7 @@ const ENVIRONMENT: Texture2D = preload(
 
 var world: GridWorld
 var selected: GridActor
+var alternate_palette: bool = false
 
 
 static func tile_center(tile: Vector2i) -> Vector2:
@@ -46,6 +47,8 @@ func _draw() -> void:
 	for actor in world.actors:
 		if actor.alive:
 			var color: Color = [Color("#9acd95"), Color("#e8c979"), Color("#ee7871")][actor.relationship]
+			if alternate_palette:
+				color = [Color("#56B4E9"), Color("#F0E442"), Color("#D55E00")][actor.relationship]
 			_draw_character(actor.tile, Vector2i(0, 0), color)
 			var center := tile_center(actor.tile)
 			draw_line(center, center + Vector2(actor.facing) * 6, color, 1)
@@ -58,7 +61,9 @@ func _draw() -> void:
 		draw_rect(selection.grow(2), Color.WHITE, false, 1)
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2(16, 16))
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
-	_draw_character(world.player_tile, Vector2i(3, 0), Color("#d8f2ef"))
+	_draw_character(world.player_tile,
+		Vector2i(4, 0) if world.hero.selected_class == &"Druid" else Vector2i(3, 0),
+		Color("#d8f2ef"))
 
 
 func _draw_character(tile: Vector2i, source: Vector2i, color: Color) -> void:

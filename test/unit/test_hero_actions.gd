@@ -53,18 +53,18 @@ func test_death_trigger_ends_attempt_and_discards_remaining_phase() -> void:
 	assert_eq(world.hero.level, 2)
 
 
-func test_unlearned_and_preview_casts_reject_without_simulation_changes() -> void:
+func test_unlearned_and_invalid_target_casts_reject_without_simulation_changes() -> void:
 	var world := MovementFixture.create_world()
 	world.movement_credit = 0.75
 	var random_before := world.random.state
-	for identifier: StringName in [&"missing", &"fireball_1", &"frost_armor_1"]:
+	for identifier: StringName in [&"missing", &"fireball_1"]:
 		assert_false(world.cast_skill(identifier))
 		assert_eq(world.turn_count, 0)
 		assert_eq(world.random.state, random_before)
 		assert_eq(world.movement_credit, 0.75)
 		assert_eq([world.hero.health, world.hero.mana], [51, 165])
 	assert_string_contains(world.messages[0], "not learned")
-	assert_string_contains(world.messages[-1], "preview only")
+	assert_string_contains(world.messages[-1], "invalid target")
 
 
 func test_learned_rank_remains_usable_below_training_level() -> void:

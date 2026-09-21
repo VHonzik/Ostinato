@@ -1,0 +1,53 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant MenuPanel as Menu
+participant MovementGame as Game
+participant GameSession as Session
+participant "Current GridWorld" as World
+participant SaveStore as Store
+participant SaveCodec as Codec
+database "Five save files" as Disk
+alt Player dies
+  World -> World : Stop remaining phase and pending actions
+  Game -> Session : restart_after_death()
+  Session -> World : Read learned ranks / hotbar
+  Session -> Session : Same seed; Loop +1; construct fresh world
+  Session -> Game : world_changed
+  Game -> Game : Clear selectors and queued input; adopt world
+else Save
+  Player -> Menu : Choose slot; confirm overwrite if occupied
+  Menu -> Store : save_slot(session, slot, confirmed)
+  Store -> World : can_save()
+  alt Combat / pending action / partial turn
+    Store --> Menu : Reject without writing
+  else Valid action boundary
+    Store -> Codec : capture(session); validate snapshot
+    Store -> Disk : Write and flush sibling temporary file
+    Store -> Codec : Read back and validate
+    alt Write / validation / replace failure
+      Store --> Menu : Error; previous save remains
+    else Verified
+      Store -> Disk : Native rename replaces destination
+      Store --> Menu : Saved
+    end
+  end
+else Load
+  Player -> Menu : Choose slot; confirm unsaved discard if needed
+  Menu -> Store : load_slot(session, slot)
+  Store -> Disk : Read
+  alt Unsupported family / revision
+    Store --> Menu : Incompatible; file unchanged
+  else Invalid supported data
+    Store -> Disk : Preserve as .damaged-UTC-unique
+    Store --> Menu : Retained filename; live world unchanged
+  else Valid supported data
+    Store -> Codec : Restore separate world, RNG, effects, timers
+    Store -> Session : restore(world, seed, loop)
+    Session -> World : Cancel abandoned cast / melee
+    Session -> Game : world_changed
+    Game -> Game : Clear queued input; adopt saved world
+  end
+end
+@enduml

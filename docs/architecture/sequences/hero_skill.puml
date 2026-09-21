@@ -3,47 +3,42 @@
 skinparam shadowing false
 actor Player
 participant MovementGame as Game
-participant HeroPanel as Panel
+participant HeroPanel as Book
+participant CombatPanel as Targeting
 participant GridWorld as World
 participant HeroState as Hero
-participant "Chat + HUD" as View
-
-Player -> Game : K / P or visible button
-Game -> Game : Clear pending movement
-Game -> Panel : open(world.hero, spell_book)
-Panel -> Hero : Read stats and learned ranks
-note over Game, Panel
-Modal keys navigate UI without moving or waiting.
-Tab stays inside panel; Esc closes without spending time.
-end note
-Player -> Panel : Click rank / Enter
-Panel -> Game : cast_requested(identifier)
-Game -> World : cast_skill(identifier)
-World -> Hero : find_skill(identifier)
-alt Unlearned rank / real spell preview
-  World -> World : add_message(rejection / preview)
-  World -> View : message_added
-  World --> Game : false; no simulation change
-else One-turn development skill
-  alt Gain 450 XP
-    World -> Hero : add_experience(450)
-    loop Each crossed XP threshold
-      Hero -> Hero : Retain excess, apply mage growth, refill resources
+Player -> Game : Open spell book; choose learned rank
+Game -> Book : open(hero, true)
+Book -> Game : cast_requested(id)
+alt Targeted damage / heal / buff
+  Game -> Targeting : open_spell(world, skill)
+  Targeting -> World : spell_candidates(skill)
+  Targeting --> Player : Closest target; Enter casts / Esc cancels
+  Player -> Targeting : Confirm target
+  Targeting -> World : cast_skill(id, target)
+else Self / development skill
+  Game -> World : cast_skill(id)
+end
+World -> World : Validate; start GCD; engage harmful target
+loop Cast boundaries until completion, cancellation, or death
+  World -> World : Advance cast progress
+  opt Completion
+    World -> World : Recheck target / range / sight / mana
+    alt Valid
+      World -> Hero : Spend mana once; update casting credit
+      World -> World : Apply spell or development effect
+    else Invalid
+      World -> World : No cost, effect, or new credit
     end
-    World -> World : Log award and each level gained
-  else Death trigger
-    World -> Hero : health = 0
-    World -> World : Log death; discard remaining phase
-  else Practice
-    World -> World : Log harmless cast
   end
-  World -> View : message_added
-  World -> World : _finish_turn(): count turn; NPC phase only if alive
-  World --> Game : true
+  World -> World : Shared NPC phase; effects; regeneration; events
+  World --> Game : Updated state
+  alt Death
+    Game -> Game : Replace attempt through GameSession
+  else Cast remains pending
+    Game --> Player : Presentation gap; Escape cancels
+    Game -> World : continue_cast() if not canceled
+  end
 end
-Game -> View : refresh_view(): level, XP, HP, mana, turn
-Game -> Panel : refresh() / close on death
-opt Player died
-  Game -> View : Show CombatPanel death overlay; block gameplay
-end
+Game -> Game : Refresh HUD, chat, camera, selectors
 @enduml

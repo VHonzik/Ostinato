@@ -10,6 +10,9 @@ const MOVE_ACTIONS: Array[StringName] = [
 const MELEE_BOUNDARY_SECONDS: float = 0.18
 
 var world: GridWorld
+var session := GameSession.new()
+var menu: MenuPanel
+var active_game: bool = false
 var _pending_action: bool = false
 var _pending_direction := Vector2i.ZERO
 var _pending_arrow: bool = false
@@ -30,22 +33,47 @@ var _melee_delay_seconds: float = 0.0
 
 
 func _ready() -> void:
+	menu = MenuPanel.new()
+	menu.session = session
+	$HUD.add_child(menu)
+	menu.theme = hero_panel.theme
+	menu.new_game_requested.connect(start_new_game)
+	menu.return_to_menu_requested.connect(_return_to_menu)
+	menu.refreshed.connect(refresh_view)
+	menu.fullscreen_changed.connect(_apply_fullscreen)
+	session.world_changed.connect(_adopt_world)
+	combat_panel.service_requested.connect(_open_service)
+	menu.options.load_options()
+	_apply_fullscreen()
+	get_tree().auto_accept_quit = false
 	_cancel_attack.pressed.connect(_cancel_pending_melee)
 	combat_panel.action_taken.connect(refresh_view)
 	combat_panel.visibility_changed.connect(_on_combat_panel_visibility_changed)
-	combat_panel.reset_requested.connect(reset_fixture)
 	combat_panel.selection_changed.connect(_select_actor)
 	hero_panel.cast_requested.connect(_cast_skill)
 	hero_panel.visibility_changed.connect(_on_hero_panel_visibility_changed)
 	$HUD/Top/Rows/HeroStatus/Character.pressed.connect(_open_hero_panel.bind(false))
 	$HUD/Top/Rows/HeroStatus/Spells.pressed.connect(_open_hero_panel.bind(true))
-	reset_fixture()
+	world = MovementFixture.create_world()
+	grid_view.world = world
+	menu.open_main()
+	$HUD/Top.hide()
+	$HUD/Bottom.hide()
+	grid_view.hide()
 	for index in range(_speed_buttons.size()):
 		_speed_buttons[index].pressed.connect(_set_speed.bind([0.5, 1.0, 1.5][index]))
-	$HUD/Top/Rows/Heading/Reset.pressed.connect(reset_fixture)
+	$HUD/Top/Rows/Heading/Reset.pressed.connect(_open_options)
 
 
 func _process(delta: float) -> void:
+	if not active_game or menu.visible:
+		return
+	if world.pending_skill != null:
+		_melee_delay_seconds -= delta
+		if _melee_delay_seconds <= 0.0:
+			world.continue_cast()
+			refresh_view()
+		return
 	if world.pending_melee != null:
 		_melee_delay_seconds -= delta
 		if _melee_delay_seconds <= 0.0:
@@ -80,6 +108,26 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		if event.is_action_pressed("fullscreen") and menu._capture_action == &"":
+			menu.toggle_fullscreen()
+			get_viewport().set_input_as_handled()
+			return
+		if menu.visible:
+			_pending_action = false
+			menu.handle_key(event)
+			get_viewport().set_input_as_handled()
+			return
+	if menu.visible or not active_game:
+		return
+	if world.pending_skill != null:
+		_pending_action = false
+		if event is InputEventKey and event.is_pressed():
+			if not event.is_echo() and event.is_action_pressed("ui_cancel"):
+				world.cancel_cast()
+				refresh_view()
+			get_viewport().set_input_as_handled()
+		return
 	if world.pending_melee != null:
 		_pending_action = false
 		if event is InputEventKey and event.is_pressed():
@@ -125,18 +173,31 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if menu.visible or not active_game:
+		return
 	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
 		return
 	if event.is_action_pressed("ui_cancel"):
 		var focused := get_viewport().gui_get_focus_owner()
 		if focused != null:
 			focused.release_focus()
+		else:
+			_open_options()
 		_pending_action = false
 		get_viewport().set_input_as_handled()
 		return
 	if (world.is_player_dead() or world.pending_melee != null
 		or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
+		return
+	if event.is_action_pressed("options"):
+		_open_options()
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("inventory"):
+		_pending_action = false
+		menu.open_inventory()
+		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("interact"):
 		_pending_action = false
@@ -152,7 +213,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		for index in range(MOVE_ACTIONS.size()):
 			if event.is_action_pressed(MOVE_ACTIONS[index]):
 				_pending_direction = GridWorld.DIRECTIONS[index]
-				_pending_arrow = event.physical_keycode in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
+				_pending_arrow = (event.physical_keycode in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
+						and _default_arrow_bindings())
 				_pending_action = true
 				matched = true
 				break
@@ -163,24 +225,87 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func reset_fixture() -> void:
+	# Development restart is an explicit new game, not a death path.
+	start_new_game()
+
+
+func start_new_game() -> void:
+	active_game = true
+	menu.active_game = true
+	menu.close()
+	session.new_game()
+	$HUD/Top.show()
+	$HUD/Bottom.show()
+	grid_view.show()
+	refresh_view()
+
+
+func _adopt_world() -> void:
 	hero_panel.close()
 	combat_panel.close()
-	world = MovementFixture.create_world()
+	world = session.world
+	active_game = true
+	menu.active_game = true
 	world.message_added.connect(_refresh_chat)
-	world.add_message("Welcome, mage. F interacts. Neutral wolf south; hostile wolves east.")
 	grid_view.world = world
+	grid_view.show()
+	$HUD/Top.show()
+	$HUD/Bottom.show()
 	_pending_action = false
 	_melee_delay_seconds = 0.0
-	_feedback.text = "You are the blue outline. Walk over the remains just west of you."
 	_update_speed_buttons()
+	_refresh_chat("")
+	_feedback.text = "F: interact / I: outfit / K: spells / Esc: options"
 	refresh_view()
+
+
+func _return_to_menu() -> void:
+	world.cancel_melee()
+	world.cancel_cast()
+	_pending_action = false
+	active_game = false
+	hero_panel.close()
+	combat_panel.close()
+	$HUD/Top.hide()
+	$HUD/Bottom.hide()
+	grid_view.hide()
+	session.world = null
+
+
+func _open_options() -> void:
+	_pending_action = false
+	menu.open_options()
+
+
+func _open_service(service: StringName) -> void:
+	if service == &"Marshal":
+		menu.open_marshal()
+	else:
+		menu.open_trainer(service)
+
+
+func _apply_fullscreen() -> void:
+	if DisplayServer.get_name() != "headless":
+		get_window().mode = Window.MODE_FULLSCREEN if menu.options.fullscreen else Window.MODE_WINDOWED
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST and menu != null:
+		menu.request_exit()
 
 
 func refresh_view() -> void:
 	if world.is_player_dead():
 		_pending_action = false
 		hero_panel.close()
-		combat_panel.show_death()
+		if session.world != world:
+			session.world = world
+		session.restart_after_death()
+		return
+	elif world.pending_skill != null:
+		_pending_action = false
+		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
+		_feedback.text = "Casting %s. Esc cancels." % world.pending_skill.title
 	elif world.pending_melee != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
@@ -190,7 +315,10 @@ func refresh_view() -> void:
 		_melee_delay_seconds = 0.0
 		if not combat_panel.visible:
 			_select_actor(null)
-	_cancel_attack.visible = world.pending_melee != null
+	_cancel_attack.visible = world.pending_melee != null or world.pending_skill != null
+	grid_view.alternate_palette = menu.options.alternate_palette
+	$HUD/Top/Rows/HeroStatus/Character.text = "Character (%s)" % menu.options.key_label(&"character")
+	$HUD/Top/Rows/HeroStatus/Spells.text = "Spells (%s)" % menu.options.key_label(&"spell_book")
 	camera.position = GridView.tile_center(world.player_tile)
 	camera.force_update_scroll()
 	grid_view.queue_redraw()
@@ -200,14 +328,14 @@ func refresh_view() -> void:
 		hero.health, hero.max_health, hero.mana, hero.max_mana,
 	]
 	hero_panel.refresh()
-	_status.text = "Turn %d  |  Tile %d, %d  |  Speed %.1f  |  Credit %.1f" % [
-		world.turn_count, world.player_tile.x, world.player_tile.y,
+	_status.text = "Loop %d  |  Turn %d  |  Tile %d, %d  |  Speed %.1f  |  Credit %.1f" % [
+		session.loop_count, world.turn_count, world.player_tile.x, world.player_tile.y,
 		world.movement_speed, world.movement_credit,
 	]
 
 
 func _set_speed(speed: float) -> void:
-	if world.is_player_dead() or world.pending_melee != null:
+	if world.is_player_dead() or world.pending_melee != null or world.pending_skill != null:
 		return
 	world.movement_speed = speed
 	_update_speed_buttons()
@@ -223,7 +351,8 @@ func _update_speed_buttons() -> void:
 
 
 func _open_hero_panel(spell_book: bool) -> void:
-	if world.is_player_dead() or world.pending_melee != null or combat_panel.visible:
+	if (world.is_player_dead() or world.pending_melee != null
+		or world.pending_skill != null or combat_panel.visible):
 		return
 	_pending_action = false
 	hero_panel.open(world.hero, spell_book)
@@ -231,7 +360,16 @@ func _open_hero_panel(spell_book: bool) -> void:
 
 func _cast_skill(identifier: StringName) -> void:
 	_pending_action = false
-	world.cast_skill(identifier)
+	var skill := world.hero.find_skill(identifier)
+	if skill == null:
+		return
+	if skill.target in [SkillRank.Target.ENEMY, SkillRank.Target.ALLY]:
+		hero_panel.close()
+		combat_panel.open_spell(world, skill)
+	else:
+		if not skill.development_only:
+			hero_panel.close()
+		world.cast_skill(identifier)
 	refresh_view()
 
 
@@ -244,9 +382,9 @@ func _on_hero_panel_visibility_changed() -> void:
 	$HUD/Bottom/Rows/Legend.visible = not hero_panel.visible
 	var controls := $HUD/Bottom/Rows/Controls as Label
 	controls.text = (
-		"A/D: tabs   ·   W/S or Tab: select   ·   Enter: activate   ·   Esc: close"
+		"A/D: tabs   Â·   W/S or Tab: select   Â·   Enter: activate   Â·   Esc: close"
 		if hero_panel.visible else
-		"Move: WASD + QEZC / arrows / numpad   ·   Wait: . / numpad 5"
+		"Move: WASD + QEZC / arrows / numpad   Â·   Wait: . / numpad 5"
 	)
 
 
@@ -281,7 +419,21 @@ func _on_combat_panel_visibility_changed() -> void:
 
 func _cancel_pending_melee() -> void:
 	world.cancel_melee()
+	world.cancel_cast()
 	_pending_action = false
 	_melee_delay_seconds = 0.0
 	_feedback.text = "Attack canceled. Elapsed turns remain spent."
 	refresh_view()
+
+
+
+func _default_arrow_bindings() -> bool:
+	for pair in [[&"move_north", KEY_UP], [&"move_east", KEY_RIGHT],
+		[&"move_south", KEY_DOWN], [&"move_west", KEY_LEFT]]:
+		var bound := false
+		for event in InputMap.action_get_events(pair[0]):
+			if event is InputEventKey and event.physical_keycode == pair[1]:
+				bound = true
+		if not bound:
+			return false
+	return true

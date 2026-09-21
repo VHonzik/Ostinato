@@ -1,15 +1,17 @@
 class_name CombatPanel
 extends Control
 
-## Interaction selection, explicit neutral attack confirmation, and temporary death UI.
+## Interaction and spell targeting with explicit confirmation.
 signal action_taken
 signal selection_changed(actor: GridActor)
-signal reset_requested
+signal service_requested(service: StringName)
 
-enum Mode { SELECT, CONFIRM_ATTACK, DEAD }
+enum Mode { SELECT, CONFIRM_ATTACK, SPELL }
 
 var mode: Mode = Mode.SELECT
 var selected: GridActor
+var _skill: SkillRank
+var _self_target: GridActor
 var _world: GridWorld
 var _candidates: Array[GridActor] = []
 var _panel: PanelContainer
@@ -72,17 +74,6 @@ func open_interaction(world: GridWorld) -> void:
 		_update_selection()
 
 
-func show_death() -> void:
-	mode = Mode.DEAD
-	selected = null
-	show()
-	_heading.text = "You died"
-	_detail.text = ("This attempt has ended. Reset the training fixture to try again. "
-		+ "The Loop arrives in milestone 4.")
-	_configure_buttons(false, "Reset fixture", false)
-	selection_changed.emit(null)
-
-
 func close() -> void:
 	hide()
 	selected = null
@@ -98,17 +89,18 @@ func confirm() -> void:
 			_choose_selected()
 		Mode.CONFIRM_ATTACK:
 			_interact_selected()
-		Mode.DEAD:
-			reset_requested.emit()
+		Mode.SPELL:
+			_world.cast_skill(_skill.id, null if selected == _self_target else selected)
+			close()
+			action_taken.emit()
 
 
 func cancel() -> void:
-	if mode != Mode.DEAD:
-		close()
+	close()
 
 
 func navigate(direction: Vector2i) -> void:
-	if mode != Mode.SELECT or _candidates.size() < 2:
+	if mode not in [Mode.SELECT, Mode.SPELL] or _candidates.size() < 2:
 		return
 	# Prefer the nearest candidate ahead. If none is ahead, wrap from the far edge.
 	var best: GridActor
@@ -128,7 +120,7 @@ func navigate(direction: Vector2i) -> void:
 
 
 func select_tile(tile: Vector2i) -> void:
-	if mode != Mode.SELECT:
+	if mode not in [Mode.SELECT, Mode.SPELL]:
 		return
 	for candidate in _candidates:
 		if candidate.tile == tile:
@@ -151,6 +143,11 @@ func _choose_selected() -> void:
 
 
 func _interact_selected() -> void:
+	if selected.alive and selected.service != &"":
+		var service := selected.service
+		close()
+		service_requested.emit(service)
+		return
 	var message := _world.interact(selected)
 	if not message.is_empty():
 		_world.add_message(message)
@@ -163,15 +160,15 @@ func _update_selection() -> void:
 	_detail.text = "Level %d   Health %d/%d. Directions select; Enter chooses; Esc cancels." % [
 		selected.melee.level, selected.health if selected.alive else 0, selected.max_health,
 	]
-	_configure_buttons(_candidates.size() > 1, "Choose (Enter)", true)
+	_configure_buttons(_candidates.size() > 1,
+		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)
 
 
 func _configure_buttons(multiple: bool, confirm_text: String, cancel_visible: bool) -> void:
 	# Keep adjacent world targets visible during selection and attack confirmation.
-	var show_world := mode != Mode.DEAD
-	_panel.position = size * 0.5 + Vector2(-224, 56 if show_world else -76)
-	_panel.size = Vector2(448, 116 if show_world else 152)
+	_panel.position = size * 0.5 + Vector2(-224, 56)
+	_panel.size = Vector2(448, 116)
 	_previous.visible = multiple
 	_next.visible = multiple
 	_confirm.text = confirm_text
@@ -185,3 +182,25 @@ func _button(parent: Node, title: String, callback: Callable) -> Button:
 	button.pressed.connect(callback)
 	parent.add_child(button)
 	return button
+
+
+func open_spell(world: GridWorld, skill: SkillRank) -> void:
+	close()
+	_world = world
+	_skill = skill
+	_candidates = world.spell_candidates(skill)
+	_self_target = null
+	if skill.target == SkillRank.Target.ALLY and world.valid_spell_target(skill, null):
+		_self_target = GridActor.new(world.player_tile)
+		_self_target.title = "You"
+		_self_target.health = world.hero.health
+		_self_target.max_health = world.hero.max_health
+		_self_target.melee.level = world.hero.level
+		_candidates.push_front(_self_target)
+	if _candidates.is_empty():
+		world.add_message("No valid target for " + skill.title + ".")
+		return
+	selected = _candidates[0]
+	mode = Mode.SPELL
+	show()
+	_update_selection()

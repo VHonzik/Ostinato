@@ -1,12 +1,17 @@
 class_name MovementFixture
 extends RefCounted
 
-## Temporary training grounds; not the final Northshire map or New Game lifecycle.
+## Runnable milestone grounds; the populated Northshire zone arrives in M6.
 const SEED: int = 104729
 
 
-static func create_world() -> GridWorld:
-	var world := GridWorld.new(Rect2i(0, 0, 40, 28), Vector2i(20, 14), SEED)
+static func create_world(
+	world_seed: int = SEED, development_build: bool = OS.is_debug_build(),
+	loop_fixture: bool = false
+) -> GridWorld:
+	var world := GridWorld.new(Rect2i(0, 0, 40, 28), Vector2i(20, 14),
+		world_seed, development_build)
+	world.stalker_schedule = loop_fixture
 	# Ruined courtyard, with doors in its north and south walls.
 	for x in range(6, 15):
 		for y in [7, 12]:
@@ -52,6 +57,19 @@ static func create_world() -> GridWorld:
 	corpse.alive = false
 	corpse.title = "Old remains"
 	world.actors.append(corpse)
+	if loop_fixture:
+		world.bounds.size.x = 56
+		world.actors[0].title = "Marshal McBride"
+		world.actors[0].service = &"Marshal"
+		for entry in [[Vector2i(17, 14), &"Mage"], [Vector2i(17, 16), &"Druid"]]:
+			var trainer := GridActor.new(entry[0])
+			trainer.title = "%s trainer" % entry[1]
+			trainer.service = entry[1]
+			world.actors.append(trainer)
+		var guard := GridActor.new(Vector2i(53, 14))
+		guard.title = "Gate guard"
+		guard.story_guard = true
+		world.actors.append(guard)
 	return world
 
 

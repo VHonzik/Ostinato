@@ -1,0 +1,86 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+class MovementGame {
+  session: GameSession
+  world: GridWorld
+  start_new_game()
+  _adopt_world()
+  refresh_view()
+}
+class GameSession {
+  seed_value: int
+  loop_count: int
+  world: GridWorld
+  new_game(seed)
+  restart_after_death(): bool
+  can_select_class(): bool
+  select_class(category): bool
+  restore(world, seed, loop)
+}
+class GridWorld {
+  turn_count: int
+  pending_skill: SkillRank
+  pending_melee: GridActor
+  periodic_effects: Array
+  stalker_arrived: bool
+  class_selected, ever_accepted_quest: bool
+  can_save(): bool
+  in_combat(): bool
+}
+class HeroState {
+  selected_class: StringName
+  learned_skills: Array
+  equipment: Dictionary
+  inventory: Array
+  casting_credit: float
+  buffs: Dictionary
+}
+class StarterGear {
+  {static} exchange(hero, category): bool
+}
+class SaveStore {
+  directory: String
+  last_error: String
+  metadata(slot)
+  save_slot(session, slot, confirmed): bool
+  load_slot(session, slot): bool
+}
+class SaveCodec {
+  {static} capture(session): Dictionary
+  {static} restore(data, development): GridWorld
+}
+class MenuPanel {
+  session: GameSession
+  saves: SaveStore
+  options: GlobalOptions
+  open_main()
+  open_slots()
+  open_marshal()
+  open_trainer(category)
+}
+class GlobalOptions {
+  bindings: Dictionary
+  fullscreen, alternate_palette: bool
+  rebind(action, key, swap): bool
+  load_options()
+}
+MovementGame *-- MenuPanel
+MovementGame *-- GameSession
+GameSession o-- GridWorld : replaces whole attempt
+GridWorld *-- HeroState
+GameSession --> StarterGear : class exchange
+StarterGear --> HeroState
+MenuPanel *-- SaveStore
+MenuPanel *-- GlobalOptions
+MenuPanel --> GameSession
+SaveStore --> SaveCodec
+SaveStore --> GameSession : validated replacement
+SaveCodec ..> GridWorld : explicit fields
+note bottom of SaveCodec
+JSON stores RNG int64 values as strings.
+Restore validates a separate world before adoption.
+end note
+@enduml
