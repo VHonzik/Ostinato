@@ -113,6 +113,8 @@ limited to equipment, presentation, and training access.
 Acceptance:
 
 - Loop 1 starts as mage; an eligible Loop 2 player can choose druid exactly once.
+- The marshal offers only classes different from the current class. Attempting to select
+  the current class changes no state and does not consume the available choice.
 - Selecting a class replaces only remaining items from the granted starter outfit,
   including carried pieces; acquired equipment is not deleted. Replaced slots with acquired
   gear keep that gear and put the new starter piece in inventory. Insufficient capacity
@@ -491,6 +493,8 @@ Acceptance:
 - Directional selection changes the candidate without moving the player.
 - Navigation past the last candidate in a direction wraps to an eligible candidate.
 - No valid targets produces no spell effect or resource expenditure.
+- Fireball has no minimum target range; eligible adjacent enemies can be selected and cast
+  upon. Insufficient mana is reported as a resource failure, not as a missing target.
 
 Preselection never casts: Enter confirms and Escape cancels. Damage abilities may select
 neutral or hostile targets; friendly NPCs are invalid damage targets. Healing/buffs use their

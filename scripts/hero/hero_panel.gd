@@ -68,13 +68,13 @@ func refresh() -> void:
 	if _hero == null:
 		return
 	_stats.text = (
-		"Mage  /  Level %d     XP %d / %d\n"
+		"%s  /  Level %d     XP %d / %d\n"
 		+ "Health %d / %d     Mana %d / %d\n"
 		+ "Strength %d     Agility %d     Stamina %d\n"
 		+ "Intellect %d     Spirit %d\n"
 		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%"
 	) % [
-		_hero.level, _hero.experience, _hero.experience_to_next_level(),
+		_hero.selected_class, _hero.level, _hero.experience, _hero.experience_to_next_level(),
 		_hero.health, _hero.max_health, _hero.mana, _hero.max_mana,
 		_hero.strength, _hero.agility, _hero.stamina, _hero.intellect, _hero.spirit,
 		_hero.melee.attack_power, _hero.melee.armor, _hero.melee.critical, _hero.melee.dodge,
@@ -115,10 +115,7 @@ func _rebuild_skills() -> void:
 			categories[skill.class_tab] = rows
 		var button := Button.new()
 		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
-		if skill.effect == SkillRank.Effect.PREVIEW:
-			button.text += "  (preview)"
-		else:
-			button.text += "  ·  1 turn / 0 mana"
+		button.text += "  ·  %.1fs / %d mana" % [skill.cast_seconds, skill.mana_cost]
 		button.tooltip_text = skill.description
 		button.pressed.connect(_request_cast.bind(skill.id))
 		categories[skill.class_tab].add_child(button)

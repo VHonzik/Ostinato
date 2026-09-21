@@ -11,7 +11,7 @@ class MovementGame <<Node2D>> {
   _cancel_pending_melee()
 }
 class CombatPanel <<Control>> {
-  mode: SELECT / CONFIRM_ATTACK / DEAD
+  mode: SELECT / CONFIRM_ATTACK / SPELL
   selected: GridActor
   open_interaction(world)
   navigate(direction)

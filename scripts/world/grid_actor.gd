@@ -22,6 +22,12 @@ var facing := Vector2i.DOWN
 var awards_experience: bool = true
 var corpse_visible: bool = true
 var died_on_turn: int = -1
+var service: StringName = &""
+var buffs: Dictionary = {}
+var chilled_until: int = 0
+var movement_credit: float = 0.0
+var story_guard: bool = false
+var stalker: bool = false
 
 
 func _init(start_tile: Vector2i, area: Rect2i = Rect2i()) -> void:

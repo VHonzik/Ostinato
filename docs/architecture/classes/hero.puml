@@ -53,6 +53,9 @@ class SkillRank <<RefCounted>> {
   rank, training_level: int
   effect: Effect
   development_only: bool
+  target: Target
+  mana_cost, range_tiles: int
+  cast_seconds: float
 }
 MovementGame --> GridWorld : owns
 MovementGame *-- HeroPanel : modal UI
@@ -67,9 +70,9 @@ DATA-001/002: Vanilla mage rows through 60.
 FR-016: repeat final growth/XP above that range.
 end note
 note bottom of SkillRank
-Mage: Fireball / Frost Armor previews.
+Mage: Fireball / Frost Armor. Druid starting ranks via trainer.
 Development: Practice / XP / Death trigger.
-Death trigger opens the temporary death overlay.
+Death trigger starts the next Loop via GameSession.
 Development ranks omitted from release builds.
 end note
 @enduml
