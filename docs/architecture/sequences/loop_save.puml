@@ -43,7 +43,7 @@ else Load
     Store -> Disk : Preserve as .damaged-UTC-unique
     Store --> Menu : Retained filename; live world unchanged
   else Valid supported data
-    Store -> Codec : Restore separate world, RNG, effects, timers
+    Store -> Codec : Restore separate world, RNG, effects, timers, loot, stock and items
     Store -> Session : restore(world, seed, loop)
     Session -> World : Cancel abandoned cast / melee
     Session -> Game : world_changed

@@ -11,6 +11,9 @@ component "MovementFixture\nTraining grounds / gate / services" as Fixture
 component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell data" as Hero
 component "StarterGear\nOutfit exchange / provenance" as Gear
 component "MeleeRules + MeleeProfile + SwingTimer" as Combat
+component "SpellEffects + SpellResistance\nRank effects / mitigation" as Spells
+component "TrainerData\nMage/druid ranks through level 10" as Training
+component "ItemData + LootData + InventoryRules\nSource values / seeded loot / atomic transfers" as Items
 component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
 component "MenuPanel + GlobalOptions\nMain / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
@@ -27,6 +30,11 @@ Game --> World : input / next boundary
 World --> Hero
 Hero --> Gear
 World --> Combat
+World --> Spells
+World --> Items
+Hero --> Items
+Hero --> Training
+Menu --> World : train / loot / trade / equip
 Game --> Panels
 Panels --> World : cast / interact
 Game --> Menu
@@ -35,14 +43,14 @@ Menu --> Saves : save / load
 Saves --> Session : replace validated world
 Saves --> World : capture / restore
 Menu --> Files : global options
-Saves --> Files : demo revision 1
+Saves --> Files : demo revision 2
 Game --> View
 View --> World
 Tests --> Godot
 Tests --> Session
 Tests --> Saves
 note bottom of World
-M4: starting mage/druid spells, Loops, save/load, first arrival.
-Higher-rank training and item services follow in M5.
+M5: paid training, equipment, trade and source-seeded loot.
+Northshire and quest lifecycle remain milestone 6.
 end note
 @enduml
