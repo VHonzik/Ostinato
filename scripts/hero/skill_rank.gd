@@ -1,8 +1,8 @@
 class_name SkillRank
 extends RefCounted
 
-## DATA-003 starting-rank subset. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR }
+## DATA-003 mage/druid ranks through level 10. Training levels never gate retained-rank use.
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -22,6 +22,18 @@ var maximum: int = 0
 var duration: int = 0
 var periodic_damage: int = 0
 var source_id: int = 0
+var training_cost: int = 0
+var prerequisite: StringName = &""
+var family: StringName = &""
+var school: int = 0
+var cooldown_seconds: int = 0
+var scaling_max: int = 0
+var scaling_rate: float = 0.0
+var coefficient: float = 0.0
+var tick_seconds: int = 0
+var tick_coefficient: float = 0.0
+var item_id: int = 0
+
 
 
 func _init(
@@ -44,53 +56,61 @@ static func starting_skills() -> Array[SkillRank]:
 
 
 static func trainer_skills(category: StringName) -> Array[SkillRank]:
-	if category == &"Druid":
-		return [catalog(&"wrath_1"), catalog(&"healing_touch_1"), catalog(&"mark_1")]
-	return starting_skills()
+	var result: Array[SkillRank] = []
+	for identifier in TrainerData.RANKS:
+		if TrainerData.RANKS[identifier].class_tab == String(category):
+			result.append(catalog(StringName(identifier)))
+	return result
 
 
 static func catalog(identifier: StringName) -> SkillRank:
-	var rows := {
-		&"fireball_1": ["Fireball", &"Mage", 133, Effect.DAMAGE, Target.ENEMY,
-			30, 1.5, 7, 14, 22, 4, 1],
-		&"frost_armor_1": ["Frost Armor", &"Mage", 168, Effect.ARMOR, Target.SELF,
-			60, 1.0, 0, 30, 30, 1800, 0],
-		&"wrath_1": ["Wrath", &"Druid", 5176, Effect.DAMAGE, Target.ENEMY,
-			20, 1.5, 6, 12, 14, 0, 0],
-		&"healing_touch_1": ["Healing Touch", &"Druid", 5185, Effect.HEAL, Target.ALLY,
-			25, 1.5, 8, 37, 51, 0, 0],
-		&"mark_1": ["Mark of the Wild", &"Druid", 1126, Effect.ARMOR, Target.ALLY,
-			20, 1.0, 6, 25, 25, 1800, 0],
-	}
-	if not rows.has(identifier):
+	if not TrainerData.RANKS.has(String(identifier)):
 		for skill in development_skills():
 			if skill.id == identifier:
 				return skill
 		return null
-	var row: Array = rows[identifier]
-	var skill := SkillRank.new(identifier, row[0], row[1], 1, 1, "", row[3])
-	skill.source_id = row[2]
-	skill.target = row[4]
-	skill.mana_cost = row[5]
-	skill.cast_seconds = row[6]
-	skill.range_tiles = row[7]
-	skill.minimum = row[8]
-	skill.maximum = row[9]
-	skill.duration = row[10]
-	skill.periodic_damage = row[11]
-	skill.description = "%s rank 1: %d mana, %.1f seconds, range %d tiles. " % [
-		skill.title, skill.mana_cost, skill.cast_seconds, skill.range_tiles]
+	var row: Dictionary = TrainerData.RANKS[String(identifier)]
+	var skill := SkillRank.new(identifier, row.title, StringName(row.class_tab),
+		row.rank, row.training_level, "", Effect[row.effect])
+	for field in row:
+		if field == "effect":
+			continue
+		if field == "target":
+			skill.target = Target[row.target]
+		elif field in ["family", "class_tab", "prerequisite"]:
+			skill.set(field, StringName(row[field]))
+		else:
+			skill.set(field, row[field])
+	skill.description = "%s rank %d: %d mana, %.1fs, range %d tiles. " % [
+		skill.title, skill.rank, skill.mana_cost, skill.cast_seconds, skill.range_tiles]
 	match skill.effect:
-		Effect.DAMAGE:
-			skill.description += "%d–%d damage." % [skill.minimum, skill.maximum]
-			if skill.periodic_damage > 0:
-				skill.description += " Plus 1 damage every 2 turns for 4 turns."
+		Effect.DAMAGE, Effect.CHANNEL, Effect.NOVA:
+			skill.description += "%d–%d damage%s. " % [skill.minimum, skill.maximum,
+				" each second for 3 turns" if skill.effect == Effect.CHANNEL else ""]
 		Effect.HEAL:
-			skill.description += "Restore %d–%d health." % [skill.minimum, skill.maximum]
+			skill.description += "Restore %d–%d health. " % [skill.minimum, skill.maximum]
 		Effect.ARMOR:
-			skill.description += "+%d armor for 1800 turns; refreshes, never stacks with itself." % skill.minimum
-			if identifier == &"frost_armor_1":
-				skill.description += " Melee attackers are chilled for 5 turns."
+			var stat := "intellect" if skill.family == &"intellect" else "armor"
+			if skill.family == &"thorns":
+				stat = "nature damage to melee attackers"
+			skill.description += "+%d %s for %d turns. " % [skill.minimum, stat, skill.duration]
+			if skill.id == &"mark_2":
+				skill.description += "+2 to all attributes. "
+		Effect.POLYMORPH:
+			skill.description += "Sheep one beast/humanoid/critter for 20 turns; heals rapidly; damage breaks. "
+		Effect.ROOT:
+			skill.description += "Root one enemy outdoors for 12 turns; damage can break. "
+		Effect.CONJURE:
+			skill.description += "Conjure food/water into inventory. "
+	if skill.periodic_damage > 0:
+		skill.description += "%d every %d turns for %d turns. " % [
+			skill.periodic_damage, skill.tick_seconds, skill.duration]
+	if skill.cooldown_seconds > 0:
+		skill.description += "%d-turn cooldown. " % skill.cooldown_seconds
+	if skill.family == &"frostbolt":
+		skill.description += "Slows movement 40%. "
+	if skill.family == &"frost_armor":
+		skill.description += "Chills melee attackers for 5 turns. "
 	return skill
 
 

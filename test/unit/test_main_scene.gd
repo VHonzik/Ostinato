@@ -732,3 +732,92 @@ func test_fireball_with_insufficient_mana_reports_the_cost_instead_of_no_target(
 	assert_eq(_game.world.hero.mana, 29)
 	assert_false(target.engaged)
 	assert_null(_game.world.pending_skill)
+
+
+func test_supply_chest_keyboard_looting_is_free_and_empty_chest_cannot_duplicate_rewards() -> void:
+	var chest := _game.world.actors[-1]
+	assert_true(chest.chest)
+	_game.world.player_tile = chest.tile + Vector2i.RIGHT
+	_game.refresh_view()
+	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "loot")
+	assert_true(_game.menu.visible)
+	var expected := chest.loot_copper
+	assert_gt(expected, 0)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.hero.copper, expected)
+	assert_eq(chest.loot_copper, 0)
+	while _game.menu.visible:
+		await _tap_key(KEY_ENTER)
+	assert_false(chest.corpse_visible)
+	assert_eq(_game.world.turn_count, 0)
+	assert_gt(_game.world.hero.inventory.filter(func(item: Dictionary) -> bool: return not item.is_empty()).size(), 0)
+	var money := _game.world.hero.copper
+	await _tap_key(KEY_F)
+	assert_eq(_game.world.hero.copper, money)
+	assert_false(_game.menu.visible)
+
+
+func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stale_menu() -> void:
+	_game.world.hero.inventory[0] = ItemData.instance(85)
+	_game.menu.open_inventory()
+	_game.menu._item_detail(0)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.hero.equipment.chest.id, 85)
+	assert_eq(_game.world.turn_count, 1)
+	assert_eq(_game.menu.page, "inventory")
+	_game.menu.close()
+	_game.world.hero.health = 1
+	_game.world.player_tile = Vector2i(40, 20)
+	var attacker := GridActor.new(Vector2i(41, 20))
+	attacker.relationship = GridActor.Relationship.HOSTILE
+	attacker.engaged = true
+	attacker.melee.level = 60
+	attacker.melee.damage_min = 1000
+	attacker.melee.damage_max = 1000
+	_game.world.actors.append(attacker)
+	_game.world.hero.inventory[1] = ItemData.instance(2139)
+	_game.menu._item_detail(1)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.session.loop_count, 2)
+	assert_false(_game.menu.visible)
+	assert_eq(_game.world.hero.equipment.main_hand.id, 35)
+
+
+func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
+	_game.world.player_tile = Vector2i(17, 19)
+	_game.world.hero.copper = 200
+	_game.refresh_view()
+	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "trade")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "quantity")
+	var confirm_button: Button
+	for button in _game.menu._buttons:
+		if button.text.begins_with("Confirm"):
+			confirm_button = button
+	confirm_button.grab_focus()
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.hero.inventory[0].id, 2139)
+	assert_eq(_game.world.hero.copper, 143)
+	assert_eq(_game.world.player_tile, Vector2i(17, 19))
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_new_services_keep_last_keyboard_control_and_resources_visible_at_minimum_size() -> void:
+	_game.world.hero.level = 10
+	_game.world.hero._apply_level_stats()
+	_game.world.hero.copper = 10000
+	for page: Callable in [_game.menu.open_inventory, _game.menu.open_trade,
+		_game.menu.open_trainer.bind(&"Mage")]:
+		page.call()
+		_game.menu._buttons[-1].grab_focus()
+		for frame in range(4):
+			await get_tree().process_frame
+		var button := _game.menu._buttons[-1]
+		var panel := _game.menu._panel.get_global_rect()
+		assert_true(Rect2(0, 0, 640, 360).encloses(panel))
+		assert_true(panel.encloses(button.get_global_rect()))
+		var resources := _game.get_node("HUD/Top/Rows/HeroStatus") as Control
+		assert_false(panel.intersects(resources.get_global_rect()))
+		await _tap_key(KEY_ESCAPE)

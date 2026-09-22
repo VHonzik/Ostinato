@@ -24,11 +24,22 @@ var copper: int = 0
 var buffs: Dictionary = {}
 var casting_credit: float = 0.0
 var last_mana_turn: int = -5
+var spell_power: int = 0
+var healing_power: int = 0
+var spell_hit: float = 0.0
+var spell_critical: float = 0.0
+var haste: float = 1.0
+var resistances: Dictionary = {}
+var cooldowns: Dictionary = {}
+var potion_ready_turn: int = 0
+var restoration: Dictionary = {}
 
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
 	_apply_level_stats()
 	StarterGear.equip_outfit(self)
+	health = max_health
+	mana = max_mana
 	for skill in SkillRank.starting_skills():
 		learn_skill(skill)
 	if development_build:
@@ -68,33 +79,60 @@ func find_skill(identifier: StringName) -> SkillRank:
 
 
 func _apply_level_stats() -> void:
-	var values := HeroData.stats_for_level(level)
-	strength = values[0]
-	agility = values[1]
-	stamina = values[2]
-	intellect = values[3]
-	spirit = values[4]
-	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
-	max_mana = values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15
-	refresh_melee_stats()
-	# Classic level-up restores resources, including when using retained skills.
+	refresh_stats()
+	# Classic level-up refills resources after current equipment and buffs.
 	health = max_health
 	mana = max_mana
 
 
+func refresh_stats() -> void:
+	var values := HeroData.stats_for_level(level)
+	var attributes := {"strength": values[0], "agility": values[1], "stamina": values[2],
+		"intellect": values[3], "spirit": values[4]}
+	for item in equipment.values():
+		var data := ItemData.get_item(int(item.id))
+		for stat in data.stats:
+			attributes[stat] += int(data.stats[stat])
+	for buff in buffs.values():
+		for stat in attributes:
+			attributes[stat] += int(buff.get(stat, 0))
+	strength = attributes.strength
+	agility = attributes.agility
+	stamina = attributes.stamina
+	intellect = attributes.intellect
+	spirit = attributes.spirit
+	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
+	max_mana = values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15
+	health = mini(health, max_health)
+	mana = mini(mana, max_mana)
+	refresh_melee_stats()
+
+
 func refresh_melee_stats() -> void:
+	var armor := 0
+	for item in equipment.values():
+		armor += int(ItemData.get_item(int(item.id)).armor)
+	for buff in buffs.values():
+		armor += int(buff.get("armor", 0))
 	melee.player = true
 	melee.level = level
 	melee.attack_power = maxi(0, strength - 10)
-	melee.armor = agility * 2
-	for item in equipment.values():
-		melee.armor += int(StarterGear.ITEMS[int(item.id)].armor)
-	for buff in buffs.values():
-		melee.armor += int(buff.armor)
+	melee.armor = agility * 2 + armor
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
 	melee.critical = agility / agility_per_percent
 	melee.dodge = 3.25 + melee.critical
-	# Both current starter outfits include the Bent Staff.
-	melee.damage_min = 3.0
-	melee.damage_max = 5.0
-	melee.interval = 2.9
+	melee.damage_min = 1.0
+	melee.damage_max = 2.0
+	melee.interval = 2.0
+	if equipment.has("main_hand"):
+		var weapon := ItemData.get_item(int(equipment.main_hand.id))
+		melee.damage_min = float(weapon.minimum)
+		melee.damage_max = float(weapon.maximum)
+		melee.interval = float(weapon.interval)
+	melee.block = 0.0
+	melee.block_value = 0
+	if equipment.has("off_hand"):
+		var shield := ItemData.get_item(int(equipment.off_hand.id))
+		if shield.shield:
+			melee.block = 5.0
+			melee.block_value = maxi(0, int(shield.block) + floori(strength / 20.0) - 1)

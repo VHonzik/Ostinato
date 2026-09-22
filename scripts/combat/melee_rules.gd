@@ -9,6 +9,9 @@ static func outcome(
 	var miss := 5.0 + difference * 0.04
 	if not defender.player and difference > 0:
 		miss = 5.0 + mini(difference, 10) * 0.1 + maxi(0, difference - 10) * 0.6
+	miss -= attacker.hit
+	var parry := 0.0 if behind or defender.parry <= 0 else defender.parry + difference * 0.04
+	var block := 0.0 if behind or defender.block <= 0 else defender.block + difference * 0.04
 	var dodge := defender.dodge + difference * (
 		0.1 if not defender.player and difference > 0 else 0.04
 	)
@@ -22,8 +25,8 @@ static func outcome(
 	if not attacker.player and difference <= -15:
 		crush = -2.0 * difference - 15.0
 	var threshold := 0.0
-	var chances: Array[float] = [miss, dodge, glance, critical, crush]
-	var outcomes: Array[StringName] = [&"miss", &"dodge", &"glancing", &"critical", &"crushing"]
+	var chances: Array[float] = [miss, dodge, parry, block, glance, critical, crush]
+	var outcomes: Array[StringName] = [&"miss", &"dodge", &"parry", &"block", &"glancing", &"critical", &"crushing"]
 	for index in range(chances.size()):
 		threshold += clampf(chances[index], 0.0, 100.0)
 		if roll < threshold:
@@ -35,7 +38,7 @@ static func damage(
 	attacker: MeleeProfile, defender: MeleeProfile, result: StringName,
 	weapon_roll: float, glance_roll: float
 ) -> int:
-	if result == &"miss" or result == &"dodge":
+	if result in [&"miss", &"dodge", &"parry"]:
 		return 0
 	var bonus := attacker.attack_power / 14.0 * attacker.interval
 	var minimum := floori(attacker.damage_min + bonus)
@@ -54,6 +57,8 @@ static func damage(
 			var high := clampf(0.9 - 0.03 * difference, 0.2, 0.99)
 			var low := clampf(0.6 - 0.05 * difference, 0.01, minf(0.6, high))
 			amount = floori(amount * lerpf(low, high, glance_roll))
+	if result == &"block":
+		amount = maxi(0, amount - defender.block_value)
 	return amount
 
 

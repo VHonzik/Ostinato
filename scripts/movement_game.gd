@@ -43,6 +43,7 @@ func _ready() -> void:
 	menu.fullscreen_changed.connect(_apply_fullscreen)
 	session.world_changed.connect(_adopt_world)
 	combat_panel.service_requested.connect(_open_service)
+	combat_panel.loot_requested.connect(menu.open_loot)
 	menu.options.load_options()
 	_apply_fullscreen()
 	get_tree().auto_accept_quit = false
@@ -241,6 +242,7 @@ func start_new_game() -> void:
 
 
 func _adopt_world() -> void:
+	menu.close()
 	hero_panel.close()
 	combat_panel.close()
 	world = session.world
@@ -255,7 +257,7 @@ func _adopt_world() -> void:
 	_melee_delay_seconds = 0.0
 	_update_speed_buttons()
 	_refresh_chat("")
-	_feedback.text = "F: interact / I: outfit / K: spells / Esc: options"
+	_feedback.text = "F: interact / I: inventory / K: spells / Esc: options"
 	refresh_view()
 
 
@@ -280,6 +282,8 @@ func _open_options() -> void:
 func _open_service(service: StringName) -> void:
 	if service == &"Marshal":
 		menu.open_marshal()
+	elif service == &"Trader":
+		menu.open_trade()
 	else:
 		menu.open_trainer(service)
 

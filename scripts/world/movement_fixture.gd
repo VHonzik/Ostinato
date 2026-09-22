@@ -70,11 +70,27 @@ static func create_world(
 		guard.title = "Gate guard"
 		guard.story_guard = true
 		world.actors.append(guard)
+		var trader := GridActor.new(Vector2i(16, 18))
+		trader.title = "Supply trader"
+		trader.service = &"Trader"
+		world.actors.append(trader)
+		var chest := GridActor.new(Vector2i(19, 19))
+		chest.title = "Training supplies"
+		chest.alive = false
+		chest.chest = true
+		world.actors.append(chest)
+	for index in range(world.actors.size()):
+		world.actors[index].spawn_id = "grounds/%d/0" % index
+	for x in range(7, 14):
+		for y in range(8, 12):
+			world.indoor_tiles[Vector2i(x, y)] = true
 	return world
 
 
 static func _set_wolf_profile(actor: GridActor, timber: bool) -> void:
 	# ClassicDB 299 / 69: see DATA-002 melee record for the fixture adaptation.
+	actor.creature_type = "beast"
+	actor.loot_table = 299 if timber else 69
 	actor.max_health = 55 if timber else 42
 	actor.health = actor.max_health
 	actor.melee.level = 2 if timber else 1

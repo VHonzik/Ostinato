@@ -109,6 +109,7 @@ func _rebuild_skills() -> void:
 			scroll.name = skill.class_tab
 			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 			_tabs.add_child(scroll)
+			scroll.follow_focus = true
 			var rows := VBoxContainer.new()
 			rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			scroll.add_child(rows)

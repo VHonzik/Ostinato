@@ -39,6 +39,7 @@ class HeroState <<RefCounted>> {
   learned_skills: Array
   add_experience(amount): PackedInt32Array
   learn_skill(skill): bool
+  refresh_stats()
   find_skill(identifier): SkillRank
 }
 class HeroData <<RefCounted>> {
@@ -50,7 +51,9 @@ class SkillRank <<RefCounted>> {
   id: StringName
   title, description: String
   class_tab: StringName
-  rank, training_level: int
+  rank, training_level, training_cost: int
+  prerequisite, family: StringName
+  cooldown_seconds: int
   effect: Effect
   development_only: bool
   target: Target
@@ -70,7 +73,9 @@ DATA-001/002: Vanilla mage rows through 60.
 FR-016: repeat final growth/XP above that range.
 end note
 note bottom of SkillRank
-Mage: Fireball / Frost Armor. Druid starting ranks via trainer.
+26 mage/druid ranks through level 10 from TrainerData.
+Training: selected class, level, previous rank and copper.
+Casting retained ranks is independent of level/class.
 Development: Practice / XP / Death trigger.
 Death trigger starts the next Loop via GameSession.
 Development ranks omitted from release builds.
