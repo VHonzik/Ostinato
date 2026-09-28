@@ -35,6 +35,9 @@ class GridActor <<RefCounted>> {
   blocked_turns: int
   health, max_health: int
   died_on_turn: int
+  rooted_until, polymorphed_until: int
+  slowed_until, chilled_until: int
+  resistances: Dictionary
 }
 class HeroState <<RefCounted>> {
   health, mana: int
@@ -45,7 +48,8 @@ class MeleeProfile <<RefCounted>> {
   level, armor, attack_power: int
   player: bool
   damage_min, damage_max, interval: float
-  dodge, critical: float
+  dodge, critical, hit, parry, block: float
+  block_value: int
 }
 class SwingTimer <<RefCounted>> {
   remaining: float
@@ -56,6 +60,19 @@ class MeleeRules <<RefCounted>> {
   {static} damage(attacker, defender, result, rolls)
   {static} kill_experience(player_level, npc_level)
 }
+
+class SpellEffects {
+  {static} can_apply(world, skill, target): bool
+  {static} resolve(world, skill, target)
+  {static} tick(world)
+}
+class SpellResistance {
+  {static} percent(attacker_level, defender_level, resistance, binary)
+  {static} mitigate(amount, percent, roll)
+}
+GridWorld --> SpellEffects : completion / ticks
+SpellEffects --> SpellResistance
+SpellEffects ..> GridActor
 
 MovementGame *-- CombatPanel
 MovementGame --> GridWorld : automatic melee boundaries

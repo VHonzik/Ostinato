@@ -2,7 +2,7 @@ extends GutTest
 
 
 func test_dummy_casts_have_one_shared_phase_and_keep_movement_credit() -> void:
-	for identifier: StringName in [&"practice_1", &"experience_1"]:
+	for identifier: StringName in [&"practice_1", &"experience_1", &"gold_1"]:
 		var world := MovementFixture.create_world()
 		var waiting := MovementFixture.create_world()
 		world.movement_credit = 0.5
@@ -81,7 +81,7 @@ func test_learned_rank_remains_usable_below_training_level() -> void:
 
 func test_release_world_cannot_activate_development_skills() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 5, 5), Vector2i(2, 2), 1, false)
-	for identifier: StringName in [&"practice_1", &"experience_1", &"death_1"]:
+	for identifier: StringName in [&"practice_1", &"experience_1", &"gold_1", &"death_1"]:
 		assert_false(world.cast_skill(identifier))
 	assert_eq(world.turn_count, 0)
 	assert_eq([world.hero.level, world.hero.experience], [1, 0])
@@ -94,3 +94,19 @@ func test_chat_retains_recent_ordered_history() -> void:
 	assert_eq(world.messages.size(), 100)
 	assert_eq(world.messages[0], "Message 5")
 	assert_eq(world.messages[-1], "Message 104")
+
+
+func test_gold_fixture_adds_exact_copper_and_resets_on_death() -> void:
+	var game := GameSession.new()
+	game.new_game(97)
+	assert_true(game.world.cast_skill(&"gold_1"))
+	assert_eq(game.world.hero.copper, 10000)
+	assert_eq(game.world.turn_count, 1)
+	assert_string_contains(game.world.messages[-1], "1g 0s 0c")
+	assert_true(game.world.cast_skill(&"gold_1"))
+	assert_eq(game.world.hero.copper, 20000)
+	assert_eq(game.world.turn_count, 2)
+	assert_true(game.world.cast_skill(&"death_1"))
+	assert_true(game.restart_after_death())
+	assert_eq(game.world.hero.copper, 0)
+	assert_not_null(game.world.hero.find_skill(&"gold_1"))

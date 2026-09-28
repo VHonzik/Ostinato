@@ -1,7 +1,7 @@
 class_name MenuPanel
 extends Control
 
-## Shared keyboard/mouse menus. No menu operation advances simulation.
+## Shared keyboard/mouse menus; only committed equipment/use actions advance simulation.
 signal new_game_requested
 signal return_to_menu_requested
 signal refreshed
@@ -19,6 +19,8 @@ var _footer: HBoxContainer
 var _back: Callable
 var _capture_action: StringName = &""
 var _trainer: StringName = &""
+var _loot_source: GridActor
+var _quantity: int = 1
 
 
 func _ready() -> void:
@@ -138,30 +140,171 @@ func open_trainer(category: StringName) -> void:
 	if session.world.hero.selected_class != category:
 		_label("Select %s before learning here. Retained skills remain usable." % category)
 	else:
+		_label("Money: " + InventoryRules.money(session.world.hero.copper))
 		for skill in SkillRank.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
 			var button := _button("%s rank %d / %s" % [
-				skill.title, skill.rank, "Learned" if known else "Free"],
+				skill.title, skill.rank, "Learned" if known else InventoryRules.money(skill.training_cost)],
 				_train.bind(skill.id))
 			button.tooltip_text = skill.description
-			button.disabled = known or session.world.hero.level < skill.training_level
+			var failure := session.world.training_failure(category, skill)
+			button.text += " / Lv %d" % skill.training_level
+			button.tooltip_text += " " + failure
+			button.disabled = failure != ""
+			if failure != "" and not known:
+				_label(failure)
 	_button("Leave (Esc)", close)
 	_finish()
 
 
 func open_inventory() -> void:
-	_begin("inventory", "Starter equipment / Inventory", close)
+	_begin("inventory", "Equipment / Inventory", close)
 	var hero := session.world.hero
-	_label("%s / %d copper / 40 inventory slots" % [hero.selected_class, hero.copper])
-	for slot in hero.equipment:
-		var item: Dictionary = hero.equipment[slot]
-		_label("%s: %s" % [slot, StarterGear.ITEMS[int(item.id)].title])
-	for index in range(hero.inventory.size()):
-		var item: Dictionary = hero.inventory[index]
-		if not item.is_empty():
-			_label("Slot %d: %s" % [index + 1, StarterGear.ITEMS[int(item.id)].title])
+	_label("%s / %s / 40 slots" % [hero.selected_class, InventoryRules.money(hero.copper)])
+	for slot in InventoryRules.SLOTS:
+		var item: Dictionary = hero.equipment.get(slot, {})
+		var title := "Empty" if item.is_empty() else String(ItemData.get_item(int(item.id)).title)
+		var button := _button("%s: %s" % [slot.replace("_", " "), title],
+			_equipped_detail.bind(slot))
+		button.disabled = item.is_empty()
+	for index in range(40):
+		var item := hero.inventory[index]
+		var title := "Empty" if item.is_empty() else "%s x%d" % [
+			ItemData.get_item(int(item.id)).title, item.quantity]
+		var button := _button("Slot %d: %s" % [index + 1, title], _item_detail.bind(index))
+		button.disabled = item.is_empty()
 	_button("Close (Esc)", close)
 	_finish()
+
+
+func _equipped_detail(slot: String) -> void:
+	var item: Dictionary = session.world.hero.equipment[slot]
+	_begin("equipment", slot.replace("_", " "), open_inventory)
+	_label(ItemData.describe(int(item.id)))
+	_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot), open_inventory))
+	_button("Back (Esc)", open_inventory)
+	_finish()
+
+
+func _item_detail(index: int) -> void:
+	var item := session.world.hero.inventory[index]
+	var data := ItemData.get_item(int(item.id))
+	_begin("item", "%s x%d" % [data.title, item.quantity], open_inventory)
+	_label(ItemData.describe(int(item.id)))
+	if data.slot != "":
+		if data.slot in ["ring", "trinket"]:
+			for suffix in ["_1", "_2"]:
+				_button("Equip in %s%s (1 turn)" % [data.slot, suffix],
+					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_inventory))
+		else:
+			_button("Equip (1 turn)", _transaction.bind(session.world.equip_item.bind(index), open_inventory))
+	if data.use != "":
+		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_inventory))
+	_button("Move / split stack", func() -> void:
+		_quantity = 1
+		_quantity_menu("Move quantity", int(item.quantity), _move_destination.bind(index),
+			_item_detail.bind(index)))
+	_button("Back (Esc)", open_inventory)
+	_finish()
+
+
+func _move_destination(quantity: int, source: int) -> void:
+	_begin("move", "Choose destination for %d item(s)" % quantity, open_inventory)
+	for index in range(40):
+		var item := session.world.hero.inventory[index]
+		var label := "Empty" if item.is_empty() else "%s x%d" % [
+			ItemData.get_item(int(item.id)).title, item.quantity]
+		var button := _button("Slot %d: %s" % [index + 1, label], _transaction.bind(
+			InventoryRules.move.bind(session.world.hero, source, index, quantity), open_inventory))
+		button.disabled = index == source
+	_button("Back (Esc)", open_inventory)
+	_finish()
+
+
+func open_loot(source: GridActor) -> void:
+	if not session.world.open_loot(source):
+		close()
+		return
+	_loot_source = source
+	_begin("loot", source.title, close)
+	if source.loot_copper > 0:
+		_button("Take " + InventoryRules.money(source.loot_copper),
+			_transaction.bind(session.world.loot_money.bind(source), _refresh_loot))
+	for index in range(source.loot.size()):
+		var item := source.loot[index]
+		if not LootData.collectable(session.world, item):
+			continue
+		var button := _button("Take %s x%d" % [ItemData.get_item(int(item.id)).title, item.quantity],
+			_transaction.bind(session.world.loot_item.bind(source, index), _refresh_loot))
+		button.tooltip_text = ItemData.describe(int(item.id))
+	_button("Leave (Esc)", close)
+	_finish()
+
+
+func _refresh_loot() -> void:
+	if not _loot_source.corpse_visible:
+		close()
+	else:
+		open_loot(_loot_source)
+
+
+func open_trade() -> void:
+	_begin("trade", "Supply trader / " + InventoryRules.money(session.world.hero.copper), close)
+	_label("Buy / sell any selected quantity. Trading spends no turns.")
+	for key in session.world.vendor_stock:
+		var data := ItemData.get_item(int(key))
+		var stock := int(session.world.vendor_stock[key])
+		var button := _button("Buy %s / %s each / %s" % [data.title,
+			InventoryRules.money(int(data.buy)), "Unlimited" if stock == -1 else str(stock) + " left"],
+			_buy_quantity.bind(int(key)))
+		button.tooltip_text = ItemData.describe(int(key))
+		button.disabled = stock == 0
+	for index in range(40):
+		var item := session.world.hero.inventory[index]
+		if not item.is_empty():
+			var data := ItemData.get_item(int(item.id))
+			if data.tradable:
+				_button("Sell slot %d: %s x%d / %s each" % [index + 1, data.title,
+					item.quantity, InventoryRules.money(int(data.sell))], _sell_quantity.bind(index))
+	_button("Leave (Esc)", close)
+	_finish()
+
+
+func _buy_quantity(identifier: int) -> void:
+	_quantity = 1
+	_quantity_menu("Buy " + String(ItemData.get_item(identifier).title), 1000,
+		func(quantity: int) -> void:
+			_transaction(session.world.buy_item.bind(identifier, quantity), open_trade), open_trade)
+
+
+func _sell_quantity(index: int) -> void:
+	_quantity = 1
+	_quantity_menu("Sell quantity", int(session.world.hero.inventory[index].quantity),
+		func(quantity: int) -> void:
+			_transaction(session.world.sell_item.bind(index, quantity), open_trade), open_trade)
+
+
+func _quantity_menu(title: String, maximum: int, action: Callable, back: Callable) -> void:
+	_begin("quantity", "%s: %d" % [title, _quantity], back)
+	for delta in [-5, -1, 1, 5]:
+		_button("%+d" % delta, func() -> void:
+			_quantity = clampi(_quantity + delta, 1, maximum)
+			_quantity_menu(title, maximum, action, back))
+	_button("Confirm %d" % _quantity, func() -> void: action.call(_quantity))
+	_button("Cancel (Esc)", back)
+	_finish()
+
+
+func _transaction(action: Callable, back: Callable) -> void:
+	var previous := session.world
+	var success: bool = action.call()
+	refreshed.emit()
+	if session.world != previous:
+		close()
+	elif success:
+		back.call()
+	else:
+		notice("Action rejected. Check money, stock, level, cooldown, and free slots; nothing was transferred.", back)
 
 
 func close() -> void:
@@ -267,7 +410,7 @@ func _button(text: String, action: Callable, parent: Node = null) -> Button:
 	button.pressed.connect(action)
 	# Defer until container layout settles, including a wrap from first to last.
 	button.focus_entered.connect(func() -> void:
-		(_rows.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(button))
+		_ensure_button_visible.call_deferred(button))
 	(parent if parent != null else _rows).add_child(button)
 	_buttons.append(button)
 	return button
@@ -355,3 +498,9 @@ func _toggle_palette() -> void:
 		open_options()
 	else:
 		notice(options.last_error, open_options)
+
+
+func _ensure_button_visible(button: Button) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(button) and _rows.is_ancestor_of(button):
+		(_rows.get_parent() as ScrollContainer).ensure_control_visible(button)

@@ -26,11 +26,15 @@ end
 World -> World : Validate; start GCD; engage harmful target
 loop Cast boundaries until completion, cancellation, or death
   World -> World : Advance cast progress
-  opt Completion
-    World -> World : Recheck target / range / sight / mana
+  alt Channel tick
+    World -> Hero : Spend mana on first tick only
+    World -> World : Validate target; SpellEffects.resolve()
+    note right: Cancellation retains ticks/cost; no credit.
+  else Ordinary completion
+    World -> World : Recheck target / range / sight / mana / effect eligibility / bag space
     alt Valid
       World -> Hero : Spend mana once; update casting credit
-      World -> World : Apply spell or development effect
+      World -> World : SpellEffects.resolve(); start family cooldown
     else Invalid
       World -> World : No cost, effect, or new credit
     end

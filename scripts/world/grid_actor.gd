@@ -28,6 +28,19 @@ var chilled_until: int = 0
 var movement_credit: float = 0.0
 var story_guard: bool = false
 var stalker: bool = false
+var spawn_id: String = ""
+var loot_table: int = 0
+var loot_assigned: bool = false
+var loot: Array[Dictionary] = []
+var loot_copper: int = 0
+var chest: bool = false
+var creature_type: String = "humanoid"
+var resistances: Dictionary = {}
+var rooted_until: int = 0
+var root_skill: StringName = &""
+var slowed_until: int = 0
+var polymorphed_until: int = 0
+var polymorphed_on_turn: int = 0
 
 
 func _init(start_tile: Vector2i, area: Rect2i = Rect2i()) -> void:
@@ -37,6 +50,8 @@ func _init(start_tile: Vector2i, area: Rect2i = Rect2i()) -> void:
 
 
 func relationship_name() -> String:
+	if chest:
+		return "Chest"
 	if not alive:
 		return "Corpse"
 	return ["Friendly", "Neutral", "Hostile"][relationship]

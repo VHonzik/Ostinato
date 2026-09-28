@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestones 1–4 training fixture on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–5 training fixture on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -105,8 +105,8 @@ racial removal, growth, XP table, resource refill, and beyond-level-60 extension
 
 The Mage tab shows learned Fireball and Frost Armor rank 1. These are explicitly labeled
 previews; activating them explains that real effects arrive later and spends no time.
-In a development build, the Development tab offers **Practice**, **Gain 450 XP**, and
-**Death trigger**. Each costs exactly one turn and no mana. Practice reports success;
+In a development build, the Development tab offers **Practice**, **Gain 450 XP**,
+and **Death trigger** at this milestone. Each costs exactly one turn and no mana. Practice reports success;
 450 XP reaches level 2 with 50/900 XP and updated stats; Death trigger reports its invocation
 and now kills the player through milestone 3's temporary death overlay.
 Release builds omit development ranks and their tab.
@@ -218,7 +218,7 @@ outfits, class eligibility, corpses, and schedule progress.
 Files live under Godot's user-data directory: on Windows, normally
 `%APPDATA%/Godot/app_userdata/Ostinato/saves/slot_1.json` through `slot_5.json`.
 Global settings are `options.json` alongside the saves directory. Tests use isolated
-temporary directories and do not overwrite gameplay slots. Saves use `demo` revision 1.
+temporary directories and do not overwrite gameplay slots. M4 originally used `demo` revision 1; M5 uses revision 2 (see below).
 Damaged saves are retained with a `.damaged-UTC-unique` suffix, and unsupported
 revisions remain unchanged. File failures are visible; a failed overwrite preserves
 the previous save.
@@ -229,12 +229,45 @@ includes repeated resets, trainer/class restrictions, spell timing, save failure
 deterministic continuation, options conflicts, and UI geometry. Human visual,
 platform, and benchmark acceptance is not inferred from those automated checks.
 
+## Milestone 5: Always be learning..
+
+Interact beside **Training supplies** at (19,19), collect its copper and items, then
+open **I** or the HUD **Inventory** button. Its label follows the configured binding. Select a bag item for details, equip/use, or move/split into a chosen slot.
+Equipment slots offer unequip. Equip, unequip and use cost one turn; the open menu,
+loot collection, rearrangement, training and trade cost no time. Full bags preserve loot.
+A mage can wear the leather vest or use a sword/shield; item-level and hand rules remain.
+
+For extra training currency, **K → Development → Gain 1 gold** grants 10,000 copper
+in one turn and reports it in chat. It is available only in development builds.
+The spell book remembers the last selected rank within each class tab while this game
+runs, including after a Loop; reopening K returns to that class and rank. New Game
+clears the remembered choice.
+
+The trader at (16,18) supports explicit buy/sell quantities. Its three mana potions are
+finite; waiting never replenishes them. New Loops restore stock. Mage/druid trainers
+at (17,14)/(17,16) expose all 26 included ranks through learning level 10, including
+prerequisite/cost feedback. For a quick higher-rank fixture, cast Development → Gain
+450 XP seventeen times to reach level 6, loot the chest, then learn Fireball rank 2
+for 100 copper. Both ranks appear in the spell book. Die and cast the retained higher
+rank from level 1; the bag, money, effects and vendor stock reset.
+
+New effects include heals over time, roots, slows, Polymorph, Nova, Arcane Missiles,
+conjured food/water, Thorns, individual cooldowns and equipment-derived stats. See the
+[source record](data/learning-baseline.md) for numeric examples, exclusions and fixture
+adaptations. The courtyard at x7–13/y8–11 is indoors for Entangling Roots.
+
+**Save compatibility:** current saves are `demo` revision 2. Revision-1 files are
+incompatible and retained unchanged. New saves restore remaining loot, vendor stock,
+quantities/equipment, currency, cooldowns and periodic effects deterministically.
+Use a new game or an unused save slot to review M5 without replacing an older save.
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: menus and playable fixture.
 - `scripts/world/`: grid rules, NPC state, fixture layout, and sprite rendering.
 - `scripts/combat/`: melee calculations, fractional swing timing, and interaction/targeting UI.
-- `scripts/hero/`: sourced mage growth, progression, learned ranks, and the character/spell panel.
+- `scripts/hero/`: sourced mage growth, progression, trainer ranks, and the character/spell panel.
+- `scripts/items/`: item/loot data and atomic inventory/equipment transactions.
 - `docs/data/`: versioned data selections and adaptations.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.
 - `tools/`: setup, launch, validation, dependency pins, and GUT report hook.

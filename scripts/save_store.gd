@@ -3,6 +3,7 @@ extends RefCounted
 
 ## FR-039/040/041 and NFR-010/011/012: validate before replacing either file or world.
 const SLOT_COUNT: int = 5
+const REVISION: int = 2
 const MAX_BYTES: int = 8 * 1024 * 1024
 
 var directory: String
@@ -29,7 +30,7 @@ func metadata(slot: int) -> Dictionary:
 		return {"status": "Damaged"}
 	if not record.has_all(["family", "revision"]):
 		return {"status": "Damaged"}
-	if record.get("family") != "demo" or record.get("revision") != 1:
+	if record.get("family") != "demo" or record.get("revision") != REVISION:
 		return {"status": "Incompatible"}
 	if (not record.get("timestamp") is String or not record.timestamp.ends_with("Z")
 		or not record.get("data") is Dictionary
@@ -50,7 +51,7 @@ func save_slot(session: GameSession, slot: int, confirmed: bool = false) -> bool
 	var state := SaveCodec.capture(session)
 	if SaveCodec.restore(state, session.development_build) == null:
 		return _fail("Current game could not be validated; previous save preserved.")
-	var record := {"family": "demo", "revision": 1,
+	var record := {"family": "demo", "revision": REVISION,
 		"timestamp": Time.get_datetime_string_from_system(true) + "Z", "data": state}
 	if DirAccess.make_dir_recursive_absolute(directory) != OK:
 		return _fail("Cannot create save directory. Previous save preserved.")
@@ -82,7 +83,7 @@ func load_slot(session: GameSession, slot: int) -> bool:
 	if not FileAccess.file_exists(path):
 		return _fail("No save in this slot.")
 	var record := _read(path)
-	if record.has_all(["family", "revision"]) and (record.family != "demo" or record.revision != 1):
+	if record.has_all(["family", "revision"]) and (record.family != "demo" or record.revision != REVISION):
 		return _fail("Incompatible save family or revision; file unchanged.")
 	if (not record.has_all(["family", "revision", "timestamp"])
 		or not record.timestamp is String

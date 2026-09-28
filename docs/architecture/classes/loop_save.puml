@@ -26,6 +26,8 @@ class GridWorld {
   pending_melee: GridActor
   periodic_effects: Array
   stalker_arrived: bool
+  vendor_stock: Dictionary
+  loot_quests: Array<String>
   class_selected, ever_accepted_quest: bool
   can_save(): bool
   in_combat(): bool
@@ -36,7 +38,8 @@ class HeroState {
   equipment: Dictionary
   inventory: Array
   casting_credit: float
-  buffs: Dictionary
+  buffs, cooldowns, restoration: Dictionary
+  copper: int
 }
 class StarterGear {
   {static} exchange(hero, category): bool
@@ -80,7 +83,9 @@ SaveStore --> SaveCodec
 SaveStore --> GameSession : validated replacement
 SaveCodec ..> GridWorld : explicit fields
 note bottom of SaveCodec
+Demo revision 2; revision 1 remains untouched/incompatible.
 JSON stores RNG int64 values as strings.
+Assigned/remaining loot, stock, items and effects are captured.
 Restore validates a separate world before adoption.
 end note
 @enduml

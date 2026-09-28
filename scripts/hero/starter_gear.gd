@@ -1,16 +1,7 @@
 class_name StarterGear
 extends RefCounted
 
-## DATA-001: outfit storage for FR-001/005; full item services follow in M5.
-const ITEMS: Dictionary = {
-	35: {"title": "Bent Staff", "slot": "main_hand", "armor": 0},
-	55: {"title": "Apprentice's Boots", "slot": "feet", "armor": 0},
-	56: {"title": "Apprentice's Robe", "slot": "chest", "armor": 3},
-	1395: {"title": "Apprentice's Pants", "slot": "legs", "armor": 2},
-	6096: {"title": "Apprentice's Shirt", "slot": "shirt", "armor": 0},
-	6123: {"title": "Novice's Robe", "slot": "chest", "armor": 3},
-	6124: {"title": "Novice's Pants", "slot": "legs", "armor": 2},
-}
+## DATA-001: granted outfit provenance survives moves and cannot erase acquired items.
 
 
 static func outfit(category: StringName) -> Array[int]:
@@ -25,8 +16,8 @@ static func equip_outfit(hero: HeroState) -> void:
 	hero.inventory.resize(40)
 	hero.inventory.fill({})
 	for identifier in outfit(&"Mage"):
-		hero.equipment[ITEMS[identifier].slot] = item(identifier)
-	hero.refresh_melee_stats()
+		hero.equipment[ItemData.get_item(identifier).slot] = item(identifier)
+	hero.refresh_stats()
 
 
 static func exchange(hero: HeroState, category: StringName) -> bool:
@@ -39,8 +30,10 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 		if not inventory[index].is_empty() and inventory[index].starter:
 			inventory[index] = {}
 	for identifier in outfit(category):
-		var slot: String = ITEMS[identifier].slot
-		if not equipment.has(slot):
+		var slot: String = ItemData.get_item(identifier).slot
+		var hands_blocked: bool = (slot == "main_hand"
+			and ItemData.get_item(identifier).two_handed and equipment.has("off_hand"))
+		if not equipment.has(slot) and not hands_blocked:
 			equipment[slot] = item(identifier)
 		else:
 			var empty := inventory.find({})
@@ -50,7 +43,7 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 	hero.equipment = equipment
 	hero.inventory.assign(inventory)
 	hero.selected_class = category
-	hero.refresh_melee_stats()
+	hero.refresh_stats()
 	hero.health = mini(hero.health, hero.max_health)
 	hero.mana = mini(hero.mana, hero.max_mana)
 	return true

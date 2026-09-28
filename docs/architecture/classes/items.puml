@@ -1,0 +1,69 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+class MenuPanel {
+  open_inventory()
+  open_loot(source)
+  open_trade()
+  open_trainer(category)
+}
+class GridWorld {
+  seed_value, turn_count: int
+  vendor_stock: Dictionary
+  train(category, identifier): bool
+  loot_item(source, index): bool
+  buy_item(identifier, quantity): bool
+  sell_item(index, quantity): bool
+  equip_item(index, slot): bool
+  consume_item(index): bool
+}
+class HeroState {
+  inventory: Array<Dictionary>
+  equipment: Dictionary
+  copper: int
+  refresh_stats()
+}
+class GridActor {
+  spawn_id: String
+  loot_assigned, chest: bool
+  loot: Array<Dictionary>
+  loot_copper: int
+}
+class ItemData {
+  {static} ITEMS: Dictionary
+  {static} get_item(identifier): Dictionary
+}
+class InventoryRules {
+  {static} add(inventory, item): bool
+  {static} equip(hero, index, slot): bool
+  {static} unequip(hero, slot): bool
+  {static} move(hero, source, destination, quantity): bool
+}
+class LootData {
+  {static} assign(world, source)
+  {static} collectable(world, item): bool
+}
+class TrainerData {
+  {static} RANKS: Dictionary
+}
+class SkillRank {
+  {static} trainer_skills(category): Array<SkillRank>
+}
+MenuPanel --> GridWorld : transaction requests
+GridWorld *-- HeroState
+GridWorld *-- GridActor
+GridWorld --> InventoryRules
+GridWorld --> LootData
+GridWorld --> SkillRank
+SkillRank --> TrainerData
+InventoryRules --> ItemData
+InventoryRules --> HeroState : commit only after validation
+LootData --> GridActor : assign once
+LootData --> ItemData : quest eligibility
+note bottom of GridActor
+Loot stream derives from seed + stable spawn identity.
+Assignment and remaining contents survive save/load.
+end note
+@enduml

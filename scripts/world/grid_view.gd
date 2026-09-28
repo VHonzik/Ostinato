@@ -42,6 +42,10 @@ func _draw() -> void:
 	for actor in world.actors:
 		if not actor.alive and actor.corpse_visible:
 			var center := tile_center(actor.tile)
+			if actor.chest:
+				draw_rect(Rect2(center - Vector2(6, 4), Vector2(12, 9)), Color("#b38b45"))
+				draw_line(center - Vector2(6, 1), center + Vector2(6, -1), Color("#edd99b"), 1)
+				continue
 			draw_line(center + Vector2(-5, 2), center + Vector2(5, 2), Color("#a09a81"), 2)
 			draw_line(center + Vector2(-2, -1), center + Vector2(2, 5), Color("#a09a81"), 2)
 	for actor in world.actors:
@@ -50,6 +54,11 @@ func _draw() -> void:
 			if alternate_palette:
 				color = [Color("#56B4E9"), Color("#F0E442"), Color("#D55E00")][actor.relationship]
 			_draw_character(actor.tile, Vector2i(0, 0), color)
+			if actor.polymorphed_until > world.turn_count:
+				draw_circle(tile_center(actor.tile), 5, Color.WHITE)
+			if actor.rooted_until > world.turn_count:
+				draw_rect(Rect2(tile_center(actor.tile) - Vector2(6, 6), Vector2(12, 12)),
+					Color("#71b580"), false, 1)
 			var center := tile_center(actor.tile)
 			draw_line(center, center + Vector2(actor.facing) * 6, color, 1)
 			if actor.health < actor.max_health:

@@ -5,6 +5,7 @@ extends Control
 signal action_taken
 signal selection_changed(actor: GridActor)
 signal service_requested(service: StringName)
+signal loot_requested(source: GridActor)
 
 enum Mode { SELECT, CONFIRM_ATTACK, SPELL }
 
@@ -143,6 +144,15 @@ func _choose_selected() -> void:
 
 
 func _interact_selected() -> void:
+	if not selected.alive and _world.open_loot(selected):
+		var source := selected
+		var available := source.loot_copper > 0
+		for item in source.loot:
+			available = available or LootData.collectable(_world, item)
+		if available:
+			close()
+			loot_requested.emit(source)
+			return
 	if selected.alive and selected.service != &"":
 		var service := selected.service
 		close()

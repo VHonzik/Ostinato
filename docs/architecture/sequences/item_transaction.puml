@@ -1,0 +1,34 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant MenuPanel as Menu
+participant GridWorld as World
+participant InventoryRules as Items
+participant HeroState as Hero
+participant MovementGame as Game
+participant GameSession as Session
+Player -> Menu : Choose loot / buy quantity / equip
+Menu -> World : Request transaction
+World -> World : Validate source, quantity, level, stock and money
+World -> Items : Try item transfer / equipment swap
+Items -> Items : Copy containers; check all capacity and hand rules
+alt Invalid or insufficient capacity
+  Items --> World : false; no mutation
+  World --> Menu : Failure; no charge or turn
+else Valid
+  Items -> Hero : Commit inventory / equipment; recompute stats if needed
+  World -> World : Remove collected loot or charge copper/stock once
+  opt Equip / unequip / consume
+    World -> World : One shared simulation turn
+  end
+  Menu -> Game : refreshed
+  alt Player died during turn
+    Game -> Session : restart_after_death()
+    Session -> Game : world_changed
+    Game -> Menu : Close stale transaction page
+  else Alive
+    Menu -> Menu : Rebuild current items / quantities
+  end
+end
+@enduml
