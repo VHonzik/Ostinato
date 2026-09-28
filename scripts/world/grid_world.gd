@@ -257,6 +257,9 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 			add_message("Gain 450 XP rank %d: gained 450 XP." % skill.rank)
 			for gained_level in hero.add_experience(450):
 				add_message("Level up! You are now level %d. Health and mana restored." % gained_level)
+		SkillRank.Effect.GOLD:
+			hero.copper += 10000
+			add_message("Gain 1 gold: gained %s." % InventoryRules.money(10000))
 		SkillRank.Effect.DEATH_NOTICE:
 			hero.health = 0
 			add_message("Death trigger invoked. You died.")

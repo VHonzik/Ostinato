@@ -2,7 +2,7 @@ class_name SkillRank
 extends RefCounted
 
 ## DATA-003 mage/druid ranks through level 10. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -120,6 +120,8 @@ static func development_skills() -> Array[SkillRank]:
 			"One turn; 0 mana. Reports a harmless practice cast.", Effect.PRACTICE, true),
 		SkillRank.new(&"experience_1", "Gain 450 XP", &"Development", 1, 1,
 			"One turn; 0 mana. Awards 450 XP through ordinary leveling.", Effect.EXPERIENCE, true),
+		SkillRank.new(&"gold_1", "Gain 1 gold", &"Development", 1, 1,
+			"One turn; 0 mana. Adds 1 gold (10,000 copper).", Effect.GOLD, true),
 		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
 			"One turn; 0 mana. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
 	]

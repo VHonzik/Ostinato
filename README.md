@@ -17,7 +17,7 @@ pwsh -NoProfile -File tools/godot.ps1
 ```
 
 Choose **New Game**. Move with WASD + QEZC, arrows, or the numpad; wait with
-period or numpad 5. **P** opens Character, **K** the spell book, **I** inventory/equipment,
+period or numpad 5. **P** opens Character, **K** the spell book, **I** or the HUD Inventory button opens inventory/equipment,
 and **F** interacts. Targeted spells require Enter confirmation; Escape cancels
 targeting or a pending cast/attack. Escape from gameplay opens Options and save/load.
 

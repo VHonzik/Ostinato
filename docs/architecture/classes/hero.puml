@@ -13,8 +13,10 @@ class MovementGame <<Node2D>> {
 }
 class HeroPanel <<Control>> {
   cast_requested(identifier)
+  _last_spell_by_class: Dictionary
   open(hero, spell_book)
   close()
+  clear_selection()
   navigate(forward)
   change_tab(direction)
 }
@@ -76,7 +78,7 @@ note bottom of SkillRank
 26 mage/druid ranks through level 10 from TrainerData.
 Training: selected class, level, previous rank and copper.
 Casting retained ranks is independent of level/class.
-Development: Practice / XP / Death trigger.
+Development: Practice / XP / Gold / Death trigger.
 Death trigger starts the next Loop via GameSession.
 Development ranks omitted from release builds.
 end note

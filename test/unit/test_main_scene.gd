@@ -291,7 +291,8 @@ func test_mouse_buttons_open_panels_and_reset_clears_hero_and_chat() -> void:
 func test_hero_panels_and_hud_fit_at_minimum_content_size() -> void:
 	var area := Rect2(0, 0, 640, 360)
 	for path in ["HUD/Top/Rows/HeroStatus", "HUD/Top/Rows/HeroStatus/Character",
-		"HUD/Top/Rows/HeroStatus/Spells", "HUD/Bottom/Rows/Chat"]:
+		"HUD/Top/Rows/HeroStatus/Spells", "HUD/Top/Rows/HeroStatus/Inventory",
+		"HUD/Bottom/Rows/Chat"]:
 		var control := _game.get_node(path) as Control
 		assert_true(area.encloses(control.get_global_rect()), path)
 	_game.hero_panel.open(_game.world.hero, false)
@@ -821,3 +822,49 @@ func test_new_services_keep_last_keyboard_control_and_resources_visible_at_minim
 		var resources := _game.get_node("HUD/Top/Rows/HeroStatus") as Control
 		assert_false(panel.intersects(resources.get_global_rect()))
 		await _tap_key(KEY_ESCAPE)
+
+
+func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
+	var hero := _game.world.hero
+	assert_true(hero.learn_skill(SkillRank.catalog(&"wrath_1")))
+	assert_true(hero.learn_skill(SkillRank.catalog(&"healing_touch_1")))
+	await _tap_key(KEY_K)
+	var frost := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Frost Armor"))[0] as Button
+	frost.grab_focus()
+	await _tap_key(KEY_ESCAPE)
+	await _tap_key(KEY_K)
+	assert_same(_game_viewport.gui_get_focus_owner(), _game.hero_panel._skill_buttons[1])
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	_game.hero_panel.change_tab(2)
+	var healing := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Healing Touch"))[0] as Button
+	healing.grab_focus()
+	await _tap_key(KEY_ESCAPE)
+	await _tap_key(KEY_K)
+	assert_eq(_game.hero_panel._tabs.get_tab_title(_game.hero_panel._tabs.current_tab), "Druid")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Healing Touch")
+	_game.hero_panel.change_tab(-2)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	_game.hero_panel.close()
+	_game.world.cast_skill(&"death_1")
+	_game.refresh_view()
+	await _tap_key(KEY_K)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	_game.start_new_game()
+	await _tap_key(KEY_K)
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Fireball")
+
+
+func test_inventory_hud_button_shows_binding_and_opens_menu_without_time() -> void:
+	var button := _game.get_node("HUD/Top/Rows/HeroStatus/Inventory") as Button
+	assert_string_contains(button.text, "Inventory (I)")
+	assert_true(Rect2(0, 0, 640, 360).encloses(button.get_global_rect()))
+	button.pressed.emit()
+	assert_eq(_game.menu.page, "inventory")
+	assert_eq(_game.world.turn_count, 0)
+	_game.menu.close()
+	_game.menu.options.bindings["inventory"] = [KEY_B]
+	_game.menu.options.apply_bindings()
+	_game.refresh_view()
+	assert_string_contains(button.text, "Inventory (B)")

@@ -181,6 +181,15 @@ A full bag leaves offered loot untouched. Looting, rearranging, training and tra
 are free; successful equip/unequip/consume spends one full shared turn (FR-010).
 Death during that turn closes the old service menu and adopts the next Loop.
 
+## PR-review development and UI additions
+
+FR-050 adds **Gain 1 gold** solely to the development tab. It grants exactly
+10,000 copper (100 silver) after one turn, costs no mana, and uses the ordinary
+currency save/load and Loop-reset behavior. The amount is an explicit Ostinato
+development fixture, not a WoW spell or reward table. FR-046 now retains the
+focused/activated rank in each class tab during play so repeated casts reopen
+at the selected rank. FR-043 exposes Inventory and its configured key on the HUD.
+
 ## Persistence and implementation shape
 
 Saves now use **demo revision 2**. Revision-1 files are reported incompatible and left

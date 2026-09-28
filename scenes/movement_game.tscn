@@ -89,11 +89,20 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 26)
 text = "Mage"
 
+[node name="Inventory" type="Button" parent="HUD/Top/Rows/HeroStatus"]
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -290.0
+offset_right = -194.0
+offset_bottom = 24.0
+text = "Inventory (I)"
+
 [node name="Character" type="Button" parent="HUD/Top/Rows/HeroStatus"]
 layout_mode = 0
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -186.0
+offset_left = -190.0
 offset_right = -88.0
 offset_bottom = 24.0
 text = "Character (P)"
@@ -142,7 +151,7 @@ mouse_filter = 2
 [node name="Legend" type="Label" parent="HUD/Bottom/Rows"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
-text = "F: interact   ·   P: character   ·   K: spells   ·   Esc: return"
+text = "F: interact   ·   I: inventory   ·   P: character   ·   K: spells   ·   Esc: return"
 mouse_filter = 2
 
 [node name="HeroPanel" type="Control" parent="HUD"]

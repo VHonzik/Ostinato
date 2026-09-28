@@ -10,6 +10,9 @@ var _stats: Label
 var _close: Button
 var _panel: PanelContainer
 var _skill_buttons: Array[Button] = []
+var _last_spell_by_class: Dictionary = {}
+var _last_class_tab: StringName = &"Mage"
+var _rebuilding: bool = false
 
 
 func _ready() -> void:
@@ -53,7 +56,14 @@ func open(hero: HeroState, spell_book: bool) -> void:
 	_rebuild_skills()
 	refresh()
 	show()
-	_tabs.current_tab = 1 if spell_book else 0
+	var selected_tab := 0
+	if spell_book:
+		selected_tab = 1
+		for index in range(1, _tabs.get_tab_count()):
+			if _tabs.get_tab_title(index) == String(_last_class_tab):
+				selected_tab = index
+				break
+	_tabs.current_tab = selected_tab
 	_focus_tab_content()
 
 
@@ -62,6 +72,11 @@ func close() -> void:
 	var focused := get_viewport().gui_get_focus_owner()
 	if focused != null and is_ancestor_of(focused):
 		focused.release_focus()
+
+
+func clear_selection() -> void:
+	_last_spell_by_class.clear()
+	_last_class_tab = &"Mage"
 
 
 func refresh() -> void:
@@ -97,6 +112,7 @@ func change_tab(direction: int) -> void:
 
 
 func _rebuild_skills() -> void:
+	_rebuilding = true
 	_skill_buttons.clear()
 	while _tabs.get_tab_count() > 1:
 		var child := _tabs.get_child(1)
@@ -118,22 +134,40 @@ func _rebuild_skills() -> void:
 		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
 		button.text += "  ·  %.1fs / %d mana" % [skill.cast_seconds, skill.mana_cost]
 		button.tooltip_text = skill.description
+		button.set_meta("skill_id", skill.id)
 		button.pressed.connect(_request_cast.bind(skill.id))
+		button.focus_entered.connect(_remember_spell.bind(skill.class_tab, skill.id))
 		categories[skill.class_tab].add_child(button)
 		_skill_buttons.append(button)
+	_rebuilding = false
 
 
 func _request_cast(identifier: StringName) -> void:
+	var skill := _hero.find_skill(identifier)
+	if skill != null:
+		_remember_spell(skill.class_tab, identifier)
 	cast_requested.emit(identifier)
 	refresh()
 
 
+func _remember_spell(category: StringName, identifier: StringName) -> void:
+	_last_spell_by_class[category] = identifier
+	_last_class_tab = category
+
+
 func _on_tab_changed(_tab: int) -> void:
-	if visible:
+	if visible and not _rebuilding:
 		_focus_tab_content()
 
 
 func _focus_tab_content() -> void:
+	if _tabs.current_tab > 0:
+		var category := StringName(_tabs.get_tab_title(_tabs.current_tab))
+		var remembered: StringName = _last_spell_by_class.get(category, &"")
+		for button in _skill_buttons:
+			if button.is_visible_in_tree() and button.get_meta("skill_id") == remembered:
+				button.grab_focus()
+				return
 	for button in _skill_buttons:
 		if button.is_visible_in_tree():
 			button.grab_focus()

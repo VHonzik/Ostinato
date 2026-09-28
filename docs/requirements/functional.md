@@ -885,6 +885,10 @@ Default controls:
 | Fullscreen | F11 or Options toggle |
 | Save/load | Options; no quick-save bypass |
 
+The gameplay HUD shall provide a visible Inventory control showing its current binding
+(default I); clicking it opens the same inventory as the key. The control remains available
+at the 640 × 360 minimum size.
+
 Rebinding within the same active context shall report a conflict and require an explicit
 swap/reassignment; it shall not silently trigger two actions. Gameplay input is suppressed
 while a menu/text field/selector owns focus. Options, palette, display settings, and bindings
@@ -933,6 +937,9 @@ Acceptance:
 - Clicking a targeted spell enters FR-024; clicking an otherwise valid untargeted spell
   requests its effect.
 - Learned ranks are identifiable; the development tab exposes FR-050 in development builds.
+- Reopening the spell book preselects the last focused or activated spell in its class tab.
+  Switching between tabs restores each tab's last selection, including after a Loop reset.
+  New Game clears these selections; a spell no longer learned falls back to the first available rank.
 
 The spell book shall expose every learned rank with a readable rank label/tooltip and
 keyboard selection/activation. The development tab and debug skills are hidden in the
@@ -976,12 +983,14 @@ Acceptance:
 
 ### FR-050 — Development skills
 
-Development gameplay shall provide test skills, including adding a known amount of XP and
-killing the player, with observable feedback. Initial dummy skills shall consume one turn.
+Development gameplay shall provide test skills, including adding a known amount of XP,
+adding 1 gold (10,000 copper), and killing the player, with observable feedback. Initial dummy skills shall consume one turn.
 
 Acceptance:
 
 - The XP skill grants its stated amount and exercises ordinary level progression.
+- The gold skill grants exactly 10,000 copper per use, reports the gain, and the
+  earned currency follows ordinary save/load and Loop-reset rules.
 - The death skill exercises the currently implemented death flow: the temporary milestone-3
   overlay, then the real Loop flow from milestone 4.
 - Initial dummy skills advance NPC/simulation time by one turn and report their effects.

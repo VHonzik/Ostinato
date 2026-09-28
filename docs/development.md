@@ -105,8 +105,8 @@ racial removal, growth, XP table, resource refill, and beyond-level-60 extension
 
 The Mage tab shows learned Fireball and Frost Armor rank 1. These are explicitly labeled
 previews; activating them explains that real effects arrive later and spends no time.
-In a development build, the Development tab offers **Practice**, **Gain 450 XP**, and
-**Death trigger**. Each costs exactly one turn and no mana. Practice reports success;
+In a development build, the Development tab offers **Practice**, **Gain 450 XP**,
+and **Death trigger** at this milestone. Each costs exactly one turn and no mana. Practice reports success;
 450 XP reaches level 2 with 50/900 XP and updated stats; Death trigger reports its invocation
 and now kills the player through milestone 3's temporary death overlay.
 Release builds omit development ranks and their tab.
@@ -232,10 +232,16 @@ platform, and benchmark acceptance is not inferred from those automated checks.
 ## Milestone 5: Always be learning..
 
 Interact beside **Training supplies** at (19,19), collect its copper and items, then
-open **I**. Select a bag item for details, equip/use, or move/split into a chosen slot.
+open **I** or the HUD **Inventory** button. Its label follows the configured binding. Select a bag item for details, equip/use, or move/split into a chosen slot.
 Equipment slots offer unequip. Equip, unequip and use cost one turn; the open menu,
 loot collection, rearrangement, training and trade cost no time. Full bags preserve loot.
 A mage can wear the leather vest or use a sword/shield; item-level and hand rules remain.
+
+For extra training currency, **K → Development → Gain 1 gold** grants 10,000 copper
+in one turn and reports it in chat. It is available only in development builds.
+The spell book remembers the last selected rank within each class tab while this game
+runs, including after a Loop; reopening K returns to that class and rank. New Game
+clears the remembered choice.
 
 The trader at (16,18) supports explicit buy/sell quantities. Its three mana potions are
 finite; waiting never replenishes them. New Loops restore stock. Mage/druid trainers

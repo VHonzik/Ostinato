@@ -53,6 +53,7 @@ func _ready() -> void:
 	combat_panel.selection_changed.connect(_select_actor)
 	hero_panel.cast_requested.connect(_cast_skill)
 	hero_panel.visibility_changed.connect(_on_hero_panel_visibility_changed)
+	$HUD/Top/Rows/HeroStatus/Inventory.pressed.connect(_open_inventory)
 	$HUD/Top/Rows/HeroStatus/Character.pressed.connect(_open_hero_panel.bind(false))
 	$HUD/Top/Rows/HeroStatus/Spells.pressed.connect(_open_hero_panel.bind(true))
 	world = MovementFixture.create_world()
@@ -196,8 +197,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("inventory"):
-		_pending_action = false
-		menu.open_inventory()
+		_open_inventory()
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("interact"):
@@ -231,6 +231,7 @@ func reset_fixture() -> void:
 
 
 func start_new_game() -> void:
+	hero_panel.clear_selection()
 	active_game = true
 	menu.active_game = true
 	menu.close()
@@ -321,6 +322,7 @@ func refresh_view() -> void:
 			_select_actor(null)
 	_cancel_attack.visible = world.pending_melee != null or world.pending_skill != null
 	grid_view.alternate_palette = menu.options.alternate_palette
+	$HUD/Top/Rows/HeroStatus/Inventory.text = "Inventory (%s)" % menu.options.key_label(&"inventory")
 	$HUD/Top/Rows/HeroStatus/Character.text = "Character (%s)" % menu.options.key_label(&"character")
 	$HUD/Top/Rows/HeroStatus/Spells.text = "Spells (%s)" % menu.options.key_label(&"spell_book")
 	camera.position = GridView.tile_center(world.player_tile)
@@ -352,6 +354,14 @@ func _update_speed_buttons() -> void:
 		_speed_buttons[index].set_pressed_no_signal(
 			is_equal_approx(world.movement_speed, [0.5, 1.0, 1.5][index])
 		)
+
+
+func _open_inventory() -> void:
+	if (not active_game or world.is_player_dead() or world.pending_melee != null
+		or world.pending_skill != null or combat_panel.visible or hero_panel.visible):
+		return
+	_pending_action = false
+	menu.open_inventory()
 
 
 func _open_hero_panel(spell_book: bool) -> void:
@@ -386,9 +396,9 @@ func _on_hero_panel_visibility_changed() -> void:
 	$HUD/Bottom/Rows/Legend.visible = not hero_panel.visible
 	var controls := $HUD/Bottom/Rows/Controls as Label
 	controls.text = (
-		"A/D: tabs   Â·   W/S or Tab: select   Â·   Enter: activate   Â·   Esc: close"
+		"A/D: tabs   ·   W/S or Tab: select   ·   Enter: activate   ·   Esc: close"
 		if hero_panel.visible else
-		"Move: WASD + QEZC / arrows / numpad   Â·   Wait: . / numpad 5"
+		"Move: WASD + QEZC / arrows / numpad   ·   Wait: . / numpad 5"
 	)
 
 
