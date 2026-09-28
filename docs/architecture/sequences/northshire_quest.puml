@@ -1,0 +1,33 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant MenuPanel as Menu
+participant QuestRules as Quests
+participant GridWorld as World
+participant InventoryRules as Items
+participant NorthshireZone as Zone
+Player -> Menu : Accept quest at its giver
+Menu -> Quests : accept(world, id, actor)
+Quests -> World : Record objectives / loot eligibility\nClose class-selection eligibility
+Player -> World : Kill matching population NPC
+World -> Quests : event("kill", npc_id)
+Quests -> World : Increment accepted objective once
+World -> Zone : died(world, actor)
+Zone -> World : Schedule next slot ordinal at death + 30
+World -> Zone : tick_population after shared phase
+alt Placement blocked
+  Zone -> World : Keep same pending ordinal
+else Legal tile
+  Zone -> World : Append seeded replacement (acts next turn)
+end
+Player -> Menu : Hand in at receiver / choose reward
+Menu -> Quests : hand_in(world, id, actor, choice)
+Quests -> Items : Remove quest items from copy; try complete reward
+alt Invalid or reward cannot fit
+  Quests --> Menu : false; no state changes
+else Success
+  Quests -> World : Commit inventory, currency, XP and handed-in state\nRemove quest-only pending loot
+  Quests --> Menu : true
+end
+@enduml

@@ -43,6 +43,7 @@ func _ready() -> void:
 	menu.fullscreen_changed.connect(_apply_fullscreen)
 	session.world_changed.connect(_adopt_world)
 	combat_panel.service_requested.connect(_open_service)
+	combat_panel.conversation_requested.connect(menu.open_conversation)
 	combat_panel.loot_requested.connect(menu.open_loot)
 	menu.options.load_options()
 	_apply_fullscreen()
@@ -196,6 +197,11 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_open_options()
 		get_viewport().set_input_as_handled()
 		return
+	if event.is_action_pressed("quest_log"):
+		_pending_action = false
+		menu.open_quest_log()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("inventory"):
 		_open_inventory()
 		get_viewport().set_input_as_handled()
@@ -258,7 +264,7 @@ func _adopt_world() -> void:
 	_melee_delay_seconds = 0.0
 	_update_speed_buttons()
 	_refresh_chat("")
-	_feedback.text = "F: interact / I: inventory / K: spells / Esc: options"
+	_feedback.text = "F: interact / J: quests / I: inventory / K: spells / Esc: options"
 	refresh_view()
 
 

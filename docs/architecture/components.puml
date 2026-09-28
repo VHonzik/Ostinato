@@ -7,7 +7,8 @@ component "Main / pixel_viewport.gd\nInteger-scaled viewport" as Main
 component "MovementGame\nInput, HUD, paced action boundaries\nCentered camera" as Game
 component "GameSession\nGame seed / Loop / world replacement" as Session
 component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / first stalker" as World
-component "MovementFixture\nTraining grounds / gate / services" as Fixture
+component "NorthshireZone\nValley / population replacement" as Fixture
+component "QuestRules + QuestData\nObjectives / eligibility / rewards" as Quests
 component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell data" as Hero
 component "StarterGear\nOutfit exchange / provenance" as Gear
 component "MeleeRules + MeleeProfile + SwingTimer" as Combat
@@ -32,6 +33,9 @@ Hero --> Gear
 World --> Combat
 World --> Spells
 World --> Items
+World --> Quests
+Menu --> Quests
+Quests --> Items
 Hero --> Items
 Hero --> Training
 Menu --> World : train / loot / trade / equip
@@ -43,14 +47,14 @@ Menu --> Saves : save / load
 Saves --> Session : replace validated world
 Saves --> World : capture / restore
 Menu --> Files : global options
-Saves --> Files : demo revision 2
+Saves --> Files : demo revision 3
 Game --> View
 View --> World
 Tests --> Godot
 Tests --> Session
 Tests --> Saves
 note bottom of World
-M5: paid training, equipment, trade and source-seeded loot.
-Northshire and quest lifecycle remain milestone 6.
+M6: populated Northshire, quest objectives and atomic rewards.
+Seeded population slots replenish and survive save/load.
 end note
 @enduml

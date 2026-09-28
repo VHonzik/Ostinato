@@ -555,7 +555,7 @@ const ITEMS: Dictionary = {
 
 
 static func get_item(identifier: int) -> Dictionary:
-	return ITEMS.get(str(identifier), {})
+	return ITEMS.get(str(identifier), NorthshireItems.ITEMS.get(str(identifier), {}))
 
 
 static func instance(identifier: int, quantity: int = 1, starter: bool = false) -> Dictionary:

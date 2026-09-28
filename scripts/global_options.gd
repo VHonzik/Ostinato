@@ -4,7 +4,7 @@ extends RefCounted
 const ACTIONS: Array[StringName] = [
 	&"move_north", &"move_northeast", &"move_east", &"move_southeast",
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
-	&"wait", &"interact", &"character", &"spell_book", &"inventory", &"options", &"fullscreen",
+	&"wait", &"interact", &"character", &"spell_book", &"inventory", &"quest_log", &"options", &"fullscreen",
 ]
 var path: String
 var bindings: Dictionary = {}
@@ -15,7 +15,7 @@ var last_error: String = ""
 
 func _init(settings_path: String = "user://options.json") -> void:
 	path = settings_path
-	for entry in [[&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]:
+	for entry in [[&"quest_log", KEY_J], [&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]:
 		if not InputMap.has_action(entry[0]):
 			InputMap.add_action(entry[0])
 			var event := InputEventKey.new()
@@ -39,14 +39,15 @@ func load_options() -> void:
 		return
 	var used: Array[int] = []
 	for action in ACTIONS:
-		var keys: Variant = data.bindings.get(String(action))
+		var keys: Variant = data.bindings.get(String(action), bindings[String(action)])
 		if not keys is Array or keys.is_empty():
 			return
 		for key in keys:
 			if not (key is float or key is int) or key <= 0 or int(key) in used:
 				return
 			used.append(int(key))
-	bindings = data.bindings
+	for action in ACTIONS:
+		bindings[String(action)] = data.bindings.get(String(action), bindings[String(action)])
 	fullscreen = data.get("fullscreen", false) == true
 	alternate_palette = data.get("alternate_palette", false) == true
 	apply_bindings()

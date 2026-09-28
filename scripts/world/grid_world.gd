@@ -40,6 +40,9 @@ var hotbar_locked: bool = false
 var resolving_turn: bool = false
 var seed_value: int = 1
 var loot_quests: Array[String] = []
+var quests: Dictionary = {}
+var population: Array[Dictionary] = []
+var northshire: bool = false
 var vendor_stock: Dictionary = {"2139": -1, "2129": -1, "85": -1, "117": -1,
 	"159": -1, "2455": 3}
 var indoor_tiles: Dictionary[Vector2i, bool] = {}
@@ -82,6 +85,7 @@ func move_player(direction: Vector2i) -> bool:
 	movement_credit += movement_speed
 	while movement_credit >= 1.0 and is_open(player_tile + direction):
 		player_tile += direction
+		QuestRules.visit(self)
 		hero.facing = direction
 		movement_credit -= 1.0
 		_acquire_hostiles()
@@ -333,7 +337,11 @@ func interact(actor: GridActor) -> String:
 	if not actor.alive:
 		return "%s: no loot remains." % actor.title
 	if actor.relationship == GridActor.Relationship.FRIENDLY:
-		return "%s: Welcome to the training grounds. Wolves roam to the east. Stay alert!" % actor.title
+		QuestRules.event(self, "talk", str(actor.npc_id))
+		if northshire:
+			return actor.title + ": " + NorthshireZone.greeting(actor.npc_id)
+		return ("%s: Welcome. The Legion is invading. The cities are besieged, and the gate is unsafe. " +
+			"Some here still think this is only a bandit raid.") % actor.title
 	request_melee(actor)
 	return ""
 
@@ -406,6 +414,9 @@ func _finish_turn(player_timer_advanced: bool = false) -> void:
 	_regenerate()
 	_tick_restoration()
 	_arrive_stalker()
+	NorthshireZone.tick_population(self)
+	_respawn_friendlies()
+	_acquire_hostiles()
 	resolving_turn = false
 	for actor in actors:
 		if not actor.alive and not actor.chest and not actor.story_guard and actor.died_on_turn >= 0:
@@ -502,6 +513,9 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 		target.returning_home = false
 		LootData.assign(self, target)
 		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
+		NorthshireZone.died(self, target)
+		if target.relationship != GridActor.Relationship.FRIENDLY:
+			QuestRules.event(self, "kill", str(target.npc_id))
 		var xp := MeleeRules.kill_experience(hero.level, target.melee.level)
 		if not target.awards_experience:
 			xp = 0
@@ -814,3 +828,20 @@ func _tick_restoration() -> void:
 			hero.mana = mini(hero.max_mana, hero.mana + amount)
 		if elapsed >= int(effect.duration):
 			hero.restoration.erase(kind)
+
+
+func _respawn_friendlies() -> void:
+	for actor in actors:
+		if (actor.alive or actor.chest or actor.story_guard
+			or actor.relationship != GridActor.Relationship.FRIENDLY
+			or actor.died_on_turn < 0 or turn_count < actor.died_on_turn + 30):
+			continue
+		if not is_open(actor.home_tile):
+			continue
+		actor.tile = actor.home_tile
+		actor.health = actor.max_health
+		actor.alive = true
+		actor.corpse_visible = true
+		actor.died_on_turn = -1
+		actor.buffs.clear()
+		actor.swing = SwingTimer.new()

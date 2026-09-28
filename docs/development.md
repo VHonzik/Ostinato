@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestones 1–5 training fixture on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–6 Northshire zone on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -260,6 +260,36 @@ adaptations. The courtyard at x7–13/y8–11 is indoors for Entangling Roots.
 incompatible and retained unchanged. New saves restore remaining loot, vendor stock,
 quantities/equipment, currency, cooldowns and periodic effects deterministically.
 Use a new game or an unused save slot to review M5 without replacing an older save.
+
+## Milestone 6: Chillin' at Northshire
+
+New Game and Loop reset now create the populated Northshire valley. Earlier fixture
+coordinates in the milestone notes above are historical; the movement fixture remains
+available to unit tests. See [DATA-004](data/northshire.md) for source IDs, reward values,
+adaptations, bounded exclusions and remaining M7/M8 content.
+
+Start at (20,14). Deputy Willem at (20,16) offers A Threat Within; Marshal McBride at
+(18,12) completes it and offers follow-ups. F opens the contact's quests and services.
+Opening a conversation is free and preserves class-choice eligibility; accepting closes
+it for the Loop. **J** opens the quest log; Options also provides a mouse control.
+Select a quest to inspect objectives, reward choices and receiver, or abandon it.
+Ready objectives remain in the log until hand-in; reward transactions are atomic.
+
+Abbey doors lead to single-floor interiors (mage trainer 17,8; Neals 22,7).
+The stable contains the druid trainer (12,15) and supplies (10,16).
+Wolves live west, vermin northwest, workers/mine north, vineyard east across the bridge
+at (32,22–24), and Garrick at the southeast shack. The original invasion survey visits
+the gate overlook (43–45,11–17) and talks to Willem, exercising location and multiple
+objectives without entering the stalker's initial aggro range.
+
+Populations replenish 30 turns after death with a new seeded ordinal. Blocked placement
+stays pending. New Loops restore initial identities/placement/loot. Quest item eligibility
+is captured at death or first chest opening; abandonment/hand-in removes remaining
+quest-only copies from bags and loot. No ordinary loot is rerolled.
+
+Current saves use **demo revision 3**; revisions 1/2 are incompatible and remain unchanged.
+Quests, counters, handed-in state, population ordinals/deadlines and remaining loot are
+saved with the existing deterministic world state. No migration is claimed.
 
 ## Project layout
 

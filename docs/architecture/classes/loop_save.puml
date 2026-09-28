@@ -28,6 +28,8 @@ class GridWorld {
   stalker_arrived: bool
   vendor_stock: Dictionary
   loot_quests: Array<String>
+  quests: Dictionary
+  population: Array<Dictionary>
   class_selected, ever_accepted_quest: bool
   can_save(): bool
   in_combat(): bool
@@ -83,9 +85,9 @@ SaveStore --> SaveCodec
 SaveStore --> GameSession : validated replacement
 SaveCodec ..> GridWorld : explicit fields
 note bottom of SaveCodec
-Demo revision 2; revision 1 remains untouched/incompatible.
+Demo revision 3; revisions 1/2 remain untouched/incompatible.
 JSON stores RNG int64 values as strings.
-Assigned/remaining loot, stock, items and effects are captured.
+Loot, stock, items, effects, quests and population deadlines are captured.
 Restore validates a separate world before adoption.
 end note
 @enduml

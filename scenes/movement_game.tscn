@@ -151,7 +151,7 @@ mouse_filter = 2
 [node name="Legend" type="Label" parent="HUD/Bottom/Rows"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.78, 0.72, 1)
-text = "F: interact   ·   I: inventory   ·   P: character   ·   K: spells   ·   Esc: return"
+text = "F: interact · J: quests · I: inventory · P: character · K: spells · Esc: options"
 mouse_filter = 2
 
 [node name="HeroPanel" type="Control" parent="HUD"]

@@ -215,6 +215,8 @@ func _send_key(key: Key, pressed: bool, echo: bool = false) -> void:
 
 
 func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
+	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	_game.set_process(true)
 	await _tap_key(KEY_P)
 	assert_true(_game.hero_panel.visible)
 	assert_eq(_game.world.turn_count, 0)
@@ -616,6 +618,7 @@ func test_main_menu_keyboard_starts_game_and_menu_actions_never_spend_time() -> 
 
 
 func test_targeted_spell_keyboard_confirmation_and_cast_cancellation() -> void:
+	_prepare_melee(GridActor.Relationship.NEUTRAL)
 	_game.set_process(false)
 	await _tap_key(KEY_K)
 	await _tap_key(KEY_ENTER)
@@ -638,8 +641,10 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 	_game.world.player_tile = Vector2i(19, 13)
 	_game.refresh_view()
 	await _tap_key(KEY_F)
-	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.SELECT)
-	assert_eq(_game.combat_panel.selected.service, &"Marshal")
+	assert_eq(_game.menu.page, "conversation")
+	for button in _game.menu._buttons:
+		if button.text == "Discuss class selection":
+			button.grab_focus()
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "marshal")
 	var choices: Array[String] = []
@@ -650,9 +655,11 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.selected_class, &"Druid")
 	assert_null(_game.world.hero.find_skill(&"wrath_1"))
-	_game.world.player_tile = Vector2i(18, 16)
+	_game.world.player_tile = Vector2i(12, 14)
 	_game.refresh_view()
 	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "conversation")
+	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trainer")
 	await _tap_key(KEY_ENTER)
 	assert_not_null(_game.world.hero.find_skill(&"wrath_1"))
@@ -738,7 +745,7 @@ func test_fireball_with_insufficient_mana_reports_the_cost_instead_of_no_target(
 func test_supply_chest_keyboard_looting_is_free_and_empty_chest_cannot_duplicate_rewards() -> void:
 	var chest := _game.world.actors[-1]
 	assert_true(chest.chest)
-	_game.world.player_tile = chest.tile + Vector2i.RIGHT
+	_game.world.player_tile = chest.tile + Vector2i.LEFT
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "loot")
@@ -786,10 +793,12 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 
 
 func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
-	_game.world.player_tile = Vector2i(17, 19)
+	_game.world.player_tile = Vector2i(17, 17)
 	_game.world.hero.copper = 200
 	_game.refresh_view()
 	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "conversation")
+	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quantity")
@@ -801,7 +810,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.inventory[0].id, 2139)
 	assert_eq(_game.world.hero.copper, 143)
-	assert_eq(_game.world.player_tile, Vector2i(17, 19))
+	assert_eq(_game.world.player_tile, Vector2i(17, 17))
 	assert_eq(_game.world.turn_count, 0)
 
 
@@ -868,3 +877,68 @@ func test_inventory_hud_button_shows_binding_and_opens_menu_without_time() -> vo
 	_game.menu.options.apply_bindings()
 	_game.refresh_view()
 	assert_string_contains(button.text, "Inventory (B)")
+
+
+func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_time() -> void:
+	_game.world.player_tile = Vector2i(21, 15)
+	_game.refresh_view()
+	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "conversation")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "quest_detail")
+	await _tap_key(KEY_ENTER)
+	assert_true(_game.world.quests.has("783"))
+	assert_true(_game.world.ever_accepted_quest)
+	assert_false(_game.menu.visible, "No remaining conversation choices return to play.")
+	await _tap_key(KEY_J)
+	assert_eq(_game.menu.page, "quests")
+	assert_string_contains(_game.menu._buttons[0].text, "In progress")
+	var position := _game.world.player_tile
+	await _tap_key(KEY_S)
+	assert_eq(_game.world.player_tile, position)
+	await _tap_key(KEY_ESCAPE)
+	_game.world.player_tile = Vector2i(19, 13)
+	_game.refresh_view()
+	await _tap_key(KEY_F)
+	assert_true(QuestRules.ready(_game.world, "783"))
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "quest_detail")
+	await _tap_key(KEY_ENTER)
+	assert_true(_game.world.quests["783"].handed_in)
+	assert_eq(_game.world.hero.experience, 40)
+	# First follow-up at the marshal is Kobold Camp Cleanup.
+	await _tap_key(KEY_ENTER)
+	await _tap_key(KEY_ENTER)
+	assert_true(_game.world.quests.has("7"))
+	await _tap_key(KEY_ESCAPE)
+	await _tap_key(KEY_J)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "quest_detail")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "confirm")
+	await _tap_key(KEY_ESCAPE)
+	assert_true(_game.world.quests.has("7"), "Cancel abandonment preserves the quest.")
+	await _tap_key(KEY_ENTER)
+	await _tap_key(KEY_ENTER)
+	assert_false(_game.world.quests.has("7"))
+	assert_true(_game.world.ever_accepted_quest)
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_quest_pages_scroll_and_mouse_open_log_at_minimum_size() -> void:
+	_game.menu.open_options()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for button in _game.menu._buttons:
+		if button.text.begins_with("Quest log"):
+			await _click_button(button)
+			break
+	assert_eq(_game.menu.page, "quests")
+	_game.menu._quest_detail("18", null)
+	_game.menu._buttons[-1].grab_focus()
+	for frame in range(4):
+		await get_tree().process_frame
+	assert_true(_game.menu._panel.get_global_rect().encloses(
+		_game.menu._buttons[-1].get_global_rect()))
+	assert_true(Rect2(0, 0, 640, 360).encloses(_game.menu._panel.get_global_rect()))
+	assert_eq(_game.world.turn_count, 0)

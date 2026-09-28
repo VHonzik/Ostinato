@@ -5,6 +5,7 @@ extends Control
 signal action_taken
 signal selection_changed(actor: GridActor)
 signal service_requested(service: StringName)
+signal conversation_requested(actor: GridActor)
 signal loot_requested(source: GridActor)
 
 enum Mode { SELECT, CONFIRM_ATTACK, SPELL }
@@ -153,6 +154,11 @@ func _interact_selected() -> void:
 			close()
 			loot_requested.emit(source)
 			return
+	if selected.alive and _world.northshire and selected.relationship == GridActor.Relationship.FRIENDLY:
+		var contact := selected
+		close()
+		conversation_requested.emit(contact)
+		return
 	if selected.alive and selected.service != &"":
 		var service := selected.service
 		close()
