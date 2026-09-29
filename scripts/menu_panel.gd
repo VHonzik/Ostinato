@@ -71,6 +71,8 @@ func open_main() -> void:
 func open_options() -> void:
 	_begin("options", "Options", close if active_game else open_main)
 	_button("Save / Load" if active_game else "Load", open_slots)
+	if active_game:
+		_button("Quest log (" + options.key_label(&"quest_log") + ")", open_quest_log)
 	_button("Keybindings", open_bindings)
 	_button("Fullscreen: %s" % ("On" if options.fullscreen else "Off"), toggle_fullscreen)
 	_button("Relationship palette: %s" % (
@@ -504,3 +506,103 @@ func _ensure_button_visible(button: Button) -> void:
 	await get_tree().process_frame
 	if is_instance_valid(button) and _rows.is_ancestor_of(button):
 		(_rows.get_parent() as ScrollContainer).ensure_control_visible(button)
+
+
+func open_conversation(actor: GridActor) -> void:
+	if not QuestRules.in_range(session.world, actor, actor.npc_id):
+		close()
+		return
+	QuestRules.event(session.world, "talk", str(actor.npc_id))
+	_begin("conversation", actor.title, close)
+	_label(NorthshireZone.greeting(actor.npc_id))
+	var choices := false
+	for identifier in QuestData.QUESTS:
+		var quest: Dictionary = QuestData.QUESTS[identifier]
+		if QuestRules.available(session.world, identifier) and int(quest.giver) == actor.npc_id:
+			_quest_button(identifier, "Available: ", _quest_detail.bind(identifier, actor))
+			choices = true
+		elif (session.world.quests.has(identifier)
+			and not session.world.quests[identifier].handed_in
+			and int(quest.receiver) == actor.npc_id):
+			_quest_button(identifier, "Ready: " if QuestRules.ready(session.world, identifier)
+				else "In progress: ", _quest_detail.bind(identifier, actor))
+			choices = true
+	if actor.service == &"Marshal":
+		_button("Discuss class selection", open_marshal)
+		choices = true
+	elif actor.service == &"Trader":
+		_button("Trade", open_trade)
+		choices = true
+	elif actor.service in [&"Mage", &"Druid"]:
+		_button("Train", open_trainer.bind(actor.service))
+		choices = true
+	if not choices:
+		session.world.add_message(session.world.interact(actor))
+		close()
+	else:
+		_button("Leave (Esc)", close)
+		_finish()
+	refreshed.emit()
+
+
+func open_quest_log() -> void:
+	_begin("quests", "Quest log", close)
+	var count := 0
+	for identifier in session.world.quests:
+		if not session.world.quests[identifier].handed_in:
+			count += 1
+			_quest_button(identifier, "Ready: " if QuestRules.ready(session.world, identifier)
+				else "In progress: ", _quest_detail.bind(identifier, null))
+	if count == 0:
+		_label("No active quests. Speak to Deputy Willem beside the abbey.")
+	_button("Close (Esc)", close)
+	_finish()
+
+
+func _quest_button(identifier: String, prefix: String, action: Callable) -> void:
+	var quest: Dictionary = QuestData.QUESTS[identifier]
+	var band := QuestRules.difficulty(int(quest.level), session.world.hero.level)
+	var button := _button("%s%s [%s]" % [prefix, quest.title, band], action)
+	var colors := {"Gray": Color.GRAY, "Green": Color("#70d779"),
+		"Yellow": Color("#ffdd66"), "Orange": Color("#ffa34d"), "Red": Color("#ff7777")}
+	button.add_theme_color_override("font_color", colors[band])
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+
+func _quest_detail(identifier: String, actor: GridActor) -> void:
+	var back := open_quest_log if actor == null else open_conversation.bind(actor)
+	var world := session.world
+	var quest: Dictionary = QuestData.QUESTS[identifier]
+	_begin("quest_detail", quest.title, back)
+	_label("Level %d / %s. Return to %s." % [quest.level,
+		QuestRules.difficulty(int(quest.level), world.hero.level),
+		NorthshireZone.npc_name(int(quest.receiver))])
+	for index in range(quest.objectives.size()):
+		var objective: Dictionary = quest.objectives[index]
+		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0
+		_label("%s: %d/%d" % [QuestRules.objective_label(objective), amount, objective.count])
+	_label("Reward: %d XP, %s." % [QuestRules.experience(int(quest.xp),
+		int(quest.level), world.hero.level), InventoryRules.money(int(quest.copper))])
+	if QuestRules.available(world, identifier) and actor != null:
+		_button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor), back))
+	elif world.quests.has(identifier) and not world.quests[identifier].handed_in:
+		if QuestRules.ready(world, identifier):
+			_label("Objectives complete — ready for hand-in.")
+			if actor != null and actor.npc_id == int(quest.receiver):
+				if quest.choices.is_empty():
+					_button("Hand in", _transaction.bind(
+						QuestRules.hand_in.bind(world, identifier, actor), back))
+				else:
+					for item in quest.choices:
+						_button("Choose " + String(ItemData.get_item(int(item)).title),
+							_transaction.bind(QuestRules.hand_in.bind(
+								world, identifier, actor, int(item)), back))
+		_button("Abandon", func() -> void:
+			confirm("Abandon " + String(quest.title) + "? Quest items and progress will be removed.",
+				_transaction.bind(QuestRules.abandon.bind(world, identifier), back),
+				_quest_detail.bind(identifier, actor)))
+	if not quest.choices.is_empty():
+		for item in quest.choices:
+			_label(ItemData.describe(int(item)))
+	_button("Back (Esc)", back)
+	_finish()

@@ -8,7 +8,10 @@ static func assign(world: GridWorld, source: GridActor) -> void:
 	source.loot_assigned = true
 	var generator := RandomNumberGenerator.new()
 	generator.seed = world.seed_value ^ int(source.spawn_id.hash()) ^ 32452843
-	if source.chest:
+	if source.loot_table == 161557:
+		if world.loot_quests.has("3904"):
+			source.loot.append(ItemData.instance(11119))
+	elif source.chest:
 		# Training-ground supplies, explicitly adapted fixture table (DATA-004 M5).
 		source.loot_copper = generator.randi_range(350, 450)
 		source.loot.append(ItemData.instance(4560 if generator.randi_range(0, 1) == 0 else 2139))
@@ -25,6 +28,14 @@ static func assign(world: GridWorld, source: GridActor) -> void:
 		# Roll independently even when the quest is ineligible.
 		if generator.randf() < 0.8 and world.loot_quests.has("wolves"):
 			source.loot.append(ItemData.instance(750))
+	elif source.loot_table in [6, 257, 80, 38, 103]:
+		var profile: Dictionary = NorthshireData.CREATURES[str(source.loot_table)]
+		source.loot_copper = generator.randi_range(int(profile.copper_min), int(profile.copper_max))
+		var quest := "18" if source.loot_table == 38 else "6"
+		var item := 752 if source.loot_table == 38 else 182
+		var rolled := generator.randf() < (0.8 if source.loot_table == 38 else 1.0)
+		if source.loot_table in [38, 103] and rolled and world.loot_quests.has(quest):
+			source.loot.append(ItemData.instance(item))
 
 
 static func collectable(world: GridWorld, item: Dictionary) -> bool:

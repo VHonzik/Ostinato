@@ -1,11 +1,11 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-2 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-3 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalker_arrived",
-	"class_selected", "ever_accepted_quest", "hotbar_locked",
+	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire",
 ]
 const HERO_FIELDS: Array[String] = [
 	"level", "experience", "health", "mana", "selected_class", "copper",
@@ -18,7 +18,7 @@ const ACTOR_FIELDS: Array[String] = [
 	"awards_experience", "corpse_visible", "died_on_turn", "service", "chilled_until",
 	"movement_credit", "story_guard", "stalker", "spawn_id", "loot_table", "loot_assigned",
 	"loot_copper", "chest", "creature_type", "rooted_until", "root_skill",
-	"slowed_until", "polymorphed_until", "polymorphed_on_turn",
+	"slowed_until", "polymorphed_until", "polymorphed_on_turn", "npc_id", "population_slot",
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
@@ -38,6 +38,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"buffs": world.hero.buffs.duplicate(true), "hotbar": [],
 		"periodic": world.periodic_effects.duplicate(true), "messages": Array(world.messages),
 		"hero_swing": [world.hero.swing.remaining, world.hero.swing._active],
+		"quests": world.quests.duplicate(true), "population": world.population.duplicate(true),
 		"vendor_stock": world.vendor_stock.duplicate(true), "loot_quests": Array(world.loot_quests),
 		"cooldowns": world.hero.cooldowns.duplicate(true),
 		"restoration": world.hero.restoration.duplicate(true),
@@ -69,7 +70,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
 		"blocked", "sight", "actors", "learned", "equipment", "inventory",
 		"buffs", "hotbar", "periodic", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances"]
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population"]
 	for key in keys:
 		if not data.has(key):
 			return null
@@ -245,6 +246,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if not message is String:
 			return null
 		world.messages.append(message)
+	if not QuestRules.restore(world, data.quests) or not NorthshireZone.restore(world, data.population):
+		return null
 	world.random.state = int(data.random)
 	world.combat_random.state = int(data.combat_random)
 	return world

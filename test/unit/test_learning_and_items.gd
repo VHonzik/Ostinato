@@ -41,8 +41,15 @@ func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money
 	assert_eq(game.world.vendor_stock["2455"], 3)
 	assert_eq(game.world.hero.cooldowns, {})
 	assert_true(game.select_class(&"Druid"))
-	var target := game.world.actors[5]
-	game.world.player_tile = Vector2i(20, 15)
+	var target: GridActor
+	for actor in game.world.actors:
+		if actor.relationship == GridActor.Relationship.NEUTRAL:
+			target = actor
+			break
+	for direction in GridWorld.DIRECTIONS:
+		if game.world.is_open(target.tile + direction):
+			game.world.player_tile = target.tile + direction
+			break
 	assert_true(game.world.cast_skill(&"fireball_2", target), "Class and current level do not gate casting.")
 	while game.world.pending_skill != null:
 		game.world.continue_cast()

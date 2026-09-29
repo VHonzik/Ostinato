@@ -17,7 +17,7 @@ func new_game(chosen_seed: int = -1) -> void:
 	generator.randomize()
 	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
-	_replace_world(MovementFixture.create_world(seed_value, development_build, true))
+	_replace_world(NorthshireZone.create_world(seed_value, development_build))
 	world.add_message("Loop 1. You awaken as a mage. The marshal waits northwest.")
 
 
@@ -28,7 +28,7 @@ func restart_after_death() -> bool:
 	var hotbar := world.hotbar.duplicate()
 	var locked := world.hotbar_locked
 	loop_count += 1
-	var fresh := MovementFixture.create_world(seed_value, development_build, true)
+	var fresh := NorthshireZone.create_world(seed_value, development_build)
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hotbar = hotbar
 	fresh.hotbar_locked = locked

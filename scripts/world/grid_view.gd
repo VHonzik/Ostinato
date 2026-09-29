@@ -28,6 +28,13 @@ func _draw() -> void:
 			var shade := Color("#243b35") if (x + y) % 2 == 0 else Color("#263e37")
 			if x in range(18, 23) or y in range(13, 16):
 				shade = Color("#494637") if (x + y) % 2 == 0 else Color("#454333")
+			if world.northshire:
+				if world.indoor_tiles.has(tile):
+					shade = Color("#5b554e")
+				elif x >= 34 and y >= 25:
+					shade = Color("#3e4631") if x % 3 == 0 else Color("#574533")
+				if x == 32 and y >= 19 and world.blocked_tiles.has(tile):
+					shade = Color("#305c70")
 			draw_rect(rectangle, shade)
 			if x in range(22, 33) and y in range(15, 24):
 				draw_rect(rectangle.grow(-1), Color("#314e3d"))
@@ -38,6 +45,12 @@ func _draw() -> void:
 					ENVIRONMENT, rectangle, Rect2(Vector2(source * 16), Vector2(16, 16)),
 					Color("#9baf8b")
 				)
+	if world.northshire:
+		for sign in [[Vector2i(16, 13), "Northshire Abbey"],
+			[Vector2i(5, 18), "Wolves"], [Vector2i(29, 10), "Echo Ridge Mine"],
+			[Vector2i(34, 23), "Vineyards"], [Vector2i(43, 10), "Gate overlook"]]:
+			draw_string(ThemeDB.fallback_font, tile_center(sign[0]), sign[1],
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#eddfb7"))
 	# Corpses remain visible under living occupants.
 	for actor in world.actors:
 		if not actor.alive and actor.corpse_visible:

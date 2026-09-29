@@ -4,6 +4,8 @@ extends RefCounted
 ## Array position is stable spawn/turn identity until world recreation (FR-013).
 enum Relationship { FRIENDLY, NEUTRAL, HOSTILE }
 
+var npc_id: int = 0
+var population_slot: int = -1
 var tile: Vector2i
 var home_tile: Vector2i
 var alive: bool = true

@@ -1,7 +1,7 @@
 class_name MovementFixture
 extends RefCounted
 
-## Runnable milestone grounds; the populated Northshire zone arrives in M6.
+## Small movement/combat fixture retained for focused rule tests.
 const SEED: int = 104729
 
 

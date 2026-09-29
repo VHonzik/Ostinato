@@ -13,6 +13,10 @@ class MovementGame <<Node2D>> {
 class CombatPanel <<Control>> {
   mode: SELECT / CONFIRM_ATTACK / SPELL
   selected: GridActor
+  _last_spell_target: GridActor
+  _last_target_type: SkillRank.Target
+  open_spell(world, skill)
+  clear_spell_target()
   open_interaction(world)
   navigate(direction)
   confirm()

@@ -1,0 +1,62 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+class GameSession {
+  new_game(seed)
+  restart_after_death()
+}
+class NorthshireZone {
+  {static} create_world(seed, development): GridWorld
+  {static} tick_population(world)
+  {static} died(world, actor)
+}
+class GridWorld {
+  quests: Dictionary
+  population: Array<Dictionary>
+  loot_quests: Array<String>
+  actors: Array<GridActor>
+  move_player(direction)
+  _check_npc_death(actor)
+}
+class GridActor {
+  npc_id, population_slot: int
+  spawn_id: String
+  loot: Array<Dictionary>
+}
+class QuestData {
+  {static} QUESTS: Dictionary
+}
+class QuestRules {
+  {static} accept(world, id, actor): bool
+  {static} event(world, kind, target)
+  {static} ready(world, id): bool
+  {static} hand_in(world, id, actor, choice): bool
+  {static} abandon(world, id): bool
+}
+class MenuPanel {
+  open_conversation(actor)
+  open_quest_log()
+}
+class InventoryRules {
+  {static} add(inventory, item): bool
+}
+class SaveCodec {
+  {static} capture(session)
+  {static} restore(data, development)
+}
+GameSession --> NorthshireZone : new game / Loop
+NorthshireZone --> GridWorld : create / schedule
+GridWorld *-- GridActor
+GridWorld --> QuestRules : movement / death / conversation
+MenuPanel --> QuestRules : free transactions
+QuestRules --> QuestData
+QuestRules --> GridWorld : counters / eligibility
+QuestRules --> InventoryRules : copy then commit rewards
+SaveCodec --> GridWorld : quests / slots / deadlines
+note bottom of NorthshireZone
+Seed + area + slot + ordinal determine each replacement.
+Blocked placement stays pending; arrivals act next phase.
+end note
+@enduml
