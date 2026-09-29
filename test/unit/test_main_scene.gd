@@ -635,6 +635,110 @@ func test_targeted_spell_keyboard_confirmation_and_cast_cancellation() -> void:
 	assert_eq(_game.world.hero.mana, 165)
 
 
+func test_enemy_spell_target_stays_selected_across_spells_until_it_dies() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.actors.clear()
+	world.population.clear()
+	world.blocked_tiles.clear()
+	world.sight_blockers.clear()
+	var near := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	near.relationship = GridActor.Relationship.NEUTRAL
+	near.health = 1000
+	near.max_health = 1000
+	var far := GridActor.new(world.player_tile + Vector2i(3, 0))
+	far.relationship = GridActor.Relationship.NEUTRAL
+	far.health = 1000
+	far.max_health = 1000
+	far.rooted_until = 100
+	world.actors.append_array([near, far])
+	world.hero.add_experience(2700)
+	assert_eq(world.hero.level, 4)
+	assert_true(world.hero.learn_skill(SkillRank.catalog(&"frostbolt_1")))
+	var fireball := world.hero.find_skill(&"fireball_1")
+	var frostbolt := world.hero.find_skill(&"frostbolt_1")
+	var panel := _game.combat_panel
+
+	panel.open_spell(world, fireball)
+	assert_same(panel.selected, near, "The first cast starts with the nearest valid enemy.")
+	panel.select_tile(far.tile)
+	panel.confirm()
+	assert_same(world.pending_target, far)
+	world.cancel_cast()
+	panel.open_spell(world, fireball)
+	assert_same(panel.selected, far, "The second Fireball remembers the confirmed target.")
+	panel.confirm()
+	assert_same(world.pending_target, far)
+	world.cancel_cast()
+
+	panel.open_spell(world, frostbolt)
+	assert_same(panel.selected, far, "Another enemy spell shares the target.")
+	panel.select_tile(near.tile)
+	panel.cancel()
+	panel.open_spell(world, frostbolt)
+	assert_same(panel.selected, far, "Canceling a new selection keeps the last confirmed target.")
+	panel.cancel()
+	far.alive = false
+	panel.open_spell(world, fireball)
+	assert_same(panel.selected, near, "A dead target falls back to the nearest living enemy.")
+	panel.cancel()
+
+
+func test_switching_spell_target_type_and_loop_reset_clear_target_memory() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.actors.clear()
+	world.population.clear()
+	world.blocked_tiles.clear()
+	world.sight_blockers.clear()
+	var near := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	near.relationship = GridActor.Relationship.NEUTRAL
+	var far := GridActor.new(world.player_tile + Vector2i(3, 0))
+	far.relationship = GridActor.Relationship.NEUTRAL
+	far.rooted_until = 100
+	var ally := GridActor.new(world.player_tile + Vector2i.UP)
+	ally.relationship = GridActor.Relationship.FRIENDLY
+	world.actors.append_array([near, far, ally])
+	assert_true(world.hero.learn_skill(SkillRank.catalog(&"intellect_1")))
+	var panel := _game.combat_panel
+	var fireball := world.hero.find_skill(&"fireball_1")
+	var intellect := world.hero.find_skill(&"intellect_1")
+
+	panel.open_spell(world, fireball)
+	panel.select_tile(far.tile)
+	panel.confirm()
+	world.cancel_cast()
+	panel.open_spell(world, intellect)
+	assert_eq(panel.selected.title, "You", "An ally spell leaves the enemy selection behind.")
+	panel.select_tile(ally.tile)
+	panel.confirm()
+	panel.open_spell(world, intellect)
+	assert_same(panel.selected, ally, "Ally spells also remember a confirmed living ally.")
+	panel.cancel()
+	panel.open_spell(world, fireball)
+	assert_same(panel.selected, near, "Switching back to enemies starts with the nearest.")
+	panel.cancel()
+
+	panel.open_spell(world, fireball)
+	panel.select_tile(far.tile)
+	panel.confirm()
+	world.cancel_cast()
+	_game._cast_skill(&"frost_armor_1")
+	panel.open_spell(world, fireball)
+	assert_same(panel.selected, near, "Choosing a self spell clears the enemy selection.")
+	panel.cancel()
+
+	panel.open_spell(world, fireball)
+	panel.select_tile(far.tile)
+	panel.confirm()
+	world.cancel_cast()
+	assert_true(world.cast_skill(&"death_1"))
+	_game.refresh_view()
+	assert_eq(_game.session.loop_count, 2)
+	assert_null(panel._last_spell_target, "Player death clears target memory.")
+	assert_eq(panel._last_target_type, SkillRank.Target.NONE)
+
+
 func test_marshal_and_trainer_interactions_open_services_without_advancing_time() -> void:
 	_game.world.cast_skill(&"death_1")
 	_game.refresh_view()

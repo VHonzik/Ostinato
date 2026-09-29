@@ -274,6 +274,8 @@ Opening a conversation is free and preserves class-choice eligibility; accepting
 it for the Loop. **J** opens the quest log; Options also provides a mouse control.
 Select a quest to inspect objectives, reward choices and receiver, or abandon it.
 Ready objectives remain in the log until hand-in; reward transactions are atomic.
+Repeated enemy spells preselect the last confirmed living, eligible enemy, including
+across ranks; choosing a non-enemy spell or starting another Loop clears that selection.
 
 Abbey doors lead to single-floor interiors (mage trainer 17,8; Neals 22,7).
 The stable contains the druid trainer (12,15) and supplies (10,16).

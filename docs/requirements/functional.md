@@ -484,12 +484,22 @@ algorithm is mandated.
 ### FR-024 — Target selection
 
 A targeted skill shall enter target selection and automatically select the closest valid
-target, or the only valid target. With none, selection shall exit without casting. Movement
-keys shall navigate multiple candidates directionally with wraparound.
+target, or the only valid target, unless a previously confirmed target of the same spell
+target category remains valid. In that case, preselect that NPC even if another is closer.
+With none, selection shall exit without casting. Movement keys shall navigate multiple
+candidates directionally with wraparound.
 
 Acceptance:
 
-- One valid target is selected; with several, the nearest is selected initially.
+- One valid target is selected; with several and no eligible remembered target, the nearest
+  is selected initially.
+- Confirming an enemy spell on a living NPC makes it the default for later enemy spells,
+  including other ranks, while it remains a valid candidate. The same rule applies to
+  ally spells. Canceling a selector does not replace the remembered target.
+- Choosing a spell of another target category, including self or untargeted, clears the
+  previous selection. A dead target, player death, New Game, or load also clears it.
+  If the remembered NPC is temporarily out of range or sight, choose the nearest valid
+  candidate without forgetting that NPC.
 - Directional selection changes the candidate without moving the player.
 - Navigation past the last candidate in a direction wraps to an eligible candidate.
 - No valid targets produces no spell effect or resource expenditure.

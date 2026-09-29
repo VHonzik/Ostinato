@@ -17,10 +17,13 @@ alt Targeted damage / heal / buff
     Targeting --> Player : Close selector; no time spent
   end
   Targeting -> World : spell_candidates(skill): relationship / range / sight
-  Targeting --> Player : Closest target; Enter casts / Esc cancels
+  Targeting --> Player : Last eligible same-category target, else closest
+  Targeting --> Player : Enter confirms / Esc cancels without changing memory
   Player -> Targeting : Confirm target
+  Targeting -> Targeting : Remember confirmed NPC and target category
   Targeting -> World : cast_skill(id, target)
 else Self / development skill
+  Game -> Targeting : clear_spell_target()
   Game -> World : cast_skill(id)
 end
 World -> World : Validate; start GCD; engage harmful target

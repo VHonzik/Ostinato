@@ -252,6 +252,7 @@ func _adopt_world() -> void:
 	menu.close()
 	hero_panel.close()
 	combat_panel.close()
+	combat_panel.clear_spell_target()
 	world = session.world
 	active_game = true
 	menu.active_game = true
@@ -387,6 +388,7 @@ func _cast_skill(identifier: StringName) -> void:
 		hero_panel.close()
 		combat_panel.open_spell(world, skill)
 	else:
+		combat_panel.clear_spell_target()
 		if not skill.development_only:
 			hero_panel.close()
 		world.cast_skill(identifier)

@@ -16,6 +16,8 @@ var _skill: SkillRank
 var _self_target: GridActor
 var _world: GridWorld
 var _candidates: Array[GridActor] = []
+var _last_spell_target: GridActor
+var _last_target_type: SkillRank.Target = SkillRank.Target.NONE
 var _panel: PanelContainer
 var _heading: Label
 var _detail: Label
@@ -92,6 +94,11 @@ func confirm() -> void:
 		Mode.CONFIRM_ATTACK:
 			_interact_selected()
 		Mode.SPELL:
+			if selected == _self_target or not selected.alive:
+				clear_spell_target()
+			else:
+				_last_spell_target = selected
+				_last_target_type = _skill.target
 			_world.cast_skill(_skill.id, null if selected == _self_target else selected)
 			close()
 			action_taken.emit()
@@ -99,6 +106,11 @@ func confirm() -> void:
 
 func cancel() -> void:
 	close()
+
+
+func clear_spell_target() -> void:
+	_last_spell_target = null
+	_last_target_type = SkillRank.Target.NONE
 
 
 func navigate(direction: Vector2i) -> void:
@@ -201,6 +213,9 @@ func _button(parent: Node, title: String, callback: Callable) -> Button:
 
 
 func open_spell(world: GridWorld, skill: SkillRank) -> void:
+	if (_world != world or _last_target_type != skill.target
+		or (_last_spell_target != null and not _last_spell_target.alive)):
+		clear_spell_target()
 	close()
 	_world = world
 	_skill = skill
@@ -220,7 +235,7 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	if _candidates.is_empty():
 		world.add_message("No valid target for " + skill.title + ".")
 		return
-	selected = _candidates[0]
+	selected = _last_spell_target if _candidates.has(_last_spell_target) else _candidates[0]
 	mode = Mode.SPELL
 	show()
 	_update_selection()
