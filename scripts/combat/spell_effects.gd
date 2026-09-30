@@ -1,10 +1,10 @@
 class_name SpellEffects
 extends RefCounted
 
-## Current mage/druid effects, isolated from input and cast pacing (DATA-002/003 M5).
-static func amount(world: GridWorld, skill: SkillRank, critical: bool = true) -> int:
+## Shared spell effects, isolated from input and cast pacing (DATA-002/003).
+static func amount(world: GridWorld, skill: SkillRank, critical: bool = true, roll: bool = true) -> int:
 	var scaling := maxi(0, mini(world.hero.level, skill.scaling_max) - skill.training_level)
-	var value := world.combat_random.randi_range(skill.minimum, skill.maximum)
+	var value := world.combat_random.randi_range(skill.minimum, skill.maximum) if roll else skill.minimum
 	value += int(scaling * skill.scaling_rate)
 	var power := world.hero.healing_power if skill.effect == SkillRank.Effect.HEAL else world.hero.spell_power
 	value += int(power * skill.coefficient)
@@ -32,18 +32,34 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 						actor.root_skill = skill.id
 		return
 	if skill.target == SkillRank.Target.ENEMY and not _hits(world, skill, target):
+		if skill.effect == SkillRank.Effect.JUDGEMENT:
+			var current := ClassSpellEffects.seal(world.hero)
+			if not current.is_empty():
+				world.hero.buffs.erase(current.key)
+				world.hero.refresh_stats()
+		return
+	if ClassSpellEffects.resolve(world, skill, target):
 		return
 	match skill.effect:
 		SkillRank.Effect.DAMAGE, SkillRank.Effect.CHANNEL:
-			var value := amount(world, skill)
+			var value := amount(world, skill, skill.effect != SkillRank.Effect.CHANNEL or skill.family == &"missiles")
+			if skill.minimum == 0 and skill.maximum == 0:
+				value = 0
+			if skill.school == 1 and target.debuffs.has("crusader"):
+				value += int(int(target.debuffs.crusader.holy_power) * skill.coefficient)
 			if skill.family != &"frostbolt":
 				value = SpellResistance.mitigate(value, resistance(world, skill, target),
 					world.combat_random.randf())
-			damage(world, target, value, skill.title)
+			if value > 0:
+				damage(world, target, value, skill.title)
+			if skill.family == &"earth_shock":
+				target.debuffs["interrupt"] = {"until": world.turn_count + 3}
 			if target.alive:
 				if skill.family == &"frostbolt":
 					target.slowed_until = world.turn_count + 1 + skill.duration
 				_periodic(world, skill, target)
+				if value == 0 and skill.periodic_damage > 0:
+					world.add_message("%s applied to %s." % [skill.title, target.title])
 		SkillRank.Effect.HEAL:
 			var value := amount(world, skill)
 			heal(world, target, value, skill.title)
@@ -76,10 +92,14 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 
 
 static func conjured_quantity(world: GridWorld, skill: SkillRank) -> int:
+	if skill.family == &"healthstone":
+		return 1
 	return clampi(2 + 2 * (world.hero.level - skill.training_level), 2, 20)
 
 
 static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
+	if not ClassSpellEffects.can_apply(world, skill, target):
+		return false
 	if skill.effect == SkillRank.Effect.CONJURE:
 		var trial := world.hero.inventory.duplicate(true)
 		return InventoryRules.add(trial, ItemData.instance(skill.item_id, conjured_quantity(world, skill)))
@@ -108,7 +128,7 @@ static func _hits(world: GridWorld, skill: SkillRank, target: GridActor) -> bool
 	var chance := 96.0 - difference if difference <= 2 else 94.0 - (difference - 2) * 11
 	chance += world.hero.spell_hit
 	var percent := resistance(world, skill, target)
-	if skill.effect in [SkillRank.Effect.ROOT, SkillRank.Effect.POLYMORPH] or skill.family == &"frostbolt":
+	if skill.effect in [SkillRank.Effect.ROOT, SkillRank.Effect.POLYMORPH, SkillRank.Effect.FEAR, SkillRank.Effect.STUN, SkillRank.Effect.CURSE] or skill.family == &"frostbolt":
 		chance -= percent
 	else:
 		chance -= SpellResistance.full_resist_chance(percent)
@@ -120,17 +140,22 @@ static func _hits(world: GridWorld, skill: SkillRank, target: GridActor) -> bool
 
 static func resistance(world: GridWorld, skill: SkillRank, target: GridActor) -> float:
 	var value := int(target.resistances.get(str(skill.school), 0))
-	var binary := skill.effect in [SkillRank.Effect.ROOT, SkillRank.Effect.POLYMORPH] or skill.family == &"frostbolt"
+	var binary := skill.effect in [SkillRank.Effect.ROOT, SkillRank.Effect.POLYMORPH, SkillRank.Effect.FEAR, SkillRank.Effect.STUN, SkillRank.Effect.CURSE] or skill.family == &"frostbolt"
 	return SpellResistance.percent(world.hero.level, target.melee.level, value, binary)
 
 
 static func damage(
 	world: GridWorld, target: GridActor, value: int, title: String,
-	death_turn: int = -1, break_root: bool = true
+	death_turn: int = -1, break_root: bool = true, source: GridActor = null
 ) -> void:
+	value = ClassSpellEffects.absorb(world, target, value, title.begins_with("You ("))
+	if target.relationship != GridActor.Relationship.FRIENDLY:
+		SummonRules.add_threat(world, target, source, value)
 	target.health = maxi(0, target.health - value)
 	if value > 0:
 		target.polymorphed_until = 0
+		if target.feared_until > world.turn_count and world.combat_random.randf() < float(value) / 50.0:
+			target.feared_until = 0
 		var threshold := 50 if target.melee.level <= 8 else 25 * target.melee.level - 150
 		if (break_root and target.rooted_until > world.turn_count
 			and world.combat_random.randf() < float(value) / threshold):
@@ -144,6 +169,15 @@ static func damage(
 
 
 static func heal(world: GridWorld, target: GridActor, value: int, title: String) -> void:
+	var missing := world.hero.max_health - world.hero.health if target == null else target.max_health - target.health
+	var threat := mini(value, missing) / 2
+	var enemies: Array[GridActor] = []
+	for enemy in world.actors:
+		if enemy.alive and enemy.engaged and enemy.relationship == GridActor.Relationship.HOSTILE:
+			enemies.append(enemy)
+	if not enemies.is_empty():
+		for enemy in enemies:
+			SummonRules.add_threat(world, enemy, null, threat / enemies.size())
 	if target == null:
 		world.hero.health = mini(world.hero.max_health, world.hero.health + value)
 	else:
@@ -154,6 +188,8 @@ static func heal(world: GridWorld, target: GridActor, value: int, title: String)
 static func _periodic(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
 	if skill.periodic_damage <= 0:
 		return
+	if skill.family == &"curse_of_agony":
+		ClassSpellEffects.remove_curse(world, target)
 	var identity := -1 if target == null else world.actors.find(target)
 	for effect in world.periodic_effects.duplicate():
 		var previous := SkillRank.catalog(StringName(effect.get("skill", "fireball_1")))
@@ -203,6 +239,13 @@ static func tick(world: GridWorld) -> void:
 			continue
 		if world.turn_count >= int(effect.next):
 			var value := int(effect.get("amount", 1))
+			if skill.family == &"curse_of_agony":
+				var tick_index := 12 - int(effect.remaining)
+				# Integer cumulative differences preserve the source total of 84.
+				if tick_index < 4:
+					value = int((tick_index + 1) * value * 0.5) - int(tick_index * value * 0.5)
+				elif tick_index >= 8:
+					value = int((tick_index + 1) * value * 1.5) - int(tick_index * value * 1.5)
 			if skill.effect == SkillRank.Effect.HEAL_OVER_TIME:
 				heal(world, actor, value, skill.title)
 			else:

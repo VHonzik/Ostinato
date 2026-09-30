@@ -30,6 +30,7 @@ func restart_after_death() -> bool:
 	loop_count += 1
 	var fresh := NorthshireZone.create_world(seed_value, development_build)
 	fresh.hero.learned_skills.assign(learned)
+	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar
 	fresh.hotbar_locked = locked
 	_replace_world(fresh)
@@ -43,7 +44,7 @@ func can_select_class() -> bool:
 
 
 func select_class(category: StringName) -> bool:
-	if (not can_select_class() or category not in [&"Mage", &"Druid"]
+	if (not can_select_class() or category not in ClassSkillData.CLASSES
 		or category == world.hero.selected_class):
 		return false
 	if not StarterGear.exchange(world.hero, category):

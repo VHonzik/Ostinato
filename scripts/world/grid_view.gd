@@ -66,7 +66,13 @@ func _draw() -> void:
 			var color: Color = [Color("#9acd95"), Color("#e8c979"), Color("#ee7871")][actor.relationship]
 			if alternate_palette:
 				color = [Color("#56B4E9"), Color("#F0E442"), Color("#D55E00")][actor.relationship]
-			_draw_character(actor.tile, Vector2i(0, 0), color)
+			if actor.summon_kind in ["earth", "fire"]:
+				var totem_color := Color("#cf884c") if actor.summon_kind == "earth" else Color("#ffb75a")
+				draw_rect(Rect2(tile_center(actor.tile) - Vector2(3, 6), Vector2(6, 12)), totem_color)
+				draw_line(tile_center(actor.tile) - Vector2(5, 3), tile_center(actor.tile) + Vector2(5, -3), color, 2)
+			else:
+				var sprite := Vector2i(5 if actor.npc_id == 416 else 6, 4) if actor.summon_kind == "pet" else Vector2i(0, 0)
+				_draw_character(actor.tile, sprite, color)
 			if actor.polymorphed_until > world.turn_count:
 				draw_circle(tile_center(actor.tile), 5, Color.WHITE)
 			if actor.rooted_until > world.turn_count:
@@ -84,7 +90,7 @@ func _draw() -> void:
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2(16, 16))
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_character(world.player_tile,
-		Vector2i(4, 0) if world.hero.selected_class == &"Druid" else Vector2i(3, 0),
+		Vector2i(3 + ClassSkillData.CLASSES.find(world.hero.selected_class), 0),
 		Color("#d8f2ef"))
 
 

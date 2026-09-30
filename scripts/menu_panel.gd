@@ -126,7 +126,7 @@ func open_marshal() -> void:
 	_begin("marshal", "Marshal McBride", close)
 	_label("The Legion has reached Northshire. Do I know you? These clothes may help.")
 	if session.can_select_class():
-		for category: StringName in [&"Mage", &"Druid"]:
+		for category: StringName in ClassSkillData.CLASSES:
 			if category == session.world.hero.selected_class:
 				continue
 			_button("Choose " + String(category), _select_class.bind(category))
@@ -533,7 +533,7 @@ func open_conversation(actor: GridActor) -> void:
 	elif actor.service == &"Trader":
 		_button("Trade", open_trade)
 		choices = true
-	elif actor.service in [&"Mage", &"Druid"]:
+	elif actor.service in ClassSkillData.CLASSES:
 		_button("Train", open_trainer.bind(actor.service))
 		choices = true
 	if not choices:

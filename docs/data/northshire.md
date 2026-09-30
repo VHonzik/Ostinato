@@ -46,6 +46,10 @@ Dialogue and objective labels are original paraphrase.
 | 3904 | Milly's Harvest | 2 / 4 | 3903 | 8 harvest 11119 | 180 / 0 |
 | 3905 | Grape Manifest | 2 / 4 | 3904 | Deliver 11125, talk to Neals 952 | 360 / 0, item choice |
 | 3104 | Glyphic Letter | 1 / 1 | 7, mage | Deliver 9571, talk to Khelden 198 | 40 / 0 |
+| 3101 | Consecrated Letter | 1 / 1 | 7, paladin | Deliver 9570 to Sammuel 925 | 40 / 0 |
+| 3103 | Hallowed Letter | 1 / 1 | 7, priest | Deliver 9548 to Anetta 375 | 40 / 0 |
+| 3105 | Tainted Letter | 1 / 1 | 7, warlock | Deliver 9576 to Drusilla 459 | 40 / 0 |
+| shaman_referral | A Shaman at the Abbey | 1 / 1 | 7, shaman | Talk to added trainer | 40 / 0 |
 | druid_referral | A Druid at the Abbey | 1 / 1 | 7, druid | Talk to added trainer | 40 / 0 |
 | gate_survey | Watch the Northshire Gate | 1 / 2 | 783 | Overlook and Willem | 85 / 0 |
 
@@ -108,7 +112,7 @@ Also present: 1212 Bishop Farthing, 375 Anetta, 925 Sammuel, 459 Drusilla, 915 J
 911 Llane, 152 Danil, 190 Dermot, 1213 Godric, 78 Janos, 11940 Merissa,
 6373 Dane, 951 Paxton, 11260 peasant, 5403 stallion, and 1642 Northshire guard.
 Added counterparts: druid trainer 900001, shaman visitor 900002, supply trader 900003.
-Mage/druid training remains functional; the other supported classes belong to M7.
+M7 adds active priest/paladin/warlock/shaman training; all six supported classes now train.
 Warrior/rogue trainers are ambient contacts only.
 
 The guard begins alive and is killed by the existing first-stalker story event.
@@ -149,15 +153,15 @@ Ineligible opening never adds quest loot retroactively.
 ## Exclusions and remaining final inventory
 
 The bounded content inventory covers the enclosed valley, abbey/mine/vineyard and gate.
-The tables and source-ID data above describe M6; these explicit gaps remain for M7/M8:
+The tables and source-ID data above describe M6; these explicit gaps remain for M8:
 
 - Exclude outbound 54 Report to Goldshire and 2158 Rest and Relaxation and their outside
   receivers. Falkhaan 6774's outside-gate travel role is omitted.
 - Exclude 3100 Simple Letter and 3102 Encrypted Letter (warrior/rogue), later class quests,
   and source Imp unlock quest under FR-018. Profession lessons, weapon grinding,
   spirit resurrection and repair services do not apply to the Loop game.
-- M7: referrals 3101/3103/3105 for paladin/priest/warlock, an adapted shaman referral,
-  active trainers and included summon exceptions.
+- M7 completed referrals 3101/3103/3105 for paladin/priest/warlock, an adapted shaman
+  referral, active trainers and included summon exceptions; see [DATA-003](renaissance.md).
 - M8 final content audit: distinct source merchant stock for Danil/Dermot/Godric/Janos/
   Merissa; remaining ordinary/reference/world-drop and chest tables; ambient rabbits,
   deer/fawns, mine spiders and remaining guard/peasant copies; terrain/art refinement.
@@ -167,9 +171,10 @@ The tables and source-ID data above describe M6; these explicit gaps remain for 
 
 ## Persistence and implementation shape
 
-Demo revision **3** adds quests/counters/handed-in state, population slots/ordinals/
+M6 demo revision **3** added quests/counters/handed-in state, population slots/ordinals/
 deadlines, source NPC IDs, and the Northshire marker. Revisions 1 and 2 are incompatible
-and preserved unchanged; no migration is claimed. Restore validates a separate world.
+and preserved unchanged; no migration is claimed. M7 now uses revision **4**.
+Restore validates a separate world.
 Loop reset returns to seeded ordinal zero and clears quests, preserving learned ranks.
 
 QuestRules keeps eligibility and atomic rewards out of UI handlers and the turn scheduler;

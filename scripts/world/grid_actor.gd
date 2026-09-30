@@ -43,6 +43,25 @@ var root_skill: StringName = &""
 var slowed_until: int = 0
 var polymorphed_until: int = 0
 var polymorphed_on_turn: int = 0
+var summon_kind: String = ""
+var summon_skill: StringName = &""
+var expires_turn: int = 0
+var mana: int = 0
+var max_mana: int = 0
+var summon_target: int = -1
+var ability_ready: float = 0.0
+var secondary_ready: int = 0
+var last_mana_turn: int = -5
+var feared_until: int = 0
+var stunned_until: int = 0
+var weakened_until: int = 0
+var forbearance_until: int = 0
+var aura_armor: int = 0
+var aura_strength: int = 0
+var aura_stamina: int = 0
+var aura_reduction: int = 0
+var threat: Dictionary = {}
+var debuffs: Dictionary = {}
 
 
 func _init(start_tile: Vector2i, area: Rect2i = Rect2i()) -> void:

@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-3 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-4 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalker_arrived",
@@ -11,6 +11,7 @@ const HERO_FIELDS: Array[String] = [
 	"level", "experience", "health", "mana", "selected_class", "copper",
 	"casting_credit", "last_mana_turn", "facing", "potion_ready_turn",
 	"spell_power", "healing_power", "spell_hit", "spell_critical", "haste",
+	"weakened_until", "forbearance_until", "healthstone_ready_turn",
 ]
 const ACTOR_FIELDS: Array[String] = [
 	"tile", "home_tile", "alive", "wander_area", "title", "relationship", "engaged",
@@ -19,6 +20,9 @@ const ACTOR_FIELDS: Array[String] = [
 	"movement_credit", "story_guard", "stalker", "spawn_id", "loot_table", "loot_assigned",
 	"loot_copper", "chest", "creature_type", "rooted_until", "root_skill",
 	"slowed_until", "polymorphed_until", "polymorphed_on_turn", "npc_id", "population_slot",
+	"summon_kind", "summon_skill", "expires_turn", "mana", "max_mana", "summon_target",
+	"aura_armor", "aura_strength", "aura_stamina", "aura_reduction",
+	"ability_ready", "secondary_ready", "last_mana_turn", "feared_until", "stunned_until", "weakened_until", "forbearance_until",
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
@@ -43,6 +47,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"cooldowns": world.hero.cooldowns.duplicate(true),
 		"restoration": world.hero.restoration.duplicate(true),
 		"resistances": world.hero.resistances.duplicate(true), "indoors": [],
+		"debuffs": world.hero.debuffs.duplicate(true),
 	}
 	for tile in world.indoor_tiles:
 		data.indoors.append([tile.x, tile.y])
@@ -60,6 +65,7 @@ static func capture(session: GameSession) -> Dictionary:
 			"swing": [actor.swing.remaining, actor.swing._active],
 			"buffs": actor.buffs.duplicate(true), "loot": actor.loot.duplicate(true),
 			"resistances": actor.resistances.duplicate(true),
+			"threat": actor.threat.duplicate(true), "debuffs": actor.debuffs.duplicate(true),
 		})
 	return data
 
@@ -70,7 +76,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
 		"blocked", "sight", "actors", "learned", "equipment", "inventory",
 		"buffs", "hotbar", "periodic", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population"]
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population", "debuffs"]
 	for key in keys:
 		if not data.has(key):
 			return null
@@ -92,8 +98,10 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.hero.level < 1
 		or world.hero.experience < 0 or world.hero.copper < 0
 		or world.hero.haste <= 0 or world.hero.potion_ready_turn < 0
+		or world.hero.weakened_until < 0 or world.hero.forbearance_until < 0
+		or world.hero.healthstone_ready_turn < 0
 		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
-		or world.hero.selected_class not in [&"Mage", &"Druid"]):
+		or world.hero.selected_class not in ClassSkillData.CLASSES):
 		return null
 	world.hero._apply_level_stats()
 	if world.hero.experience >= world.hero.experience_to_next_level():
@@ -109,7 +117,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if not data.actors is Array or data.actors.size() > 1000:
 		return null
 	for record in data.actors:
-		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "resistances"])):
+		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "resistances", "threat", "debuffs"])):
 			return null
 		var actor := GridActor.new(Vector2i.ZERO)
 		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
@@ -136,6 +144,30 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if not _number_map(record.resistances, 0) or actor.loot_copper < 0:
 			return null
 		actor.resistances = _normalized_numbers(record.resistances)
+		if not _number_map(record.threat, 0) or not _debuffs(record.debuffs):
+			return null
+		for key in record.threat:
+			if not key.is_valid_int() or int(key) < -1 or int(key) >= data.actors.size():
+				return null
+		actor.threat = _normalized_numbers(record.threat)
+		actor.debuffs = _normalized_buffs(record.debuffs)
+		if (actor.summon_kind not in ["", "pet", "earth", "fire"] or actor.mana < 0
+			or actor.mana > actor.max_mana or actor.max_mana < 0 or actor.ability_ready < 0
+			or actor.secondary_ready < 0 or actor.expires_turn < 0
+			or actor.feared_until < 0 or actor.stunned_until < 0
+			or actor.weakened_until < 0 or actor.forbearance_until < 0
+			or actor.summon_target < -1 or actor.summon_target >= data.actors.size()):
+			return null
+		if actor.summon_kind != "":
+			var summon := SkillRank.catalog(actor.summon_skill)
+			if (summon == null or summon.effect != SkillRank.Effect.SUMMON
+				or SummonRules.slot(summon) != actor.summon_kind
+				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience
+				or (actor.summon_kind == "pet" and actor.npc_id !=
+					(416 if summon.family == &"summon_imp" else 1860))):
+				return null
+			if actor.alive and SummonRules.active(world, actor.summon_kind) != null:
+				return null
 		actor.buffs = _normalized_buffs(record.buffs)
 		world.actors.append(actor)
 	if not data.learned is Array or data.learned.size() > 1000:
@@ -177,7 +209,10 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if world.hero.equipment.has("off_hand"):
 		if ItemData.get_item(int(world.hero.equipment.off_hand.id)).weapon:
 			return null
-	world.hero.refresh_stats()
+	if not _debuffs(data.debuffs):
+		return null
+	world.hero.debuffs = _normalized_buffs(data.debuffs)
+	SummonRules.refresh_auras(world)
 	world.hero.health = int(data.hero.health)
 	world.hero.mana = int(data.hero.mana)
 	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health
@@ -347,7 +382,8 @@ static func _buffs(data: Variant) -> bool:
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
 		for stat in buff:
-			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns"]:
+			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns", "regen", "next", "absorb", "physical_immunity",
+				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power"]:
 				return false
 	return true
 
@@ -398,3 +434,15 @@ static func _normalized_numbers(data: Dictionary) -> Dictionary:
 	for key in data:
 		result[key] = int(data[key])
 	return result
+
+
+static func _debuffs(data: Variant) -> bool:
+	if not data is Dictionary or data.size() > 100:
+		return false
+	for key in data:
+		if not key is String or not _number_map(data[key], 0) or not data[key].has("until"):
+			return false
+		for field in data[key]:
+			if field not in ["until", "reduction", "slow", "holy_power", "dispel"]:
+				return false
+	return true

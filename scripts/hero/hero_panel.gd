@@ -100,7 +100,7 @@ func navigate(forward: bool) -> void:
 	# Explicit focus ring keeps Tab and movement keys inside the modal panel.
 	var controls: Array[Control] = [_close, _tabs.get_tab_bar()]
 	for button in _skill_buttons:
-		if button.is_visible_in_tree():
+		if button.is_visible_in_tree() and not button.disabled:
 			controls.append(button)
 	var index := controls.find(get_viewport().gui_get_focus_owner())
 	index = posmod(index + (1 if forward else -1), controls.size())
@@ -119,7 +119,11 @@ func _rebuild_skills() -> void:
 		_tabs.remove_child(child)
 		child.queue_free()
 	var categories: Dictionary[StringName, VBoxContainer] = {}
-	for skill in _hero.learned_skills:
+	var skills := _hero.learned_skills.duplicate()
+	if _hero.find_skill(&"pet_attack") != null:
+		for identifier: StringName in [&"pet_attack", &"pet_follow", &"pet_dismiss"]:
+			skills.append(ClassSkillData.pet_command(identifier))
+	for skill in skills:
 		if not categories.has(skill.class_tab):
 			var scroll := ScrollContainer.new()
 			scroll.name = skill.class_tab
@@ -132,7 +136,10 @@ func _rebuild_skills() -> void:
 			categories[skill.class_tab] = rows
 		var button := Button.new()
 		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
-		button.text += "  ·  %.1fs / %d mana" % [skill.cast_seconds, skill.mana_cost]
+		button.text += "  ·  %s / %d mana" % ["Free" if skill.free_instant or skill.effect == SkillRank.Effect.PET_COMMAND else "%.1fs" % skill.cast_seconds, skill.cost(_hero)]
+		if skill.effect == SkillRank.Effect.PASSIVE:
+			button.text = skill.title + " · Passive (learned)"
+			button.disabled = true
 		button.tooltip_text = skill.description
 		button.set_meta("skill_id", skill.id)
 		button.pressed.connect(_request_cast.bind(skill.id))
@@ -165,11 +172,11 @@ func _focus_tab_content() -> void:
 		var category := StringName(_tabs.get_tab_title(_tabs.current_tab))
 		var remembered: StringName = _last_spell_by_class.get(category, &"")
 		for button in _skill_buttons:
-			if button.is_visible_in_tree() and button.get_meta("skill_id") == remembered:
+			if button.is_visible_in_tree() and not button.disabled and button.get_meta("skill_id") == remembered:
 				button.grab_focus()
 				return
 	for button in _skill_buttons:
-		if button.is_visible_in_tree():
+		if button.is_visible_in_tree() and not button.disabled:
 			button.grab_focus()
 			return
 	_tabs.get_tab_bar().grab_focus()

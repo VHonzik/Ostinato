@@ -343,5 +343,93 @@ const QUESTS: Dictionary = {
 		"copper": 0,
 		"choices": [],
 		"source_item": 0
+	},
+	"3101": {
+		"title": "Consecrated Letter",
+		"level": 1,
+		"minimum": 1,
+		"previous": [
+			"7"
+		],
+		"giver": 197,
+		"receiver": 925,
+		"category": "Paladin",
+		"objectives": [
+			{
+				"kind": "talk",
+				"target": "925",
+				"count": 1
+			}
+		],
+		"xp": 40,
+		"copper": 0,
+		"choices": [],
+		"source_item": 9570
+	},
+	"3103": {
+		"title": "Hallowed Letter",
+		"level": 1,
+		"minimum": 1,
+		"previous": [
+			"7"
+		],
+		"giver": 197,
+		"receiver": 375,
+		"category": "Priest",
+		"objectives": [
+			{
+				"kind": "talk",
+				"target": "375",
+				"count": 1
+			}
+		],
+		"xp": 40,
+		"copper": 0,
+		"choices": [],
+		"source_item": 9548
+	},
+	"3105": {
+		"title": "Tainted Letter",
+		"level": 1,
+		"minimum": 1,
+		"previous": [
+			"7"
+		],
+		"giver": 197,
+		"receiver": 459,
+		"category": "Warlock",
+		"objectives": [
+			{
+				"kind": "talk",
+				"target": "459",
+				"count": 1
+			}
+		],
+		"xp": 40,
+		"copper": 0,
+		"choices": [],
+		"source_item": 9576
+	},
+	"shaman_referral": {
+		"title": "A Shaman at the Abbey",
+		"level": 1,
+		"minimum": 1,
+		"previous": [
+			"7"
+		],
+		"giver": 197,
+		"receiver": 900002,
+		"category": "Shaman",
+		"objectives": [
+			{
+				"kind": "talk",
+				"target": "900002",
+				"count": 1
+			}
+		],
+		"xp": 40,
+		"copper": 0,
+		"choices": [],
+		"source_item": 0
 	}
 }
