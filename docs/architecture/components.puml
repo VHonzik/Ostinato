@@ -19,7 +19,7 @@ component "ItemData + LootData + InventoryRules\nSource values / seeded loot / a
 component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
 component "MenuPanel + GlobalOptions\nMain / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
-component "GridView\nSprites / relationships / selected target" as View
+component "GridView\nShared class / distinct creature sprites\nRelationships / selected target" as View
 component "Validation\nHeadless import, scripts, startup\nGUT 9.7.1 / PlantUML" as Tests
 artifact "user://\nSaves and global options" as Files
 Godot --> Main

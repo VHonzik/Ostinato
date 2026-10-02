@@ -2,6 +2,25 @@ class_name GridView
 extends Node2D
 
 const TILE_SIZE: int = 16
+# Shared by the player and trainer NPCs (FR-018).
+const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
+	&"Mage": Vector2i(3, 0),
+	&"Druid": Vector2i(4, 0),
+	&"Warlock": Vector2i(5, 0),
+	&"Priest": Vector2i(6, 0),
+	&"Shaman": Vector2i(7, 0),
+	&"Paladin": Vector2i(2, 2),
+}
+# Source NPC identity keeps species silhouettes independent of relationship colors.
+const ENEMY_SPRITES: Dictionary[int, Vector2i] = {
+	299: Vector2i(9, 0), # Young Wolf
+	69: Vector2i(0, 4), # Timber Wolf
+	6: Vector2i(0, 5), # Kobold Vermin
+	257: Vector2i(1, 5), # Kobold Worker
+	80: Vector2i(3, 5), # Kobold Laborer
+	38: Vector2i(1, 2), # Defias Thug
+	103: Vector2i(3, 2), # Garrick Padfoot
+}
 const CHARACTERS: Texture2D = preload(
 	"res://assets/spritesheets/scroolospritescharacters_nobg.png"
 )
@@ -16,6 +35,20 @@ var alternate_palette: bool = false
 
 static func tile_center(tile: Vector2i) -> Vector2:
 	return Vector2(tile * TILE_SIZE) + Vector2.ONE * (TILE_SIZE / 2.0)
+
+
+static func class_sprite(category: StringName) -> Vector2i:
+	return CLASS_SPRITES.get(category, CLASS_SPRITES[&"Mage"])
+
+
+static func actor_sprite(actor: GridActor) -> Vector2i:
+	if actor.summon_kind == "pet":
+		return Vector2i(5 if actor.npc_id == 416 else 6, 4)
+	if CLASS_SPRITES.has(actor.service):
+		return class_sprite(actor.service)
+	if actor.stalker:
+		return Vector2i(3, 4)
+	return ENEMY_SPRITES.get(actor.npc_id, Vector2i.ZERO)
 
 
 func _draw() -> void:
@@ -71,8 +104,7 @@ func _draw() -> void:
 				draw_rect(Rect2(tile_center(actor.tile) - Vector2(3, 6), Vector2(6, 12)), totem_color)
 				draw_line(tile_center(actor.tile) - Vector2(5, 3), tile_center(actor.tile) + Vector2(5, -3), color, 2)
 			else:
-				var sprite := Vector2i(5 if actor.npc_id == 416 else 6, 4) if actor.summon_kind == "pet" else Vector2i(0, 0)
-				_draw_character(actor.tile, sprite, color)
+				_draw_character(actor.tile, actor_sprite(actor), color)
 			if actor.polymorphed_until > world.turn_count:
 				draw_circle(tile_center(actor.tile), 5, Color.WHITE)
 			if actor.rooted_until > world.turn_count:
@@ -90,7 +122,7 @@ func _draw() -> void:
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2(16, 16))
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_character(world.player_tile,
-		Vector2i(3 + ClassSkillData.CLASSES.find(world.hero.selected_class), 0),
+		class_sprite(world.hero.selected_class),
 		Color("#d8f2ef"))
 
 

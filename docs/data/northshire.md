@@ -120,6 +120,17 @@ That corpse remains throughout the Loop. Other scripted friendly deaths return a
 home after 30 turns, retrying blocked homes. Ordinary attacks cannot kill friendlies.
 Marshal/guards know of the invasion; Milly/peasants blame bandits; clergy report refugees.
 
+## Enemy presentation
+
+FR-020 uses distinct existing-sheet silhouettes for every included enemy type, selected
+by source NPC ID rather than current relationship. Zero-based 16-pixel cells in
+scroolospritescharacters_nobg.png are: Young Wolf 299 → (9,0), Timber Wolf 69 → (0,4),
+Kobold Vermin 6 → (0,5), Worker 257 → (1,5), Laborer 80 → (3,5), Defias Thug 38 → (1,2),
+Garrick 103 → (3,2). The invasion stalker uses (3,4), identified by its story flag.
+These are presentation counterparts, not claims that the source sheet depicts WoW art.
+Relationship colors, selection outlines, facing and health indicators remain independent
+of these base sprites. Replacements and restored saves derive the same art from actor data.
+
 ## Seeded populations and loot
 
 | Area | Source types | Slots | Tiles |

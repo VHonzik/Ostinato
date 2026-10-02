@@ -370,6 +370,8 @@ Acceptance:
 
 - Every class has a selectable sprite, free starting-skill training, and a sourced inventory
   of included ranks, costs, and prerequisites (DATA-003).
+- Each class trainer uses the same base sprite as the player of that class; the trainer
+  retains its friendly relationship indicator.
 - Exclude druid forms and all form-only abilities, racial actives/passives, and quest-awarded
   skills, except the summon exceptions below. Ignore consumable reagents and casting tools.
 - Warlock Imp and Voidwalker and shaman Earth/Fire totems available by level 10 are included.
@@ -417,6 +419,9 @@ Acceptance:
 - A neutral NPC stays neutral after a blocked movement attempt but becomes hostile when
   explicitly engaged and adopts the hostile presentation.
 - Relationship rules remain the same under alternate palettes (NFR-008).
+- Different enemy creature types use distinct base sprites, including variants within
+  the wolf, kobold, and Defias populations. Changing relationship or palette retains
+  the creature's sprite identity.
 
 Story-driven exceptions remain future design space; no generic faction/event framework is
 required by this reservation.

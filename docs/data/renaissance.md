@@ -247,7 +247,22 @@ quest. It grants no skills or stat growth changes. All classes retain the source
 human-mage baseline under FR-005. New starter item IDs are recorded in ClassItems;
 shaman uses the Vanilla orc starter outfit without racial stats. Acquired equipment
 is preserved; replacement outfit pieces go into inventory if occupied, and insufficient
-space rejects the whole exchange. Distinct existing-sheet sprites identify all six classes.
+space rejects the whole exchange. Player and trainer share each class's base sprite
+from scroolospritescharacters_nobg.png; coordinates below are zero-based 16-pixel cells.
+The Paladin uses an armored humanoid, replacing the earlier creature silhouette after QA.
+Trainer relationship tint remains friendly; the player's outline/tint remains distinct.
+
+| Class | Sprite cell (column, row) |
+| --- | --- |
+| Mage | 3, 0 |
+| Druid | 4, 0 |
+| Warlock | 5, 0 |
+| Priest | 6, 0 |
+| Shaman | 7, 0 |
+| Paladin | 2, 2 |
+
+GridView owns the shared class mapping; class selection and save/load derive presentation
+from current class/service without storing redundant sprite state.
 
 Trainers: Drusilla (29,18), Anetta (23,9), Sammuel (16,10), added shaman (12,17),
 Khelden (17,8), added druid (12,15). Marshal referrals 3105/3103/3101 use source letters

@@ -36,7 +36,11 @@ class GridActor <<RefCounted>> {
   wander_area: Rect2i
 }
 class GridView <<Node2D>> {
+  {static} CLASS_SPRITES
+  {static} ENEMY_SPRITES
   world: GridWorld
+  {static} class_sprite(category): Vector2i
+  {static} actor_sprite(actor): Vector2i
   _draw()
 }
 class HeroState <<RefCounted>>

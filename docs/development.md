@@ -301,6 +301,8 @@ Anetta (23,9), shaman (12,17), Sammuel (16,10). Starting ranks are free. Higher 
 require their source level, previous rank and copper; Development XP/Gold provide
 quick training access. K displays learned ranks by class, including retained ranks
 and passive Parry. A/D switches tabs; Tab/W/S navigates and scrolls the skill list.
+Class trainers match the player's class sprite, including the armored Paladin. Wolves,
+kobold variants, Defias, Garrick and the stalker use distinct enemy silhouettes.
 
 Warlock's Summon Imp is available at level 1. Its Attack, Stop/Follow and Dismiss
 commands appear in the same spell-book tab; command selection is free and the pet
