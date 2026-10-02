@@ -1036,6 +1036,184 @@ resolved FR-012 timing when they replace one-turn development fixtures. Save fai
 compatibility behavior apply when the save system is introduced; migrations are needed
 only when a supported older schema exists.
 
+### Milestone 8 work packages
+
+Audit baseline: `acc2a6a` (merged milestone 7), 2026-10-02. Keep **8 — Final stretch**
+as [one milestone](https://github.com/VHonzik/Ostinato/milestone/8), delivered through these packages.
+This is a delivery breakdown;
+existing FR/NFR criteria remain authoritative. Each feature PR must be runnable and
+testable when merged, including tests, persistence/reset changes, source records and
+affected diagrams. Do not defer these dependencies to a later package.
+
+Working foundations include Loops, six-class training/summons, quests, inventory,
+five-slot saves, global rebinding/fullscreen and alternate relationship colors.
+Hotbar state survives saves/Loops but has no assignment/activation UI. Only the first
+stalker arrives; no completion state exists. The [DATA-004 gap list](../data/northshire.md#exclusions-and-remaining-final-inventory)
+still identifies unfinished merchants, loot/chests and population content.
+Implemented foundations are not claims of final human acceptance.
+
+| Package | Deliverable | Ordering |
+| --- | --- | --- |
+| [M8-A](https://github.com/VHonzik/Ostinato/issues/8) | Stalker victory and terminal effect ordering | Start with the existing first stalker. |
+| [M8-B](https://github.com/VHonzik/Ostinato/issues/9) | Five scheduled stalkers and blocked arrivals | After A; every reinforcement can end the demo. |
+| [M8-C](https://github.com/VHonzik/Ostinato/issues/10) | Five usable hotbar slots | Independent of A/B and content work. |
+| [M8-D](https://github.com/VHonzik/Ostinato/issues/11) | Individual Northshire merchant services | Independent; source catalogs before implementation. |
+| [M8-E](https://github.com/VHonzik/Ostinato/issues/12) | Complete ordinary loot and real treasure chests | Coordinate item data with D and added creatures with F. |
+| [M8-F](https://github.com/VHonzik/Ostinato/issues/13) | Remaining bounded world inventory and presentation | Begin source audit now; reconcile coverage with D/E. |
+| [M8-G](https://github.com/VHonzik/Ostinato/issues/14) | Completed interface and accessibility | Start checks now; finish after A/C/D/F UI changes. |
+| [M8-H](https://github.com/VHonzik/Ostinato/issues/15) | Performance fixtures and measured fixes | Build fixtures now; final measurements follow B/final content/UI, using I's release build. |
+| [M8-I](https://github.com/VHonzik/Ostinato/issues/16) | Windows demo export and automated delivery checks | Establish tooling now; refresh artifact after gameplay/content/performance fixes. |
+
+#### M8-A — Stalker victory and terminal effect ordering
+
+Requirements: FR-006, FR-002, FR-010/013, FR-040/041; NFR-014.
+Evidence: `GridWorld._check_npc_death()` handles ordinary deaths, `_finish_turn()`
+checks player death, and `MovementGame.refresh_view()` immediately resets a dead player.
+There is no completed-attempt state or completion screen.
+
+- Killing any stalker via melee, direct/area/periodic damage, pet, totem or reflected
+  damage stops simulation and shows “Thanks for playing”, with Load and Main Menu.
+- Check terminal results after each resolved effect in stable order. One effect killing
+  player and stalker wins; an earlier effect killing only the player still resets.
+  Stop later effects, actors, regeneration, arrivals and queued UI continuations.
+- Ordinary deaths behave normally; completed attempts cannot resume or save as playable
+  attempts. An earlier valid save loads normally. Test damage paths, simultaneous
+  outcomes, no subsequent effects and repeated callbacks with controlled fixtures.
+
+#### M8-B — Five scheduled stalkers and blocked arrivals
+
+Requirements: FR-029/031/033/048, FR-002/013/041; NFR-013.
+Evidence: `GridWorld._arrive_stalker()` uses one boolean and entry tile;
+`SaveCodec` saves only that first-arrival state.
+
+- Implement turns 15, 215, 395, 555 and 695, distinct stable identities and legal gate
+  positions. Preserve the first guard death/feasting event without repeating it.
+- Blocked arrivals stay pending and announce once on entry; delays never shift later
+  deadlines. Idle real time does nothing; arrivals first act in the next actor phase.
+- Save/load restores deadlines and pending/arrived identities; reset restarts them.
+  Test blocking across several deadlines, the five-arrival limit, population reservations
+  and victory canceling pending arrivals. Declare compatibility if saved state changes.
+
+#### M8-C — Five usable hotbar slots
+
+Requirements: FR-045/046/017/024/043, FR-001/002/041; NFR-003/007.
+Evidence: `GridWorld.hotbar`, `GameSession` and `SaveCodec` preserve five rank IDs
+and lock state; `MovementGame`, `HeroPanel` and `GlobalOptions.ACTIONS` do not expose them.
+
+- Add five visible slots, drag-and-drop and keyboard Assign → 1–5, explicit rank/cost/effect
+  tooltips and a layout lock that still allows activation.
+- Add globally rebindable top-row 1–5 actions distinct from numpad movement. Reuse spell-book
+  targeting/casting and suppress activation while another UI owns input.
+- Test unlearned-rank rejection, unchanged assignments after higher-rank training, locked
+  edits, retention after death/load and empty slots on New Game. Keep keyboard/mouse
+  controls usable at 640 × 360 in this package.
+
+#### M8-D — Individual Northshire merchant services
+
+Requirements: FR-030/038/037/021, FR-002/041; DATA-004; NFR-013.
+Evidence: Danil, Dermot, Godric, Janos and Merissa are ambient `NorthshireZone.NPCS`
+contacts; trading uses a combined fixture and one global stock dictionary.
+
+- Source each required merchant's catalog, prices, quantities and finite/unlimited flags.
+  Carry the interacted merchant identity through UI, transactions and saved stock.
+- Preserve atomic quantity transfers, capacity and free service timing. Finite stock
+  belongs to its merchant, never replenishes within a Loop, and resets on death.
+- Test distinct merchants, exhausted stock, insufficient funds/capacity and save/load.
+  Update DATA-004 and any schema in this package. Retire or explicitly retain the added
+  supply trader with a documented final-content adaptation.
+
+#### M8-E — Complete ordinary loot and real treasure chests
+
+Requirements: FR-027/028/029/030/034/037, FR-002/041; DATA-004; NFR-013.
+Evidence: `LootData.assign()` has a small wolf-junk subset, humanoid copper/quest drops,
+harvest crates and development supplies. Source reference/world-drop tables are deferred.
+
+- Enumerate complete applicable ordinary/reference/world-drop tables for bounded creatures
+  and required treasure objects; source missing item values. Replace the normal-zone
+  development chest with sourced content or an explicit final-content adaptation.
+- Preserve seed/instance/ordinal identity and independence from combat rolls/collection
+  order. Quest eligibility changes only its filter; chests never replenish. Include loot
+  for F's added creatures when their source inventory is resolved.
+- Verify known seeded outcomes, reference-table selection/quantities, full bags, partial
+  collection, quest hand-in/abandonment, reset and saved depleted sources. Update DATA-004
+  coverage/exclusions; development fixtures must not silently become normal rewards.
+
+#### M8-F — Remaining bounded world inventory and presentation
+
+Requirements: FR-020/027/029/030/031/032/035, FR-018 trainer presentation;
+DATA-004; NFR-002/013.
+Evidence: DATA-004 lists rabbits, deer/fawns, mine spiders, guard/peasant copies and
+terrain/art as candidate gaps. The 56 × 44 zone has 25 fixed contacts and 47 population
+slots; that inventory is not proof of complete source coverage.
+
+- Reconcile every in-boundary Classic NPC, quest and necessary object with its counterpart
+  or permitted exclusion. Verify candidate gaps before treating them as confirmed additions.
+  Consult Wowhead and WoW Wiki; record versions, inaccessible sources and adaptations.
+- Implement missing populations/objects and useful terrain/art refinement in runnable slices.
+  Preserve single-floor interiors, doors, quest routes, distinct creature sprites and
+  first-stalker arrival before the earliest ordinary route to the gate.
+- Give repeated fixed NPC types unique instance identities and distinguish the story guard.
+  Preserve the world-NPC budget/five stalker reservations, with summons in addition.
+  Verify seeded placement/replacement, reset/load and quest reachability. Reconcile D/E's
+  merchants/loot in DATA-004 rather than declaring a sample complete.
+
+#### M8-G — Completed interface and accessibility
+
+Requirements: FR-004/021/024/039/042–049; NFR-002/003/007/008/009.
+Evidence: global options, alternate colors and written target relationships already work.
+`GridView` uses static health/corpse indicators; geometry tests do not establish readability.
+
+- Exercise completed keyboard/mouse flows with long dialogue, multiple quest objectives,
+  rank tooltips, full inventory, combat log, hotbar and five occupied saves. Fix clipping,
+  scrolling/focus and stale binding labels at all required sizes/fullscreen transitions.
+- Verify palette updates/persistence and relationship text against light/dark terrain.
+  Supply the playable fixture for human review; protan/deutan simulations support that
+  review but cannot establish acceptance alone.
+- Static indicators may remain. NFR-009 is conditional: if informational blinking is added,
+  share one real-time phase changing every two seconds without catch-up flashes or simulation
+  effects. Do not introduce blinking merely to test it.
+
+#### M8-H — Performance fixtures and measured fixes
+
+Requirements: NFR-004/005/006/013/014/015 and NFR reference fixtures; FR-002/041.
+Evidence: reset/save correctness tests exist, but no documented 256 × 256 benchmark fixture
+or reference-hardware results. `GridView._draw()` visits every map tile; pursuit runs
+per-request breadth-first searches. These are measurement targets, not proven failures.
+
+- Build reproducible 256 × 256 exploration, crowded-combat and late-Loop fixtures, including
+  20 nearby combatants and stress coverage of 100 world NPCs including five stalkers,
+  plus a pet/two totems and the specified inventory/quest/effect/loot/save state.
+- Record seeds, actions, versions/counts and actual hardware/display/build settings.
+  Measure visible FPS, New Game/Load, individual turns and resets with exact NFR repetitions
+  and strict bounds; also measure final content if costlier.
+- Fix measured bottlenecks without changing deterministic outcomes. Include ten consecutive
+  resets as well as restored-fixture resets. Headless tests/arbitrary hardware do not
+  establish reference rendering performance; unavailable measurements remain open.
+
+#### M8-I — Windows demo export and automated delivery checks
+
+Requirements: NFR-001/012, FR-042/046/050; existing project validation rules.
+Evidence: `docs/development.md` says CI/exports are not configured; pinned Godot/GUT and
+`tools/validate.ps1` exist. Saves use `demo` revision 4; revisions 1–3 are explicitly
+incompatible, not unimplemented promised migrations.
+
+- Establish reproducible Windows x64 Compatibility exports with matching Godot 4.7.2
+  templates and commit/version labels. Use the existing full validation entry point locally
+  and in CI, retaining engine/GUT 9.7.1 pins and complete test discovery.
+- Verify release builds hide development skills/tab/inputs. Review fixture speed controls
+  and supply rewards so development shortcuts do not enter ordinary demo play. Record
+  supported save revisions and deliberate compatibility breaks from state/content changes.
+- Exercise exported startup/core controls on Windows 10 22H2 and Windows 11 24H2, recording
+  actual OS builds/drivers. Tooling may land early; refresh the final artifact and checks
+  after gameplay, content, performance and human-playtest fixes.
+
+Closure still requires all applicable final FR/NFR criteria, complete DATA-004 coverage
+and the balance evaluation below. These are known packages, not a claim that every
+acceptance criterion has been exhaustively verified. New gaps belong in the affected
+package or a focused milestone-8 follow-up. Humans decide QA scope, documentation,
+acceptance and merging; no mandatory QA form or sign-off procedure is added. Balance
+goals remain tuning goals, not scripted wins.
+
 ### Balance acceptance for human playtesting
 
 Evaluate this intended experience with a player familiar with Classic combat, initially unfamiliar
