@@ -69,7 +69,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not active_game or menu.visible:
+	if not active_game or menu.visible or world.is_terminal():
 		return
 	if world.pending_skill != null:
 		_melee_delay_seconds -= delta
@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 	if not _pending_action:
 		return
 	_pending_action = false
-	if (world.is_player_dead() or world.pending_melee != null
+	if (world.is_terminal() or world.pending_melee != null
 		or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
 		return
@@ -121,7 +121,7 @@ func _input(event: InputEvent) -> void:
 			menu.handle_key(event)
 			get_viewport().set_input_as_handled()
 			return
-	if menu.visible or not active_game:
+	if menu.visible or not active_game or world.is_terminal():
 		return
 	if world.pending_skill != null:
 		_pending_action = false
@@ -169,14 +169,14 @@ func _input(event: InputEvent) -> void:
 			if not matched:
 				return
 		get_viewport().set_input_as_handled()
-	elif not world.is_player_dead() and get_viewport().gui_get_focus_owner() == null:
+	elif not world.is_terminal() and get_viewport().gui_get_focus_owner() == null:
 		if event.is_action_pressed("character") or event.is_action_pressed("spell_book"):
 			_open_hero_panel(event.is_action_pressed("spell_book"))
 			get_viewport().set_input_as_handled()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if menu.visible or not active_game:
+	if menu.visible or not active_game or world.is_terminal():
 		return
 	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
 		return
@@ -189,7 +189,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		_pending_action = false
 		get_viewport().set_input_as_handled()
 		return
-	if (world.is_player_dead() or world.pending_melee != null
+	if (world.is_terminal() or world.pending_melee != null
 		or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
 		return
@@ -270,8 +270,7 @@ func _adopt_world() -> void:
 
 
 func _return_to_menu() -> void:
-	world.cancel_melee()
-	world.cancel_cast()
+	world.discard()
 	_pending_action = false
 	active_game = false
 	hero_panel.close()
@@ -307,7 +306,21 @@ func _notification(what: int) -> void:
 
 
 func refresh_view() -> void:
-	if world.is_player_dead():
+	world.check_terminal()
+	if world.attempt_state == GridWorld.AttemptState.COMPLETED:
+		_pending_action = false
+		_melee_delay_seconds = 0.0
+		hero_panel.close()
+		combat_panel.close()
+		combat_panel.clear_spell_target()
+		_cancel_attack.hide()
+		$HUD/Top.hide()
+		$HUD/Bottom.hide()
+		grid_view.queue_redraw()
+		if menu.active_game or not menu.visible:
+			menu.open_completion()
+		return
+	if world.attempt_state == GridWorld.AttemptState.PLAYER_DIED:
 		_pending_action = false
 		hero_panel.close()
 		if session.world != world:
@@ -348,7 +361,7 @@ func refresh_view() -> void:
 
 
 func _set_speed(speed: float) -> void:
-	if world.is_player_dead() or world.pending_melee != null or world.pending_skill != null:
+	if world.is_terminal() or world.pending_melee != null or world.pending_skill != null:
 		return
 	world.movement_speed = speed
 	_update_speed_buttons()
@@ -364,7 +377,7 @@ func _update_speed_buttons() -> void:
 
 
 func _open_inventory() -> void:
-	if (not active_game or world.is_player_dead() or world.pending_melee != null
+	if (not active_game or world.is_terminal() or world.pending_melee != null
 		or world.pending_skill != null or combat_panel.visible or hero_panel.visible):
 		return
 	_pending_action = false
@@ -372,7 +385,7 @@ func _open_inventory() -> void:
 
 
 func _open_hero_panel(spell_book: bool) -> void:
-	if (world.is_player_dead() or world.pending_melee != null
+	if (world.is_terminal() or world.pending_melee != null
 		or world.pending_skill != null or combat_panel.visible):
 		return
 	_pending_action = false
@@ -380,6 +393,8 @@ func _open_hero_panel(spell_book: bool) -> void:
 
 
 func _cast_skill(identifier: StringName) -> void:
+	if not active_game or world.is_terminal():
+		return
 	_pending_action = false
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:

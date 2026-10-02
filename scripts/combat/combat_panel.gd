@@ -88,6 +88,8 @@ func close() -> void:
 
 
 func confirm() -> void:
+	if not visible or selected == null or _world == null or _world.is_terminal():
+		return
 	match mode:
 		Mode.SELECT:
 			_choose_selected()

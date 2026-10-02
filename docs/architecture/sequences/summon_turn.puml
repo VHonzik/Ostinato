@@ -23,7 +23,7 @@ Summons -> Actors : Validate / update target or remove pet
 World --> Player : No simulation time
 Player -> World : Commit move / wait / cast boundary
 World -> Actors : Expire totems before occupancy / aggro decisions
-loop Existing stable actor order
+loop Existing stable actor order while attempt active
   alt Enemy
     World -> Summons : enemy_target(world, actor)
     Summons --> World : Player or living summon by threat
@@ -31,9 +31,12 @@ loop Existing stable actor order
   else Pet or totem
     World -> Summons : act(world, actor)
     Summons -> Actors : Follow / cast / swing / pulse if ready
+    Summons -> World : Damage checks terminal outcome after each effect
   end
 end
-World -> Summons : Refresh buffs / auras / caps
+opt Attempt still active
+  World -> Summons : Refresh buffs / auras / caps
+end
 World --> Player : Updated resources, messages and sprites
 Player -> Save : Save outside combat at action boundary
 Save -> World : Capture actor indexes / timers / RNG / learned ranks

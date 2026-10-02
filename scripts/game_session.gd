@@ -22,7 +22,10 @@ func new_game(chosen_seed: int = -1) -> void:
 
 
 func restart_after_death() -> bool:
-	if world == null or not world.is_player_dead():
+	if world == null:
+		return false
+	world.check_terminal()
+	if world.attempt_state != GridWorld.AttemptState.PLAYER_DIED:
 		return false
 	var learned := world.hero.learned_skills.duplicate()
 	var hotbar := world.hotbar.duplicate()
@@ -39,7 +42,7 @@ func restart_after_death() -> bool:
 
 
 func can_select_class() -> bool:
-	return (world != null and loop_count >= 2 and world.hero.level == 1
+	return (world != null and not world.is_terminal() and loop_count >= 2 and world.hero.level == 1
 		and not world.class_selected and not world.ever_accepted_quest)
 
 
@@ -63,8 +66,7 @@ func restore(restored_world: GridWorld, saved_seed: int, saved_loop: int) -> voi
 
 func _replace_world(next_world: GridWorld) -> void:
 	if world != null:
-		world.cancel_melee()
-		world.cancel_cast()
+		world.discard()
 	world = next_world
 	world_changed.emit()
 

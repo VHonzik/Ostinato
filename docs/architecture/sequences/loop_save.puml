@@ -9,7 +9,11 @@ participant "Current GridWorld" as World
 participant SaveStore as Store
 participant SaveCodec as Codec
 database "Five save files" as Disk
-alt Player dies
+alt Stalker dies (including simultaneous player death)
+  World -> World : Latch COMPLETED; cancel pending actions
+  Game -> Menu : open_completion()
+  Menu --> Player : Thanks for playing / Load / Main Menu
+else Player dies first
   World -> World : Stop remaining phase and pending actions
   Game -> Session : restart_after_death()
   Session -> World : Read learned ranks / hotbar
@@ -20,7 +24,7 @@ else Save
   Player -> Menu : Choose slot; confirm overwrite if occupied
   Menu -> Store : save_slot(session, slot, confirmed)
   Store -> World : can_save()
-  alt Combat / pending action / partial turn
+  alt Completed / combat / pending action / partial turn
     Store --> Menu : Reject without writing
   else Valid action boundary
     Store -> Codec : capture(session); validate snapshot
@@ -45,7 +49,7 @@ else Load
   else Valid supported data
     Store -> Codec : Restore separate world, RNG, effects, timers, loot, stock and items
     Store -> Session : restore(world, seed, loop)
-    Session -> World : Cancel abandoned cast / melee
+    Session -> World : discard(): make abandoned attempt inert
     Session -> Game : world_changed
     Game -> Game : Clear queued input; adopt saved world
   end

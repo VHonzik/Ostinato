@@ -16,6 +16,8 @@ static func amount(world: GridWorld, skill: SkillRank, critical: bool = true, ro
 
 
 static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
+	if world.is_terminal():
+		return
 	if skill.effect == SkillRank.Effect.NOVA:
 		for actor in world.actors:
 			if (actor.alive and actor.relationship != GridActor.Relationship.FRIENDLY
@@ -27,6 +29,8 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 					var value := SpellResistance.mitigate(amount(world, skill),
 						resistance(world, skill, actor), world.combat_random.randf())
 					damage(world, actor, value, skill.title)
+					if world.check_terminal():
+						return
 					if actor.alive:
 						actor.rooted_until = world.turn_count + 1 + skill.duration
 						actor.root_skill = skill.id
@@ -52,6 +56,8 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 					world.combat_random.randf())
 			if value > 0:
 				damage(world, target, value, skill.title)
+				if world.check_terminal():
+					return
 			if skill.family == &"earth_shock":
 				target.debuffs["interrupt"] = {"until": world.turn_count + 3}
 			if target.alive:
@@ -148,6 +154,8 @@ static func damage(
 	world: GridWorld, target: GridActor, value: int, title: String,
 	death_turn: int = -1, break_root: bool = true, source: GridActor = null
 ) -> void:
+	if world.is_terminal() or not target.alive:
+		return
 	value = ClassSpellEffects.absorb(world, target, value, title.begins_with("You ("))
 	if target.relationship != GridActor.Relationship.FRIENDLY:
 		SummonRules.add_threat(world, target, source, value)
@@ -166,9 +174,12 @@ static func damage(
 	else:
 		world.add_message("%s -> %s: %d damage." % [title, target.title, value])
 	world._check_npc_death(target, death_turn)
+	world.check_terminal()
 
 
 static func heal(world: GridWorld, target: GridActor, value: int, title: String) -> void:
+	if world.is_terminal():
+		return
 	var missing := world.hero.max_health - world.hero.health if target == null else target.max_health - target.health
 	var threat := mini(value, missing) / 2
 	var enemies: Array[GridActor] = []
@@ -231,6 +242,8 @@ static func _buff(world: GridWorld, skill: SkillRank, target: GridActor) -> void
 
 static func tick(world: GridWorld) -> void:
 	for effect in world.periodic_effects.duplicate():
+		if world.check_terminal():
+			return
 		var actor: GridActor = null if int(effect.actor) == -1 else world.actors[int(effect.actor)]
 		var skill := SkillRank.catalog(StringName(effect.get("skill", "fireball_1")))
 		if actor != null and (not actor.alive or (
@@ -254,6 +267,8 @@ static func tick(world: GridWorld) -> void:
 					percent *= 0.1
 				value = SpellResistance.mitigate(value, percent, world.combat_random.randf())
 				damage(world, actor, value, skill.title, world.turn_count, false)
+			if world.check_terminal():
+				return
 			effect.remaining -= 1
 			effect.next += skill.tick_seconds
 			if effect.remaining == 0 or (actor != null and not actor.alive):

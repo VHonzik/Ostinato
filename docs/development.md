@@ -206,7 +206,7 @@ Mark of the Wild. Die again and use those retained spells from the mage baseline
 The eastern gate is at (54,14). At turn 15 a level-20 stalker enters, kills the guard,
 and idles until ordinary aggro. Blocking the entry delays it until a free boundary.
 Its announcement, actor state, and pending arrival survive load and reset each Loop.
-This is the first-arrival subset; reinforcements and completion remain M8.
+This is the first-arrival subset; reinforcements remain M8-B. M8-A adds completion below.
 
 **Options → Save / Load** offers five slots. Occupied saves show UTC timestamp and
 Loop; overwrite asks for confirmation. Saving is disabled in combat or during a
@@ -318,6 +318,37 @@ and [summon sequence](architecture/sequences/summon_turn.puml).
 Current saves use **demo revision 4**. Revisions 1–3 are preserved and incompatible.
 Save outside combat with active summons, reload, then continue to verify preserved
 pet commands/resources, totem duration and effects. No migration is claimed.
+
+## Milestone 8-A: Stalker victory
+
+Killing any stalker ends the attempt immediately with **Thanks for playing** and
+**Load** / **Main Menu**. Escape cannot resume it. Load opens the existing five slots;
+Back returns to completion, while a valid earlier save resumes normal gameplay.
+Completed attempts cannot create or overwrite saves. Ordinary deaths still start
+the next Loop and retain learned ranks.
+
+[FR-006](requirements/functional.md#fr-006--demo-completion) and FR-013 define the
+terminal ordering directly; no new Classic combat formula is introduced. `GridWorld`
+latches an outcome after each resolved effect. All health changes belonging to one
+effect precede its checkpoint, where a stalker death takes priority over player death.
+An earlier lethal player hit ends the attempt before subsequent Thorns/Lightning Shield
+retaliation, area targets, periodic ticks, actors, regeneration or arrivals. A committed
+player effect still consumes its current turn. Death/completion cancels pending actions;
+world replacement also marks the abandoned world inert so stale callbacks cannot resume it.
+The small attempt-state enum keeps these rules in the existing model, instead of spreading
+independent completion flags through the UI and damage paths.
+
+Save fields remain **demo revision 4**: completion is never written as a playable save.
+A valid pre-M8 revision-4 save already containing a dead stalker opens at completion;
+other valid revision-4 saves resume normally. Revisions 1–3 remain incompatible.
+See [terminal ordering](architecture/sequences/demo_completion.puml).
+
+For a quick controlled completion review, run the GUT UI fixture
+`test_completion_menu_fits_keyboard_navigation_cannot_resume_and_main_menu_works`
+in `test/unit/test_main_scene.gd`; the complete validation includes this fixture,
+all damage paths, simultaneous outcomes, menu continuations and save preservation.
+For normal play, defeat the first stalker at the gate and try Load or Main Menu.
+These fixtures do not establish balance or human visual acceptance.
 
 ## Project layout
 
