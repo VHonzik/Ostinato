@@ -1082,3 +1082,109 @@ func test_six_class_spell_book_scrolls_and_keyboard_reaches_commands_at_minimum_
 	assert_gt(scroll.scroll_vertical, 0)
 	assert_true(scroll.get_global_rect().encloses(dismiss.get_global_rect()))
 	assert_eq(_game.world.turn_count, 0)
+
+
+func _complete_demo_fixture() -> GridWorld:
+	var world := _game.world
+	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	stalker.stalker = true
+	stalker.relationship = GridActor.Relationship.HOSTILE
+	world.actors.append(stalker)
+	SpellEffects.damage(world, stalker, stalker.health, "Victory fixture")
+	_game.refresh_view()
+	return world
+
+
+func test_completion_menu_fits_keyboard_navigation_cannot_resume_and_main_menu_works() -> void:
+	_game._pending_action = true
+	var world := _complete_demo_fixture()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_eq(_game.menu.page, "completion")
+	assert_eq((_game.menu._rows.get_child(0) as Label).text, "Thanks for playing")
+	assert_eq(_game.menu._buttons.size(), 2)
+	assert_eq(_game.menu._buttons[0].text, "Load")
+	assert_eq(_game.menu._buttons[1].text, "Main Menu")
+	var area := Rect2(Vector2.ZERO, Vector2(640, 360))
+	for button in _game.menu._buttons:
+		assert_true(area.encloses(button.get_global_rect()), button.text)
+	assert_false(_game._pending_action)
+	assert_false(_game.hero_panel.visible)
+	assert_false(_game.combat_panel.visible)
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(_game.menu.page, "completion")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "slots")
+	for button in _game.menu._buttons:
+		assert_false(button.text.begins_with("Save"))
+	_game.refresh_view()
+	assert_eq(_game.menu.page, "slots", "Repeated refresh preserves completion navigation.")
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(_game.menu.page, "completion")
+	_game._process(1.0)
+	_game._cast_skill(&"frost_armor_1")
+	assert_eq(world.turn_count, 0)
+	assert_eq(_game.session.loop_count, 1)
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "main")
+	assert_null(_game.session.world)
+	assert_false(_game.active_game)
+
+
+func test_completion_from_item_turn_is_not_replaced_by_transaction_back_callback() -> void:
+	var world := _game.world
+	var stalker := GridActor.new(Vector2i(40, 30))
+	stalker.stalker = true
+	stalker.relationship = GridActor.Relationship.HOSTILE
+	world.actors.append(stalker)
+	world.periodic_effects.append({"actor": world.actors.size() - 1, "skill": "fireball_1",
+		"next": 1, "remaining": 1, "amount": 1000})
+	assert_true(InventoryRules.add(world.hero.inventory, ItemData.instance(118)))
+	_game.menu.open_inventory()
+	_game.menu._transaction(world.consume_item.bind(0), _game.menu.open_inventory)
+	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_eq(_game.menu.page, "completion")
+	assert_true(_game.menu.visible)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+
+func test_completion_load_returns_to_saved_game_and_clears_queued_input() -> void:
+	var directory := "user://test_completion_ui_" + Crypto.new().generate_random_bytes(8).hex_encode()
+	_game.menu.saves = SaveStore.new(directory)
+	assert_true(_game.menu.saves.save_slot(_game.session, 1))
+	var ended := _complete_demo_fixture()
+	_game.menu._buttons[0].pressed.emit()
+	_game.menu._request_load(1)
+	assert_false(_game.menu.visible)
+	assert_eq(_game.world.attempt_state, GridWorld.AttemptState.ACTIVE)
+	assert_ne(_game.world, ended)
+	assert_false(_game._pending_action)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.world.turn_count, 1)
+	assert_eq(ended.turn_count, 0)
+	for file in DirAccess.get_files_at(directory):
+		DirAccess.remove_absolute(directory.path_join(file))
+	DirAccess.remove_absolute(directory)
+
+
+func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act() -> void:
+	_game.menu.open_inventory()
+	var stale := _game.menu._buttons[-1]
+	var world := _game.world
+	var stalker := GridActor.new(Vector2i(40, 30))
+	stalker.stalker = true
+	stalker.health = 0
+	world.actors.append(stalker)
+	world.hero.health = 0
+	world._check_npc_death(stalker)
+	_game.refresh_view()
+	stale.pressed.emit()
+	_game.refresh_view()
+	assert_eq(_game.menu.page, "completion")
+	assert_same(_game.session.world, world)
+	assert_eq(_game.session.loop_count, 1)
+	await get_tree().process_frame
+	await get_tree().process_frame

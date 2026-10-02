@@ -202,7 +202,7 @@ static func absorb(world: GridWorld, target: GridActor, amount: int, physical: b
 
 
 static func retaliate(world: GridWorld, attacker: GridActor, defender: GridActor, amount: int) -> void:
-	if amount <= 0 or not attacker.alive:
+	if world.is_terminal() or amount <= 0 or not attacker.alive:
 		return
 	var buffs := world.hero.buffs if defender == null else defender.buffs
 	if buffs.has(&"lightning_shield_1"):
@@ -218,7 +218,7 @@ static func retaliate(world: GridWorld, attacker: GridActor, defender: GridActor
 
 
 static func on_melee(world: GridWorld, target: GridActor, amount: int) -> void:
-	if amount <= 0 or not target.alive:
+	if world.is_terminal() or amount <= 0 or not target.alive:
 		return
 	var current := seal(world.hero)
 	if not current.is_empty() and current.skill.family == &"seal_of_righteousness":
@@ -232,6 +232,8 @@ static func on_melee(world: GridWorld, target: GridActor, amount: int) -> void:
 		value += int(power * speed * (0.108 if two_handed else 0.092)
 			* (1.0 - (20 - skill.training_level) * 0.0375))
 		SpellEffects.damage(world, target, value, "Seal of Righteousness")
+	if world.check_terminal():
+		return
 	if target.alive and world.hero.buffs.has(&"flametongue_weapon_1"):
 		var enchant: Dictionary = world.hero.buffs[&"flametongue_weapon_1"]
 		if int(enchant.weapon_id) == int(world.hero.equipment.get("main_hand", {}).get("id", 0)):
@@ -240,6 +242,8 @@ static func on_melee(world: GridWorld, target: GridActor, amount: int) -> void:
 			value = SpellResistance.mitigate(value, SpellResistance.percent(world.hero.level,
 				target.melee.level, int(target.resistances.get("2", 0)), false), world.combat_random.randf())
 			SpellEffects.damage(world, target, value, "Flametongue Weapon")
+	if world.check_terminal():
+		return
 	if target.debuffs.has("crusader"):
 		target.debuffs.crusader.until = world.turn_count + 11
 

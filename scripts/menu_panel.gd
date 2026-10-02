@@ -68,7 +68,24 @@ func open_main() -> void:
 	_finish()
 
 
+func open_completion() -> void:
+	active_game = false
+	_begin("completion", "Thanks for playing", Callable())
+	_button("Load", open_slots)
+	_button("Main Menu", func() -> void:
+		return_to_menu_requested.emit()
+		open_main())
+	_finish()
+
+
+func _completed() -> bool:
+	return session.world != null and session.world.attempt_state == GridWorld.AttemptState.COMPLETED
+
+
 func open_options() -> void:
+	if _completed():
+		open_completion()
+		return
 	_begin("options", "Options", close if active_game else open_main)
 	_button("Save / Load" if active_game else "Load", open_slots)
 	if active_game:
@@ -88,7 +105,8 @@ func open_options() -> void:
 
 
 func open_slots() -> void:
-	_begin("slots", "Five save slots", open_options if active_game else open_main)
+	var back := open_completion if _completed() else (open_options if active_game else open_main)
+	_begin("slots", "Five save slots", back)
 	if active_game and not session.world.can_save():
 		_label("Saving unavailable during combat or a pending action. Loading is available.")
 	for slot in range(1, SaveStore.SLOT_COUNT + 1):
@@ -298,11 +316,15 @@ func _quantity_menu(title: String, maximum: int, action: Callable, back: Callabl
 
 
 func _transaction(action: Callable, back: Callable) -> void:
+	if session.world == null or session.world.is_terminal():
+		return
 	var previous := session.world
 	var success: bool = action.call()
 	refreshed.emit()
 	if session.world != previous:
 		close()
+	elif previous.is_terminal():
+		return
 	elif success:
 		back.call()
 	else:
@@ -310,6 +332,9 @@ func _transaction(action: Callable, back: Callable) -> void:
 
 
 func close() -> void:
+	if _completed():
+		open_completion()
+		return
 	hide()
 	_capture_action = &""
 	var focused := get_viewport().gui_get_focus_owner()
@@ -409,7 +434,9 @@ func _label(text: String) -> void:
 func _button(text: String, action: Callable, parent: Node = null) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.pressed.connect(action)
+	button.pressed.connect(func() -> void:
+		if _buttons.has(button):
+			action.call())
 	# Defer until container layout settles, including a wrap from first to last.
 	button.focus_entered.connect(func() -> void:
 		_ensure_button_visible.call_deferred(button))

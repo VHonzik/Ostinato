@@ -139,6 +139,8 @@ static func enemy_target(world: GridWorld, actor: GridActor) -> GridActor:
 
 
 static func act(world: GridWorld, actor: GridActor) -> void:
+	if world.is_terminal():
+		return
 	if actor.expires_turn > 0 and world.turn_count >= actor.expires_turn:
 		remove(world, actor)
 		return
@@ -197,7 +199,7 @@ static func act(world: GridWorld, actor: GridActor) -> void:
 				add_threat(world, target, actor, 45 + maxi(0, mini(actor.melee.level, 15) - 10) * 2)
 				world.add_message("Voidwalker: Torment.")
 			for swing in range(actor.swing.advance(distance == 1 and not ClassSpellEffects.immune(actor.buffs), actor.melee.interval)):
-				if not target.alive:
+				if world.is_terminal() or not target.alive:
 					break
 				actor.facing = MeleeRules.facing_toward(target.tile - actor.tile)
 				var outcome := MeleeRules.outcome(actor.melee, target.melee,

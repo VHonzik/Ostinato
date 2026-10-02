@@ -6,7 +6,7 @@ component "Godot 4.7.2\nCompatibility / InputMap" as Godot
 component "Main / pixel_viewport.gd\nInteger-scaled viewport" as Main
 component "MovementGame\nInput, HUD, paced action boundaries\nCentered camera" as Game
 component "GameSession\nGame seed / Loop / world replacement" as Session
-component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / first stalker" as World
+component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / terminal outcomes" as World
 component "NorthshireZone\nValley / population replacement" as Fixture
 component "QuestRules + QuestData\nObjectives / eligibility / rewards" as Quests
 component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell data" as Hero
@@ -17,7 +17,7 @@ component "TrainerData + ClassSkillData\nSix-class ranks through level 10" as Tr
 component "ClassSpellEffects + SummonRules + SummonData\nClass effects / pet commands / totem auras" as Summons
 component "ItemData + LootData + InventoryRules\nSource values / seeded loot / atomic transfers" as Items
 component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
-component "MenuPanel + GlobalOptions\nMain / services / slots / keybindings" as Menu
+component "MenuPanel + GlobalOptions\nMain / completion / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
 component "GridView\nShared class / distinct creature sprites\nRelationships / selected target" as View
 component "Validation\nHeadless import, scripts, startup\nGUT 9.7.1 / PlantUML" as Tests
@@ -57,7 +57,8 @@ Tests --> Godot
 Tests --> Session
 Tests --> Saves
 note bottom of World
-M7: shared actor order includes pets and totems.
+M8-A: terminal effects stop all later stages.
+Shared actor order includes pets and totems.
 Six-class ranks persist; active summons reset each Loop.
 end note
 @enduml

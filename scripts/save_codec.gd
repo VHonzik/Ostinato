@@ -32,6 +32,8 @@ const MELEE_FIELDS: Array[String] = [
 
 static func capture(session: GameSession) -> Dictionary:
 	var world := session.world
+	if world == null or world.is_terminal():
+		return {}
 	var data := {
 		"seed": str(session.seed_value), "loop": session.loop_count,
 		"world": _fields(world, WORLD_FIELDS), "hero": _fields(world.hero, HERO_FIELDS),
@@ -285,6 +287,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		return null
 	world.random.state = int(data.random)
 	world.combat_random.state = int(data.combat_random)
+	# Pre-M8 revision-4 saves may contain a defeated stalker; reopen as completed.
+	world.check_terminal()
 	return world
 
 
