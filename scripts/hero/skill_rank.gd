@@ -1,8 +1,8 @@
 class_name SkillRank
 extends RefCounted
 
-## DATA-003 mage/druid ranks through level 10. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD }
+## DATA-003 six-class ranks through level 10. Training levels never gate retained-rank use.
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -33,6 +33,9 @@ var coefficient: float = 0.0
 var tick_seconds: int = 0
 var tick_coefficient: float = 0.0
 var item_id: int = 0
+var mana_percent: int = 0
+var detail: String = ""
+var free_instant: bool = false
 
 
 
@@ -57,19 +60,33 @@ static func starting_skills() -> Array[SkillRank]:
 
 static func trainer_skills(category: StringName) -> Array[SkillRank]:
 	var result: Array[SkillRank] = []
-	for identifier in TrainerData.RANKS:
-		if TrainerData.RANKS[identifier].class_tab == String(category):
+	for identifier in all_ranks():
+		if all_ranks()[identifier].class_tab == String(category):
 			result.append(catalog(StringName(identifier)))
 	return result
 
 
+static func all_ranks() -> Dictionary:
+	var ranks := TrainerData.RANKS.duplicate()
+	ranks.merge(ClassSkillData.RANKS)
+	return ranks
+
+
+func cost(hero: HeroState) -> int:
+	return mana_cost + int(HeroData.stats_for_level(hero.level)[6] * mana_percent / 100.0)
+
+
 static func catalog(identifier: StringName) -> SkillRank:
-	if not TrainerData.RANKS.has(String(identifier)):
+	var ranks := all_ranks()
+	if not ranks.has(String(identifier)):
+		var command := ClassSkillData.pet_command(identifier)
+		if command != null:
+			return command
 		for skill in development_skills():
 			if skill.id == identifier:
 				return skill
 		return null
-	var row: Dictionary = TrainerData.RANKS[String(identifier)]
+	var row: Dictionary = ranks[String(identifier)]
 	var skill := SkillRank.new(identifier, row.title, StringName(row.class_tab),
 		row.rank, row.training_level, "", Effect[row.effect])
 	for field in row:
@@ -83,6 +100,11 @@ static func catalog(identifier: StringName) -> SkillRank:
 			skill.set(field, row[field])
 	skill.description = "%s rank %d: %d mana, %.1fs, range %d tiles. " % [
 		skill.title, skill.rank, skill.mana_cost, skill.cast_seconds, skill.range_tiles]
+	if ClassSkillData.RANKS.has(String(identifier)) and skill.detail != "":
+		if skill.mana_percent > 0:
+			skill.description += "%d%% base mana. " % skill.mana_percent
+		skill.description += skill.detail
+		return skill
 	match skill.effect:
 		Effect.DAMAGE, Effect.CHANNEL, Effect.NOVA:
 			skill.description += "%d–%d damage%s. " % [skill.minimum, skill.maximum,
@@ -111,6 +133,9 @@ static func catalog(identifier: StringName) -> SkillRank:
 		skill.description += "Slows movement 40%. "
 	if skill.family == &"frost_armor":
 		skill.description += "Chills melee attackers for 5 turns. "
+	if skill.mana_percent > 0:
+		skill.description += "%d%% of base mana. " % skill.mana_percent
+	skill.description += skill.detail
 	return skill
 
 

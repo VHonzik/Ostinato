@@ -13,12 +13,13 @@ component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell
 component "StarterGear\nOutfit exchange / provenance" as Gear
 component "MeleeRules + MeleeProfile + SwingTimer" as Combat
 component "SpellEffects + SpellResistance\nRank effects / mitigation" as Spells
-component "TrainerData\nMage/druid ranks through level 10" as Training
+component "TrainerData + ClassSkillData\nSix-class ranks through level 10" as Training
+component "ClassSpellEffects + SummonRules + SummonData\nClass effects / pet commands / totem auras" as Summons
 component "ItemData + LootData + InventoryRules\nSource values / seeded loot / atomic transfers" as Items
 component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
 component "MenuPanel + GlobalOptions\nMain / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
-component "GridView\nSprites / relationships / selected target" as View
+component "GridView\nShared class / distinct creature sprites\nRelationships / selected target" as View
 component "Validation\nHeadless import, scripts, startup\nGUT 9.7.1 / PlantUML" as Tests
 artifact "user://\nSaves and global options" as Files
 Godot --> Main
@@ -32,6 +33,8 @@ World --> Hero
 Hero --> Gear
 World --> Combat
 World --> Spells
+World --> Summons
+Spells --> Summons
 World --> Items
 World --> Quests
 Menu --> Quests
@@ -47,14 +50,14 @@ Menu --> Saves : save / load
 Saves --> Session : replace validated world
 Saves --> World : capture / restore
 Menu --> Files : global options
-Saves --> Files : demo revision 3
+Saves --> Files : demo revision 4
 Game --> View
 View --> World
 Tests --> Godot
 Tests --> Session
 Tests --> Saves
 note bottom of World
-M6: populated Northshire, quest objectives and atomic rewards.
-Seeded population slots replenish and survive save/load.
+M7: shared actor order includes pets and totems.
+Six-class ranks persist; active summons reset each Loop.
 end note
 @enduml

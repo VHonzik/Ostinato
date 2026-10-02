@@ -2,8 +2,8 @@
 
 A 2D roguelike inspired by World of Warcraft Classic leveling.
 
-Milestones 1–6 are playable: Northshire exploration and quests, grid movement, combat,
-mage/druid training through level 10, items/trading, persistent learning across deaths,
+Milestones 1–7 are playable: Northshire exploration and quests, grid movement, combat,
+training for all six classes through level 10, pets and totems, items/trading, persistent learning across deaths,
 class selection, five save slots, and the first demon stalker arrival.
 
 Launch from PowerShell 7 with:
@@ -26,12 +26,12 @@ The stable at (7–13,12–18) contains the druid trainer and an equipment suppl
 The trader remains at (16,18).
 
 **K → Development → Death trigger** starts the next Loop. Learned ranks remain;
-quests, loot and seeded populations reset. From Loop 2, the marshal offers druid at
+quests, loot and seeded populations reset. From Loop 2, the marshal offers the other five classes at
 level 1 before any quest acceptance. New population ordinals appear 30 turns after death.
 The gate stalker arrives on turn 15. Saving requires an action boundary outside combat.
 
-Saves use **demo revision 3**. Revision-1/2 saves remain untouched and incompatible.
-Remaining classes, final content coverage, reinforcements and completion belong to
+Saves use **demo revision 4**. Revision-1/2/3 saves remain untouched and incompatible.
+Final content coverage, reinforcements and completion belong to
 later milestones; see the [Northshire inventory](docs/data/northshire.md).
 Windows desktop / Godot Compatibility is the target. Development skills are omitted
 from release builds. CI and exports remain to be established.
@@ -40,6 +40,7 @@ from release builds. CI and exports remain to be established.
 - [Non-functional requirements](docs/requirements/non-functional.md)
 - [Development, dependencies, and validation](docs/development.md)
 - [Milestone 6 source data, adaptations and remaining content](docs/data/northshire.md)
+- [Milestone 7 class, pet and totem data](docs/data/renaissance.md)
 - [GDScript coding style](docs/coding-style.md)
 - [Architecture overview](docs/architecture/components.puml)
 - [Project rules](AGENTS.md)

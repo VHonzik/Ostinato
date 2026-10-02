@@ -61,6 +61,9 @@ class SkillRank <<RefCounted>> {
   target: Target
   mana_cost, range_tiles: int
   cast_seconds: float
+  mana_percent: int
+  free_instant: bool
+  cost(hero): int
 }
 MovementGame --> GridWorld : owns
 MovementGame *-- HeroPanel : modal UI
@@ -75,7 +78,8 @@ DATA-001/002: Vanilla mage rows through 60.
 FR-016: repeat final growth/XP above that range.
 end note
 note bottom of SkillRank
-26 mage/druid ranks through level 10 from TrainerData.
+85 ranks through level 10 from TrainerData / ClassSkillData.
+Includes passive Parry and summons; pet commands are derived.
 Training: selected class, level, previous rank and copper.
 Casting retained ranks is independent of level/class.
 Development: Practice / XP / Gold / Death trigger.

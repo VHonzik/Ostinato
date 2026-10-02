@@ -33,6 +33,14 @@ var resistances: Dictionary = {}
 var cooldowns: Dictionary = {}
 var potion_ready_turn: int = 0
 var restoration: Dictionary = {}
+var weakened_until: int = 0
+var forbearance_until: int = 0
+var healthstone_ready_turn: int = 0
+var aura_strength: int = 0
+var aura_stamina: int = 0
+var aura_armor: int = 0
+var aura_reduction: int = 0
+var debuffs: Dictionary = {}
 
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
@@ -68,10 +76,15 @@ func learn_skill(skill: SkillRank) -> bool:
 	if skill == null or level < skill.training_level or find_skill(skill.id) != null:
 		return false
 	learned_skills.append(skill)
+	refresh_stats()
 	return true
 
 
 func find_skill(identifier: StringName) -> SkillRank:
+	if String(identifier).begins_with("pet_"):
+		for learned in learned_skills:
+			if learned.family in [&"summon_imp", &"summon_voidwalker"]:
+				return ClassSkillData.pet_command(identifier)
 	for skill in learned_skills:
 		if skill.id == identifier:
 			return skill
@@ -96,6 +109,8 @@ func refresh_stats() -> void:
 	for buff in buffs.values():
 		for stat in attributes:
 			attributes[stat] += int(buff.get(stat, 0))
+	attributes.strength += aura_strength
+	attributes.stamina += aura_stamina
 	strength = attributes.strength
 	agility = attributes.agility
 	stamina = attributes.stamina
@@ -117,7 +132,8 @@ func refresh_melee_stats() -> void:
 	melee.player = true
 	melee.level = level
 	melee.attack_power = maxi(0, strength - 10)
-	melee.armor = agility * 2 + armor
+	melee.armor = agility * 2 + armor + aura_armor
+	melee.parry = 5.0 if find_skill(&"parry_1") != null else 0.0
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
 	melee.critical = agility / agility_per_percent
 	melee.dodge = 3.25 + melee.critical
@@ -136,3 +152,12 @@ func refresh_melee_stats() -> void:
 		if shield.shield:
 			melee.block = 5.0
 			melee.block_value = maxi(0, int(shield.block) + floori(strength / 20.0) - 1)
+
+	for key in buffs:
+		var buff: Dictionary = buffs[key]
+		melee.attack_power += int(buff.get("attack_power", 0))
+		if buff.has("weapon_id") and int(buff.weapon_id) == int(equipment.get("main_hand", {}).get("id", 0)):
+			melee.damage_min += float(buff.get("weapon_dps", 0)) * melee.interval
+			melee.damage_max += float(buff.get("weapon_dps", 0)) * melee.interval
+		if buff.has("crusader"):
+			melee.interval /= 1.4

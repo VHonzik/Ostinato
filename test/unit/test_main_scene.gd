@@ -754,7 +754,7 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 	var choices: Array[String] = []
 	for button: Button in _game.menu.find_children("*", "Button", true, false):
 		choices.append(button.text)
-	assert_eq(choices, ["Choose Druid", "Leave (Esc)"])
+	assert_eq(choices, ["Choose Druid", "Choose Warlock", "Choose Priest", "Choose Shaman", "Choose Paladin", "Leave (Esc)"])
 	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Choose Druid")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.selected_class, &"Druid")
@@ -1045,4 +1045,40 @@ func test_quest_pages_scroll_and_mouse_open_log_at_minimum_size() -> void:
 	assert_true(_game.menu._panel.get_global_rect().encloses(
 		_game.menu._buttons[-1].get_global_rect()))
 	assert_true(Rect2(0, 0, 640, 360).encloses(_game.menu._panel.get_global_rect()))
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_six_class_spell_book_scrolls_and_keyboard_reaches_commands_at_minimum_size() -> void:
+	var hero := _game.world.hero
+	hero.level = 10
+	for identifier in SkillRank.all_ranks():
+		hero.learn_skill(SkillRank.catalog(StringName(identifier)))
+	_game.hero_panel.open(hero, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var panel := _game.hero_panel
+	var area := Rect2(0, 0, 640, 360)
+	assert_true(area.encloses(panel._panel.get_global_rect()))
+	assert_true(area.encloses(panel._tabs.get_tab_bar().get_global_rect()))
+	var seen: Array[String] = []
+	for index in range(panel._tabs.get_tab_count()):
+		panel._tabs.current_tab = index
+		seen.append(panel._tabs.get_tab_title(index))
+	for category in ClassSkillData.CLASSES:
+		assert_has(seen, String(category))
+	panel._tabs.current_tab = seen.find("Warlock")
+	for step in range(25):
+		panel.navigate(true)
+		await get_tree().process_frame
+	var dismiss: Button
+	for button in panel._skill_buttons:
+		if button.get_meta("skill_id") == &"pet_dismiss":
+			dismiss = button
+	assert_not_null(dismiss)
+	dismiss.grab_focus()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var scroll := panel._tabs.get_current_tab_control() as ScrollContainer
+	assert_gt(scroll.scroll_vertical, 0)
+	assert_true(scroll.get_global_rect().encloses(dismiss.get_global_rect()))
 	assert_eq(_game.world.turn_count, 0)

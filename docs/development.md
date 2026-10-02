@@ -1,6 +1,6 @@
 # Development
 
-The project runs the milestones 1–6 Northshire zone on Windows with Godot's Compatibility renderer.
+The project runs the milestones 1–7 Northshire zone on Windows with Godot's Compatibility renderer.
 Gameplay follows the [functional](requirements/functional.md) and
 [non-functional](requirements/non-functional.md) requirements. The Git remote is
 [VHonzik/Ostinato](https://github.com/VHonzik/Ostinato); CI and exports are not configured yet.
@@ -289,9 +289,35 @@ stays pending. New Loops restore initial identities/placement/loot. Quest item e
 is captured at death or first chest opening; abandonment/hand-in removes remaining
 quest-only copies from bags and loot. No ordinary loot is rerolled.
 
-Current saves use **demo revision 3**; revisions 1/2 are incompatible and remain unchanged.
+M6 introduced **demo revision 3**; M7 now uses revision 4 (see below).
 Quests, counters, handed-in state, population ordinals/deadlines and remaining loot are
 saved with the existing deterministic world state. No migration is claimed.
+
+## Milestone 7: Renaissance person
+
+The marshal now offers all other supported classes at an eligible Loop-2+ boundary.
+Select Warlock, Priest, Shaman or Paladin, then visit their trainer: Drusilla (29,18),
+Anetta (23,9), shaman (12,17), Sammuel (16,10). Starting ranks are free. Higher ranks
+require their source level, previous rank and copper; Development XP/Gold provide
+quick training access. K displays learned ranks by class, including retained ranks
+and passive Parry. A/D switches tabs; Tab/W/S navigates and scrolls the skill list.
+Class trainers match the player's class sprite, including the armored Paladin. Wolves,
+kobold variants, Defias, Garrick and the stalker use distinct enemy silhouettes.
+
+Warlock's Summon Imp is available at level 1. Its Attack, Stop/Follow and Dismiss
+commands appear in the same spell-book tab; command selection is free and the pet
+acts during subsequent player turns. Shaman totems occupy tiles and replace only
+others of their own element. Learn skills in several Loops, then combine a pet,
+Earth/Fire totems, priest buffs and paladin abilities from the ordinary mage restart.
+Death clears active summons/effects but keeps learned abilities.
+
+The [DATA-003 source record](data/renaissance.md) lists all 59 added ranks, exclusions,
+formulas and adaptations. See [summon classes](architecture/classes/summons.puml)
+and [summon sequence](architecture/sequences/summon_turn.puml).
+
+Current saves use **demo revision 4**. Revisions 1–3 are preserved and incompatible.
+Save outside combat with active summons, reload, then continue to verify preserved
+pet commands/resources, totem duration and effects. No migration is claimed.
 
 ## Project layout
 

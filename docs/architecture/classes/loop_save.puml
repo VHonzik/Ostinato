@@ -85,9 +85,9 @@ SaveStore --> SaveCodec
 SaveStore --> GameSession : validated replacement
 SaveCodec ..> GridWorld : explicit fields
 note bottom of SaveCodec
-Demo revision 3; revisions 1/2 remain untouched/incompatible.
+Demo revision 4; revisions 1-3 remain untouched/incompatible.
 JSON stores RNG int64 values as strings.
-Loot, stock, items, effects, quests and population deadlines are captured.
+Items, quests, populations, summons, threat and effect deadlines are captured.
 Restore validates a separate world before adoption.
 end note
 @enduml

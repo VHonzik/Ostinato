@@ -26,12 +26,16 @@ else Self / development skill
   Game -> Targeting : clear_spell_target()
   Game -> World : cast_skill(id)
 end
+break Pet command or sourced off-GCD instant
+  World -> World : Validate; command pet or resolve Judgement / cost / cooldown
+  World --> Game : No turn, GCD or casting credit changes
+end
 World -> World : Validate; start GCD; engage harmful target
 loop Cast boundaries until completion, cancellation, or death
   World -> World : Advance cast progress
-  alt Channel tick
-    World -> Hero : Spend mana on first tick only
-    World -> World : Validate target; SpellEffects.resolve()
+  alt Channel boundary
+    World -> Hero : Spend mana on first boundary only
+    World -> World : Validate target; resolve only when tick interval is due
     note right: Cancellation retains ticks/cost; no credit.
   else Ordinary completion
     World -> World : Recheck target / range / sight / mana / effect eligibility / bag space
@@ -42,7 +46,7 @@ loop Cast boundaries until completion, cancellation, or death
       World -> World : No cost, effect, or new credit
     end
   end
-  World -> World : Shared NPC phase; effects; regeneration; events
+  World -> World : Shared NPC / summon phase; effects; regeneration; events
   World --> Game : Updated state
   alt Death
     Game -> Game : Replace attempt through GameSession
