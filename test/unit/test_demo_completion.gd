@@ -110,7 +110,7 @@ func test_periodic_victory_stops_later_ticks_regeneration_and_pending_arrival() 
 	assert_true(later.alive)
 	assert_eq(world.hero.health, 20)
 	assert_eq(world.hero.mana, 0)
-	assert_false(world.stalker_arrived)
+	assert_false(world.stalkers_arrived > 0)
 	assert_eq(world.actors.size(), 2)
 	_assert_complete(world)
 
@@ -249,7 +249,7 @@ func test_development_kill_stalker_rejects_before_arrival_without_changing_simul
 	assert_null(world.pending_skill)
 	for boundary in range(15):
 		world.wait_turn()
-	assert_true(world.stalker_arrived, "Rejected use does not skip or delay the schedule.")
+	assert_true(world.stalkers_arrived > 0, "Rejected use does not skip or delay the schedule.")
 	assert_true(world.cast_skill(&"kill_stalker_1"))
 	assert_eq(world.turn_count, 16)
 	assert_eq(session.loop_count, 1)

@@ -161,6 +161,29 @@ wolf loot retains its M5 rows, including 80% meat. Eligibility is captured at de
 first opening, even after objective completion, and rechecked on collection.
 Ineligible opening never adds quest loot retroactively.
 
+## Scheduled invasion arrivals (M8-B)
+
+FR-031/033 explicitly define this invasion adaptation: Loop turns 15, 215, 395, 555
+and 695, with at most five stalkers. All five retain the sourced level-20 ordinary
+creature profile selected in [DATA-002's first-stalker record](loop-baseline.md#first-stalker-fixture)
+(494 health, 888 armor, 31–38 raw melee, 16 attack power, two-second swing).
+No combat formula or new Classic source selection is introduced by this package.
+
+Legal gate placements are tried in fixed order: (54,14), (54,13), (54,15), (53,13),
+(53,15). All are inside the valley and outside the gate-survey aggro boundary.
+Even the nearest is 33 tiles from spawn in an unobstructed Chebyshev path, so the
+turn-15 first arrival still precedes the earliest ordinary base-speed visit.
+Each entered actor idles at its entry/home until normal aggro. Only identity zero
+kills the guard and announces feasting; identities one through four announce reinforcements.
+
+The world checks terrain, player and living actor occupancy, including summons.
+All blocked means pending; overdue identities enter in order at the next free boundary,
+possibly several together, without shifting any deadline. Stable IDs are `gate/stalker/0`
+through `/4`, independent of entry delay and tile. Save revision 5 preserves the deadlines,
+entered count, actor order and turn; pending state follows from these saved values.
+Reset restores the initial schedule. Victory discards its remaining execution.
+The ordinary population cap is 95 world NPCs; pets and totems do not consume that budget.
+
 ## Exclusions and remaining final inventory
 
 The bounded content inventory covers the enclosed valley, abbey/mine/vineyard and gate.

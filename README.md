@@ -4,7 +4,8 @@ A 2D roguelike inspired by World of Warcraft Classic leveling.
 
 Milestones 1–7 are playable: Northshire exploration and quests, grid movement, combat,
 training for all six classes through level 10, pets and totems, items/trading, persistent learning across deaths,
-class selection, five save slots, and the first demon stalker arrival.
+class selection and five save slots. Milestone 8 adds five scheduled demon stalkers
+and demo completion when any stalker dies.
 
 Launch from PowerShell 7 with:
 ```powershell
@@ -28,11 +29,12 @@ The trader remains at (16,18).
 **K → Development → Death trigger** starts the next Loop. Learned ranks remain;
 quests, loot and seeded populations reset. From Loop 2, the marshal offers the other five classes at
 level 1 before any quest acceptance. New population ordinals appear 30 turns after death.
-The gate stalker arrives on turn 15. Saving requires an action boundary outside combat.
+Gate stalkers arrive on turns 15, 215, 395, 555 and 695; blocked arrivals wait for a free
+gate tile. Killing any stalker shows **Thanks for playing**. Saving requires an action
+boundary outside combat.
 
-Saves use **demo revision 4**. Revision-1/2/3 saves remain untouched and incompatible.
-Final content coverage, reinforcements and completion belong to
-later milestones; see the [Northshire inventory](docs/data/northshire.md).
+Saves use **demo revision 5**. Revisions 1–4 remain untouched and incompatible.
+Final content coverage remains in milestone 8; see the [Northshire inventory](docs/data/northshire.md).
 Windows desktop / Godot Compatibility is the target. Development skills are omitted
 from release builds. CI and exports remain to be established.
 

@@ -200,14 +200,14 @@ func test_mana_five_second_rule_and_health_regeneration_use_shared_two_turn_tick
 func test_first_stalker_is_pending_when_blocked_and_schedule_resets_after_death() -> void:
 	var game := GameSession.new()
 	game.new_game(101)
-	var blocker := GridActor.new(Vector2i(54, 14))
-	game.world.actors.append(blocker)
+	for tile in GridWorld.STALKER_ENTRIES:
+		game.world.blocked_tiles[tile] = true
 	for index in range(15):
 		game.world.wait_turn()
-	assert_false(game.world.stalker_arrived)
-	blocker.alive = false
+	assert_false(game.world.stalkers_arrived > 0)
+	game.world.blocked_tiles.erase(Vector2i(54, 14))
 	game.world.wait_turn()
-	assert_true(game.world.stalker_arrived)
+	assert_true(game.world.stalkers_arrived > 0)
 	var stalker := game.world.actors[-1]
 	assert_eq(stalker.melee.level, 20)
 	assert_eq(stalker.health, 494)
@@ -223,7 +223,7 @@ func test_first_stalker_is_pending_when_blocked_and_schedule_resets_after_death(
 	assert_eq(announced, 1)
 	game.world.hero.health = 0
 	game.restart_after_death()
-	assert_false(game.world.stalker_arrived)
+	assert_false(game.world.stalkers_arrived > 0)
 	assert_eq(game.world.turn_count, 0)
 
 

@@ -29,7 +29,8 @@ class GridWorld {
   pending_skill: SkillRank
   pending_melee: GridActor
   periodic_effects: Array
-  stalker_arrived: bool
+  stalkers_arrived: int
+  stalker_deadlines: Array<int>
   vendor_stock: Dictionary
   loot_quests: Array<String>
   quests: Dictionary
@@ -90,10 +91,11 @@ SaveStore --> SaveCodec
 SaveStore --> GameSession : validated replacement
 SaveCodec ..> GridWorld : explicit fields
 note bottom of SaveCodec
-Demo revision 4; revisions 1-3 remain untouched/incompatible.
+Demo revision 5; revisions 1-4 remain untouched/incompatible.
 JSON stores RNG int64 values as strings.
 Items, quests, populations, summons, threat and effect deadlines are captured.
 Restore validates a separate world before adoption.
-Completed attempts cannot be captured; legacy defeated-stalker saves open at completion.
+Five arrival deadlines and entered identities survive load.
+Completed attempts cannot be captured; defeated-stalker snapshots open at completion.
 end note
 @enduml

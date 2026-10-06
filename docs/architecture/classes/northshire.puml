@@ -17,6 +17,9 @@ class GridWorld {
   population: Array<Dictionary>
   loot_quests: Array<String>
   actors: Array<GridActor>
+  stalker_deadlines: Array<int>
+  stalkers_arrived: int
+  _arrive_stalker()
   move_player(direction)
   _check_npc_death(actor)
 }
@@ -58,5 +61,6 @@ SaveCodec --> GridWorld : quests / slots / deadlines
 note bottom of NorthshireZone
 Seed + area + slot + ordinal determine each replacement.
 Blocked placement stays pending; arrivals act next phase.
+95 ordinary world NPCs reserve five stalker slots; summons are additional.
 end note
 @enduml

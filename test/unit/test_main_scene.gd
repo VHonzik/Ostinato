@@ -1196,7 +1196,7 @@ func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() ->
 		_game.start_new_game()
 		for boundary in range(15):
 			_game.world.wait_turn()
-		assert_true(_game.world.stalker_arrived)
+		assert_true(_game.world.stalkers_arrived > 0)
 		_game.refresh_view()
 		await _tap_key(KEY_K)
 		await _tap_key(KEY_D)

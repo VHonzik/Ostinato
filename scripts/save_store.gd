@@ -3,7 +3,7 @@ extends RefCounted
 
 ## FR-039/040/041 and NFR-010/011/012: validate before replacing either file or world.
 const SLOT_COUNT: int = 5
-const REVISION: int = 4
+const REVISION: int = 5
 const MAX_BYTES: int = 8 * 1024 * 1024
 
 var directory: String
