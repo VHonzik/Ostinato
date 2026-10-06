@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant MovementGame as Game
+participant GridWorld as World
+participant "SpellEffects / SummonRules" as Effects
+participant GameSession as Session
+participant MenuPanel as Menu
+alt Development QA: Kill stalker
+  Player -> Game : Spell book / Development / Kill stalker
+  Game -> World : cast_skill(kill_stalker_1)
+  World -> World : First living stalker in saved actor order
+  note right of World
+  No living stalker: feedback, no elapsed turn.
+  Otherwise: lethal damage via SpellEffects.damage(),
+  one turn, zero mana; no range/sight/hit-roll restriction.
+  end note
+else Ordinary gameplay
+  Player -> Game : Commit action
+  Game -> World : Move / wait / melee / cast boundary
+end
+loop Effects in stable order while attempt active
+  World -> Effects : Resolve one damage effect
+  Effects -> World : Apply health changes; check_terminal()
+  alt Stalker killed in this effect
+    World -> World : Latch COMPLETED (even if player also died)
+  else Player killed without stalker death
+    World -> World : Latch PLAYER_DIED
+  else No terminal result
+    World -> World : Continue next effect / actor / stage
+  end
+end
+note over World, Effects
+Terminal state cancels melee and cast continuations.
+No later damage, retaliation, regeneration or arrival runs.
+A committed player effect consumes its boundary once.
+end note
+World --> Game : Terminal outcome
+alt COMPLETED
+  Game -> Game : Clear queued input / selectors; hide gameplay controls
+  Game -> Menu : open_completion()
+  Menu --> Player : Thanks for playing / Load / Main Menu
+  note right of Menu
+  Escape cannot resume.
+  Load uses existing slots; Back returns here.
+  Successful load adopts an earlier playable world.
+  end note
+else PLAYER_DIED
+  Game -> Session : restart_after_death()
+  Session -> World : discard()
+  Session -> Game : world_changed (fresh Loop)
+end
+note over Session, World
+The first terminal result is latched.
+A later callback cannot change death into victory,
+repeat a reset, or resume an abandoned world.
+end note
+@enduml

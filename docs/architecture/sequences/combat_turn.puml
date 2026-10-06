@@ -28,19 +28,20 @@ else Neutral / hostile
   Panel -> World : request_melee(target)
   note over Game, World : A hostile bump also requests melee directly.
   World -> World : Validate target; engage; face target
-  loop Committed boundaries until swing, cancellation, invalid target, or death
+  loop Committed boundaries until swing, cancellation, invalid target, or terminal outcome
     World -> Hero : advance(active=true, interval)
     opt Swing(s) due
       World -> Rules : outcome + damage (combat random stream)
       World -> NPC : apply damage
-      opt NPC dies
+      opt Ordinary NPC dies
         World -> NPC : nonblocking corpse; stop acting
         World -> Rules : kill_experience()
         World -> Hero : award once; ordinary progression
       end
     end
     World -> World : Increment elapsed turn
-    loop Living NPCs in stable order; stop on player death
+    World -> World : check_terminal(); stop remaining effects on victory/death
+    loop Living NPCs in stable order while attempt active
       World -> NPC : shortest terrain route; reroute only if next step occupied
       World -> NPC : advance swing timer; attack if ready and adjacent
       opt Attack
@@ -49,7 +50,10 @@ else Neutral / hostile
       end
     end
     World --> Game : resources / chat / pending target / death
-    alt Player died
+    alt Stalker defeated
+      Game -> Game : MenuPanel.open_completion()
+      Game --> Player : Thanks for playing; Load / Main Menu
+    else Player died
       Game -> Game : GameSession.restart_after_death()
       Game --> Player : Next Loop; learned ranks retained
     else Swing still pending

@@ -82,8 +82,9 @@ note bottom of SkillRank
 Includes passive Parry and summons; pet commands are derived.
 Training: selected class, level, previous rank and copper.
 Casting retained ranks is independent of level/class.
-Development: Practice / XP / Gold / Death trigger.
+Development: Practice / XP / Gold / Death trigger / Kill stalker.
 Death trigger starts the next Loop via GameSession.
+Kill stalker uses normal damage/death processing for completion QA.
 Development ranks omitted from release builds.
 end note
 @enduml

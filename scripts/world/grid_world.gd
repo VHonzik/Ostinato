@@ -3,6 +3,8 @@ extends RefCounted
 
 signal message_added(message: String)
 
+enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
+
 ## Player-driven movement and combat: FR-007 through FR-027 (milestone subset).
 const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(1, 1),
@@ -38,6 +40,7 @@ var ever_accepted_quest: bool = false
 var hotbar: Array[StringName] = [&"", &"", &"", &"", &""]
 var hotbar_locked: bool = false
 var resolving_turn: bool = false
+var attempt_state: AttemptState = AttemptState.ACTIVE
 var seed_value: int = 1
 var loot_quests: Array[String] = []
 var quests: Dictionary = {}
@@ -70,7 +73,7 @@ func is_open(tile: Vector2i) -> bool:
 
 
 func move_player(direction: Vector2i) -> bool:
-	if is_player_dead() or pending_melee != null or pending_skill != null:
+	if is_terminal() or pending_melee != null or pending_skill != null:
 		return false
 	if not DIRECTIONS.has(direction) or movement_speed <= 0.0:
 		return false
@@ -94,16 +97,19 @@ func move_player(direction: Vector2i) -> bool:
 
 
 func wait_turn() -> void:
-	if not is_player_dead() and pending_melee == null and pending_skill == null:
+	if not is_terminal() and pending_melee == null and pending_skill == null:
 		_finish_turn()
 
 
 func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
-	if is_player_dead() or pending_melee != null or pending_skill != null:
+	if is_terminal() or pending_melee != null or pending_skill != null:
 		return false
 	var skill := hero.find_skill(identifier)
 	if skill == null:
 		add_message("Cannot cast: that rank is not learned.")
+		return false
+	if skill.effect == SkillRank.Effect.KILL_STALKER and _first_living_stalker() == null:
+		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
 	if skill.effect == SkillRank.Effect.PET_COMMAND:
 		return SummonRules.command(self, identifier, target)
@@ -148,7 +154,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 
 
 func continue_cast() -> bool:
-	if pending_skill == null or is_player_dead():
+	if pending_skill == null or is_terminal():
 		cancel_cast()
 		return false
 	resolving_turn = true
@@ -198,6 +204,8 @@ func cooldown_family(skill: SkillRank) -> StringName:
 
 
 func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
+	if skill.effect == SkillRank.Effect.KILL_STALKER:
+		return target == null and _first_living_stalker() != null
 	if skill.effect == SkillRank.Effect.RESURRECT:
 		return (target != null and actors.has(target) and not target.alive
 			and not target.story_guard and not target.chest and target.summon_kind == ""
@@ -251,11 +259,13 @@ func in_combat() -> bool:
 
 
 func can_save() -> bool:
-	return (not is_player_dead() and not in_combat() and not resolving_turn
+	return (not is_terminal() and not in_combat() and not resolving_turn
 		and pending_melee == null and pending_skill == null)
 
 
 func training_failure(category: StringName, skill: SkillRank) -> String:
+	if is_terminal():
+		return "This attempt has ended."
 	if skill == null or skill.class_tab != category or hero.selected_class != category:
 		return "Requires the matching selected class."
 	if hero.find_skill(skill.id) != null:
@@ -283,6 +293,13 @@ func train(category: StringName, identifier: StringName) -> bool:
 	return true
 
 
+func _first_living_stalker() -> GridActor:
+	for actor in actors:
+		if actor.alive and actor.stalker:
+			return actor
+	return null
+
+
 func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 	match skill.effect:
 		SkillRank.Effect.PRACTICE:
@@ -294,11 +311,20 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 		SkillRank.Effect.GOLD:
 			hero.copper += 10000
 			add_message("Gain 1 gold: gained %s." % InventoryRules.money(10000))
+		SkillRank.Effect.KILL_STALKER:
+			var stalker := _first_living_stalker()
+			if stalker != null:
+				var lethal_damage := stalker.health
+				# Guarantee the QA kill while still exercising normal damage/death processing.
+				for buff in stalker.buffs.values():
+					lethal_damage += int(buff.get("absorb", 0))
+				SpellEffects.damage(self, stalker, lethal_damage, "Kill stalker")
 		SkillRank.Effect.DEATH_NOTICE:
 			hero.health = 0
 			add_message("Death trigger invoked. You died.")
 		_:
 			SpellEffects.resolve(self, skill, target)
+	check_terminal()
 
 
 func add_message(message: String) -> void:
@@ -310,6 +336,34 @@ func add_message(message: String) -> void:
 
 func is_player_dead() -> bool:
 	return hero.health <= 0
+
+
+func is_terminal() -> bool:
+	return attempt_state != AttemptState.ACTIVE or is_player_dead()
+
+
+## FR-006/013: latch the first terminal effect; victory wins simultaneous deaths.
+func check_terminal() -> bool:
+	if attempt_state != AttemptState.ACTIVE:
+		return true
+	for actor in actors:
+		if actor.stalker and actor.health <= 0:
+			attempt_state = AttemptState.COMPLETED
+			break
+	if attempt_state == AttemptState.ACTIVE and is_player_dead():
+		attempt_state = AttemptState.PLAYER_DIED
+	if attempt_state == AttemptState.ACTIVE:
+		return false
+	cancel_melee()
+	cancel_cast()
+	return true
+
+
+func discard() -> void:
+	if attempt_state == AttemptState.ACTIVE:
+		attempt_state = AttemptState.DISCARDED
+	cancel_melee()
+	cancel_cast()
 
 
 func actor_at(tile: Vector2i) -> GridActor:
@@ -362,7 +416,7 @@ func interaction_candidates() -> Array[GridActor]:
 
 
 func interact(actor: GridActor) -> String:
-	if is_player_dead() or not interaction_candidates().has(actor):
+	if is_terminal() or not interaction_candidates().has(actor):
 		return "That target is no longer available."
 	if not actor.alive:
 		return "%s: no loot remains." % actor.title
@@ -377,7 +431,7 @@ func interact(actor: GridActor) -> String:
 
 
 func request_melee(target: GridActor) -> bool:
-	if is_player_dead() or pending_melee != null or pending_skill != null or not _valid_melee(target):
+	if is_terminal() or pending_melee != null or pending_skill != null or not _valid_melee(target):
 		return false
 	target.relationship = GridActor.Relationship.HOSTILE
 	target.engaged = true
@@ -390,20 +444,20 @@ func request_melee(target: GridActor) -> bool:
 
 
 func continue_melee() -> bool:
-	if is_player_dead() or not _valid_melee(pending_melee):
+	if is_terminal() or not _valid_melee(pending_melee):
 		pending_melee = null
 		return false
 	resolving_turn = true
 	var target := pending_melee
 	var swings := hero.swing.advance(true, hero.melee.interval / hero.haste)
 	for index in range(swings):
-		if not _valid_melee(target) or is_player_dead():
+		if not _valid_melee(target) or is_terminal():
 			break
 		_player_swing(target)
 	if swings > 0:
 		pending_melee = null
 	_finish_turn(true)
-	if is_player_dead() or not _valid_melee(pending_melee):
+	if is_terminal() or not _valid_melee(pending_melee):
 		pending_melee = null
 	return true
 
@@ -421,10 +475,12 @@ func _valid_melee(target: GridActor) -> bool:
 
 
 func _finish_turn(player_timer_advanced: bool = false) -> void:
-	# Terminal player effects consume their turn but discard its remaining stages.
+	# A committed terminal player effect still consumes its boundary, exactly once.
+	if is_terminal() and not resolving_turn:
+		return
 	turn_count += 1
 	resolving_turn = true
-	if is_player_dead():
+	if check_terminal():
 		pending_melee = null
 		cancel_cast()
 		resolving_turn = false
@@ -443,12 +499,15 @@ func _finish_turn(player_timer_advanced: bool = false) -> void:
 			SummonRules.act(self, actor)
 		else:
 			_act_npc(actor)
-		if is_player_dead():
+		if check_terminal():
 			pending_melee = null
 			cancel_cast()
 			resolving_turn = false
 			return
 	_tick_effects()
+	if check_terminal():
+		resolving_turn = false
+		return
 	_regenerate()
 	_tick_restoration()
 	_arrive_stalker()
@@ -537,7 +596,7 @@ func _act_npc(actor: GridActor) -> void:
 	var interval := actor.melee.interval * (1.25 if actor.chilled_until > turn_count else 1.0)
 	var swings := actor.swing.advance(in_melee, interval)
 	for index in range(swings):
-		if is_player_dead():
+		if is_terminal():
 			return
 		actor.facing = MeleeRules.facing_toward(target_tile - actor.tile)
 		var result := MeleeRules.outcome(actor.melee, hero.melee if target == null else target.melee,
@@ -557,13 +616,16 @@ func _act_npc(actor: GridActor) -> void:
 		if amount > 0 and (buffs.has(&"frost_armor_1") or buffs.has(&"frost_armor_2")):
 			actor.chilled_until = turn_count + 5
 		add_message("%s -> %s: %s, %d damage." % [actor.title, "You" if target == null else target.title, result, amount])
-		if is_player_dead():
+		# Retaliation is a subsequent effect, so a lethal incoming hit ends first.
+		if check_terminal():
 			add_message("You died.")
 			return
 		if target != null and not target.alive:
 			return
 		if amount > 0 and buffs.has(&"thorns_1"):
 			SpellEffects.damage(self, actor, int(buffs[&"thorns_1"].thorns), "Thorns", turn_count)
+		if check_terminal():
+			return
 		ClassSpellEffects.retaliate(self, actor, target, amount)
 		if not actor.alive:
 			return
@@ -582,6 +644,8 @@ func _player_swing(target: GridActor) -> void:
 
 
 func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
+	if attempt_state != AttemptState.ACTIVE:
+		return
 	if target.health == 0 and target.alive:
 		if target.summon_kind != "":
 			SummonRules.remove(self, target)
@@ -590,6 +654,8 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 		target.alive = false
 		target.engaged = false
 		target.returning_home = false
+		if check_terminal():
+			return
 		LootData.assign(self, target)
 		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
 		NorthshireZone.died(self, target)
@@ -705,6 +771,8 @@ func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
 
 func _tick_effects() -> void:
 	SpellEffects.tick(self)
+	if check_terminal():
+		return
 	ClassSpellEffects.tick(self)
 	for key in hero.buffs.keys():
 		if int(hero.buffs[key].until) <= turn_count:
@@ -734,7 +802,7 @@ func _regenerate() -> void:
 
 
 func _arrive_stalker() -> void:
-	if not stalker_schedule or stalker_arrived or turn_count < 15:
+	if is_terminal() or not stalker_schedule or stalker_arrived or turn_count < 15:
 		return
 	var entry := Vector2i(54, 14)
 	if not is_open(entry):
@@ -766,7 +834,7 @@ func _arrive_stalker() -> void:
 
 
 func item_action_ready() -> bool:
-	return not is_player_dead() and pending_melee == null and pending_skill == null and not resolving_turn
+	return not is_terminal() and pending_melee == null and pending_skill == null and not resolving_turn
 
 
 func equip_item(index: int, slot: String = "") -> bool:

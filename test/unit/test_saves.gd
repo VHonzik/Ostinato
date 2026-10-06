@@ -169,3 +169,66 @@ func test_save_does_not_impose_a_progression_level_cap() -> void:
 	_session.new_game(9)
 	assert_true(_saves.load_slot(_session, 1), _saves.last_error)
 	assert_eq(_session.world.hero.level, 100001)
+
+
+func test_completion_cannot_overwrite_or_create_saves_and_earlier_save_resumes() -> void:
+	assert_true(_saves.save_slot(_session, 1), _saves.last_error)
+	var bytes := FileAccess.get_file_as_bytes(_saves.slot_path(1))
+	var ended := _session.world
+	var stalker := GridActor.new(ended.player_tile + Vector2i.RIGHT)
+	stalker.stalker = true
+	stalker.relationship = GridActor.Relationship.HOSTILE
+	ended.actors.append(stalker)
+	SpellEffects.damage(ended, stalker, stalker.health, "Victory fixture")
+	assert_eq(ended.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_false(_saves.save_slot(_session, 1, true))
+	assert_false(_saves.save_slot(_session, 2))
+	assert_eq(FileAccess.get_file_as_bytes(_saves.slot_path(1)), bytes)
+	assert_eq(_saves.metadata(2).status, "Empty")
+	assert_eq(SaveCodec.capture(_session), {})
+	assert_true(_saves.load_slot(_session, 1), _saves.last_error)
+	assert_eq(_session.world.attempt_state, GridWorld.AttemptState.ACTIVE)
+	assert_eq(_session.loop_count, 1)
+	_session.world.wait_turn()
+	assert_eq(_session.world.turn_count, 1)
+	ended.wait_turn()
+	assert_eq(ended.turn_count, 0)
+
+
+func test_pre_m8_revision_four_dead_stalker_snapshot_loads_as_completed() -> void:
+	var actor := GridActor.new(Vector2i(54, 14))
+	actor.stalker = true
+	actor.alive = false
+	actor.health = 0
+	_session.world.actors.append(actor)
+	# Construct the legacy snapshot without a terminal checkpoint, as pre-M8 did.
+	var data := SaveCodec.capture(_session)
+	assert_false(data.is_empty())
+	var restored := SaveCodec.restore(data, true)
+	assert_not_null(restored)
+	assert_eq(restored.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_false(restored.can_save())
+	restored.wait_turn()
+	assert_eq(restored.turn_count, 0)
+
+
+func test_supported_save_predating_qa_skill_loads_helper_without_rewriting_slot() -> void:
+	assert_true(_saves.save_slot(_session, 1), _saves.last_error)
+	var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))
+	record.data.learned.erase("kill_stalker_1")
+	var file := FileAccess.open(_saves.slot_path(1), FileAccess.WRITE)
+	file.store_string(JSON.stringify(record))
+	file.close()
+	var bytes := FileAccess.get_file_as_bytes(_saves.slot_path(1))
+	assert_true(_saves.load_slot(_session, 1), _saves.last_error)
+	assert_not_null(_session.world.hero.find_skill(&"kill_stalker_1"))
+	assert_eq(FileAccess.get_file_as_bytes(_saves.slot_path(1)), bytes)
+	assert_true(_saves.save_slot(_session, 2), _saves.last_error)
+	assert_true(_saves.load_slot(_session, 2), _saves.last_error)
+	var data := SaveCodec.capture(_session)
+	assert_eq(data.learned.count("kill_stalker_1"), 1, "Subsequent loads do not duplicate the helper.")
+	var release_world := SaveCodec.restore(data, false)
+	assert_not_null(release_world)
+	assert_null(release_world.hero.find_skill(&"kill_stalker_1"))
+	assert_false(release_world.cast_skill(&"kill_stalker_1"))
+	assert_eq(release_world.turn_count, 0)
