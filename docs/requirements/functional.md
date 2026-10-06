@@ -999,7 +999,8 @@ Acceptance:
 ### FR-050 — Development skills
 
 Development gameplay shall provide test skills, including adding a known amount of XP,
-adding 1 gold (10,000 copper), and killing the player, with observable feedback. Initial dummy skills shall consume one turn.
+adding 1 gold (10,000 copper), killing the player, and killing a living stalker for completion
+QA, with observable feedback. Initial dummy skills shall consume one turn.
 
 Acceptance:
 
@@ -1008,6 +1009,13 @@ Acceptance:
   earned currency follows ordinary save/load and Loop-reset rules.
 - The death skill exercises the currently implemented death flow: the temporary milestone-3
   overlay, then the real Loop flow from milestone 4.
+- Kill stalker is available in the Development spell-book tab, including after loading an
+  existing supported save in a development build. It kills the first living stalker in
+  saved actor order from any player position, ignoring range, sight, hit rolls and absorbs.
+  A successful use costs one turn and zero mana and invokes ordinary NPC death/completion
+  processing under FR-006/013; no later phase executes. It affects no other actor.
+- With no living stalker, Kill stalker reports that fact and changes no simulation time,
+  resources, cooldowns or actor state. It does not spawn a stalker or skip its schedule.
 - Initial dummy skills advance NPC/simulation time by one turn and report their effects.
 
 These are development fixtures, not normal progression rewards. They are excluded from

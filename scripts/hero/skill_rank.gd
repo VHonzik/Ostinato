@@ -2,7 +2,7 @@ class_name SkillRank
 extends RefCounted
 
 ## DATA-003 six-class ranks through level 10. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -149,4 +149,7 @@ static func development_skills() -> Array[SkillRank]:
 			"One turn; 0 mana. Adds 1 gold (10,000 copper).", Effect.GOLD, true),
 		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
 			"One turn; 0 mana. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
+		SkillRank.new(&"kill_stalker_1", "Kill stalker", &"Development", 1, 1,
+			"One turn; 0 mana. Kill the first living stalker anywhere and end the demo. "
+			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
 	]

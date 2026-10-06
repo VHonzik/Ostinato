@@ -108,6 +108,9 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill == null:
 		add_message("Cannot cast: that rank is not learned.")
 		return false
+	if skill.effect == SkillRank.Effect.KILL_STALKER and _first_living_stalker() == null:
+		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
+		return false
 	if skill.effect == SkillRank.Effect.PET_COMMAND:
 		return SummonRules.command(self, identifier, target)
 	if hero.mana < skill.cost(hero):
@@ -201,6 +204,8 @@ func cooldown_family(skill: SkillRank) -> StringName:
 
 
 func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
+	if skill.effect == SkillRank.Effect.KILL_STALKER:
+		return target == null and _first_living_stalker() != null
 	if skill.effect == SkillRank.Effect.RESURRECT:
 		return (target != null and actors.has(target) and not target.alive
 			and not target.story_guard and not target.chest and target.summon_kind == ""
@@ -288,6 +293,13 @@ func train(category: StringName, identifier: StringName) -> bool:
 	return true
 
 
+func _first_living_stalker() -> GridActor:
+	for actor in actors:
+		if actor.alive and actor.stalker:
+			return actor
+	return null
+
+
 func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 	match skill.effect:
 		SkillRank.Effect.PRACTICE:
@@ -299,6 +311,14 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 		SkillRank.Effect.GOLD:
 			hero.copper += 10000
 			add_message("Gain 1 gold: gained %s." % InventoryRules.money(10000))
+		SkillRank.Effect.KILL_STALKER:
+			var stalker := _first_living_stalker()
+			if stalker != null:
+				var lethal_damage := stalker.health
+				# Guarantee the QA kill while still exercising normal damage/death processing.
+				for buff in stalker.buffs.values():
+					lethal_damage += int(buff.get("absorb", 0))
+				SpellEffects.damage(self, stalker, lethal_damage, "Kill stalker")
 		SkillRank.Effect.DEATH_NOTICE:
 			hero.health = 0
 			add_message("Death trigger invoked. You died.")

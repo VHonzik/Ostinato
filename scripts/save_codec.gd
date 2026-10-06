@@ -287,6 +287,11 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		return null
 	world.random.state = int(data.random)
 	world.combat_random.state = int(data.combat_random)
+	# Development helpers belong to the running build, including saves predating a helper.
+	if development_build:
+		for skill in SkillRank.development_skills():
+			if world.hero.find_skill(skill.id) == null:
+				world.hero.learned_skills.append(skill)
 	# Pre-M8 revision-4 saves may contain a defeated stalker; reopen as completed.
 	world.check_terminal()
 	return world

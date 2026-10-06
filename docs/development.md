@@ -343,7 +343,15 @@ A valid pre-M8 revision-4 save already containing a dead stalker opens at comple
 other valid revision-4 saves resume normally. Revisions 1–3 remain incompatible.
 See [terminal ordering](architecture/sequences/demo_completion.puml).
 
-For a quick controlled completion review, run the GUT UI fixture
+For quick completion QA in a development build, wait at spawn for 15 turns until the
+stalker arrival announcement, then choose **K → Development → Kill stalker**. It costs
+one turn and zero mana and kills the first living stalker from anywhere, through normal
+damage/death processing. The completion screen appears immediately. Before an arrival,
+it reports no living stalker without spending time. It does not spawn an enemy or change
+the schedule. Existing supported saves gain the helper when loaded in development builds;
+release builds omit it with the other development ranks.
+
+For a controlled automated completion review, run the GUT UI fixture
 `test_completion_menu_fits_keyboard_navigation_cannot_resume_and_main_menu_works`
 in `test/unit/test_main_scene.gd`; the complete validation includes this fixture,
 all damage paths, simultaneous outcomes, menu continuations and save preservation.

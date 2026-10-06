@@ -81,7 +81,7 @@ func test_learned_rank_remains_usable_below_training_level() -> void:
 
 func test_release_world_cannot_activate_development_skills() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 5, 5), Vector2i(2, 2), 1, false)
-	for identifier: StringName in [&"practice_1", &"experience_1", &"gold_1", &"death_1"]:
+	for identifier: StringName in [&"practice_1", &"experience_1", &"gold_1", &"death_1", &"kill_stalker_1"]:
 		assert_false(world.cast_skill(identifier))
 	assert_eq(world.turn_count, 0)
 	assert_eq([world.hero.level, world.hero.experience], [1, 0])

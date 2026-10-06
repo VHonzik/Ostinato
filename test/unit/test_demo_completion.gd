@@ -230,3 +230,67 @@ func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
 	assert_eq(previous.turn_count, 0)
 	assert_eq(session.world.turn_count, 0)
 	assert_eq(previous.attempt_state, GridWorld.AttemptState.DISCARDED)
+
+
+func test_development_kill_stalker_rejects_before_arrival_without_changing_simulation() -> void:
+	var session := GameSession.new()
+	session.new_game(97)
+	var world := session.world
+	world.movement_credit = 0.75
+	world.hero.casting_credit = 0.4
+	var before := SaveCodec.capture(session)
+	assert_false(world.cast_skill(&"kill_stalker_1"))
+	assert_string_contains(world.messages[-1], "no living stalker")
+	var after := SaveCodec.capture(session)
+	# The only permitted change is the explicit feedback, not a turn or a new actor.
+	before.erase("messages")
+	after.erase("messages")
+	assert_eq(after, before)
+	assert_null(world.pending_skill)
+	for boundary in range(15):
+		world.wait_turn()
+	assert_true(world.stalker_arrived, "Rejected use does not skip or delay the schedule.")
+	assert_true(world.cast_skill(&"kill_stalker_1"))
+	assert_eq(world.turn_count, 16)
+	assert_eq(session.loop_count, 1)
+	_assert_complete(world)
+
+
+func test_development_kill_stalker_is_guaranteed_and_stops_at_first_live_stalker() -> void:
+	var world := _world()
+	var ordinary := _enemy(world, Vector2i(11, 10), false)
+	ordinary.engaged = true
+	ordinary.melee.damage_min = 1000
+	ordinary.melee.damage_max = 1000
+	var first := _enemy(world, Vector2i(50, 20))
+	first.max_health = 494
+	first.health = 494
+	first.melee.level = 20
+	first.resistances = {"2": 1000}
+	first.buffs[&"shield_a"] = {"absorb": 1000, "until": 100}
+	first.buffs[&"shield_b"] = {"absorb": 2000, "until": 100}
+	var later := _enemy(world, Vector2i(12, 10))
+	world.sight_blockers[Vector2i(11, 10)] = true
+	assert_false(world.has_sight(world.player_tile, first.tile))
+	world.hero.spell_hit = -100
+	world.hero.mana = 0
+	world.hero.casting_credit = 0.4
+	world.movement_credit = 0.75
+	assert_true(world.cast_skill(&"kill_stalker_1"))
+	assert_false(first.alive)
+	assert_eq(first.health, 0)
+	assert_false(first.engaged)
+	assert_false(first.loot_assigned, "Uses stalker death processing, without ordinary loot.")
+	assert_true(later.alive, "Actor order wins over the nearer stalker.")
+	assert_eq(later.health, 1)
+	assert_true(ordinary.alive)
+	assert_eq(ordinary.health, 1)
+	assert_eq(world.hero.health, world.hero.max_health, "No later NPC phase attacks.")
+	assert_eq(world.hero.mana, 0)
+	assert_eq(world.hero.experience, 0)
+	assert_eq(world.hero.casting_credit, 0.4)
+	assert_eq(world.movement_credit, 0.75)
+	assert_eq(world.turn_count, 1)
+	assert_string_contains("\n".join(world.messages), "Kill stalker -> Stalker: 494 damage.")
+	assert_false(world.cast_skill(&"kill_stalker_1"), "A repeated activation cannot advance time.")
+	_assert_complete(world)

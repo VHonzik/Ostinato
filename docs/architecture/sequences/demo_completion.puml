@@ -7,8 +7,19 @@ participant GridWorld as World
 participant "SpellEffects / SummonRules" as Effects
 participant GameSession as Session
 participant MenuPanel as Menu
-Player -> Game : Commit action
-Game -> World : Move / wait / melee / cast boundary
+alt Development QA: Kill stalker
+  Player -> Game : Spell book / Development / Kill stalker
+  Game -> World : cast_skill(kill_stalker_1)
+  World -> World : First living stalker in saved actor order
+  note right of World
+  No living stalker: feedback, no elapsed turn.
+  Otherwise: lethal damage via SpellEffects.damage(),
+  one turn, zero mana; no range/sight/hit-roll restriction.
+  end note
+else Ordinary gameplay
+  Player -> Game : Commit action
+  Game -> World : Move / wait / melee / cast boundary
+end
 loop Effects in stable order while attempt active
   World -> Effects : Resolve one damage effect
   Effects -> World : Apply health changes; check_terminal()

@@ -10,7 +10,7 @@ func test_all_included_mage_druid_ranks_are_trainable_and_resolvable() -> void:
 				assert_true(world.train(category, skill.id), skill.id)
 			assert_lte(skill.training_level, 10)
 			assert_gt(skill.source_id, 0)
-	assert_eq(world.hero.learned_skills.size(), 30, "26 sourced ranks plus four development skills.")
+	assert_eq(world.hero.learned_skills.size(), 31, "26 sourced ranks plus five development skills.")
 	assert_null(SkillRank.catalog(&"bear_form_1"))
 	assert_null(SkillRank.catalog(&"moonfire_3"))
 

@@ -317,6 +317,7 @@ func test_release_spell_book_has_no_development_tab_or_controls() -> void:
 	for button: Button in _game.hero_panel.find_children("*", "Button", true, false):
 		assert_false(button.text.contains("450 XP"))
 		assert_false(button.text.contains("Death trigger"))
+		assert_false(button.text.contains("Kill stalker"))
 
 
 func test_shift_tab_navigates_backward_inside_the_panel() -> void:
@@ -1188,3 +1189,32 @@ func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act()
 	assert_eq(_game.session.loop_count, 1)
 	await get_tree().process_frame
 	await get_tree().process_frame
+
+
+func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() -> void:
+	for use_mouse in [false, true]:
+		_game.start_new_game()
+		for boundary in range(15):
+			_game.world.wait_turn()
+		assert_true(_game.world.stalker_arrived)
+		_game.refresh_view()
+		await _tap_key(KEY_K)
+		await _tap_key(KEY_D)
+		for selection in range(4):
+			await _tap_key(KEY_S)
+		var button := _game_viewport.gui_get_focus_owner() as Button
+		assert_not_null(button)
+		assert_eq(button.get_meta("skill_id"), &"kill_stalker_1")
+		assert_true(Rect2(0, 0, 640, 360).encloses(button.get_global_rect()),
+			"The QA action is reachable at the minimum window size.")
+		assert_eq(_game.world.turn_count, 15, "Navigation never spends a turn.")
+		if use_mouse:
+			await _click_button(button)
+		else:
+			await _tap_key(KEY_ENTER)
+		assert_eq(_game.world.attempt_state, GridWorld.AttemptState.COMPLETED)
+		assert_eq(_game.world.turn_count, 16)
+		assert_eq(_game.session.loop_count, 1)
+		assert_eq(_game.menu.page, "completion")
+		assert_true(_game.menu.visible)
+		assert_false(_game.hero_panel.visible)
