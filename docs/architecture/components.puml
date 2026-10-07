@@ -6,7 +6,7 @@ component "Godot 4.7.2\nCompatibility / InputMap" as Godot
 component "Main / pixel_viewport.gd\nInteger-scaled viewport" as Main
 component "MovementGame\nInput, HUD, paced action boundaries\nCentered camera" as Game
 component "GameSession\nGame seed / Loop / world replacement" as Session
-component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / terminal outcomes" as World
+component "GridWorld + GridActor\nMovement, melee, casts, effects\nOrdered phases / terminal outcomes / five gate arrivals" as World
 component "NorthshireZone\nValley / population replacement" as Fixture
 component "QuestRules + QuestData\nObjectives / eligibility / rewards" as Quests
 component "HeroState + HeroData + SkillRank\nMage growth / learned ranks / spell data" as Hero
@@ -50,7 +50,7 @@ Menu --> Saves : save / load
 Saves --> Session : replace validated world
 Saves --> World : capture / restore
 Menu --> Files : global options
-Saves --> Files : demo revision 4
+Saves --> Files : demo revision 5
 Game --> View
 View --> World
 Tests --> Godot

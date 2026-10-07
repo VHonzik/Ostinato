@@ -123,9 +123,9 @@ static func tick_population(world: GridWorld) -> void:
 		# At most 95 ordinary world actors; reserve five stalker positions.
 		var ordinary := 0
 		for actor in world.actors:
-			if actor.alive and not actor.stalker:
+			if actor.alive and not actor.stalker and actor.summon_kind == "":
 				ordinary += 1
-		if ordinary >= 95:
+		if ordinary >= 100 - GridWorld.STALKER_DEADLINES.size():
 			continue
 		var area: Dictionary = AREAS[record.area]
 		var identity := "%s/%d/%d" % [record.area, record.slot, record.ordinal]

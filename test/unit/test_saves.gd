@@ -102,16 +102,20 @@ func test_damage_is_preserved_byte_for_byte_and_no_partial_state_is_loaded() -> 
 
 
 func test_unsupported_schema_stays_unchanged() -> void:
-	assert_true(_saves.save_slot(_session, 1), _saves.last_error)
-	var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))
-	record.revision = SaveStore.REVISION + 1
-	var file := FileAccess.open(_saves.slot_path(1), FileAccess.WRITE)
-	file.store_string(JSON.stringify(record))
-	file.close()
-	var bytes := FileAccess.get_file_as_bytes(_saves.slot_path(1))
-	assert_false(_saves.load_slot(_session, 1))
-	assert_string_contains(_saves.last_error, "Incompatible")
-	assert_eq(FileAccess.get_file_as_bytes(_saves.slot_path(1)), bytes)
+	for revision in [1, 2, 3, 4, SaveStore.REVISION + 1]:
+		assert_true(_saves.save_slot(_session, 1, true), _saves.last_error)
+		var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))
+		record.revision = revision
+		var file := FileAccess.open(_saves.slot_path(1), FileAccess.WRITE)
+		file.store_string(JSON.stringify(record))
+		file.close()
+		var bytes := FileAccess.get_file_as_bytes(_saves.slot_path(1))
+		var current := _session.world
+		assert_eq(_saves.metadata(1).status, "Incompatible")
+		assert_false(_saves.load_slot(_session, 1))
+		assert_string_contains(_saves.last_error, "Incompatible")
+		assert_same(_session.world, current)
+		assert_eq(FileAccess.get_file_as_bytes(_saves.slot_path(1)), bytes)
 
 
 func test_write_and_replacement_failures_preserve_previous_save() -> void:
@@ -195,13 +199,13 @@ func test_completion_cannot_overwrite_or_create_saves_and_earlier_save_resumes()
 	assert_eq(ended.turn_count, 0)
 
 
-func test_pre_m8_revision_four_dead_stalker_snapshot_loads_as_completed() -> void:
+func test_supported_dead_stalker_snapshot_loads_as_completed() -> void:
 	var actor := GridActor.new(Vector2i(54, 14))
 	actor.stalker = true
 	actor.alive = false
 	actor.health = 0
 	_session.world.actors.append(actor)
-	# Construct the legacy snapshot without a terminal checkpoint, as pre-M8 did.
+	# A snapshot without a terminal checkpoint must still never resume gameplay.
 	var data := SaveCodec.capture(_session)
 	assert_false(data.is_empty())
 	var restored := SaveCodec.restore(data, true)

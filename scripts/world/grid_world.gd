@@ -12,6 +12,11 @@ const DIRECTIONS: Array[Vector2i] = [
 ]
 
 const CHAT_LIMIT: int = 100
+const STALKER_DEADLINES: Array[int] = [15, 215, 395, 555, 695]
+const STALKER_ENTRIES: Array[Vector2i] = [
+	Vector2i(54, 14), Vector2i(54, 13), Vector2i(54, 15),
+	Vector2i(53, 13), Vector2i(53, 15),
+]
 
 var hero: HeroState
 var messages: PackedStringArray = []
@@ -34,7 +39,8 @@ var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
 var periodic_effects: Array[Dictionary] = []
 var stalker_schedule: bool = false
-var stalker_arrived: bool = false
+var stalkers_arrived: int = 0
+var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
 var ever_accepted_quest: bool = false
 var hotbar: Array[StringName] = [&"", &"", &"", &"", &""]
@@ -802,16 +808,29 @@ func _regenerate() -> void:
 
 
 func _arrive_stalker() -> void:
-	if is_terminal() or not stalker_schedule or stalker_arrived or turn_count < 15:
+	if is_terminal() or not stalker_schedule:
 		return
-	var entry := Vector2i(54, 14)
-	if not is_open(entry):
-		return
+	# FR-033: overdue identities enter in order; blocking never moves a deadline.
+	while stalkers_arrived < stalker_deadlines.size():
+		if turn_count < stalker_deadlines[stalkers_arrived]:
+			break
+		var entry := Vector2i(-1, -1)
+		for tile in STALKER_ENTRIES:
+			if is_open(tile):
+				entry = tile
+				break
+		if entry == Vector2i(-1, -1):
+			break
+		_spawn_stalker(entry)
+	_acquire_hostiles()
+
+
+func _spawn_stalker(entry: Vector2i) -> void:
 	var stalker := GridActor.new(entry)
 	stalker.title = "Demon stalker"
 	stalker.stalker = true
 	stalker.creature_type = "demon"
-	stalker.spawn_id = "gate/stalker/0"
+	stalker.spawn_id = "gate/stalker/%d" % stalkers_arrived
 	stalker.relationship = GridActor.Relationship.HOSTILE
 	# Ordinary level-20 Wildthorn Stalker profile, DATA-002 M4 adaptation.
 	stalker.max_health = 494
@@ -822,15 +841,17 @@ func _arrive_stalker() -> void:
 	stalker.melee.damage_max = 38.0
 	stalker.melee.attack_power = 16
 	actors.append(stalker)
-	stalker_arrived = true
-	for actor in actors:
-		if actor.story_guard:
-			actor.health = 0
-			actor.alive = false
-			actor.engaged = false
-			actor.died_on_turn = turn_count
-	add_message("A demon stalker enters the gate, kills the guard, and begins to feast!")
-	_acquire_hostiles()
+	stalkers_arrived += 1
+	if stalkers_arrived == 1:
+		for actor in actors:
+			if actor.story_guard:
+				actor.health = 0
+				actor.alive = false
+				actor.engaged = false
+				actor.died_on_turn = turn_count
+		add_message("A demon stalker enters the gate, kills the guard, and begins to feast!")
+	else:
+		add_message("A demon stalker reinforcement enters the gate (%d of 5)!" % stalkers_arrived)
 
 
 func item_action_ready() -> bool:

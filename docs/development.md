@@ -358,6 +358,38 @@ all damage paths, simultaneous outcomes, menu continuations and save preservatio
 For normal play, defeat the first stalker at the gate and try Load or Main Menu.
 These fixtures do not establish balance or human visual acceptance.
 
+## Milestone 8-B: Scheduled stalker reinforcements
+
+FR-033 now schedules five stalkers at Loop turns **15, 215, 395, 555 and 695**.
+At each deadline, the next identity (`gate/stalker/0` through `/4`) enters the first
+free tile in this stable order: (54,14), (54,13), (54,15), (53,13), (53,15).
+The first arrival still kills the guard and announces feasting. Reinforcements
+announce their arrival count and idle at the gate until ordinary aggro.
+
+Living actors (including summons), the player and terrain block entry; corpses do not.
+When every entry is blocked, due identities stay pending. Every simulation boundary
+retries them in order, admitting as many as fit without changing later deadlines.
+Arrivals may acquire targets immediately but first act in the next shared actor phase.
+Waiting in real time advances nothing. Completion makes pending arrivals inert.
+Loop reset restores the guard and all five deadlines, starting again with identity zero.
+The 95-ordinary-NPC limit reserves five world slots; pets and totems are additional.
+
+**Save compatibility:** M8-B writes **demo revision 5**. Revisions 1–4 are incompatible
+and remain byte-for-byte unchanged; no migration is provided. Revision 5 stores all
+five absolute deadlines, the entered identity count, simulation turn and actors.
+An index below the count has arrived; a remaining deadline at or before the saved turn
+is pending. This avoids duplicating pending flags and actor identities in another list.
+Loading validates deadlines/count/identities and resumes without repeating announcements
+or the guard event. Use New Game or an unused slot when trying this version.
+
+For a quick normal check, wait 15 turns at spawn: the first announcement appears.
+Continue waiting through turn 215 to see the second. Development → Kill stalker ends
+the demo; Development → Death trigger instead starts Loop 2 and restarts the schedule.
+The complete GUT suite uses controlled fixtures for all deadlines, blocked gate tiles,
+save/load continuation, population reservations and each of the five victory targets.
+See [the arrival sequence](architecture/sequences/stalker_arrivals.puml) and
+[DATA-004](data/northshire.md#scheduled-invasion-arrivals-m8-b) for placement/adaptations.
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: menus and playable fixture.

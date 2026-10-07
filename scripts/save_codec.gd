@@ -1,10 +1,10 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-4 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-5 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
-	"global_cooldown_until", "stalker_schedule", "stalker_arrived",
+	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
 	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire",
 ]
 const HERO_FIELDS: Array[String] = [
@@ -50,6 +50,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"restoration": world.hero.restoration.duplicate(true),
 		"resistances": world.hero.resistances.duplicate(true), "indoors": [],
 		"debuffs": world.hero.debuffs.duplicate(true),
+		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 	}
 	for tile in world.indoor_tiles:
 		data.indoors.append([tile.x, tile.y])
@@ -285,6 +286,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		world.messages.append(message)
 	if not QuestRules.restore(world, data.quests) or not NorthshireZone.restore(world, data.population):
 		return null
+	if not _restore_stalkers(world, data.get("stalker_deadlines")):
+		return null
 	world.random.state = int(data.random)
 	world.combat_random.state = int(data.combat_random)
 	# Development helpers belong to the running build, including saves predating a helper.
@@ -292,9 +295,35 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		for skill in SkillRank.development_skills():
 			if world.hero.find_skill(skill.id) == null:
 				world.hero.learned_skills.append(skill)
-	# Pre-M8 revision-4 saves may contain a defeated stalker; reopen as completed.
+	# Never resume a snapshot containing a defeated stalker as a playable attempt.
 	world.check_terminal()
 	return world
+
+
+static func _restore_stalkers(world: GridWorld, deadlines: Variant) -> bool:
+	if (not deadlines is Array or deadlines.size() != GridWorld.STALKER_DEADLINES.size()
+		or world.stalkers_arrived < 0 or world.stalkers_arrived > deadlines.size()):
+		return false
+	world.stalker_deadlines.clear()
+	for index in range(deadlines.size()):
+		if (not _integer(deadlines[index], 1)
+			or int(deadlines[index]) != GridWorld.STALKER_DEADLINES[index]):
+			return false
+		world.stalker_deadlines.append(int(deadlines[index]))
+	var identities: Array[String] = []
+	for actor in world.actors:
+		if not actor.spawn_id.begins_with("gate/stalker/"):
+			continue
+		if not actor.stalker or actor.summon_kind != "" or identities.has(actor.spawn_id):
+			return false
+		identities.append(actor.spawn_id)
+	if identities.size() != world.stalkers_arrived:
+		return false
+	for index in range(world.stalkers_arrived):
+		if (identities[index] != "gate/stalker/%d" % index
+			or world.stalker_deadlines[index] > world.turn_count):
+			return false
+	return true
 
 
 static func _fields(object: Object, names: Array[String]) -> Dictionary:
