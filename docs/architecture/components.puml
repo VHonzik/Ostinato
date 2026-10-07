@@ -16,7 +16,7 @@ component "SpellEffects + SpellResistance\nRank effects / mitigation" as Spells
 component "TrainerData + ClassSkillData\nSix-class ranks through level 10" as Training
 component "ClassSpellEffects + SummonRules + SummonData\nClass effects / pet commands / totem auras" as Summons
 component "ItemData + LootData + InventoryRules\nSource values / seeded loot / atomic transfers" as Items
-component "CombatPanel + HeroPanel\nInteraction / targeting / spell book" as Panels
+component "CombatPanel + HeroPanel + HotbarPanel\nInteraction / targeting / spell book / five rank slots" as Panels
 component "MenuPanel + GlobalOptions\nMain / completion / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
 component "GridView\nShared class / distinct creature sprites\nRelationships / selected target" as View
@@ -43,7 +43,7 @@ Hero --> Items
 Hero --> Training
 Menu --> World : train / loot / trade / equip
 Game --> Panels
-Panels --> World : cast / interact
+Panels --> World : cast / interact / assign explicit rank
 Game --> Menu
 Menu --> Session : class choice / new game
 Menu --> Saves : save / load

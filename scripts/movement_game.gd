@@ -12,6 +12,7 @@ const MELEE_BOUNDARY_SECONDS: float = 0.18
 var world: GridWorld
 var session := GameSession.new()
 var menu: MenuPanel
+var hotbar_panel: HotbarPanel
 var active_game: bool = false
 var _pending_action: bool = false
 var _pending_direction := Vector2i.ZERO
@@ -33,6 +34,15 @@ var _melee_delay_seconds: float = 0.0
 
 
 func _ready() -> void:
+	hotbar_panel = HotbarPanel.new()
+	hotbar_panel.theme = hero_panel.theme
+	$HUD.add_child(hotbar_panel)
+	hotbar_panel.slot_pressed.connect(_hotbar_slot_pressed)
+	hotbar_panel.rank_dropped.connect(_assign_hotbar)
+	hotbar_panel.lock_requested.connect(_toggle_hotbar_lock)
+	hero_panel.slot_chosen.connect(_hotbar_slot_pressed)
+	hero_panel.assignment_changed.connect(_refresh_hotbar)
+	hero_panel.lock_requested.connect(_toggle_hotbar_lock)
 	menu = MenuPanel.new()
 	menu.session = session
 	$HUD.add_child(menu)
@@ -45,6 +55,7 @@ func _ready() -> void:
 	combat_panel.service_requested.connect(_open_service)
 	combat_panel.conversation_requested.connect(menu.open_conversation)
 	combat_panel.loot_requested.connect(menu.open_loot)
+	menu.visibility_changed.connect(_refresh_hotbar)
 	menu.options.load_options()
 	_apply_fullscreen()
 	get_tree().auto_accept_quit = false
@@ -63,6 +74,7 @@ func _ready() -> void:
 	$HUD/Top.hide()
 	$HUD/Bottom.hide()
 	grid_view.hide()
+	hotbar_panel.hide()
 	for index in range(_speed_buttons.size()):
 		_speed_buttons[index].pressed.connect(_set_speed.bind([0.5, 1.0, 1.5][index]))
 	$HUD/Top/Rows/Heading/Reset.pressed.connect(_open_options)
@@ -89,7 +101,7 @@ func _process(delta: float) -> void:
 		return
 	_pending_action = false
 	if (world.is_terminal() or world.pending_melee != null
-		or combat_panel.visible or hero_panel.visible
+		or world.pending_skill != null or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
 		return
 	var direction := _pending_direction
@@ -145,14 +157,17 @@ func _input(event: InputEvent) -> void:
 		return
 	if hero_panel.visible:
 		_pending_action = false
+		if hero_panel.handle_assignment_key(event):
+			get_viewport().set_input_as_handled()
+			return
 		if event.is_action_pressed("ui_cancel") or event.is_action_pressed("spell_book"):
 			hero_panel.close()
 		elif event.is_action_pressed("character"):
 			_open_hero_panel(false)
 		elif event.is_action_pressed("ui_focus_next", false, true):
-			hero_panel.navigate(true)
+			hero_panel.navigate(true, true)
 		elif event.is_action_pressed("ui_focus_prev", false, true):
-			hero_panel.navigate(false)
+			hero_panel.navigate(false, true)
 		elif event.is_action_pressed("move_east"):
 			hero_panel.change_tab(1)
 		elif event.is_action_pressed("move_west"):
@@ -190,9 +205,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if (world.is_terminal() or world.pending_melee != null
-		or combat_panel.visible or hero_panel.visible
+		or world.pending_skill != null or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
 		return
+	for index in range(5):
+		if event.is_action_pressed("hotbar_%d" % (index + 1)):
+			_hotbar_slot_pressed(index)
+			get_viewport().set_input_as_handled()
+			return
 	if event.is_action_pressed("options"):
 		_open_options()
 		get_viewport().set_input_as_handled()
@@ -278,6 +298,7 @@ func _return_to_menu() -> void:
 	$HUD/Top.hide()
 	$HUD/Bottom.hide()
 	grid_view.hide()
+	hotbar_panel.hide()
 	session.world = null
 
 
@@ -314,6 +335,7 @@ func refresh_view() -> void:
 		combat_panel.close()
 		combat_panel.clear_spell_target()
 		_cancel_attack.hide()
+		hotbar_panel.hide()
 		$HUD/Top.hide()
 		$HUD/Bottom.hide()
 		grid_view.queue_redraw()
@@ -354,6 +376,7 @@ func refresh_view() -> void:
 		hero.health, hero.max_health, hero.mana, hero.max_mana,
 	]
 	hero_panel.refresh()
+	_refresh_hotbar()
 	_status.text = "Loop %d  |  Turn %d  |  Tile %d, %d  |  Speed %.1f  |  Credit %.1f" % [
 		session.loop_count, world.turn_count, world.player_tile.x, world.player_tile.y,
 		world.movement_speed, world.movement_credit,
@@ -389,7 +412,9 @@ func _open_hero_panel(spell_book: bool) -> void:
 		or world.pending_skill != null or combat_panel.visible):
 		return
 	_pending_action = false
+	hero_panel.layout_locked = world.hotbar_locked
 	hero_panel.open(world.hero, spell_book)
+	_refresh_hotbar()
 
 
 func _cast_skill(identifier: StringName) -> void:
@@ -415,6 +440,8 @@ func _refresh_chat(_message: String) -> void:
 
 
 func _on_hero_panel_visibility_changed() -> void:
+	$HUD/Bottom.visible = active_game and not hero_panel.visible and not combat_panel.visible
+	_refresh_hotbar()
 	_feedback.visible = not hero_panel.visible
 	$HUD/Bottom/Rows/Legend.visible = not hero_panel.visible
 	var controls := $HUD/Bottom/Rows/Controls as Label
@@ -451,7 +478,8 @@ func _handle_combat_input(event: InputEvent) -> void:
 
 
 func _on_combat_panel_visibility_changed() -> void:
-	$HUD/Bottom.visible = not combat_panel.visible
+	$HUD/Bottom.visible = active_game and not combat_panel.visible and not hero_panel.visible
+	_refresh_hotbar()
 
 
 func _cancel_pending_melee() -> void:
@@ -474,3 +502,53 @@ func _default_arrow_bindings() -> bool:
 		if not bound:
 			return false
 	return true
+
+
+func _hotbar_can_edit() -> bool:
+	return (active_game and world != null and not world.is_terminal() and not menu.visible
+		and not combat_panel.visible and world.pending_skill == null and world.pending_melee == null)
+
+
+func _refresh_hotbar() -> void:
+	if hotbar_panel == null or world == null or menu == null:
+		return
+	hotbar_panel.visible = (active_game and not world.is_terminal()
+		and not combat_panel.visible and not menu.visible)
+	var can_edit := _hotbar_can_edit()
+	hotbar_panel.refresh(world, menu.options, can_edit and not hero_panel.visible,
+		can_edit, hero_panel.choosing_slot)
+	hero_panel.layout_locked = world.hotbar_locked
+	hero_panel.refresh()
+
+
+func _hotbar_slot_pressed(slot: int) -> void:
+	if not _hotbar_can_edit() or slot < 0 or slot >= world.hotbar.size():
+		return
+	if hero_panel.visible:
+		if hero_panel.choosing_slot:
+			_assign_hotbar(slot, hero_panel.assignment_id, world.hero)
+		return
+	# Slot buttons do not take focus or bypass an existing UI owner.
+	var focused := get_viewport().gui_get_focus_owner()
+	if focused != null:
+		return
+	_cast_skill(world.hotbar[slot])
+
+
+func _assign_hotbar(slot: int, identifier: StringName, source_hero: HeroState) -> void:
+	if not _hotbar_can_edit() or source_hero != world.hero:
+		return
+	if world.assign_hotbar(slot, identifier):
+		hero_panel.finish_assignment()
+		_refresh_hotbar()
+
+
+func _toggle_hotbar_lock() -> void:
+	if not _hotbar_can_edit():
+		return
+	world.hotbar_locked = not world.hotbar_locked
+	if hero_panel.visible:
+		hero_panel.finish_assignment()
+	else:
+		hotbar_panel.lock_button.release_focus()
+	_refresh_hotbar()

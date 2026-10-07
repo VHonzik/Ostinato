@@ -1,0 +1,37 @@
+@startuml
+!pragma layout smetana
+skinparam shadowing false
+actor Player
+participant HeroPanel as Book
+participant SkillButton as Rank
+participant HotbarPanel as Bar
+participant MovementGame as Game
+participant GridWorld as World
+participant "GameSession / SaveCodec" as Persistence
+alt Keyboard assignment
+  Player -> Book : Select rank; Tab to Assign; Enter
+  Book -> Book : Store assignment_id; choose slot
+  Player -> Book : Top-row 1-5 (Esc cancels)
+  Book -> Game : slot_chosen(slot)
+else Mouse assignment
+  Player -> Rank : Drag learned rank
+  Rank --> Bar : {skill_id, hero}
+  Bar -> Bar : Validate current hero, learned active rank and unlocked layout
+  Bar -> Game : rank_dropped(slot, id, hero)
+end
+Game -> Game : Validate active world and UI ownership
+Game -> World : assign_hotbar(slot, id)
+alt Layout locked / unknown rank / passive / invalid slot
+  World --> Game : false; state and time unchanged
+else Accepted
+  World -> World : hotbar[slot] = explicit rank ID
+  World --> Game : true; no simulation time
+  Game -> Book : finish_assignment()
+  Game -> Bar : refresh labels / rank-cost-effect tooltips
+end
+Player -> Game : Toggle layout lock
+Game -> World : hotbar_locked = !hotbar_locked
+note over Game, World: Lock blocks edits, never ordinary activation.
+Persistence -> World : Save/load or reset preserves five IDs and lock
+note over Persistence, World: New Game starts with empty slots and unlocked layout.
+@enduml

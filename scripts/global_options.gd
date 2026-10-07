@@ -4,6 +4,7 @@ extends RefCounted
 const ACTIONS: Array[StringName] = [
 	&"move_north", &"move_northeast", &"move_east", &"move_southeast",
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
+	&"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5",
 	&"wait", &"interact", &"character", &"spell_book", &"inventory", &"quest_log", &"options", &"fullscreen",
 ]
 var path: String
@@ -15,7 +16,9 @@ var last_error: String = ""
 
 func _init(settings_path: String = "user://options.json") -> void:
 	path = settings_path
-	for entry in [[&"quest_log", KEY_J], [&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]:
+	for entry in [[&"hotbar_1", KEY_1], [&"hotbar_2", KEY_2], [&"hotbar_3", KEY_3],
+		[&"hotbar_4", KEY_4], [&"hotbar_5", KEY_5], [&"quest_log", KEY_J],
+		[&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]:
 		if not InputMap.has_action(entry[0]):
 			InputMap.add_action(entry[0])
 			var event := InputEventKey.new()
@@ -37,17 +40,33 @@ func load_options() -> void:
 	var data: Dictionary = json.data
 	if not data.get("bindings") is Dictionary:
 		return
+	var restored: Dictionary = {}
 	var used: Array[int] = []
+	# Validate saved actions first. New hotbar defaults must not steal older bindings.
 	for action in ACTIONS:
-		var keys: Variant = data.bindings.get(String(action), bindings[String(action)])
-		if not keys is Array or keys.is_empty():
+		if not data.bindings.has(String(action)):
+			continue
+		var keys: Variant = data.bindings[String(action)]
+		if not keys is Array or (keys.is_empty() and not String(action).begins_with("hotbar_")):
 			return
 		for key in keys:
 			if not (key is float or key is int) or key <= 0 or int(key) in used:
 				return
 			used.append(int(key))
+		restored[String(action)] = keys.duplicate()
 	for action in ACTIONS:
-		bindings[String(action)] = data.bindings.get(String(action), bindings[String(action)])
+		if restored.has(String(action)):
+			continue
+		var keys: Array = bindings[String(action)].duplicate()
+		for key in keys.duplicate():
+			if int(key) in used:
+				if not String(action).begins_with("hotbar_"):
+					return
+				keys.erase(key)
+			else:
+				used.append(int(key))
+		restored[String(action)] = keys
+	bindings = restored
 	fullscreen = data.get("fullscreen", false) == true
 	alternate_palette = data.get("alternate_palette", false) == true
 	apply_bindings()
@@ -64,8 +83,11 @@ func apply_bindings() -> void:
 
 func conflict(action: StringName, key: int) -> StringName:
 	for candidate in ACTIONS:
-		if candidate != action and key in bindings[String(candidate)]:
-			return candidate
+		if candidate == action:
+			continue
+		for bound_key in bindings[String(candidate)]:
+			if int(bound_key) == key:
+				return candidate
 	return &""
 
 
@@ -79,9 +101,14 @@ func rebind(action: StringName, key: int, swap: bool = false) -> bool:
 		last_error = "Key is assigned to %s. Confirm a swap." % other
 		return false
 	var previous: Array = bindings[String(action)].duplicate()
+	if other != &"" and previous.is_empty():
+		last_error = "Bind an unused key before swapping an unbound slot."
+		return false
 	if other != &"":
 		# Transfer the complete previous action binding; no same-context duplicates.
-		bindings[String(other)].erase(key)
+		for bound_key in bindings[String(other)].duplicate():
+			if int(bound_key) == key:
+				bindings[String(other)].erase(bound_key)
 		bindings[String(other)].append_array(previous)
 	bindings[String(action)] = [key]
 	apply_bindings()
@@ -104,4 +131,5 @@ func save_options() -> bool:
 
 
 func key_label(action: StringName) -> String:
-	return OS.get_keycode_string(int(bindings[String(action)][0]))
+	var keys: Array = bindings[String(action)]
+	return "Unbound" if keys.is_empty() else OS.get_keycode_string(int(keys[0]))

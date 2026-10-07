@@ -69,6 +69,18 @@ func _init(
 	combat_random.seed = world_seed ^ 15485863
 
 
+func assign_hotbar(slot: int, identifier: StringName) -> bool:
+	# FR-045: store an explicit learned rank; layout editing never spends time.
+	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
+		return false
+	if identifier != &"":
+		var skill := hero.find_skill(identifier)
+		if skill == null or skill.effect == SkillRank.Effect.PASSIVE:
+			return false
+	hotbar[slot] = identifier
+	return true
+
+
 func is_open(tile: Vector2i) -> bool:
 	if not bounds.has_point(tile) or blocked_tiles.has(tile) or tile == player_tile:
 		return false

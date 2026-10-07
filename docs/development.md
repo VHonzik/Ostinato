@@ -390,6 +390,39 @@ save/load continuation, population reservations and each of the five victory tar
 See [the arrival sequence](architecture/sequences/stalker_arrivals.puml) and
 [DATA-004](data/northshire.md#scheduled-invasion-arrivals-m8-b) for placement/adaptations.
 
+## Milestone 8-C: Five hotbar slots
+
+The five slots at the bottom of gameplay activate with **top-row 1–5** or a click.
+Numpad keys keep their movement/wait actions. **Options → Keybindings** rebinds each
+slot globally; labels show its current key. A conflicting binding requires the same
+explicit swap as other gameplay actions. Older saved bindings keep their keys; if
+a number is already taken, its new slot shows **Unbound** until assigned an unused key.
+
+Open **K**, select a rank with W/S, then Tab to **Assign**, press Enter, and choose
+**top-row 1–5** (or click a slot). Escape cancels assignment without closing the book.
+Alternatively drag the rank's spell-book button onto a slot. **Clear slot** uses the
+same slot chooser. **Lock/Unlock** is available in the book and beside the hotbar;
+locking prevents edits while leaving activation available. All editing is free.
+The selected rank's cost/effects appear in the scrollable book details; hover a slot
+for the full rank/cost/effect tooltip. Long slot titles are clipped to preserve all
+five controls at 640 × 360. W/S navigates ranks; Tab also reaches the book actions.
+
+Assignments keep the exact learned rank when higher ranks are trained. They and the
+lock survive death and save/load; New Game starts empty and unlocked. Derived pet
+commands can be assigned when their summon is learned; passives cannot be activated.
+Activation enters the existing spell-book targeting/casting path, including explicit
+confirmation, remembered targets, costs, cooldowns and cancellation. Menus, selectors,
+pending actions and focused UI suppress hotbar activation.
+
+FR-045/046/017/024/043 and FR-001/002/041 define this UI directly; no new combat rule
+or external numeric data is introduced. Save fields remain **demo revision 5**.
+`SkillButton` shares native drag data and wrapped tooltips between book and hotbar;
+`HotbarPanel` keeps five-slot presentation out of the simulation. Assignment validation
+stays in `GridWorld`; there is no new manager or separate casting implementation.
+See [hero classes](architecture/classes/hero.puml),
+[assignment flow](architecture/sequences/hotbar_assignment.puml) and
+[casting flow](architecture/sequences/hero_skill.puml).
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: menus and playable fixture.

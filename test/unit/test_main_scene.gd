@@ -1218,3 +1218,181 @@ func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() ->
 		assert_eq(_game.menu.page, "completion")
 		assert_true(_game.menu.visible)
 		assert_false(_game.hero_panel.visible)
+
+
+func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
+	await _tap_key(KEY_K)
+	var panel := _game.hero_panel
+	# W/S keeps skill navigation; Tab also reaches the assignment controls.
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_TAB)
+	assert_same(_game_viewport.gui_get_focus_owner(), panel._assign)
+	await _tap_key(KEY_ENTER)
+	assert_true(panel.choosing_slot)
+	await _tap_key(KEY_KP_1)
+	assert_eq(_game.world.hotbar[0], &"", "Numpad movement is not slot selection.")
+	await _tap_key(KEY_1)
+	assert_eq(_game.world.hotbar[0], &"frost_armor_1")
+	assert_false(panel.choosing_slot)
+	assert_eq(_game.world.turn_count, 0)
+	panel.begin_assignment()
+	await _tap_key(KEY_ESCAPE)
+	assert_true(panel.visible)
+	assert_false(panel.choosing_slot)
+	panel._lock.pressed.emit()
+	assert_true(_game.world.hotbar_locked)
+	assert_true(panel._assign.disabled)
+	await _tap_key(KEY_ESCAPE)
+	await _tap_key(KEY_1)
+	assert_eq(_game.world.turn_count, 1, "Locking preserves activation.")
+	assert_lt(_game.world.hero.mana, _game.world.hero.max_mana)
+	assert_false(_game.hero_panel.visible)
+	_game.hotbar_panel.lock_button.pressed.emit()
+	await _tap_key(KEY_K)
+	panel.begin_assignment(true)
+	await _tap_key(KEY_1)
+	assert_eq(_game.world.hotbar[0], &"")
+	assert_eq(_game.world.turn_count, 1)
+
+
+func test_hotbar_uses_spell_book_targeting_and_rejects_activation_with_modal_owners() -> void:
+	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	assert_true(_game.world.assign_hotbar(0, &"fireball_1"))
+	assert_true(_game.world.assign_hotbar(4, &"practice_1"))
+	_game.refresh_view()
+	await _tap_key(KEY_1)
+	assert_true(_game.combat_panel.visible)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, 0, "Target selector owns hotbar keys.")
+	await _tap_key(KEY_ENTER)
+	assert_not_null(_game.world.pending_skill)
+	var turns := _game.world.turn_count
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, turns, "Pending casts own hotbar keys.")
+	await _tap_key(KEY_ESCAPE)
+	_game.menu.open_options()
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, turns)
+	_game.menu.close()
+	await _tap_key(KEY_K)
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, turns, "The book does not activate slots.")
+	await _tap_key(KEY_ESCAPE)
+	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as Control
+	chat.grab_focus()
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, turns, "Focused chat suppresses gameplay keys.")
+	chat.release_focus()
+	await _tap_key(KEY_5)
+	assert_eq(_game.world.turn_count, turns + 1)
+
+
+func test_hotbar_rebinding_changes_activation_and_labels_but_not_slot_assignment_numbers() -> void:
+	assert_true(_game.world.assign_hotbar(0, &"practice_1"))
+	assert_true(_game.menu.options.rebind(&"hotbar_1", KEY_R))
+	_game.refresh_view()
+	assert_true(_game.hotbar_panel.slots[0].text.begins_with("R"))
+	await _tap_key(KEY_1)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_R)
+	assert_eq(_game.world.turn_count, 1)
+	await _tap_key(KEY_K)
+	_game.hero_panel.begin_assignment()
+	await _tap_key(KEY_1)
+	assert_eq(_game.world.hotbar[0], &"fireball_1")
+	assert_eq(_game.world.turn_count, 1)
+
+
+func test_hotbar_drop_validates_rank_lock_and_world_and_controls_fit_at_minimum_size() -> void:
+	await _tap_key(KEY_K)
+	var bar := _game.hotbar_panel
+	var rank := _game.world.hero.find_skill(&"fireball_1")
+	var data := {"skill_id": rank.id, "hero": _game.world.hero}
+	assert_true(bar._can_drop(Vector2.ZERO, data, 0))
+	bar._drop(Vector2.ZERO, data, 0)
+	assert_eq(_game.world.hotbar[0], rank.id)
+	assert_string_contains(bar.slots[0].tooltip_text, "Rank 1")
+	assert_string_contains(bar.slots[0].tooltip_text, "30 mana")
+	assert_string_contains(bar.slots[0].tooltip_text, "damage")
+	assert_false(bar._can_drop(Vector2.ZERO, {"skill_id": &"fireball_2", "hero": _game.world.hero}, 0))
+	_game._toggle_hotbar_lock()
+	assert_false(bar._can_drop(Vector2.ZERO, data, 1))
+	bar._drop(Vector2.ZERO, data, 1)
+	assert_eq(_game.world.hotbar[1], &"")
+	assert_eq(_game.world.turn_count, 0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var area := Rect2(0, 0, 640, 360)
+	for control: Control in [bar, bar.lock_button, _game.hero_panel._panel,
+		_game.hero_panel._assign, _game.hero_panel._clear, _game.hero_panel._details]:
+		assert_true(area.encloses(control.get_global_rect()), control.name)
+	for button in bar.slots:
+		assert_true(area.encloses(button.get_global_rect()))
+	assert_false(bar.get_global_rect().intersects(_game.hero_panel._panel.get_global_rect()))
+	_game.start_new_game()
+	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
+	assert_eq(_game.world.hotbar, [&"", &"", &"", &"", &""])
+
+
+func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank() -> void:
+	await _tap_key(KEY_K)
+	var button := _game.hero_panel._skill_buttons[1] as SkillButton
+	var destination := _game.hotbar_panel.slots[3].get_global_rect().get_center()
+	var origin := button.get_global_rect().get_center()
+	var motion := InputEventMouseMotion.new()
+	motion.position = origin
+	motion.global_position = origin
+	_viewport.push_input(motion, true)
+	var press := InputEventMouseButton.new()
+	press.position = origin
+	press.global_position = origin
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.button_mask = MOUSE_BUTTON_MASK_LEFT
+	_viewport.push_input(press, true)
+	motion.position = origin + Vector2(16, 0)
+	motion.global_position = motion.position
+	motion.relative = Vector2(16, 0)
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
+	_viewport.push_input(motion, true)
+	await get_tree().process_frame
+	assert_true(_game_viewport.gui_is_dragging(), "Godot started a native rank drag.")
+	motion.relative = destination - motion.position
+	motion.position = destination
+	motion.global_position = destination
+	_viewport.push_input(motion, true)
+	await get_tree().process_frame
+	press.position = destination
+	press.global_position = destination
+	press.pressed = false
+	press.button_mask = 0
+	_viewport.push_input(press, true)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert_eq(_game.world.hotbar[3], &"frost_armor_1")
+	assert_eq(_game.world.turn_count, 0, "Dragging does not activate the source spell.")
+	await _tap_key(KEY_ESCAPE)
+	await _click_button(_game.hotbar_panel.slots[3])
+	assert_eq(_game.world.turn_count, 1)
+	assert_lt(_game.world.hero.mana, _game.world.hero.max_mana)
+
+
+func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() -> void:
+	_game.world.hero.level = 10
+	for identifier in SkillRank.all_ranks():
+		_game.world.hero.learn_skill(SkillRank.catalog(StringName(identifier)))
+	await _tap_key(KEY_K)
+	await _tap_key(KEY_TAB)
+	assert_same(_game_viewport.gui_get_focus_owner(), _game.hero_panel._assign)
+	await _tap_key(KEY_ENTER)
+	await _tap_key(KEY_2)
+	assert_eq(_game.world.hotbar[1], &"fireball_1", "Tab to Assign must preserve the selected rank.")
+	var details := _game.hero_panel._details
+	details.text = "Long rank effect details.\n".repeat(20)
+	details.grab_focus()
+	await get_tree().process_frame
+	await _tap_key(KEY_S)
+	assert_gt(details.get_v_scroll_bar().value, 0.0)
+	assert_same(_game_viewport.gui_get_focus_owner(), details)
+	assert_eq(_game.world.turn_count, 0)
