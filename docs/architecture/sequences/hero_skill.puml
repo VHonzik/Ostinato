@@ -4,12 +4,20 @@ skinparam shadowing false
 actor Player
 participant MovementGame as Game
 participant HeroPanel as Book
+participant HotbarPanel as Bar
 participant CombatPanel as Targeting
 participant GridWorld as World
 participant HeroState as Hero
-Player -> Game : Open spell book; choose learned rank
-Game -> Book : open(hero, true)
-Book -> Game : cast_requested(id)
+alt Spell-book activation
+  Player -> Game : Open spell book; choose learned rank
+  Game -> Book : open(hero, true)
+  Book -> Game : cast_requested(id)
+else Hotbar activation
+  Player -> Game : Bound slot key, or click HotbarPanel slot
+  Game -> Game : Reject while a modal, focused UI or pending action owns input
+  Game -> World : Read explicit hotbar[slot] rank
+end
+Game -> Game : _cast_skill(id)
 alt Targeted damage / heal / buff
   Game -> Targeting : open_spell(world, skill)
   break Insufficient mana

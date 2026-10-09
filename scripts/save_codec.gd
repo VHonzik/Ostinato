@@ -253,7 +253,10 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		return null
 	world.hotbar.clear()
 	for identifier in data.hotbar:
-		if not identifier is String or (identifier != "" and not learned.has(identifier)):
+		if not identifier is String:
+			return null
+		if (identifier != "" and not learned.has(identifier)
+			and world.hero.find_skill(StringName(identifier)) == null):
 			return null
 		world.hotbar.append(StringName(identifier))
 	if not data.periodic is Array:

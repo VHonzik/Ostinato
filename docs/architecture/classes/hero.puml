@@ -7,12 +7,19 @@ hide empty members
 class MovementGame <<Node2D>> {
   world: GridWorld
   hero_panel: HeroPanel
+  hotbar_panel: HotbarPanel
+  _assign_hotbar(slot, identifier, source_hero)
+  _hotbar_slot_pressed(slot)
   _input(event)
   _cast_skill(identifier)
   refresh_view()
 }
 class HeroPanel <<Control>> {
   cast_requested(identifier)
+  choosing_slot: bool
+  assignment_id: StringName
+  begin_assignment(clear_slot)
+  handle_assignment_key(event)
   _last_spell_by_class: Dictionary
   open(hero, spell_book)
   close()
@@ -22,6 +29,9 @@ class HeroPanel <<Control>> {
 }
 class GridWorld <<RefCounted>> {
   hero: HeroState
+  hotbar: Array[StringName]
+  hotbar_locked: bool
+  assign_hotbar(slot, identifier): bool
   messages: PackedStringArray
   message_added(message)
   cast_skill(identifier): bool
@@ -65,6 +75,23 @@ class SkillRank <<RefCounted>> {
   free_instant: bool
   cost(hero): int
 }
+class HotbarPanel <<HBoxContainer>> {
+  slot_pressed(slot)
+  rank_dropped(slot, identifier, source_hero)
+  lock_requested()
+  refresh(world, options, can_activate, can_edit, choosing_slot)
+}
+class SkillButton <<Button>> {
+  skill: SkillRank
+  describe(rank_data, owner_hero)
+  _get_drag_data(position)
+  _make_custom_tooltip(text)
+}
+MovementGame *-- HotbarPanel
+HotbarPanel *-- "5" SkillButton
+HeroPanel *-- SkillButton : learned ranks / drag sources
+HotbarPanel --> MovementGame : slot / drop / lock signals
+HotbarPanel --> GlobalOptions : current activation labels
 MovementGame --> GridWorld : owns
 MovementGame *-- HeroPanel : modal UI
 HeroPanel --> HeroState : reads
