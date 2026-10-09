@@ -73,6 +73,7 @@ static func create_world(
 		var trader := GridActor.new(Vector2i(16, 18))
 		trader.title = "Supply trader"
 		trader.service = &"Trader"
+		trader.npc_id = 900003
 		world.actors.append(trader)
 		var chest := GridActor.new(Vector2i(19, 19))
 		chest.title = "Training supplies"
@@ -84,6 +85,7 @@ static func create_world(
 	for x in range(7, 14):
 		for y in range(8, 12):
 			world.indoor_tiles[Vector2i(x, y)] = true
+	world.vendor_stock = MerchantData.initial_stock(world.actors)
 	return world
 
 

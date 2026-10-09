@@ -307,11 +307,12 @@ func _open_options() -> void:
 	menu.open_options()
 
 
-func _open_service(service: StringName) -> void:
+func _open_service(actor: GridActor) -> void:
+	var service := actor.service
 	if service == &"Marshal":
 		menu.open_marshal()
 	elif service == &"Trader":
-		menu.open_trade()
+		menu.open_trade(actor)
 	else:
 		menu.open_trainer(service)
 

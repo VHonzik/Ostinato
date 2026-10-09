@@ -31,14 +31,14 @@ func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money
 	game.world.hero.copper = 500
 	assert_true(game.world.train(&"Mage", &"fireball_2"))
 	game.world.hero.inventory[0] = ItemData.instance(118, 4)
-	game.world.vendor_stock["2455"] = 0
+	game.world.vendor_stock["fixed/900003"]["2455"] = 0
 	game.world.hero.cooldowns["fire_blast"] = 500
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.level, 1)
 	assert_eq(game.world.hero.copper, 0)
 	assert_true(game.world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
-	assert_eq(game.world.vendor_stock["2455"], 3)
+	assert_eq(game.world.vendor_stock["fixed/900003"]["2455"], 3)
 	assert_eq(game.world.hero.cooldowns, {})
 	assert_true(game.select_class(&"Druid"))
 	var target: GridActor
@@ -209,29 +209,32 @@ func test_trade_quantity_is_atomic_and_finite_stock_does_not_replenish() -> void
 	var world := _world()
 	var trader := GridActor.new(Vector2i(4, 5))
 	trader.service = &"Trader"
+	trader.npc_id = 900003
+	trader.spawn_id = "fixed/900003"
 	world.actors.append(trader)
+	world.vendor_stock = MerchantData.initial_stock(world.actors)
 	world.hero.copper = 119
-	assert_false(world.buy_item(2455, 3))
+	assert_false(world.buy_item(trader, 2455, 3))
 	assert_eq(world.hero.copper, 119)
-	assert_eq(world.vendor_stock["2455"], 3)
+	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 3)
 	world.hero.copper = 120
-	assert_true(world.buy_item(2455, 3))
+	assert_true(world.buy_item(trader, 2455, 3))
 	assert_eq(world.hero.copper, 0)
 	assert_eq(world.hero.inventory[0].quantity, 3)
-	assert_eq(world.vendor_stock["2455"], 0)
-	assert_false(world.sell_item(0, 4))
-	assert_true(world.sell_item(0, 2))
+	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 0)
+	assert_false(world.sell_item(trader, 0, 4))
+	assert_true(world.sell_item(trader, 0, 2))
 	assert_eq(world.hero.copper, 20)
 	assert_eq(world.hero.inventory[0].quantity, 1)
 	assert_eq(world.turn_count, 0)
 	for turn in range(40):
 		world.wait_turn()
-	assert_eq(world.vendor_stock["2455"], 0)
+	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 0)
 	_fill(world.hero)
 	var money := world.hero.copper
-	assert_false(world.buy_item(159, 1))
+	assert_false(world.buy_item(trader, 159, 1))
 	assert_eq(world.hero.copper, money)
-	assert_eq(world.vendor_stock["159"], -1)
+	assert_eq(world.vendor_stock["fixed/900003"]["159"], -1)
 
 
 func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:

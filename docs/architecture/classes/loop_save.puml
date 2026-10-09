@@ -91,11 +91,12 @@ SaveStore --> SaveCodec
 SaveStore --> GameSession : validated replacement
 SaveCodec ..> GridWorld : explicit fields
 note bottom of SaveCodec
-Demo revision 5; revisions 1-4 remain untouched/incompatible.
+Demo revision 6; revisions 1-5 remain untouched/incompatible.
 JSON stores RNG int64 values as strings.
 Items, quests, populations, summons, threat and effect deadlines are captured.
 Restore validates a separate world before adoption.
 Five arrival deadlines and entered identities survive load.
+Stock is validated by merchant spawn_id and catalog item_id.
 Completed attempts cannot be captured; defeated-stalker snapshots open at completion.
 end note
 @enduml

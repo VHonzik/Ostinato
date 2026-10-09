@@ -17,7 +17,7 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_h
 	assert_true(world.open_loot(chest))
 	assert_true(world.loot_item(chest, 0))
 	assert_true(world.loot_money(chest))
-	world.vendor_stock["2455"] = 2
+	world.vendor_stock["fixed/900003"]["2455"] = 2
 	world.hero.potion_ready_turn = 120
 	world.hero.cooldowns["fire_blast"] = 8
 	assert_true(world.cast_skill(&"rejuvenation_1"))
@@ -47,7 +47,7 @@ func test_invalid_equipment_stacks_effects_and_stock_are_rejected_without_partia
 	bad.equipment.off_hand = ItemData.instance(2129)
 	assert_null(SaveCodec.restore(bad, true), "A staff occupies both hands.")
 	bad = state.duplicate(true)
-	bad.vendor_stock["2455"] = -2
+	bad.vendor_stock["fixed/900003"]["2455"] = -2
 	assert_null(SaveCodec.restore(bad, true))
 	bad = state.duplicate(true)
 	bad.restoration = {"water": {"total": 10, "duration": 0, "started": 0, "delivered": 0}}

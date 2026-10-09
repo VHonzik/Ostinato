@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-5 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-6 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -221,15 +221,37 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health
 		or world.hero.mana < 0 or world.hero.mana > world.hero.max_mana):
 		return null
-	if (not _number_map(data.vendor_stock, -1) or not _number_map(data.cooldowns, 0)
-		or not _number_map(data.resistances, 0)):
+	if not _number_map(data.cooldowns, 0) or not _number_map(data.resistances, 0):
 		return null
-	for key in data.vendor_stock:
-		if not world.vendor_stock.has(key):
+	if not data.vendor_stock is Dictionary:
+		return null
+	var initial_stock := MerchantData.initial_stock(world.actors)
+	if data.vendor_stock.size() != initial_stock.size():
+		return null
+	# A merchant instance owns its stock; duplicate identities cannot share a pool.
+	var merchant_ids: Array[String] = []
+	for actor in world.actors:
+		if actor.service != &"Trader":
+			continue
+		if (actor.spawn_id.is_empty() or merchant_ids.has(actor.spawn_id)
+			or MerchantData.catalog(actor.npc_id).is_empty()):
 			return null
-	if data.vendor_stock.size() != world.vendor_stock.size():
-		return null
-	world.vendor_stock = _normalized_numbers(data.vendor_stock)
+		merchant_ids.append(actor.spawn_id)
+	for merchant_id in initial_stock:
+		if not data.vendor_stock.has(merchant_id):
+			return null
+		var stock: Variant = data.vendor_stock[merchant_id]
+		var initial: Dictionary = initial_stock[merchant_id]
+		if not _number_map(stock, -1) or stock.size() != initial.size():
+			return null
+		for key in initial:
+			if not stock.has(key):
+				return null
+			if (int(initial[key]) == -1 and stock[key] != -1
+				or int(initial[key]) >= 0 and (stock[key] < 0 or stock[key] > initial[key])):
+				return null
+		world.vendor_stock[merchant_id] = _normalized_numbers(stock)
+
 	world.hero.cooldowns = _normalized_numbers(data.cooldowns)
 	world.hero.resistances = _normalized_numbers(data.resistances)
 	if not data.loot_quests is Array:

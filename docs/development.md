@@ -423,6 +423,27 @@ See [hero classes](architecture/classes/hero.puml),
 [assignment flow](architecture/sequences/hotbar_assignment.puml) and
 [casting flow](architecture/sequences/hero_skill.puml).
 
+## Milestone 8-D: Individual merchant services
+
+Use F beside Brother Danil (19,9), Dermot Johns (15,20), Godric Rothgar (18,20),
+or Janos Hammerknuckle (21,20), then choose **Trade**. Each window names that merchant
+and lists only their catalog. Buy chooses a number of clearly labeled bundles:
+Danil's bread/water bundles each contain five items for 25 copper. Armor and weapons
+are individual purchases. Sell chooses individual units from a carried stack.
+Keyboard focus scrolls through all stock/sell rows; mouse buttons use the same flow.
+Open menus, purchases, sales and rejected transfers spend no turns.
+
+Merissa stays ambient: the source audit found no merchant catalog. The Abbey supply
+trader at (16,18) remains as an explicit invasion provisioner, including three finite
+mana potions per Loop. Waiting or selling does not refill stock; death/New Game does.
+Danil's four ammo/throwing entries are omitted by the owner-approved FR-038 adaptation.
+See [DATA-004 merchant catalogs](data/merchants.md) for full source rows and adaptations.
+
+Current saves use **demo revision 6**. Revisions 1–5 remain incompatible and untouched;
+no migration is supplied. Save outside combat, buy/sell, then Load to restore each
+merchant's stock, inventory and copper. Transactions validate the original merchant
+again; changing worlds invalidates old interaction references.
+
 ## Project layout
 
 - `scenes/main.tscn`: integer-scaled viewport; `movement_game.tscn`: menus and playable fixture.

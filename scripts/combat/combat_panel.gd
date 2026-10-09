@@ -4,7 +4,7 @@ extends Control
 ## Interaction and spell targeting with explicit confirmation.
 signal action_taken
 signal selection_changed(actor: GridActor)
-signal service_requested(service: StringName)
+signal service_requested(actor: GridActor)
 signal conversation_requested(actor: GridActor)
 signal loot_requested(source: GridActor)
 
@@ -174,9 +174,9 @@ func _interact_selected() -> void:
 		conversation_requested.emit(contact)
 		return
 	if selected.alive and selected.service != &"":
-		var service := selected.service
+		var contact := selected
 		close()
-		service_requested.emit(service)
+		service_requested.emit(contact)
 		return
 	var message := _world.interact(selected)
 	if not message.is_empty():
