@@ -20,6 +20,7 @@ var _back: Callable
 var _capture_action: StringName = &""
 var _trainer: StringName = &""
 var _loot_source: GridActor
+var _merchant: GridActor
 var _quantity: int = 1
 
 
@@ -268,40 +269,53 @@ func _refresh_loot() -> void:
 		open_loot(_loot_source)
 
 
-func open_trade() -> void:
-	_begin("trade", "Supply trader / " + InventoryRules.money(session.world.hero.copper), close)
-	_label("Buy / sell any selected quantity. Trading spends no turns.")
-	for key in session.world.vendor_stock:
+func open_trade(merchant: GridActor) -> void:
+	if session.world == null or not session.world.trader_in_range(merchant):
+		close()
+		return
+	_merchant = merchant
+	_begin("trade", merchant.title + " / " + InventoryRules.money(session.world.hero.copper), close)
+	_label("Buy bundles / sell individual items. Trading spends no turns.")
+	for key in MerchantData.catalog(merchant.npc_id):
 		var data := ItemData.get_item(int(key))
-		var stock := int(session.world.vendor_stock[key])
-		var button := _button("Buy %s / %s each / %s" % [data.title,
-			InventoryRules.money(int(data.buy)), "Unlimited" if stock == -1 else str(stock) + " left"],
+		var stock := int(session.world.vendor_stock[merchant.spawn_id][key])
+		var offer: Dictionary = MerchantData.catalog(merchant.npc_id)[key]
+		var button := _button("Buy %s x%d / %s / %s" % [data.title, offer.quantity,
+			InventoryRules.money(int(offer.price)), "Unlimited" if stock == -1 else str(stock) + " left"],
 			_buy_quantity.bind(int(key)))
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(key))
-		button.disabled = stock == 0
+		button.disabled = stock >= 0 and stock < int(offer.quantity)
 	for index in range(40):
 		var item := session.world.hero.inventory[index]
 		if not item.is_empty():
 			var data := ItemData.get_item(int(item.id))
 			if data.tradable:
-				_button("Sell slot %d: %s x%d / %s each" % [index + 1, data.title,
+				var button := _button("Sell slot %d: %s x%d / %s each" % [index + 1, data.title,
 					item.quantity, InventoryRules.money(int(data.sell))], _sell_quantity.bind(index))
+				button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_button("Leave (Esc)", close)
 	_finish()
 
 
 func _buy_quantity(identifier: int) -> void:
+	var merchant := _merchant
+	var offer: Dictionary = MerchantData.catalog(merchant.npc_id)[str(identifier)]
 	_quantity = 1
-	_quantity_menu("Buy " + String(ItemData.get_item(identifier).title), 1000,
-		func(quantity: int) -> void:
-			_transaction(session.world.buy_item.bind(identifier, quantity), open_trade), open_trade)
+	_quantity_menu("%s: bundles of %d %s / %s each" % [merchant.title, offer.quantity,
+		ItemData.get_item(identifier).title, InventoryRules.money(int(offer.price))], 1000,
+		func(bundles: int) -> void:
+			_transaction(session.world.buy_item.bind(merchant, identifier, bundles),
+				open_trade.bind(merchant)), open_trade.bind(merchant))
 
 
 func _sell_quantity(index: int) -> void:
+	var merchant := _merchant
 	_quantity = 1
-	_quantity_menu("Sell quantity", int(session.world.hero.inventory[index].quantity),
+	_quantity_menu(merchant.title + ": sell quantity", int(session.world.hero.inventory[index].quantity),
 		func(quantity: int) -> void:
-			_transaction(session.world.sell_item.bind(index, quantity), open_trade), open_trade)
+			_transaction(session.world.sell_item.bind(merchant, index, quantity),
+				open_trade.bind(merchant)), open_trade.bind(merchant))
 
 
 func _quantity_menu(title: String, maximum: int, action: Callable, back: Callable) -> void:
@@ -558,7 +572,7 @@ func open_conversation(actor: GridActor) -> void:
 		_button("Discuss class selection", open_marshal)
 		choices = true
 	elif actor.service == &"Trader":
-		_button("Trade", open_trade)
+		_button("Trade", open_trade.bind(actor))
 		choices = true
 	elif actor.service in ClassSkillData.CLASSES:
 		_button("Train", open_trainer.bind(actor.service))

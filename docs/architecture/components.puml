@@ -15,7 +15,7 @@ component "MeleeRules + MeleeProfile + SwingTimer" as Combat
 component "SpellEffects + SpellResistance\nRank effects / mitigation" as Spells
 component "TrainerData + ClassSkillData\nSix-class ranks through level 10" as Training
 component "ClassSpellEffects + SummonRules + SummonData\nClass effects / pet commands / totem auras" as Summons
-component "ItemData + LootData + InventoryRules\nSource values / seeded loot / atomic transfers" as Items
+component "ItemData + MerchantData + LootData + InventoryRules\nSource catalogs / per-merchant stock / atomic transfers" as Items
 component "CombatPanel + HeroPanel + HotbarPanel\nInteraction / targeting / spell book / five rank slots" as Panels
 component "MenuPanel + GlobalOptions\nMain / completion / services / slots / keybindings" as Menu
 component "SaveStore + SaveCodec\nFive slots / validation / restoration" as Saves
@@ -50,7 +50,7 @@ Menu --> Saves : save / load
 Saves --> Session : replace validated world
 Saves --> World : capture / restore
 Menu --> Files : global options
-Saves --> Files : demo revision 5
+Saves --> Files : demo revision 6
 Game --> View
 View --> World
 Tests --> Godot

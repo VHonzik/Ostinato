@@ -923,7 +923,10 @@ func test_new_services_keep_last_keyboard_control_and_resources_visible_at_minim
 	_game.world.hero.level = 10
 	_game.world.hero._apply_level_stats()
 	_game.world.hero.copper = 10000
-	for page: Callable in [_game.menu.open_inventory, _game.menu.open_trade,
+	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 900003)[0] as GridActor
+	_game.world.player_tile = merchant.tile + Vector2i.RIGHT
+	for page: Callable in [_game.menu.open_inventory, _game.menu.open_trade.bind(merchant),
 		_game.menu.open_trainer.bind(&"Mage")]:
 		page.call()
 		_game.menu._buttons[-1].grab_focus()
@@ -1396,3 +1399,82 @@ func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() 
 	assert_gt(details.get_v_scroll_bar().value, 0.0)
 	assert_same(_game_viewport.gui_get_focus_owner(), details)
 	assert_eq(_game.world.turn_count, 0)
+
+
+func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mouse_sell() -> void:
+	var danil := _game.world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 152)[0] as GridActor
+	_game.world.player_tile = Vector2i(19, 10)
+	_game.world.hero.copper = 100
+	_game.refresh_view()
+	await _tap_key(KEY_F)
+	assert_eq(_game.menu.page, "conversation")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "trade")
+	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, "Brother Danil")
+	assert_string_contains(_game.menu._buttons[0].text, "Bread x5")
+	assert_string_contains(_game.menu._buttons[1].text, "Water x5")
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "quantity")
+	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, "bundles of 5")
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(_game.menu.page, "trade")
+	assert_same(_game.menu._merchant, danil)
+	await _tap_key(KEY_ENTER)
+	_game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text == "+1")[0].grab_focus()
+	await _tap_key(KEY_ENTER)
+	_game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text == "Confirm 2")[0].grab_focus()
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.hero.inventory[0].id, 4540)
+	assert_eq(_game.world.hero.inventory[0].quantity, 10)
+	assert_eq(_game.world.hero.copper, 50)
+	var sell := _game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Sell slot 1:"))[0] as Button
+	sell.grab_focus()
+	for frame in range(4):
+		await get_tree().process_frame
+	await _click_button(sell)
+	assert_eq(_game.menu.page, "quantity")
+	var confirm := _game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text == "Confirm 1")[0] as Button
+	confirm.grab_focus()
+	for frame in range(4):
+		await get_tree().process_frame
+	await _click_button(confirm)
+	assert_eq(_game.menu.page, "trade")
+	assert_same(_game.menu._merchant, danil)
+	assert_eq(_game.world.hero.inventory[0].quantity, 9)
+	assert_eq(_game.world.hero.copper, 51)
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_game.world.player_tile, Vector2i(19, 10))
+
+
+func test_every_merchant_catalog_and_full_bag_can_be_scrolled_at_minimum_size() -> void:
+	for index in range(40):
+		_game.world.hero.inventory[index] = ItemData.instance(159, 20)
+	for npc_id in [152, 190, 1213, 78, 900003]:
+		var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
+			return actor.npc_id == npc_id)[0] as GridActor
+		for direction in GridWorld.DIRECTIONS:
+			if _game.world.is_open(merchant.tile + direction):
+				_game.world.player_tile = merchant.tile + direction
+				break
+		_game.menu.open_conversation(merchant)
+		await _tap_key(KEY_ENTER)
+		assert_eq(_game.menu.page, "trade")
+		assert_same(_game.menu._merchant, merchant)
+		assert_eq(_game.menu._buttons.size(), MerchantData.catalog(npc_id).size() + 41)
+		# Every row must fit horizontally, including long buy and full-stack sell labels.
+		for button in _game.menu._buttons:
+			button.grab_focus()
+			for frame in range(3):
+				await get_tree().process_frame
+			assert_lte(button.get_global_rect().end.x, 570.0, button.text)
+			assert_gte(button.position.x, 0.0, button.text)
+		var panel := _game.menu._panel.get_global_rect()
+		assert_true(Rect2(0, 0, 640, 360).encloses(panel))
+		assert_true(panel.encloses(_game.menu._buttons[-1].get_global_rect()))
+		await _tap_key(KEY_ESCAPE)
+		assert_eq(_game.world.turn_count, 0)

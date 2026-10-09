@@ -6,7 +6,7 @@ hide empty members
 class MenuPanel {
   open_inventory()
   open_loot(source)
-  open_trade()
+  open_trade(merchant)
   open_trainer(category)
 }
 class GridWorld {
@@ -14,8 +14,8 @@ class GridWorld {
   vendor_stock: Dictionary
   train(category, identifier): bool
   loot_item(source, index): bool
-  buy_item(identifier, quantity): bool
-  sell_item(index, quantity): bool
+  buy_item(merchant, identifier, bundles): bool
+  sell_item(merchant, index, quantity): bool
   equip_item(index, slot): bool
   consume_item(index): bool
 }
@@ -27,6 +27,7 @@ class HeroState {
 }
 class GridActor {
   spawn_id: String
+  npc_id: int
   loot_assigned, chest: bool
   loot: Array<Dictionary>
   loot_copper: int
@@ -34,6 +35,10 @@ class GridActor {
 class ItemData {
   {static} ITEMS: Dictionary
   {static} get_item(identifier): Dictionary
+}
+class MerchantData {
+  {static} catalog(npc_id): Dictionary
+  {static} initial_stock(actors): Dictionary
 }
 class InventoryRules {
   {static} add(inventory, item): bool
@@ -54,6 +59,8 @@ class SkillRank {
 MenuPanel --> GridWorld : transaction requests
 GridWorld *-- HeroState
 GridWorld *-- GridActor
+GridWorld --> MerchantData : catalog / stock by spawn_id
+MenuPanel --> MerchantData : bundle sizes and prices
 GridWorld --> InventoryRules
 GridWorld --> LootData
 GridWorld --> SkillRank

@@ -19,10 +19,10 @@ const NPCS: Array = [
 	[900002, "Shaman trainer", 12, 17, "Shaman"],
 	[900003, "Abbey supply trader", 16, 18, "Trader"],
 	[1642, "Northshire Guard", 53, 14, ""],
-	[152, "Brother Danil", 19, 9, ""],
-	[190, "Dermot Johns", 15, 20, ""],
-	[1213, "Godric Rothgar", 18, 20, ""],
-	[78, "Janos Hammerknuckle", 21, 20, ""],
+	[152, "Brother Danil", 19, 9, "Trader"],
+	[190, "Dermot Johns", 15, 20, "Trader"],
+	[1213, "Godric Rothgar", 18, 20, "Trader"],
+	[78, "Janos Hammerknuckle", 21, 20, "Trader"],
 	[11940, "Merissa Stilwell", 23, 16, ""],
 	[6373, "Dane Winslow", 28, 16, ""],
 	[951, "Brother Paxton", 24, 6, ""],
@@ -94,6 +94,7 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	chest.alive = false
 	chest.spawn_id = "abbey/chest/0"
 	world.actors.append(chest)
+	world.vendor_stock = MerchantData.initial_stock(world.actors)
 	return world
 
 

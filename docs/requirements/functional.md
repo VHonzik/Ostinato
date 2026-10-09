@@ -804,6 +804,9 @@ Store currency as whole copper: 100 copper = 1 silver; 100 silver = 1 gold. Use 
 prices and finite/unlimited stock flags from DATA-004. Finite stock never replenishes within
 a Loop; reset restores it. Unlimited stock remains unlimited. Buyback is excluded.
 Buying/selling an explicitly selected quantity is atomic, with no partial charge or transfer.
+Danil's arrows, bullets and two throwing-weapon entries are omitted from the demo merchant
+catalog because ranged-weapon attacks are outside the implemented combat controls. This
+explicit catalog adaptation does not add ranged combat; see [DATA-004](../data/merchants.md).
 
 ## Saving, menus, and interface
 

@@ -52,8 +52,7 @@ var loot_quests: Array[String] = []
 var quests: Dictionary = {}
 var population: Array[Dictionary] = []
 var northshire: bool = false
-var vendor_stock: Dictionary = {"2139": -1, "2129": -1, "85": -1, "117": -1,
-	"159": -1, "2455": 3}
+var vendor_stock: Dictionary = {}
 var indoor_tiles: Dictionary[Vector2i, bool] = {}
 
 
@@ -926,35 +925,41 @@ func _hide_empty_corpse(source: GridActor) -> void:
 		source.corpse_visible = false
 
 
-func trader_in_range() -> bool:
-	for actor in interaction_candidates():
-		if actor.alive and actor.service == &"Trader":
-			return true
-	return false
+func trader_in_range(merchant: GridActor) -> bool:
+	return (merchant != null and actors.has(merchant) and merchant.alive
+		and merchant.relationship == GridActor.Relationship.FRIENDLY
+		and merchant.service == &"Trader" and interaction_candidates().has(merchant)
+		and vendor_stock.has(merchant.spawn_id)
+		and not MerchantData.catalog(merchant.npc_id).is_empty())
 
 
-func buy_item(identifier: int, quantity: int) -> bool:
-	var key := str(identifier)
-	if not item_action_ready() or not trader_in_range() or not vendor_stock.has(key) or quantity < 1:
+func buy_item(merchant: GridActor, identifier: int, bundles: int) -> bool:
+	if not item_action_ready() or not trader_in_range(merchant) or bundles < 1 or bundles > 1000:
 		return false
-	var data := ItemData.get_item(identifier)
-	var cost := int(data.buy) * quantity
-	if (quantity > 1000 or cost > hero.copper
-		or (int(vendor_stock[key]) >= 0 and quantity > int(vendor_stock[key]))):
+	var key := str(identifier)
+	var catalog := MerchantData.catalog(merchant.npc_id)
+	if not catalog.has(key):
+		return false
+	var offer: Dictionary = catalog[key]
+	var stock: Dictionary = vendor_stock[merchant.spawn_id]
+	var quantity := int(offer.quantity) * bundles
+	var cost := int(offer.price) * bundles
+	if cost > hero.copper or (int(stock[key]) >= 0 and quantity > int(stock[key])):
 		add_message("Purchase rejected: insufficient money or stock.")
 		return false
 	if not InventoryRules.add(hero.inventory, ItemData.instance(identifier, quantity)):
 		add_message("Purchase rejected: inventory full.")
 		return false
 	hero.copper -= cost
-	if int(vendor_stock[key]) >= 0:
-		vendor_stock[key] -= quantity
-	add_message("Bought %s x%d for %s." % [data.title, quantity, InventoryRules.money(cost)])
+	if int(stock[key]) >= 0:
+		stock[key] -= quantity
+	add_message("Bought %s x%d from %s for %s." % [ItemData.get_item(identifier).title,
+		quantity, merchant.title, InventoryRules.money(cost)])
 	return true
 
 
-func sell_item(index: int, quantity: int) -> bool:
-	if (not item_action_ready() or not trader_in_range() or index < 0 or index >= 40
+func sell_item(merchant: GridActor, index: int, quantity: int) -> bool:
+	if (not item_action_ready() or not trader_in_range(merchant) or index < 0 or index >= 40
 		or hero.inventory[index].is_empty() or quantity < 1):
 		return false
 	var item := hero.inventory[index]
@@ -965,7 +970,7 @@ func sell_item(index: int, quantity: int) -> bool:
 	item.quantity -= quantity
 	if item.quantity == 0:
 		hero.inventory[index] = {}
-	add_message("Sold %s x%d for %s." % [data.title, quantity,
+	add_message("Sold %s x%d to %s for %s." % [data.title, quantity, merchant.title,
 		InventoryRules.money(int(data.sell) * quantity)])
 	return true
 

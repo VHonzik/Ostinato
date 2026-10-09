@@ -196,10 +196,12 @@ The tables and source-ID data above describe M6; these explicit gaps remain for 
   spirit resurrection and repair services do not apply to the Loop game.
 - M7 completed referrals 3101/3103/3105 for paladin/priest/warlock, an adapted shaman
   referral, active trainers and included summon exceptions; see [DATA-003](renaissance.md).
-- M8 final content audit: distinct source merchant stock for Danil/Dermot/Godric/Janos/
-  Merissa; remaining ordinary/reference/world-drop and chest tables; ambient rabbits,
+- M8-D completed the [merchant audit and services](merchants.md): Danil, Dermot, Godric
+  and Janos have individual source catalogs; Merissa has no source vendor catalog.
+  The supply trader is explicitly retained as an invasion provisioner.
+- M8 final content audit: remaining ordinary/reference/world-drop and chest tables; ambient rabbits,
   deer/fawns, mine spiders and remaining guard/peasant copies; terrain/art refinement.
-  The supply trader currently retains M5's explicitly combined service table.
+  M8-D records the retained supply trader separately from the source merchants.
 - Outside-valley Defias Cutpurses 94 and unrelated generic Stormwind guards 1423 are
   excluded. Stalkers are the invasion addition, not a source Northshire population.
 
@@ -208,6 +210,7 @@ The tables and source-ID data above describe M6; these explicit gaps remain for 
 M6 demo revision **3** added quests/counters/handed-in state, population slots/ordinals/
 deadlines, source NPC IDs, and the Northshire marker. Revisions 1 and 2 are incompatible
 and preserved unchanged; no migration is claimed. M7 now uses revision **4**.
+M8-D now uses revision **6** for per-merchant stock; revisions 1–5 are incompatible.
 Restore validates a separate world.
 Loop reset returns to seeded ordinal zero and clears quests, preserving learned ranks.
 
