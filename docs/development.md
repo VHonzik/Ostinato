@@ -394,7 +394,9 @@ for the full rank/cost/effect tooltip. Long slot titles are clipped to preserve 
 five controls at 640 × 360. W/S navigates ranks; Tab also reaches the book actions.
 
 Assignments keep the exact learned rank when higher ranks are trained. They and the
-lock survive death and save/load; New Game starts empty and unlocked. Derived pet
+lock survive death and save/load; New Game assigns Fireball rank 1 to slot 1 and
+Frost Armor rank 1 to slot 2, with the remaining slots empty and the layout unlocked.
+Defaults never replace cleared slots on load or death. Derived pet
 commands can be assigned when their summon is learned; passives cannot be activated.
 Activation enters the existing spell-book targeting/casting path, including explicit
 confirmation, remembered targets, costs, cooldowns and cancellation. Menus, selectors,
@@ -410,9 +412,9 @@ stays in `GridWorld`; there is no new manager or separate casting implementation
 
 Use F beside Brother Danil (19,9), Dermot Johns (15,20), Godric Rothgar (18,20),
 or Janos Hammerknuckle (21,20), then choose **Trade**. Each window names that merchant
-and lists only their catalog. Buy chooses a number of clearly labeled bundles:
-Danil's bread/water bundles each contain five items for 25 copper. Armor and weapons
-are individual purchases. Sell chooses individual units from a carried stack.
+and lists only their catalog. Buy offers direct 1/stack actions and 10 for stack limits
+above 10; Sell offers 1/10/the carried stack, showing quantities and total prices. Danil's bread/water cost 5 copper per item. Armor and weapons
+are individual purchases. **Sell All Grey Items** sells carried Poor-quality items.
 Keyboard focus scrolls through all stock/sell rows; mouse buttons use the same flow.
 Open menus, purchases, sales and rejected transfers spend no turns.
 
@@ -431,8 +433,9 @@ again; changing worlds invalidates old interaction references.
 
 Wolves, kobolds, Defias and Garrick now use complete sourced ordinary loot and their
 shared grey-equipment/bag tables. F beside a corpse or chest opens its remaining loot;
-collect items and copper separately. Collection costs no time. A full inventory leaves
-an offered stack at its source; make room and try again. Food, equipment and selling
+collect items and copper separately or choose **Loot All**. Loot All collects copper
+and each eligible whole stack that fits, leaving unfit/ineligible stacks at the source
+without blocking later stacks. Collection costs no time. Make room and try again. Food, equipment and selling
 use the same inventory/merchant controls as before. Dropped bags are trade goods only
 and do not expand the fixed inventory.
 

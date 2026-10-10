@@ -906,12 +906,8 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.menu.page, "quantity")
-	var confirm_button: Button
-	for button in _game.menu._buttons:
-		if button.text.begins_with("Confirm"):
-			confirm_button = button
-	confirm_button.grab_focus()
+	assert_eq(_game.menu.page, "buy")
+	assert_true(_game.menu._buttons[0].text.begins_with("Buy 1 /"))
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.inventory[0].id, 2139)
 	assert_eq(_game.world.hero.copper, 143)
@@ -1233,7 +1229,7 @@ func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
 	await _tap_key(KEY_ENTER)
 	assert_true(panel.choosing_slot)
 	await _tap_key(KEY_KP_1)
-	assert_eq(_game.world.hotbar[0], &"", "Numpad movement is not slot selection.")
+	assert_eq(_game.world.hotbar[0], &"fireball_1", "Numpad movement is not slot selection.")
 	await _tap_key(KEY_1)
 	assert_eq(_game.world.hotbar[0], &"frost_armor_1")
 	assert_false(panel.choosing_slot)
@@ -1322,7 +1318,7 @@ func test_hotbar_drop_validates_rank_lock_and_world_and_controls_fit_at_minimum_
 	_game._toggle_hotbar_lock()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 1))
 	bar._drop(Vector2.ZERO, data, 1)
-	assert_eq(_game.world.hotbar[1], &"")
+	assert_eq(_game.world.hotbar[1], &"frost_armor_1")
 	assert_eq(_game.world.turn_count, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -1335,7 +1331,7 @@ func test_hotbar_drop_validates_rank_lock_and_world_and_controls_fit_at_minimum_
 	assert_false(bar.get_global_rect().intersects(_game.hero_panel._panel.get_global_rect()))
 	_game.start_new_game()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
-	assert_eq(_game.world.hotbar, [&"", &"", &"", &"", &""])
+	assert_eq(_game.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
 
 
 func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank() -> void:
@@ -1412,20 +1408,18 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
 	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, "Brother Danil")
-	assert_string_contains(_game.menu._buttons[0].text, "Bread x5")
-	assert_string_contains(_game.menu._buttons[1].text, "Water x5")
+	assert_string_contains(_game.menu._buttons[0].text, "Bread / 0g 0s 5c each")
+	assert_string_contains(_game.menu._buttons[1].text, "Water / 0g 0s 5c each")
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.menu.page, "quantity")
-	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, "bundles of 5")
+	assert_eq(_game.menu.page, "buy")
+	assert_eq(_game.menu._buttons.map(func(button: Button) -> String: return button.text),
+		["Buy 1 / 0g 0s 5c", "Buy 10 / 0g 0s 50c", "Buy stack (20) / 0g 1s 0c", "Back (Esc)"])
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.menu.page, "trade")
 	assert_same(_game.menu._merchant, danil)
+	assert_eq(_game.world.hero.copper, 100, "Backing out never purchases.")
 	await _tap_key(KEY_ENTER)
-	_game.menu._buttons.filter(func(button: Button) -> bool:
-		return button.text == "+1")[0].grab_focus()
-	await _tap_key(KEY_ENTER)
-	_game.menu._buttons.filter(func(button: Button) -> bool:
-		return button.text == "Confirm 2")[0].grab_focus()
+	await _tap_key(KEY_S)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.inventory[0].id, 4540)
 	assert_eq(_game.world.hero.inventory[0].quantity, 10)
@@ -1436,17 +1430,23 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	for frame in range(4):
 		await get_tree().process_frame
 	await _click_button(sell)
-	assert_eq(_game.menu.page, "quantity")
-	var confirm := _game.menu._buttons.filter(func(button: Button) -> bool:
-		return button.text == "Confirm 1")[0] as Button
-	confirm.grab_focus()
+	assert_eq(_game.menu.page, "sell")
+	var one := _game.menu._buttons[0]
+	assert_eq(one.text, "Sell 1 / 0g 0s 1c")
 	for frame in range(4):
 		await get_tree().process_frame
-	await _click_button(confirm)
+	await _click_button(one)
 	assert_eq(_game.menu.page, "trade")
 	assert_same(_game.menu._merchant, danil)
 	assert_eq(_game.world.hero.inventory[0].quantity, 9)
 	assert_eq(_game.world.hero.copper, 51)
+	_game.menu._sell_options(0)
+	assert_true(_game.menu._buttons[1].disabled, "Cannot sell ten from a stack of nine.")
+	assert_eq(_game.menu._buttons[2].text, "Sell stack (9) / 0g 0s 9c")
+	_game.menu._buttons[2].grab_focus()
+	await _tap_key(KEY_ENTER)
+	assert_true(_game.world.hero.inventory[0].is_empty())
+	assert_eq(_game.world.hero.copper, 60)
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.player_tile, Vector2i(19, 10))
 
@@ -1465,7 +1465,7 @@ func test_every_merchant_catalog_and_full_bag_can_be_scrolled_at_minimum_size() 
 		await _tap_key(KEY_ENTER)
 		assert_eq(_game.menu.page, "trade")
 		assert_same(_game.menu._merchant, merchant)
-		assert_eq(_game.menu._buttons.size(), MerchantData.catalog(npc_id).size() + 41)
+		assert_eq(_game.menu._buttons.size(), MerchantData.catalog(npc_id).size() + 42)
 		# Every row must fit horizontally, including long buy and full-stack sell labels.
 		for button in _game.menu._buttons:
 			button.grab_focus()
@@ -1478,3 +1478,72 @@ func test_every_merchant_catalog_and_full_bag_can_be_scrolled_at_minimum_size() 
 		assert_true(panel.encloses(_game.menu._buttons[-1].get_global_rect()))
 		await _tap_key(KEY_ESCAPE)
 		assert_eq(_game.world.turn_count, 0)
+
+
+func test_trade_stack_options_respect_money_stock_and_minimum_window_size() -> void:
+	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 900003)[0] as GridActor
+	_game.world.player_tile = Vector2i(17, 17)
+	_game.world.hero.copper = 200
+	_game.menu.open_trade(merchant)
+	_game.menu._buy_options(2455)
+	assert_eq(_game.menu._buttons.size(), 3, "Potions offer 1 and stack, without 10.")
+	assert_true(_game.menu._buttons[1].text.begins_with("Buy stack (5)"))
+	assert_true(_game.menu._buttons[1].disabled, "Stock of three cannot fill a stack of five.")
+	_game.menu._buy_options(159)
+	_game.menu._buttons[2].grab_focus()
+	for frame in range(4):
+		await get_tree().process_frame
+	for button in _game.menu._buttons:
+		assert_true(_game.menu._panel.get_global_rect().encloses(button.get_global_rect()))
+	await _click_button(_game.menu._buttons[2])
+	assert_eq(_game.world.hero.inventory[0], ItemData.instance(159, 20))
+	assert_eq(_game.world.hero.copper, 100)
+	_game.world.hero.copper = 4
+	_game.menu._buy_options(159)
+	for index in range(3):
+		assert_true(_game.menu._buttons[index].disabled)
+	_game.menu._sell_options(0)
+	_game.menu._buttons[1].grab_focus()
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.world.hero.inventory[0].quantity, 10)
+	assert_eq(_game.world.hero.copper, 14)
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
+	var chest := _game.world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.chest and actor.loot_table == 2843)[0] as GridActor
+	_game.world.player_tile = chest.tile
+	chest.loot_assigned = true
+	chest.loot_copper = 8
+	chest.loot = [ItemData.instance(7073, 2), ItemData.instance(159, 3)]
+	_game.menu.open_loot(chest)
+	assert_eq(_game.menu._buttons[0].text, "Loot All")
+	for frame in range(4):
+		await get_tree().process_frame
+	await _click_button(_game.menu._buttons[0])
+	assert_false(_game.menu.visible)
+	assert_false(chest.corpse_visible)
+	assert_eq(_game.world.hero.copper, 8)
+	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 152)[0] as GridActor
+	_game.world.player_tile = Vector2i(19, 10)
+	_game.menu.open_trade(merchant)
+	var sell := _game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text == "Sell All Grey Items")[0] as Button
+	sell.grab_focus()
+	await _tap_key(KEY_ENTER)
+	assert_eq(_game.menu.page, "trade")
+	assert_true(_game.world.hero.inventory[0].is_empty())
+	assert_eq(_game.world.hero.inventory[1], ItemData.instance(159, 3))
+	assert_eq(_game.world.hero.copper, 20)
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_starting_mage_hotbar_activates_without_manual_assignment() -> void:
+	assert_eq(_game.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_false(_game.world.hotbar_locked)
+	await _tap_key(KEY_2)
+	assert_true(_game.world.hero.buffs.has(&"frost_armor_1"))
+	assert_eq(_game.world.turn_count, 1)

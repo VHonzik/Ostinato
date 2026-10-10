@@ -5,6 +5,7 @@ extends RefCounted
 const ITEMS: Dictionary = {
 	"755": {
 		"title": "Melted Candle",
+		"quality": 0,
 		"slot": "",
 		"level": 0,
 		"stack": 5,
@@ -26,6 +27,7 @@ const ITEMS: Dictionary = {
 	},
 	"765": {
 		"title": "Silverleaf",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -48,6 +50,7 @@ const ITEMS: Dictionary = {
 	},
 	"805": {
 		"title": "Small Red Pouch",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -70,6 +73,7 @@ const ITEMS: Dictionary = {
 	},
 	"828": {
 		"title": "Small Blue Pouch",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -92,6 +96,7 @@ const ITEMS: Dictionary = {
 	},
 	"1364": {
 		"title": "Ragged Leather Vest",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -113,6 +118,7 @@ const ITEMS: Dictionary = {
 	},
 	"1366": {
 		"title": "Ragged Leather Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -134,6 +140,7 @@ const ITEMS: Dictionary = {
 	},
 	"1367": {
 		"title": "Ragged Leather Boots",
+		"quality": 0,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -155,6 +162,7 @@ const ITEMS: Dictionary = {
 	},
 	"1368": {
 		"title": "Ragged Leather Gloves",
+		"quality": 0,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -176,6 +184,7 @@ const ITEMS: Dictionary = {
 	},
 	"1369": {
 		"title": "Ragged Leather Belt",
+		"quality": 0,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -197,6 +206,7 @@ const ITEMS: Dictionary = {
 	},
 	"1370": {
 		"title": "Ragged Leather Bracers",
+		"quality": 0,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -218,6 +228,7 @@ const ITEMS: Dictionary = {
 	},
 	"1372": {
 		"title": "Ragged Cloak",
+		"quality": 0,
 		"slot": "back",
 		"level": 1,
 		"stack": 1,
@@ -239,6 +250,7 @@ const ITEMS: Dictionary = {
 	},
 	"1374": {
 		"title": "Frayed Shoes",
+		"quality": 0,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -260,6 +272,7 @@ const ITEMS: Dictionary = {
 	},
 	"1376": {
 		"title": "Frayed Cloak",
+		"quality": 0,
 		"slot": "back",
 		"level": 1,
 		"stack": 1,
@@ -281,6 +294,7 @@ const ITEMS: Dictionary = {
 	},
 	"1377": {
 		"title": "Frayed Gloves",
+		"quality": 0,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -302,6 +316,7 @@ const ITEMS: Dictionary = {
 	},
 	"1378": {
 		"title": "Frayed Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -323,6 +338,7 @@ const ITEMS: Dictionary = {
 	},
 	"1380": {
 		"title": "Frayed Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -344,6 +360,7 @@ const ITEMS: Dictionary = {
 	},
 	"2055": {
 		"title": "Small Wooden Hammer",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -365,6 +382,7 @@ const ITEMS: Dictionary = {
 	},
 	"2057": {
 		"title": "Pitted Defias Shortsword",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -386,6 +404,7 @@ const ITEMS: Dictionary = {
 	},
 	"2070": {
 		"title": "Darnassian Bleu",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -409,6 +428,7 @@ const ITEMS: Dictionary = {
 	},
 	"2210": {
 		"title": "Battered Buckler",
+		"quality": 0,
 		"slot": "off_hand",
 		"level": 1,
 		"stack": 1,
@@ -430,6 +450,7 @@ const ITEMS: Dictionary = {
 	},
 	"2211": {
 		"title": "Bent Large Shield",
+		"quality": 0,
 		"slot": "off_hand",
 		"level": 1,
 		"stack": 1,
@@ -451,6 +472,7 @@ const ITEMS: Dictionary = {
 	},
 	"2396": {
 		"title": "Light Mail Bracers",
+		"quality": 1,
 		"slot": "wrists",
 		"level": 5,
 		"stack": 1,
@@ -472,6 +494,7 @@ const ITEMS: Dictionary = {
 	},
 	"2398": {
 		"title": "Light Chain Armor",
+		"quality": 1,
 		"slot": "chest",
 		"level": 5,
 		"stack": 1,
@@ -493,6 +516,7 @@ const ITEMS: Dictionary = {
 	},
 	"2447": {
 		"title": "Peacebloom",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -515,6 +539,7 @@ const ITEMS: Dictionary = {
 	},
 	"2649": {
 		"title": "Flimsy Chain Belt",
+		"quality": 0,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -536,6 +561,7 @@ const ITEMS: Dictionary = {
 	},
 	"2650": {
 		"title": "Flimsy Chain Boots",
+		"quality": 0,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -557,6 +583,7 @@ const ITEMS: Dictionary = {
 	},
 	"2651": {
 		"title": "Flimsy Chain Bracers",
+		"quality": 0,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -578,6 +605,7 @@ const ITEMS: Dictionary = {
 	},
 	"2652": {
 		"title": "Flimsy Chain Cloak",
+		"quality": 0,
 		"slot": "back",
 		"level": 1,
 		"stack": 1,
@@ -599,6 +627,7 @@ const ITEMS: Dictionary = {
 	},
 	"2653": {
 		"title": "Flimsy Chain Gloves",
+		"quality": 0,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -620,6 +649,7 @@ const ITEMS: Dictionary = {
 	},
 	"2654": {
 		"title": "Flimsy Chain Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -641,6 +671,7 @@ const ITEMS: Dictionary = {
 	},
 	"2656": {
 		"title": "Flimsy Chain Vest",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -662,6 +693,7 @@ const ITEMS: Dictionary = {
 	},
 	"2770": {
 		"title": "Copper Ore",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 10,
@@ -684,6 +716,7 @@ const ITEMS: Dictionary = {
 	},
 	"2772": {
 		"title": "Iron Ore",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 10,
@@ -706,6 +739,7 @@ const ITEMS: Dictionary = {
 	},
 	"2835": {
 		"title": "Rough Stone",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -728,6 +762,7 @@ const ITEMS: Dictionary = {
 	},
 	"3363": {
 		"title": "Frayed Belt",
+		"quality": 0,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -749,6 +784,7 @@ const ITEMS: Dictionary = {
 	},
 	"3365": {
 		"title": "Frayed Bracers",
+		"quality": 0,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -770,6 +806,7 @@ const ITEMS: Dictionary = {
 	},
 	"3471": {
 		"title": "Copper Chain Vest",
+		"quality": 2,
 		"slot": "chest",
 		"level": 5,
 		"stack": 1,
@@ -793,6 +830,7 @@ const ITEMS: Dictionary = {
 	},
 	"4302": {
 		"title": "Small Green Dagger",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 5,
 		"stack": 1,
@@ -814,6 +852,7 @@ const ITEMS: Dictionary = {
 	},
 	"4496": {
 		"title": "Small Brown Pouch",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -836,6 +875,7 @@ const ITEMS: Dictionary = {
 	},
 	"4536": {
 		"title": "Shiny Red Apple",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -859,6 +899,7 @@ const ITEMS: Dictionary = {
 	},
 	"4766": {
 		"title": "Feral Blade",
+		"quality": 2,
 		"slot": "main_hand",
 		"level": 8,
 		"stack": 1,
@@ -882,6 +923,7 @@ const ITEMS: Dictionary = {
 	},
 	"5364": {
 		"title": "Dry Salt Lick",
+		"quality": 0,
 		"slot": "",
 		"level": 0,
 		"stack": 5,
@@ -903,6 +945,7 @@ const ITEMS: Dictionary = {
 	},
 	"5498": {
 		"title": "Small Lustrous Pearl",
+		"quality": 2,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -925,6 +968,7 @@ const ITEMS: Dictionary = {
 	},
 	"5571": {
 		"title": "Small Black Pouch",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -947,6 +991,7 @@ const ITEMS: Dictionary = {
 	},
 	"5572": {
 		"title": "Small Green Pouch",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -969,6 +1014,7 @@ const ITEMS: Dictionary = {
 	},
 	"7280": {
 		"title": "Rugged Leather Pants",
+		"quality": 2,
 		"slot": "legs",
 		"level": 6,
 		"stack": 1,

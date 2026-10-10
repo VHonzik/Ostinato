@@ -5,6 +5,7 @@ extends RefCounted
 const ITEMS: Dictionary = {
 	"6144": {
 		"title": "Neophyte's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -26,6 +27,7 @@ const ITEMS: Dictionary = {
 	},
 	"5512": {
 		"title": "Minor Healthstone",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 1,
@@ -50,6 +52,7 @@ const ITEMS: Dictionary = {
 	},
 	"35": {
 		"title": "Bent Staff",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -71,6 +74,7 @@ const ITEMS: Dictionary = {
 	},
 	"36": {
 		"title": "Worn Mace",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -92,6 +96,7 @@ const ITEMS: Dictionary = {
 	},
 	"43": {
 		"title": "Squire's Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -113,6 +118,7 @@ const ITEMS: Dictionary = {
 	},
 	"2092": {
 		"title": "Worn Dagger",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -134,6 +140,7 @@ const ITEMS: Dictionary = {
 	},
 	"44": {
 		"title": "Squire's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -155,6 +162,7 @@ const ITEMS: Dictionary = {
 	},
 	"45": {
 		"title": "Squire's Shirt",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -176,6 +184,7 @@ const ITEMS: Dictionary = {
 	},
 	"51": {
 		"title": "Neophyte's Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -197,6 +206,7 @@ const ITEMS: Dictionary = {
 	},
 	"52": {
 		"title": "Neophyte's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -218,6 +228,7 @@ const ITEMS: Dictionary = {
 	},
 	"53": {
 		"title": "Neophyte's Shirt",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -239,6 +250,7 @@ const ITEMS: Dictionary = {
 	},
 	"55": {
 		"title": "Apprentice's Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -260,6 +272,7 @@ const ITEMS: Dictionary = {
 	},
 	"56": {
 		"title": "Apprentice's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -281,6 +294,7 @@ const ITEMS: Dictionary = {
 	},
 	"57": {
 		"title": "Acolyte's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -302,6 +316,7 @@ const ITEMS: Dictionary = {
 	},
 	"2362": {
 		"title": "Worn Wooden Shield",
+		"quality": 0,
 		"slot": "off_hand",
 		"level": 1,
 		"stack": 1,
@@ -323,6 +338,7 @@ const ITEMS: Dictionary = {
 	},
 	"59": {
 		"title": "Acolyte's Shoes",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -344,6 +360,7 @@ const ITEMS: Dictionary = {
 	},
 	"2361": {
 		"title": "Battleworn Hammer",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -365,6 +382,7 @@ const ITEMS: Dictionary = {
 	},
 	"6096": {
 		"title": "Apprentice's Shirt",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -386,6 +404,7 @@ const ITEMS: Dictionary = {
 	},
 	"6097": {
 		"title": "Acolyte's Shirt",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -407,6 +426,7 @@ const ITEMS: Dictionary = {
 	},
 	"6123": {
 		"title": "Novice's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -428,6 +448,7 @@ const ITEMS: Dictionary = {
 	},
 	"6124": {
 		"title": "Novice's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -449,6 +470,7 @@ const ITEMS: Dictionary = {
 	},
 	"1395": {
 		"title": "Apprentice's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -470,6 +492,7 @@ const ITEMS: Dictionary = {
 	},
 	"1396": {
 		"title": "Acolyte's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -491,6 +514,7 @@ const ITEMS: Dictionary = {
 	},
 	"6134": {
 		"title": "Primitive Mantle",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -512,6 +536,7 @@ const ITEMS: Dictionary = {
 	},
 	"6135": {
 		"title": "Primitive Kilt",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -533,6 +558,7 @@ const ITEMS: Dictionary = {
 	},
 	"9570": {
 		"title": "Consecrated Letter",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -554,6 +580,7 @@ const ITEMS: Dictionary = {
 	},
 	"9576": {
 		"title": "Tainted Letter",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -575,6 +602,7 @@ const ITEMS: Dictionary = {
 	},
 	"9548": {
 		"title": "Hallowed Letter",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,

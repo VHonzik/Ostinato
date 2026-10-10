@@ -47,7 +47,7 @@ func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
 	_beside(world, danil)
 	assert_false(world.buy_item(danil, 2131, 1), "Danil cannot sell Janos's sword.")
 	assert_false(world.buy_item(janos, 2131, 1), "Another nearby merchant cannot authorize Janos.")
-	assert_true(world.buy_item(danil, 4540, 2))
+	assert_true(world.buy_item(danil, 4540, 10))
 	assert_eq(world.hero.inventory[0].quantity, 10)
 	assert_eq(world.hero.copper, 950)
 	var impostor := GridActor.new(danil.tile)
@@ -70,12 +70,12 @@ func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
 	assert_eq(world.vendor_stock[danil.spawn_id]["4540"], -1)
 
 
-func test_bundles_reject_partial_money_and_capacity_without_changing_stock() -> void:
+func test_quantities_reject_partial_money_and_capacity_without_changing_stock() -> void:
 	var world := NorthshireZone.create_world(819, false)
 	var danil := _merchant(world, 152)
 	_beside(world, danil)
 	world.hero.copper = 49
-	assert_false(world.buy_item(danil, 159, 2))
+	assert_false(world.buy_item(danil, 159, 10))
 	assert_eq(world.hero.copper, 49)
 	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	world.hero.copper = 1000
@@ -83,11 +83,11 @@ func test_bundles_reject_partial_money_and_capacity_without_changing_stock() -> 
 		world.hero.inventory[index] = ItemData.instance(159, 20)
 	world.hero.inventory[0].quantity = 16
 	var before := world.hero.inventory.duplicate(true)
-	assert_false(world.buy_item(danil, 159, 1), "Four free units cannot fit a five-unit bundle.")
+	assert_false(world.buy_item(danil, 159, 5), "Four free units cannot fit five items.")
 	assert_eq(world.hero.inventory, before)
 	assert_eq(world.hero.copper, 1000)
 	world.hero.inventory[0].quantity = 15
-	assert_true(world.buy_item(danil, 159, 1))
+	assert_true(world.buy_item(danil, 159, 5))
 	assert_eq(world.hero.inventory[0].quantity, 20)
 	assert_eq(world.hero.copper, 975)
 	for amount in [-1, 0, 1001]:
@@ -181,7 +181,7 @@ func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
 	var enemy := _merchant(world, 38)
 	enemy.engaged = true
 	assert_true(world.in_combat())
-	assert_true(world.buy_item(merchant, 159, 1))
+	assert_true(world.buy_item(merchant, 159, 5))
 	assert_true(world.sell_item(merchant, 0, 1))
 	assert_eq(world.turn_count, 0)
 	world.pending_skill = SkillRank.catalog(&"fireball_1")
@@ -214,7 +214,7 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 	assert_eq(world.hero.melee.interval, 3.2)
 	merchant = _merchant(world, 152)
 	_beside(world, merchant)
-	assert_true(world.buy_item(merchant, 4540, 1))
+	assert_true(world.buy_item(merchant, 4540, 5))
 	var bread_slot := -1
 	for index in range(40):
 		if world.hero.inventory[index].get("id", 0) == 4540:
@@ -224,3 +224,83 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 	assert_eq(world.hero.inventory[bread_slot].quantity, 4)
 	assert_eq(world.hero.restoration.food.total, 61)
 	assert_eq(world.hero.restoration.food.duration, 18)
+
+
+func test_direct_purchase_units_preserve_prices_and_stack_limits() -> void:
+	var world := NorthshireZone.create_world(819, false)
+	var danil := _merchant(world, 152)
+	_beside(world, danil)
+	world.hero.copper = 155
+	for amount in [1, 10, 20]:
+		assert_true(world.buy_item(danil, 4540, amount))
+	assert_eq(world.hero.inventory[0], ItemData.instance(4540, 20))
+	assert_eq(world.hero.inventory[1], ItemData.instance(4540, 11))
+	assert_eq(world.hero.copper, 0)
+	assert_false(world.buy_item(danil, 4540, 1))
+	assert_eq(world.turn_count, 0)
+	for catalog in MerchantData.CATALOGS.values():
+		for offer in catalog.values():
+			assert_eq(int(offer.price) % int(offer.quantity), 0,
+				"Individual source prices must be exact whole copper.")
+
+
+func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat_proceeds() -> void:
+	var world := NorthshireZone.create_world(819, false)
+	var merchant := _merchant(world, 152)
+	_beside(world, merchant)
+	world.hero.inventory[0] = ItemData.instance(7073, 5)
+	world.hero.inventory[1] = ItemData.instance(7073, 2)
+	world.hero.inventory[2] = ItemData.instance(56) # Grey carried robe.
+	world.hero.inventory[3] = ItemData.instance(159, 20) # White water.
+	world.hero.inventory[4] = ItemData.instance(2572) # Green equipment.
+	world.hero.inventory[5] = ItemData.instance(750, 2) # Quest item.
+	world.hero.inventory[6] = ItemData.instance(5349, 4) # Conjured food.
+	world.hero.inventory[7] = ItemData.instance(35) # Common equipment.
+	var retained := world.hero.inventory.slice(3).duplicate(true)
+	var equipment := world.hero.equipment.duplicate(true)
+	var stock := world.vendor_stock.duplicate(true)
+	world.hero.copper = 10
+	assert_true(world.sell_all_grey(merchant))
+	assert_eq(world.hero.copper, 53, "Seven fangs at 6c plus a 1c grey robe.")
+	for index in range(3):
+		assert_true(world.hero.inventory[index].is_empty())
+	assert_eq(world.hero.inventory.slice(3), retained)
+	assert_eq(world.hero.equipment, equipment)
+	assert_eq(world.vendor_stock, stock)
+	assert_false(world.sell_all_grey(merchant))
+	assert_eq(world.hero.copper, 53)
+	assert_eq(world.turn_count, 0)
+
+
+func test_bulk_sale_rejects_distant_dead_stale_and_busy_merchants_without_transfer() -> void:
+	var world := NorthshireZone.create_world(819, false)
+	var merchant := _merchant(world, 152)
+	world.hero.inventory[0] = ItemData.instance(7073, 2)
+	assert_false(world.sell_all_grey(merchant))
+	_beside(world, merchant)
+	merchant.alive = false
+	assert_false(world.sell_all_grey(merchant))
+	merchant.alive = true
+	world.pending_skill = SkillRank.catalog(&"fireball_1")
+	assert_false(world.sell_all_grey(merchant))
+	world.pending_skill = null
+	var other := NorthshireZone.create_world(819, false)
+	assert_false(world.sell_all_grey(_merchant(other, 152)))
+	assert_eq(world.hero.inventory[0], ItemData.instance(7073, 2))
+	assert_eq(world.hero.copper, 0)
+	world.hero.health = 0
+	world.check_terminal()
+	assert_false(world.sell_all_grey(merchant))
+
+
+func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starter_gear() -> void:
+	for catalog in [ItemData.ITEMS, NorthshireItems.ITEMS, ClassItems.ITEMS,
+		MerchantItems.ITEMS, LootItems.ITEMS]:
+		for item in catalog.values():
+			assert_true(item.has("quality"), item.title)
+			assert_between(int(item.quality), 0, 4)
+	assert_eq(ItemData.get_item(7073).quality, 0)
+	assert_eq(ItemData.get_item(56).quality, 0)
+	assert_eq(ItemData.get_item(35).quality, 1)
+	assert_eq(ItemData.get_item(159).quality, 1)
+	assert_eq(ItemData.get_item(2572).quality, 2)

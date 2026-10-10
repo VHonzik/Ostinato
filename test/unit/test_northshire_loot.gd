@@ -18,8 +18,8 @@ func test_source_inventory_has_every_bounded_row_and_resolves_every_reference_an
 	for rows in NorthshireLoot.REFERENCES.values():
 		for row in rows:
 			assert_false(ItemData.get_item(int(row[0])).is_empty())
-	assert_eq(ItemData.get_item(2057).minimum, 2.0)
-	assert_eq(ItemData.get_item(2057).maximum, 4.0)
+	assert_eq(ItemData.get_item(2057).minimum, 2)
+	assert_eq(ItemData.get_item(2057).maximum, 4)
 	assert_eq(ItemData.get_item(2057).interval, 2.0)
 	assert_eq(ItemData.get_item(7280).stats, {"stamina": 1})
 	assert_eq(ItemData.get_item(3471).stats, {"strength": 1})
@@ -353,3 +353,68 @@ func _replace_vermin(world: GridWorld) -> GridActor:
 	var replacement := _source(world, "vermin/0/1")
 	LootData.assign(world, replacement)
 	return replacement
+
+
+func test_loot_all_collects_money_and_later_fitting_stacks_leaving_unfit_and_ineligible_loot() -> void:
+	var game := GameSession.new()
+	game.new_game(619)
+	var world := game.world
+	var chest := _source(world, "treasure/mine/0")
+	world.player_tile = chest.tile
+	chest.loot_assigned = true
+	chest.loot_copper = 12
+	chest.loot = [ItemData.instance(35), ItemData.instance(750), ItemData.instance(159, 2)]
+	for index in range(40):
+		world.hero.inventory[index] = ItemData.instance(159, 20)
+	world.hero.inventory[0].quantity = 18
+	assert_true(world.loot_all(chest))
+	assert_eq(world.hero.copper, 12)
+	assert_eq(world.hero.inventory[0].quantity, 20)
+	assert_eq(chest.loot, [ItemData.instance(35), ItemData.instance(750)])
+	assert_true(chest.corpse_visible)
+	assert_false(world.loot_all(chest))
+	assert_eq(world.hero.copper, 12)
+	var restored := SaveCodec.restore(SaveCodec.capture(game), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_false(restored.loot_all(chest), "A stale chest cannot authorize a transfer.")
+	chest = _source(restored, "treasure/mine/0")
+	assert_eq(chest.loot, [ItemData.instance(35), ItemData.instance(750)])
+	restored.hero.inventory[1] = {}
+	assert_true(restored.loot_all(chest))
+	assert_eq(restored.hero.inventory[1].id, 35)
+	assert_eq(chest.loot, [ItemData.instance(750)])
+	assert_eq(restored.hero.copper, 12)
+	assert_eq(restored.turn_count, 0)
+
+
+func test_loot_all_empties_corpses_and_chests_once_and_obeys_action_guards() -> void:
+	for is_chest in [false, true]:
+		var world := GridWorld.new(Rect2i(0, 0, 8, 8), Vector2i(4, 4), 619, false)
+		var source := GridActor.new(Vector2i(4, 5))
+		source.alive = false
+		source.corpse_visible = true
+		source.chest = is_chest
+		source.loot_assigned = true
+		source.loot_copper = 7
+		source.loot = [ItemData.instance(7073, 2), ItemData.instance(159, 3), ItemData.instance(750)]
+		world.loot_quests.append("wolves")
+		world.actors.append(source)
+		world.player_tile = Vector2i.ZERO
+		assert_false(world.loot_all(source))
+		world.player_tile = Vector2i(4, 4)
+		world.pending_skill = SkillRank.catalog(&"fireball_1")
+		assert_false(world.loot_all(source))
+		assert_eq(source.loot_copper, 7)
+		assert_eq(source.loot.size(), 3)
+		world.pending_skill = null
+		assert_true(world.loot_all(source))
+		assert_eq(world.hero.inventory[0], ItemData.instance(7073, 2))
+		assert_eq(world.hero.inventory[1], ItemData.instance(159, 3))
+		assert_eq(world.hero.inventory[2], ItemData.instance(750))
+		assert_true(source.loot.is_empty())
+		assert_false(source.corpse_visible)
+		assert_false(world.loot_all(source))
+		assert_eq(world.hero.copper, 7)
+		assert_eq(world.turn_count, 0)

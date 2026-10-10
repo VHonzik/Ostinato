@@ -31,9 +31,17 @@ reward is added. The final bounded quest audit remains M8-F.
 
 ## Catalogs, prices and quantities
 
-Each row below is one purchase bundle. Prices and sell values are whole copper,
-without reputation discounts (no reputation system). UI quantities count purchase
-bundles and explicitly name their size; selling selects individual carried units.
+Each row below records one source purchase bundle. Prices and sell values are whole
+copper, without reputation discounts (no reputation system). Per the
+[owner request on PR #22](https://github.com/VHonzik/Ostinato/pull/22#issuecomment-6095902182),
+2026-10-10, the UI now buys individual units: source bundle price divided by bundle size
+(all included prices divide evenly). Select an item, then Buy 1 or Buy stack (maximum
+stack size); stack limits above 10 also offer Buy 10. Selling offers 1, 10 where applicable,
+or the selected carried stack, with exact quantities and total prices. There is no trade
+quantity adjustment/confirmation page. Inventory move/split retains its quantity chooser.
+Sell All Grey Items sells only carried tradable Poor-quality items (item_template Quality 0),
+including grey equipment in the bag, and leaves equipped and higher-quality items intact.
+Every item catalog now records source quality explicitly; Poor items are labeled in details.
 Stack limits, level/slot rules, armor, shield block and weapon values come directly
 from item_template. The new data live in `MerchantItems`; existing item definitions
 are reused. Bread 4540 uses the same Food spell 433 and 61-health/18-turn restoration
@@ -105,7 +113,8 @@ Each purchase gives one item: Dirk 2139 at 57c, Large Round Shield 2129 at 77c,
 Dirty Leather Vest 85 at 62c, Tough Jerky 117 and Water 159 at 5c each, all unlimited;
 Minor Mana Potion 2455 at 40c has exactly three units per Loop. Source item properties
 and sell values remain unchanged. In particular, Danil's water comes in source bundles
-of five for 25c; the supply trader sells one for 5c. No buyback or restocking on sale.
+of five for 25c; both merchants now sell individual units for 5c through the UI.
+No buyback or restocking on sale.
 
 ## Identity, state and checks
 
@@ -114,17 +123,17 @@ Keeping these records inline in GridWorld/UI would duplicate catalog/price check
 this helper lets construction, transactions, UI and save validation use the same records.
 GridWorld owns `vendor_stock[spawn_id][item_id]`; `npc_id` selects a catalog, while the
 stable spawn identity owns the stock. Two instances with the same catalog remain independent.
-The exact actor travels through interaction, conversation, trade, quantity confirmation
+The exact actor travels through interaction, conversation, trade, direct quantity actions
 and transactions. It must still belong to the current world, be alive/friendly and in
 interaction range. Stale references after load/death cannot authorize a purchase or sale.
 
-All purchases check bundle count (1–1000), catalog membership, funds, whole-stock quantity
+All purchases check item count (1–1000), catalog membership, funds, whole-stock quantity
 and full capacity before committing. Selling checks the selected stack/quantity and
 tradability, at any valid merchant. Trading, rejected actions and opening menus are free,
 including in combat at an action boundary. Waiting, selling and scripted merchant respawn
 do not refill finite stock. Death/New Game rebuild initial stocks.
 
-Examples: Danil's two bread bundles deliver ten loaves for 50c. With only 49c, or only
+Examples: Danil's Buy 10 bread action delivers ten loaves for 50c. With only 49c, or only
 nine free units in the bag, neither copper nor items change. Selling three loaves returns
 3c. The supply trader's three mana potions cost 120c; a fourth is rejected until a new Loop.
 

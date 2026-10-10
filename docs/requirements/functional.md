@@ -597,6 +597,10 @@ Acceptance:
 - Two NPCs of the same creature type are not required to have identical loot.
 - A source cannot be emptied repeatedly for duplicate rewards during the same lifecycle.
 - Loading preserves both the assigned loot and which items have already been taken.
+- Corpse and chest menus provide Loot All alongside individual pickups. It collects all
+  copper, then each eligible whole item stack that fits, in source order, without spending
+  turns. An unfit or ineligible stack stays at the source and does not block later stacks.
+  Reopening or repeating Loot All cannot duplicate rewards.
 
 Loot is selected from source tables (DATA-004) independently of combat randomness.
 Quest-item rolls belong to the seeded source too, but eligibility is captured at death
@@ -798,6 +802,15 @@ Acceptance:
 - Buying with enough currency and capacity transfers the item and deducts its price once.
 - Insufficient currency or capacity prevents completion of a purchase.
 - Selling transfers the selected item/quantity and grants the configured proceeds once.
+- Buying and selling offer direct actions for one item or one stack, with an additional
+  ten-item action when the item's stack limit exceeds ten. Buying a stack uses its maximum
+  stack size; selling a stack uses the selected carried stack's actual quantity. Unstackable
+  items need only the one-item action. Trade menus have no +/- quantity adjustment step.
+- Source purchase bundles may be divided into individual units at their existing per-item
+  price. Show each action's exact quantity and total price before committing it.
+- Sell All Grey Items sells every tradable Poor-quality (grey) item in the carried inventory
+  for its configured proceeds, without spending turns. Equipped items, quest items,
+  conjured items, and higher-quality items stay untouched. Repeating it grants no duplicates.
 - A Loop resets gold; save/load restores the saved amount.
 
 Store currency as whole copper: 100 copper = 1 silver; 100 silver = 1 gold. Use source
@@ -941,7 +954,10 @@ Acceptance:
 There shall be five slots, bound to top-row 1–5 by default. Assignment stores an explicit
 learned rank; learning a higher rank does not silently replace it. The tooltip shows rank,
 cost, and effects without requiring rank text on the icon. Assignments and layout lock
-persist across Loops and saves for the same game. New Game starts with empty assignments.
+persist across Loops and saves for the same game. New Game assigns the initial mage skills,
+Fireball rank 1 and Frost Armor rank 1, to slots 1 and 2 respectively; slots 3-5 are empty
+and the layout is unlocked. These defaults do not overwrite saved or deliberately cleared
+assignments when loading or restarting a Loop.
 Keyboard users can select a spell/rank, choose Assign, and choose a slot with 1–5.
 
 ### FR-046 — Spell book
@@ -1116,7 +1132,7 @@ and lock state; `MovementGame`, `HeroPanel` and `GlobalOptions.ACTIONS` do not e
 - Add globally rebindable top-row 1–5 actions distinct from numpad movement. Reuse spell-book
   targeting/casting and suppress activation while another UI owns input.
 - Test unlearned-rank rejection, unchanged assignments after higher-rank training, locked
-  edits, retention after death/load and empty slots on New Game. Keep keyboard/mouse
+  edits, retention after death/load and starting mage assignments on New Game. Keep keyboard/mouse
   controls usable at 640 × 360 in this package.
 
 #### M8-D — Individual Northshire merchant services

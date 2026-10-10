@@ -5,6 +5,7 @@ extends RefCounted
 const ITEMS: Dictionary = {
 	"4540": {
 		"title": "Tough Hunk of Bread",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -28,6 +29,7 @@ const ITEMS: Dictionary = {
 	},
 	"2121": {
 		"title": "Thin Cloth Armor",
+		"quality": 1,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -49,6 +51,7 @@ const ITEMS: Dictionary = {
 	},
 	"3599": {
 		"title": "Thin Cloth Belt",
+		"quality": 1,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -70,6 +73,7 @@ const ITEMS: Dictionary = {
 	},
 	"2120": {
 		"title": "Thin Cloth Pants",
+		"quality": 1,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -91,6 +95,7 @@ const ITEMS: Dictionary = {
 	},
 	"2117": {
 		"title": "Thin Cloth Shoes",
+		"quality": 1,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -112,6 +117,7 @@ const ITEMS: Dictionary = {
 	},
 	"3600": {
 		"title": "Thin Cloth Bracers",
+		"quality": 1,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -133,6 +139,7 @@ const ITEMS: Dictionary = {
 	},
 	"2119": {
 		"title": "Thin Cloth Gloves",
+		"quality": 1,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -154,6 +161,7 @@ const ITEMS: Dictionary = {
 	},
 	"2127": {
 		"title": "Cracked Leather Vest",
+		"quality": 1,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -175,6 +183,7 @@ const ITEMS: Dictionary = {
 	},
 	"2122": {
 		"title": "Cracked Leather Belt",
+		"quality": 1,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -196,6 +205,7 @@ const ITEMS: Dictionary = {
 	},
 	"2126": {
 		"title": "Cracked Leather Pants",
+		"quality": 1,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -217,6 +227,7 @@ const ITEMS: Dictionary = {
 	},
 	"2123": {
 		"title": "Cracked Leather Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -238,6 +249,7 @@ const ITEMS: Dictionary = {
 	},
 	"2124": {
 		"title": "Cracked Leather Bracers",
+		"quality": 1,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -259,6 +271,7 @@ const ITEMS: Dictionary = {
 	},
 	"2125": {
 		"title": "Cracked Leather Gloves",
+		"quality": 1,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -280,6 +293,7 @@ const ITEMS: Dictionary = {
 	},
 	"2379": {
 		"title": "Tarnished Chain Vest",
+		"quality": 1,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -301,6 +315,7 @@ const ITEMS: Dictionary = {
 	},
 	"2381": {
 		"title": "Tarnished Chain Leggings",
+		"quality": 1,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -322,6 +337,7 @@ const ITEMS: Dictionary = {
 	},
 	"2380": {
 		"title": "Tarnished Chain Belt",
+		"quality": 1,
 		"slot": "waist",
 		"level": 1,
 		"stack": 1,
@@ -343,6 +359,7 @@ const ITEMS: Dictionary = {
 	},
 	"2383": {
 		"title": "Tarnished Chain Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 1,
 		"stack": 1,
@@ -364,6 +381,7 @@ const ITEMS: Dictionary = {
 	},
 	"2384": {
 		"title": "Tarnished Chain Bracers",
+		"quality": 1,
 		"slot": "wrists",
 		"level": 1,
 		"stack": 1,
@@ -385,6 +403,7 @@ const ITEMS: Dictionary = {
 	},
 	"2385": {
 		"title": "Tarnished Chain Gloves",
+		"quality": 1,
 		"slot": "hands",
 		"level": 1,
 		"stack": 1,
@@ -406,6 +425,7 @@ const ITEMS: Dictionary = {
 	},
 	"17184": {
 		"title": "Small Shield",
+		"quality": 1,
 		"slot": "off_hand",
 		"level": 1,
 		"stack": 1,
@@ -427,6 +447,7 @@ const ITEMS: Dictionary = {
 	},
 	"2131": {
 		"title": "Shortsword",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -448,6 +469,7 @@ const ITEMS: Dictionary = {
 	},
 	"1194": {
 		"title": "Bastard Sword",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -469,6 +491,7 @@ const ITEMS: Dictionary = {
 	},
 	"2134": {
 		"title": "Hand Axe",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -490,6 +513,7 @@ const ITEMS: Dictionary = {
 	},
 	"2479": {
 		"title": "Broad Axe",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -511,6 +535,7 @@ const ITEMS: Dictionary = {
 	},
 	"2130": {
 		"title": "Club",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -532,6 +557,7 @@ const ITEMS: Dictionary = {
 	},
 	"2480": {
 		"title": "Large Club",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -553,6 +579,7 @@ const ITEMS: Dictionary = {
 	},
 	"2132": {
 		"title": "Short Staff",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,

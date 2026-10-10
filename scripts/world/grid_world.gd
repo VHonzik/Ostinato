@@ -920,6 +920,20 @@ func loot_money(source: GridActor) -> bool:
 	return true
 
 
+## FR-028: best effort, preserving every stack that cannot currently be collected.
+func loot_all(source: GridActor) -> bool:
+	if not open_loot(source):
+		return false
+	var collected := loot_money(source)
+	var index := 0
+	while index < source.loot.size():
+		if LootData.collectable(self, source.loot[index]) and loot_item(source, index):
+			collected = true
+		else:
+			index += 1
+	return collected
+
+
 func _hide_empty_corpse(source: GridActor) -> void:
 	if source.loot.is_empty() and source.loot_copper == 0 and not source.story_guard:
 		source.corpse_visible = false
@@ -933,17 +947,15 @@ func trader_in_range(merchant: GridActor) -> bool:
 		and not MerchantData.catalog(merchant.npc_id).is_empty())
 
 
-func buy_item(merchant: GridActor, identifier: int, bundles: int) -> bool:
-	if not item_action_ready() or not trader_in_range(merchant) or bundles < 1 or bundles > 1000:
+func buy_item(merchant: GridActor, identifier: int, quantity: int) -> bool:
+	if not item_action_ready() or not trader_in_range(merchant) or quantity < 1 or quantity > 1000:
 		return false
 	var key := str(identifier)
 	var catalog := MerchantData.catalog(merchant.npc_id)
 	if not catalog.has(key):
 		return false
-	var offer: Dictionary = catalog[key]
 	var stock: Dictionary = vendor_stock[merchant.spawn_id]
-	var quantity := int(offer.quantity) * bundles
-	var cost := int(offer.price) * bundles
+	var cost := MerchantData.unit_price(merchant.npc_id, identifier) * quantity
 	if cost > hero.copper or (int(stock[key]) >= 0 and quantity > int(stock[key])):
 		add_message("Purchase rejected: insufficient money or stock.")
 		return false
@@ -973,6 +985,23 @@ func sell_item(merchant: GridActor, index: int, quantity: int) -> bool:
 	add_message("Sold %s x%d to %s for %s." % [data.title, quantity, merchant.title,
 		InventoryRules.money(int(data.sell) * quantity)])
 	return true
+
+
+func sell_all_grey(merchant: GridActor) -> bool:
+	if not item_action_ready() or not trader_in_range(merchant):
+		return false
+	var sold := false
+	for index in range(hero.inventory.size()):
+		var item := hero.inventory[index]
+		if item.is_empty():
+			continue
+		var data := ItemData.get_item(int(item.id))
+		if int(data.quality) == 0 and data.tradable:
+			if sell_item(merchant, index, int(item.quantity)):
+				sold = true
+	if not sold:
+		add_message("No grey items to sell.")
+	return sold
 
 
 func consume_item(index: int) -> bool:

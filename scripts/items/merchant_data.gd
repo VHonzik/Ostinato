@@ -201,6 +201,13 @@ static func catalog(npc_id: int) -> Dictionary:
 	return CATALOGS.get(str(npc_id), {})
 
 
+## FR-038: source bundle prices divide evenly into copper per item for every demo offer.
+static func unit_price(npc_id: int, identifier: int) -> int:
+	var offer: Dictionary = catalog(npc_id)[str(identifier)]
+	@warning_ignore("integer_division")
+	return int(offer.price) / int(offer.quantity)
+
+
 static func initial_stock(actors: Array[GridActor]) -> Dictionary:
 	var result: Dictionary = {}
 	for actor in actors:
