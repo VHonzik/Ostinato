@@ -153,13 +153,12 @@ be alive; five positions remain reserved for stalkers. Arrivals append to the ac
 order and first act next turn. Corresponding loot uses the existing private spawn-ID
 stream, unaffected by combat rolls or collection order.
 
-There are 12 harvest crates (object 161557 counterpart), one harvest each when eligible
-at first opening. Crates and the abbey supply chest never replenish in a Loop.
-The supply chest retains M5's documented development supply table for equipment access.
-Humanoid copper uses source min/max; bandanas roll 80%, Garrick's head 100%;
-wolf loot retains its M5 rows, including 80% meat. Eligibility is captured at death/
-first opening, even after objective completion, and rechecked on collection.
-Ineligible opening never adds quest loot retroactively.
+M8-E completes the ordinary/reference/world-drop closure for all seven resolved
+creature types and adds three pooled Battered Chests (object 2843), replacing normal
+Abbey development supplies. The 12 harvest crates retain object 161557's quest table.
+All tables, item values, pool counterparts, adaptations and known seeded outcomes are
+in [DATA-004 ordinary loot and treasure](loot.md). Chests never replenish within a Loop;
+partial and depleted sources survive save/load. Quest filtering never rerolls ordinary loot.
 
 ## Scheduled invasion arrivals (M8-B)
 
@@ -199,7 +198,9 @@ The tables and source-ID data above describe M6; these explicit gaps remain for 
 - M8-D completed the [merchant audit and services](merchants.md): Danil, Dermot, Godric
   and Janos have individual source catalogs; Merissa has no source vendor catalog.
   The supply trader is explicitly retained as an invasion provisioner.
-- M8 final content audit: remaining ordinary/reference/world-drop and chest tables; ambient rabbits,
+- M8-E completed [ordinary/reference/world-drop and treasure tables](loot.md) for the
+  resolved population inventory. Added creature closures travel with M8-F when resolved.
+- M8-F final content audit: ambient rabbits,
   deer/fawns, mine spiders and remaining guard/peasant copies; terrain/art refinement.
   M8-D records the retained supply trader separately from the source merchants.
 - Outside-valley Defias Cutpurses 94 and unrelated generic Stormwind guards 1423 are
@@ -210,7 +211,8 @@ The tables and source-ID data above describe M6; these explicit gaps remain for 
 M6 demo revision **3** added quests/counters/handed-in state, population slots/ordinals/
 deadlines, source NPC IDs, and the Northshire marker. Revisions 1 and 2 are incompatible
 and preserved unchanged; no migration is claimed. M7 now uses revision **4**.
-M8-D now uses revision **6** for per-merchant stock; revisions 1–5 are incompatible.
+M8-D introduced revision **6** for per-merchant stock. M8-E now uses revision **7**
+for sourced loot/chest content; revisions 1–6 are incompatible and preserved unchanged.
 Restore validates a separate world.
 Loop reset returns to seeded ordinal zero and clears quests, preserving learned ranks.
 

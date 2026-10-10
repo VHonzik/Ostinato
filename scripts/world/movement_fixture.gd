@@ -79,6 +79,7 @@ static func create_world(
 		chest.title = "Training supplies"
 		chest.alive = false
 		chest.chest = true
+		chest.loot_table = LootData.DEVELOPMENT_SUPPLIES if development_build else 0
 		world.actors.append(chest)
 	for index in range(world.actors.size()):
 		world.actors[index].spawn_id = "grounds/%d/0" % index

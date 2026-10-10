@@ -422,10 +422,36 @@ mana potions per Loop. Waiting or selling does not refill stock; death/New Game 
 Danil's four ammo/throwing entries are omitted by the owner-approved FR-038 adaptation.
 See [DATA-004 merchant catalogs](data/merchants.md) for full source rows and adaptations.
 
-Current saves use **demo revision 6**. Revisions 1–5 remain incompatible and untouched;
-no migration is supplied. Save outside combat, buy/sell, then Load to restore each
+M8-D introduced **demo revision 6**; M8-E advances it to revision 7 below.
+Older revisions remain incompatible and untouched; no migration is supplied. Save outside combat, buy/sell, then Load to restore each
 merchant's stock, inventory and copper. Transactions validate the original merchant
 again; changing worlds invalidates old interaction references.
+
+## Milestone 8-E: Ordinary loot and treasure
+
+Wolves, kobolds, Defias and Garrick now use complete sourced ordinary loot and their
+shared grey-equipment/bag tables. F beside a corpse or chest opens its remaining loot;
+collect items and copper separately. Collection costs no time. A full inventory leaves
+an offered stack at its source; make room and try again. Food, equipment and selling
+use the same inventory/merchant controls as before. Dropped bags are trade goods only
+and do not expand the fixed inventory.
+
+Normal games contain one **Battered Chest** in each of Echo Ridge Mine, the vineyard
+and the valley. Mine/vineyard placement varies by game seed; the valley chest is at
+**(30,29)**, west of the river. Each gives 10–20 copper, one grey equipment item and
+possible food/water. They do not replenish until the next Loop. Opening/collecting
+in a different order cannot reroll contents. Save/load preserves partial/depleted loot;
+death restores corresponding chest placements and contents for the same seed.
+The Abbey development supply chest is removed from normal games in all build modes.
+Its old table survives only in the isolated movement test fixture.
+
+**Current save compatibility: demo revision 7.** Revisions 1–6 are incompatible and
+remain unchanged; no migration is supplied. Start New Game or use an unused slot.
+This content revision keeps old development supplies out of normal saves and prevents
+unopened sources changing reward tables underneath an existing attempt.
+See [DATA-004 loot](data/loot.md) for the complete source inventory, adaptation details,
+seed-619 fixtures and M8-F coordination. No human balance or final world acceptance
+is inferred from automated coverage.
 
 ## Project layout
 

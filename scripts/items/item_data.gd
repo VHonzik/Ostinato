@@ -556,7 +556,8 @@ const ITEMS: Dictionary = {
 
 static func get_item(identifier: int) -> Dictionary:
 	return ITEMS.get(str(identifier), NorthshireItems.ITEMS.get(str(identifier),
-		ClassItems.ITEMS.get(str(identifier), MerchantItems.ITEMS.get(str(identifier), {}))))
+		ClassItems.ITEMS.get(str(identifier), MerchantItems.ITEMS.get(str(identifier),
+		LootItems.ITEMS.get(str(identifier), {})))))
 
 
 static func instance(identifier: int, quantity: int = 1, starter: bool = false) -> Dictionary:
@@ -575,4 +576,6 @@ static func describe(identifier: int) -> String:
 		detail += " / two hands"
 	if item.use != "":
 		detail += " / restores " + String(item.use)
+	if item.has("note"):
+		detail += " / " + String(item.note)
 	return detail
