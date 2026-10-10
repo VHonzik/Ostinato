@@ -36,9 +36,13 @@ copper, without reputation discounts (no reputation system). Per the
 [owner request on PR #22](https://github.com/VHonzik/Ostinato/pull/22#issuecomment-6095902182),
 2026-10-10, the UI now buys individual units: source bundle price divided by bundle size
 (all included prices divide evenly). Select an item, then Buy 1 or Buy stack (maximum
-stack size); stack limits above 10 also offer Buy 10. Selling offers 1, 10 where applicable,
-or the selected carried stack, with exact quantities and total prices. There is no trade
-quantity adjustment/confirmation page. Inventory move/split retains its quantity chooser.
+stack size); stack limits above 10 also offer Buy 10. The owner's follow-up uses an initial
+Buy/Sell choice with separate lists to reduce scrolling. Sell rows show each carried stack's
+quantity and total proceeds; Enter/confirm or a mouse click sells that stack immediately.
+The next stack of the same item stays selected, including across nonadjacent inventory slots.
+After its final stack, focus moves to Back so repeated confirmation cannot sell another item.
+Sales stay in Sell; purchases return to Buy. Selling has no quantity/confirmation submenu.
+Inventory move/split retains its quantity chooser.
 Sell All Grey Items sells only carried tradable Poor-quality items (item_template Quality 0),
 including grey equipment in the bag, and leaves equipped and higher-quality items intact.
 Every item catalog now records source quality explicitly; Poor items are labeled in details.

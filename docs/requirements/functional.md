@@ -802,10 +802,15 @@ Acceptance:
 - Buying with enough currency and capacity transfers the item and deducts its price once.
 - Insufficient currency or capacity prevents completion of a purchase.
 - Selling transfers the selected item/quantity and grants the configured proceeds once.
-- Buying and selling offer direct actions for one item or one stack, with an additional
-  ten-item action when the item's stack limit exceeds ten. Buying a stack uses its maximum
-  stack size; selling a stack uses the selected carried stack's actual quantity. Unstackable
-  items need only the one-item action. Trade menus have no +/- quantity adjustment step.
+- The initial trade window offers Buy and Sell buttons leading to separate item lists.
+  Buying offers one item or a full stack, plus ten items when the stack limit exceeds ten.
+  Unstackable items need only the one-item action; no +/- quantity adjustment is shown.
+- Activating a sell-list item by Enter/confirm or mouse immediately sells that entire
+  carried stack, including a partial stack, with no quantity or confirmation submenu.
+  Show its quantity and total proceeds on the row before activation. If another stack of
+  the same item remains, keep that item selected so three confirmations sell three stacks.
+  When none remain, focus Back rather than another item or Sell All Grey Items.
+  Individual and bulk sales stay on the Sell page; purchases return to the Buy list.
 - Source purchase bundles may be divided into individual units at their existing per-item
   price. Show each action's exact quantity and total price before committing it.
 - Sell All Grey Items sells every tradable Poor-quality (grey) item in the carried inventory

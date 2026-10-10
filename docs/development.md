@@ -411,10 +411,13 @@ stays in `GridWorld`; there is no new manager or separate casting implementation
 ## Milestone 8-D: Individual merchant services
 
 Use F beside Brother Danil (19,9), Dermot Johns (15,20), Godric Rothgar (18,20),
-or Janos Hammerknuckle (21,20), then choose **Trade**. Each window names that merchant
-and lists only their catalog. Buy offers direct 1/stack actions and 10 for stack limits
-above 10; Sell offers 1/10/the carried stack, showing quantities and total prices. Danil's bread/water cost 5 copper per item. Armor and weapons
-are individual purchases. **Sell All Grey Items** sells carried Poor-quality items.
+or Janos Hammerknuckle (21,20), then choose **Trade**, followed by **Buy** or **Sell**.
+Buy lists only that merchant's catalog, with 1/stack actions and 10 for stack limits above 10.
+Danil's bread/water cost 5 copper per item. Sell lists carried tradable stacks and total
+proceeds: Enter or a mouse click immediately sells the selected whole stack. Another stack
+of the same item stays selected, so three Enter presses sell three stacks without navigating.
+After the last stack, focus moves to Back. Sales stay in Sell; purchases return to Buy.
+**Sell All Grey Items** is on the Sell page and sells carried Poor-quality items.
 Keyboard focus scrolls through all stock/sell rows; mouse buttons use the same flow.
 Open menus, purchases, sales and rejected transfers spend no turns.
 

@@ -276,7 +276,19 @@ func open_trade(merchant: GridActor) -> void:
 		return
 	_merchant = merchant
 	_begin("trade", merchant.title + " / " + InventoryRules.money(session.world.hero.copper), close)
-	_label("Choose an item, then buy or sell 1, 10, or a stack. Trading spends no turns.")
+	_button("Buy", open_buy.bind(merchant))
+	_button("Sell", open_sell.bind(merchant))
+	_button("Leave (Esc)", close)
+	_finish()
+
+
+func open_buy(merchant: GridActor) -> void:
+	if session.world == null or not session.world.trader_in_range(merchant):
+		close()
+		return
+	_merchant = merchant
+	_begin("buy_list", merchant.title + " / Buy / " + InventoryRules.money(session.world.hero.copper),
+		open_trade.bind(merchant))
 	for key in MerchantData.catalog(merchant.npc_id):
 		var data := ItemData.get_item(int(key))
 		var stock := int(session.world.vendor_stock[merchant.spawn_id][key])
@@ -287,24 +299,48 @@ func open_trade(merchant: GridActor) -> void:
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(key))
 		button.disabled = stock == 0
-	_button("Sell All Grey Items", _transaction.bind(
-		session.world.sell_all_grey.bind(merchant), open_trade.bind(merchant)))
+	_button("Back (Esc)", open_trade.bind(merchant))
+	_finish()
+
+
+func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
+	if session.world == null or not session.world.trader_in_range(merchant):
+		close()
+		return
+	_merchant = merchant
+	_begin("sell", merchant.title + " / Sell / " + InventoryRules.money(session.world.hero.copper),
+		open_trade.bind(merchant))
+	_label("Confirm an item to sell its whole stack. Trading spends no turns.")
+	var grey := _button("Sell All Grey Items", _transaction.bind(
+		session.world.sell_all_grey.bind(merchant), open_sell.bind(merchant)))
+	grey.disabled = true
+	var selected: Button
 	for index in range(40):
 		var item := session.world.hero.inventory[index]
-		if not item.is_empty():
-			var data := ItemData.get_item(int(item.id))
-			if data.tradable:
-				var button := _button("Sell slot %d: %s x%d / %s each" % [index + 1, data.title,
-					item.quantity, InventoryRules.money(int(data.sell))], _sell_options.bind(index))
-				button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_button("Leave (Esc)", close)
-	_finish()
+		if item.is_empty():
+			continue
+		var data := ItemData.get_item(int(item.id))
+		if not data.tradable:
+			continue
+		var button := _button("Sell slot %d: %s x%d / %s total" % [index + 1, data.title,
+			item.quantity, InventoryRules.money(int(data.sell) * int(item.quantity))],
+			_transaction.bind(session.world.sell_item.bind(merchant, index, int(item.quantity)),
+				open_sell.bind(merchant, int(item.id))))
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		button.tooltip_text = ItemData.describe(int(item.id))
+		if int(data.quality) == 0:
+			grey.disabled = false
+		if selected == null and (selected_item == 0 or int(item.id) == selected_item):
+			selected = button
+	var back := _button("Back (Esc)", open_trade.bind(merchant))
+	# Keep consecutive sales on the same item; exhaustion must not select another sale.
+	(selected if selected != null else back).grab_focus()
 
 
 func _buy_options(identifier: int) -> void:
 	var merchant := _merchant
 	var data := ItemData.get_item(identifier)
-	_begin("buy", "Buy " + String(data.title), open_trade.bind(merchant))
+	_begin("buy", "Buy " + String(data.title), open_buy.bind(merchant))
 	_label(ItemData.describe(identifier))
 	var unit_price := MerchantData.unit_price(merchant.npc_id, identifier)
 	var amounts: Array[int] = [1]
@@ -318,33 +354,10 @@ func _buy_options(identifier: int) -> void:
 			"Buy %d" % quantity)
 		var button := _button("%s / %s" % [label, InventoryRules.money(unit_price * quantity)],
 			_transaction.bind(session.world.buy_item.bind(merchant, identifier, quantity),
-				open_trade.bind(merchant)))
+				open_buy.bind(merchant)))
 		button.disabled = (stock >= 0 and stock < quantity) or (
 			session.world.hero.copper < unit_price * quantity)
-	_button("Back (Esc)", open_trade.bind(merchant))
-	_finish()
-
-
-func _sell_options(index: int) -> void:
-	var merchant := _merchant
-	var item := session.world.hero.inventory[index]
-	var data := ItemData.get_item(int(item.id))
-	_begin("sell", "Sell %s x%d" % [data.title, item.quantity], open_trade.bind(merchant))
-	_label(ItemData.describe(int(item.id)))
-	var amounts: Array[int] = [1]
-	if int(data.stack) > 10:
-		amounts.append(10)
-	if int(data.stack) > 1:
-		amounts.append(int(item.quantity))
-	for option in range(amounts.size()):
-		var quantity := amounts[option]
-		var label := "Sell stack (%d)" % quantity if option == amounts.size() - 1 and (
-			int(data.stack) > 1) else "Sell %d" % quantity
-		var button := _button("%s / %s" % [label, InventoryRules.money(int(data.sell) * quantity)],
-			_transaction.bind(session.world.sell_item.bind(merchant, index, quantity),
-				open_trade.bind(merchant)))
-		button.disabled = quantity > int(item.quantity)
-	_button("Back (Esc)", open_trade.bind(merchant))
+	_button("Back (Esc)", open_buy.bind(merchant))
 	_finish()
 
 
