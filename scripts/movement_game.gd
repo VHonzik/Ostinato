@@ -6,7 +6,7 @@ const MOVE_ACTIONS: Array[StringName] = [
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
 ]
 
-## Brief presentation gap makes FR-010 cancellation possible without another confirmation.
+## Brief presentation gap makes cancellation possible without another confirmation.
 const MELEE_BOUNDARY_SECONDS: float = 0.18
 
 var world: GridWorld

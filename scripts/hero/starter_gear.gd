@@ -1,7 +1,7 @@
 class_name StarterGear
 extends RefCounted
 
-## DATA-001: granted outfit provenance survives moves and cannot erase acquired items.
+## Granted outfit provenance survives moves and cannot erase acquired items.
 
 
 static func outfit(category: StringName) -> Array[int]:

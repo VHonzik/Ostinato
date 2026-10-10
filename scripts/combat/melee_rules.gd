@@ -1,7 +1,7 @@
 class_name MeleeRules
 extends RefCounted
 
-## DATA-002: mage versus unshielded beasts, one physical white-attack table.
+## Mage versus unshielded beasts, one physical white-attack table.
 static func outcome(
 	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float
 ) -> StringName:

@@ -1,7 +1,7 @@
 class_name MerchantItems
 extends RefCounted
 
-## Vanilla item_template values; see DATA-004 in docs/data/merchants.md.
+## Item definitions used by merchant catalogs.
 const ITEMS: Dictionary = {
 	"4540": {
 		"title": "Tough Hunk of Bread",

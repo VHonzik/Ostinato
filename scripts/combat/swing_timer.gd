@@ -1,7 +1,7 @@
 class_name SwingTimer
 extends RefCounted
 
-## FR-014: retain fractional delay, but never bank attacks while inactive.
+## Retain fractional delay, but never bank attacks while inactive.
 var remaining: float = 0.0
 var _active: bool = false
 

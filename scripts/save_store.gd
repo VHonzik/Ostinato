@@ -1,7 +1,7 @@
 class_name SaveStore
 extends RefCounted
 
-## FR-039/040/041 and NFR-010/011/012: validate before replacing either file or world.
+## Validate before replacing either the save file or the world.
 const SLOT_COUNT: int = 5
 const REVISION: int = 7
 const MAX_BYTES: int = 8 * 1024 * 1024

@@ -1,7 +1,7 @@
 class_name SpellResistance
 extends RefCounted
 
-## Numeric Classic resistance distribution, DATA-002 M5; percentages in basis points.
+## Classic-inspired resistance distribution; percentages in basis points.
 const DISTRIBUTION: Array = [
 	[10000, 0, 0, 0, 0],
 	[9700, 200, 100, 0, 0],

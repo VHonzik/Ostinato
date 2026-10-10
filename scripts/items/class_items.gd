@@ -1,7 +1,7 @@
 class_name ClassItems
 extends RefCounted
 
-## DATA-001/004 class outfits and Minor Healthstone.
+## Class outfits and Minor Healthstone.
 const ITEMS: Dictionary = {
 	"6144": {
 		"title": "Neophyte's Robe",

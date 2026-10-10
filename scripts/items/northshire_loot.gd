@@ -1,7 +1,7 @@
 class_name NorthshireLoot
 extends RefCounted
 
-## Complete bounded Vanilla tables; source rows and adaptations: docs/data/loot.md.
+## Pre-pivot Northshire loot tables.
 ## Row: item ID, percent chance (negative = quest), group, min count/reference, max count.
 ## Group 0 rolls independently; a positive group selects at most one item.
 const TABLES: Dictionary = {

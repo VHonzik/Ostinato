@@ -4,7 +4,7 @@ extends RefCounted
 const DEVELOPMENT_SUPPLIES: int = -1
 
 
-## Per-source RNG never consumes combat/wandering randomness (FR-028).
+## Per-source RNG never consumes combat/wandering randomness.
 static func assign(world: GridWorld, source: GridActor) -> void:
 	if source.loot_assigned:
 		return

@@ -1,7 +1,7 @@
 class_name QuestRules
 extends RefCounted
 
-## Concrete quest transactions and objective updates (FR-034/035/047).
+## Concrete quest transactions and objective updates.
 static func available(world: GridWorld, identifier: String) -> bool:
 	if not QuestData.QUESTS.has(identifier) or world.quests.has(identifier):
 		return false

@@ -5,7 +5,7 @@ signal message_added(message: String)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
 
-## Player-driven movement and combat: FR-007 through FR-027 (milestone subset).
+## Player-driven movement and combat.
 const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(1, 1),
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1),
@@ -69,7 +69,7 @@ func _init(
 
 
 func assign_hotbar(slot: int, identifier: StringName) -> bool:
-	# FR-045: store an explicit learned rank; layout editing never spends time.
+	# Store an explicit learned rank; layout editing never spends time.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
 	if identifier != &"":
@@ -359,7 +359,7 @@ func is_terminal() -> bool:
 	return attempt_state != AttemptState.ACTIVE or is_player_dead()
 
 
-## FR-006/013: latch the first terminal effect; victory wins simultaneous deaths.
+## Latch the first terminal effect; victory wins simultaneous deaths.
 func check_terminal() -> bool:
 	if attempt_state != AttemptState.ACTIVE:
 		return true
@@ -821,7 +821,7 @@ func _regenerate() -> void:
 func _arrive_stalker() -> void:
 	if is_terminal() or not stalker_schedule:
 		return
-	# FR-033: overdue identities enter in order; blocking never moves a deadline.
+	# Overdue identities enter in order; blocking never moves a deadline.
 	while stalkers_arrived < stalker_deadlines.size():
 		if turn_count < stalker_deadlines[stalkers_arrived]:
 			break
@@ -843,7 +843,7 @@ func _spawn_stalker(entry: Vector2i) -> void:
 	stalker.creature_type = "demon"
 	stalker.spawn_id = "gate/stalker/%d" % stalkers_arrived
 	stalker.relationship = GridActor.Relationship.HOSTILE
-	# Ordinary level-20 Wildthorn Stalker profile, DATA-002 M4 adaptation.
+	# Ordinary level-20 Wildthorn Stalker profile, pre-pivot tuning.
 	stalker.max_health = 494
 	stalker.health = 494
 	stalker.melee.level = 20
@@ -920,7 +920,7 @@ func loot_money(source: GridActor) -> bool:
 	return true
 
 
-## FR-028: best effort, preserving every stack that cannot currently be collected.
+## Best effort, preserving every stack that cannot currently be collected.
 func loot_all(source: GridActor) -> bool:
 	if not open_loot(source):
 		return false

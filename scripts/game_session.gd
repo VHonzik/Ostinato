@@ -1,7 +1,7 @@
 class_name GameSession
 extends RefCounted
 
-## FR-001/002/003: replace the complete attempt; old references cannot affect the new world.
+## Replace the complete attempt; old references cannot affect the new world.
 signal world_changed
 
 var world: GridWorld

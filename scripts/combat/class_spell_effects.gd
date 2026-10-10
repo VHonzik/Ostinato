@@ -1,7 +1,7 @@
 class_name ClassSpellEffects
 extends RefCounted
 
-## Concrete M7 rules supplement SpellEffects; source choices are in DATA-003 renaissance.md.
+## Class-specific rules supplement shared SpellEffects.
 static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
 	if skill.effect == SkillRank.Effect.PASSIVE:
 		return false

@@ -1,7 +1,7 @@
 class_name QuestData
 extends RefCounted
 
-## DATA-004: docs/data/northshire.md.
+## Pre-pivot Northshire quest definitions and rewards.
 const QUESTS: Dictionary = {
 	"6": {
 		"title": "Bounty on Garrick Padfoot",

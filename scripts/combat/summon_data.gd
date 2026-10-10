@@ -1,7 +1,7 @@
 class_name SummonData
 extends RefCounted
 
-## DATA-003: HP, mana, armor, strength, spirit, intellect, agility, weapon minimum.
+## HP, mana, armor, strength, spirit, intellect, agility, weapon minimum.
 ## Pinned pet_levelstats and creature_template_classlevelstats; rows by level 1-60.
 const LEVELS: Dictionary = {
 	"416": [

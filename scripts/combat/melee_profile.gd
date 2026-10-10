@@ -1,7 +1,7 @@
 class_name MeleeProfile
 extends RefCounted
 
-## Single-weapon physical subset; provenance in docs/data/melee-baseline.md.
+## Single-weapon physical combat profile.
 var level: int = 1
 var player: bool = false
 var armor: int = 0

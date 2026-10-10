@@ -44,7 +44,7 @@ func test_death_trigger_ends_attempt_and_discards_remaining_phase() -> void:
 	assert_true(world.is_player_dead())
 	assert_eq(world.player_tile, tile_before)
 	assert_eq(world.turn_count, 2)
-	assert_eq(world.random.state, random_before, "FR-013 discards the ended attempt's phase.")
+	assert_eq(world.random.state, random_before, "The ended attempt's phase is discarded.")
 	assert_string_contains(world.messages[-1], "Death trigger invoked")
 	world.wait_turn()
 	assert_false(world.move_player(Vector2i.DOWN))

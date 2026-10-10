@@ -1,7 +1,7 @@
 class_name ItemData
 extends RefCounted
 
-## Vanilla item values; DATA-004 in docs/data/learning-baseline.md.
+## Item definitions and equipment values.
 const ITEMS: Dictionary = {
 	"35": {
 		"title": "Bent Staff",

@@ -1,7 +1,7 @@
 class_name InventoryRules
 extends RefCounted
 
-## Atomic 40-slot transactions: mutate copies, then commit only on success (FR-037/038).
+## Atomic 40-slot transactions: mutate copies, then commit only on success.
 const SLOTS: Array[String] = [
 	"head", "neck", "shoulders", "back", "chest", "shirt", "tabard", "wrists",
 	"hands", "waist", "legs", "feet", "ring_1", "ring_2", "trinket_1", "trinket_2",

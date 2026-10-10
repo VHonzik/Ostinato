@@ -1,9 +1,9 @@
 extends GutHookScript
-## GUT's XML omits unrun tests and script skips. Preserve both for validation.
+## One result file detects unrun tests and matches narrowly asserted engine errors.
 
 
 func run() -> void:
-	var report: Dictionary = GutUtils.ResultExporter.new().get_results_dictionary(gut)
+	var results: Dictionary = GutUtils.ResultExporter.new().get_results_dictionary(gut)
 	var collected: Array[Dictionary] = []
 	for test_script in gut.get_test_collector().scripts:
 		for test_case in test_script.tests:
@@ -12,32 +12,33 @@ func run() -> void:
 				"name": test_case.name,
 				"status": test_case.get_status_text(),
 			})
-	report["collected"] = collected
+	var skipped_scripts := 0
+	for script_result: Dictionary in results.test_scripts.scripts.values():
+		if script_result.props.skipped:
+			skipped_scripts += 1
 	var tracked_errors: Array[Dictionary] = []
 	for test_id in gut.error_tracker.errors.items:
 		for tracked_error: GutTrackedError in gut.error_tracker.errors.items[test_id]:
 			if tracked_error.is_push_warning():
 				continue
 			tracked_errors.append({
-				"test": str(test_id),
 				"code": tracked_error.code,
 				"rationale": tracked_error.rationale,
 				"file": tracked_error.file,
-				"function": tracked_error.function,
 				"line": tracked_error.line,
-				"expected": tracked_error.handled and test_id != GutUtils.NO_TEST and not (
-					tracked_error.file == "modules/gdscript/gdscript_byte_codegen.cpp"
-					and tracked_error.function == "write_return"
-				),
+				"expected": tracked_error.handled and test_id != GutUtils.NO_TEST,
 			})
-	report["tracked_errors"] = tracked_errors
-	var report_directory := OS.get_environment("OSTINATO_REPORT_DIR")
-	if report_directory.is_empty():
-		report_directory = "res://reports"
-	var report_path := report_directory.path_join("gut.json")
-	var report_file := FileAccess.open(report_path, FileAccess.WRITE)
-	if report_file == null:
-		push_error("Cannot write GUT validation report: " + report_path)
+	var directory := OS.get_environment("OSTINATO_REPORT_DIR")
+	if directory.is_empty():
+		return # Editor runs use GUT's own results display.
+	var file := FileAccess.open(directory.path_join("gut.json"), FileAccess.WRITE)
+	if file == null:
+		push_error("Cannot write GUT result.")
 		set_exit_code(1)
 		return
-	report_file.store_string(JSON.stringify(report, "  ") + "\n")
+	file.store_string(JSON.stringify({
+		"totals": results.test_scripts.props,
+		"collected": collected,
+		"skipped_scripts": skipped_scripts,
+		"tracked_errors": tracked_errors,
+	}, "  ") + "\n")

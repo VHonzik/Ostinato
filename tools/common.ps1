@@ -42,7 +42,7 @@ function Invoke-ToolProcess {
   foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
   $process = [Diagnostics.Process]::new()
   $process.StartInfo = $startInfo
-  Write-Host "Running $Name"
+
   try {
     if (!$process.Start()) { throw "Could not start $Name." }
     $stdoutTask = $process.StandardOutput.ReadToEndAsync()
@@ -54,8 +54,6 @@ function Invoke-ToolProcess {
     }
     $stdout = $stdoutTask.GetAwaiter().GetResult()
     $stderr = $stderrTask.GetAwaiter().GetResult()
-    $command = [ordered]@{ executable = $FilePath; arguments = $Arguments; exit_code = $process.ExitCode; timed_out = !$completed }
-    $command | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $OutputDirectory "$Name.command.json") -Encoding utf8
     [IO.File]::WriteAllText((Join-Path $OutputDirectory "$Name.stdout.log"), $stdout)
     [IO.File]::WriteAllText((Join-Path $OutputDirectory "$Name.stderr.log"), $stderr)
     if (!$completed) { throw "$Name timed out after $TimeoutSeconds seconds. See $OutputDirectory." }

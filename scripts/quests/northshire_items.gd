@@ -1,7 +1,7 @@
 class_name NorthshireItems
 extends RefCounted
 
-## Vanilla item_template values (DATA-004).
+## Vanilla item_template values.
 const ITEMS: Dictionary = {
 	"182": {
 		"title": "Garrick's Head",

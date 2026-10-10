@@ -13,7 +13,5 @@
     "gut",
     "push_error"
   ],
-  "post_run_script": "res://tools/gut_report.gd",
-  "junit_xml_file": "res://reports/gut.xml",
-  "junit_xml_timestamp": false
+  "post_run_script": "res://tools/gut_report.gd"
 }

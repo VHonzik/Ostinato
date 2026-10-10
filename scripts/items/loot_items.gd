@@ -1,7 +1,7 @@
 class_name LootItems
 extends RefCounted
 
-## Vanilla item_template values; docs/data/loot.md records all source items.
+## Item definitions used by ordinary loot tables.
 const ITEMS: Dictionary = {
 	"755": {
 		"title": "Melted Candle",

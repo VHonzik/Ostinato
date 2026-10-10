@@ -1,7 +1,7 @@
 class_name HeroData
 extends RefCounted
 
-## DATA-001/002: Vanilla 1.12 mage baseline; see docs/data/hero-baseline.md.
+## Pre-pivot Vanilla mage baseline. Tune here when the progression design changes.
 ## Columns: strength, agility, stamina, intellect, spirit, base health, base mana.
 const LEVEL_STATS: Array[Array] = [
 	[20, 20, 20, 23, 22, 31, 100], # 1

@@ -1,7 +1,7 @@
 class_name TrainerData
 extends RefCounted
 
-## Complete included mage/druid ranks through 10. See DATA-003 M5.
+## Pre-pivot mage/druid training ranks through level 10.
 const RANKS: Dictionary = {
 	"fireball_1": {
 		"title": "Fireball",

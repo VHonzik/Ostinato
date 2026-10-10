@@ -1,7 +1,7 @@
 class_name NorthshireZone
 extends RefCounted
 
-## Fixed single-floor valley and per-slot seeded populations (FR-029/030/032).
+## Fixed single-floor valley and per-slot seeded populations.
 const NPCS: Array = [
 	[197, "Marshal McBride", 18, 12, "Marshal"],
 	[823, "Deputy Willem", 20, 16, ""],
