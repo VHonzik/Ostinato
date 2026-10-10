@@ -15,9 +15,7 @@ Exact versions, download URLs, and hashes are in [tools/versions.json](../tools/
 | Exact engine output | `4.7.2.stable.official.ed1daf0bf` |
 | Export templates | 4.7.2 stable; install when exports are needed |
 | GUT | 9.7.1, vendored in `addons/gut/` with its MIT license |
-| PlantUML | 1.2026.8, cached in `bin/`; uses Smetana, no Graphviz needed |
 | PowerShell | 7+ |
-| Java | 17+ on PATH |
 
 Use the pinned [Godot release](https://godotengine.org/download/archive/4.7.2-stable/) and
 [GUT release](https://github.com/bitwes/Gut/releases/tag/v9.7.1).
@@ -34,8 +32,8 @@ pwsh -NoProfile -File tools/godot.ps1 --version
 pwsh -NoProfile -File tools/godot.ps1 --editor
 ```
 
-Setup downloads missing pinned Godot, GUT, and PlantUML dependencies and checks their hashes.
-It can be rerun; mismatched Godot/PlantUML files are errors and existing GUT is checked for
+Setup downloads missing pinned Godot and GUT dependencies and checks their hashes.
+It can be rerun; mismatched Godot files are errors and existing GUT is checked for
 its declared version without being overwritten. Downloads need network access. Export
 templates are unnecessary for editor use and validation.
 
@@ -83,8 +81,6 @@ The fixture is not the final Northshire map.
 Keeping every rule in the scene would couple turn tests to rendering; one ordinary
 RefCounted model and typed NPC records let tests exercise movement and deterministic
 ordering directly. There is no global manager or event bus.
-See the [class diagram](architecture/classes/movement.puml) and
-[turn sequence](architecture/sequences/movement_turn.puml).
 
 For [NFR-002/003](requirements/non-functional.md#platform-rendering-and-display),
 `pixel_viewport.gd` uses a built-in SubViewportContainer: choose the largest integer scale
@@ -123,8 +119,6 @@ Implemented scope is the milestone-2 portion of FR-015/016/017/046/048/050. Mile
 training services, and real spell effects remain later dependencies. The five primary stats, resources, sourced growth,
 learned ranks, and one-turn fixtures are executable now. The existing movement tests
 remain in the complete suite alongside progression, skill/turn, and UI tests.
-See the [hero class diagram](architecture/classes/hero.puml) and
-[skill sequence](architecture/sequences/hero_skill.puml).
 
 ## Milestone 3: Fight!
 
@@ -171,9 +165,7 @@ Scope: the initial melee/interaction portions of FR-009/014/020–027/049, FR-01
 XP, and updated FR-048/050 feedback. See [DATA-002 melee selection](data/melee-baseline.md)
 for formulas, source limitations, explicit fixture adaptations, and deferred mechanics.
 No targeted real spell, inventory loot, regeneration, or full combat formula coverage
-is claimed. Existing Fireball/Frost Armor remain previews. See the
-[combat classes](architecture/classes/combat.puml) and
-[combat sequence](architecture/sequences/combat_turn.puml).
+is claimed. Existing Fireball/Frost Armor remain previews.
 
 ## Milestone 4: Here we go again...
 
@@ -223,9 +215,7 @@ Damaged saves are retained with a `.damaged-UTC-unique` suffix, and unsupported
 revisions remain unchanged. File failures are visible; a failed overwrite preserves
 the previous save.
 
-See [Loop/save classes](architecture/classes/loop_save.puml) and
-[Loop/save sequence](architecture/sequences/loop_save.puml). Automated coverage
-includes repeated resets, trainer/class restrictions, spell timing, save failures,
+Automated coverage includes repeated resets, trainer/class restrictions, spell timing, save failures,
 deterministic continuation, options conflicts, and UI geometry. Human visual,
 platform, and benchmark acceptance is not inferred from those automated checks.
 
@@ -312,8 +302,7 @@ Earth/Fire totems, priest buffs and paladin abilities from the ordinary mage res
 Death clears active summons/effects but keeps learned abilities.
 
 The [DATA-003 source record](data/renaissance.md) lists all 59 added ranks, exclusions,
-formulas and adaptations. See [summon classes](architecture/classes/summons.puml)
-and [summon sequence](architecture/sequences/summon_turn.puml).
+formulas and adaptations.
 
 Current saves use **demo revision 4**. Revisions 1–3 are preserved and incompatible.
 Save outside combat with active summons, reload, then continue to verify preserved
@@ -341,7 +330,6 @@ independent completion flags through the UI and damage paths.
 Save fields remain **demo revision 4**: completion is never written as a playable save.
 A valid pre-M8 revision-4 save already containing a dead stalker opens at completion;
 other valid revision-4 saves resume normally. Revisions 1–3 remain incompatible.
-See [terminal ordering](architecture/sequences/demo_completion.puml).
 
 For quick completion QA in a development build, wait at spawn for 15 turns until the
 stalker arrival announcement, then choose **K → Development → Kill stalker**. It costs
@@ -387,8 +375,6 @@ Continue waiting through turn 215 to see the second. Development → Kill stalke
 the demo; Development → Death trigger instead starts Loop 2 and restarts the schedule.
 The complete GUT suite uses controlled fixtures for all deadlines, blocked gate tiles,
 save/load continuation, population reservations and each of the five victory targets.
-See [the arrival sequence](architecture/sequences/stalker_arrivals.puml) and
-[DATA-004](data/northshire.md#scheduled-invasion-arrivals-m8-b) for placement/adaptations.
 
 ## Milestone 8-C: Five hotbar slots
 
@@ -419,9 +405,6 @@ or external numeric data is introduced. Save fields remain **demo revision 5**.
 `SkillButton` shares native drag data and wrapped tooltips between book and hotbar;
 `HotbarPanel` keeps five-slot presentation out of the simulation. Assignment validation
 stays in `GridWorld`; there is no new manager or separate casting implementation.
-See [hero classes](architecture/classes/hero.puml),
-[assignment flow](architecture/sequences/hotbar_assignment.puml) and
-[casting flow](architecture/sequences/hero_skill.puml).
 
 ## Milestone 8-D: Individual merchant services
 
@@ -454,9 +437,8 @@ again; changing worlds invalidates old interaction references.
 - `docs/data/`: versioned data selections and adaptations.
 - `test/unit/`: GUT tests; all project test suites belong under `test/`.
 - `tools/`: setup, launch, validation, dependency pins, and GUT report hook.
-- `docs/architecture/`: PlantUML sources for implemented systems.
 - `addons/gut/`: pinned third-party dependency.
-- `reports/`: generated local logs, test results, and diagrams; ignored by Git and Godot.
+- `reports/`: generated local logs and test results; ignored by Git and Godot.
 
 Follow [coding-style.md](coding-style.md). [.editorconfig](../.editorconfig) and
 [.gitattributes](../.gitattributes) define formatting and LF normalization.
@@ -473,7 +455,7 @@ pwsh -NoProfile -File tools/validate.ps1
 
 It verifies tool pins and test configuration, imports resources headlessly, checks every
 first-party GDScript, runs startup for 120 iterations, runs the complete recursive GUT suite
-with error tracking, and renders every PlantUML source as SVG and PNG. Discovery is checked
+with error tracking. Discovery is checked
 against detailed JSON and JUnit results so unrun or missing tests cannot pass.
 
 Unexpected diagnostics, nonzero exits, timeouts, resource leaks, missing reports, zero
@@ -499,8 +481,6 @@ The shared process helper provides timeouts and logs for each tool. The GUT repo
 adds discovery/status/error details absent from JUnit so the runner can verify completeness.
 Startup checks cover only the scene they exercise; add meaningful tests as gameplay appears.
 
-Render diagrams independently with `pwsh -NoProfile -File tools/render_diagrams.ps1`.
-Inspect changed diagrams for readability.
 
 ## Pull requests
 

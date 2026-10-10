@@ -44,6 +44,5 @@ from release builds. CI and exports remain to be established.
 - [Milestone 6 source data, adaptations and remaining content](docs/data/northshire.md)
 - [Milestone 7 class, pet and totem data](docs/data/renaissance.md)
 - [GDScript coding style](docs/coding-style.md)
-- [Architecture overview](docs/architecture/components.puml)
 - [Project rules](AGENTS.md)
 - [GitHub repository](https://github.com/VHonzik/Ostinato)

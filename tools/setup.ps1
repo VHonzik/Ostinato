@@ -36,14 +36,5 @@ if ($gutMetadata -notmatch ('(?m)^version="' + [regex]::Escape($ToolVersions.gut
   throw 'Installed GUT does not match its pin; setup will not overwrite an existing addon.'
 }
 
-$renderer = Join-Path $ProjectRoot $ToolVersions.plantuml.jar
-if (!(Test-Path -LiteralPath $renderer)) {
-  $downloadedRenderer = Join-Path $cache 'plantuml.jar'
-  Invoke-WebRequest -Uri $ToolVersions.plantuml.download_url -OutFile $downloadedRenderer -TimeoutSec 120
-  Assert-FileHash $downloadedRenderer $ToolVersions.plantuml.sha256
-  Copy-Item -LiteralPath $downloadedRenderer -Destination $renderer
-}
-Assert-FileHash $renderer $ToolVersions.plantuml.sha256
-Get-Command java -ErrorAction Stop | Out-Null
 Write-Host 'Pinned dependencies are available. Run: pwsh -File tools/validate.ps1'
 Write-Host 'Export templates are deferred until export tooling is established.'

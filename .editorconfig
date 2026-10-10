@@ -7,7 +7,7 @@ insert_final_newline = true
 indent_style = tab
 trim_trailing_whitespace = true
 
-[*.{md,json,yml,yaml,ps1,puml}]
+[*.{md,json,yml,yaml,ps1}]
 indent_style = space
 indent_size = 2
 

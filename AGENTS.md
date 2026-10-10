@@ -11,7 +11,7 @@ Before planning, research, implementation, tests, or review, read both:
 
 Read their complete current contents and any requirement files they explicitly include. Do not rely solely on a summary from an earlier session. Re-read affected requirements when they change.
 
-Then read `docs/coding-style.md`, `docs/development.md`, and relevant existing code and diagrams. If requirements are absent or unreadable, report the missing paths and do not invent them. If the assigned task is to establish or edit requirements, continue that documentation work from the user's instructions and identify unresolved decisions.
+Then read `docs/coding-style.md`, `docs/development.md`, and relevant existing code. If requirements are absent or unreadable, report the missing paths and do not invent them. If the assigned task is to establish or edit requirements, continue that documentation work from the user's instructions and identify unresolved decisions.
 
 ## Requirements and WoW references
 
@@ -39,18 +39,6 @@ Avoid speculative abstractions, generic frameworks, unnecessary layers, and deep
 For a new abstraction, briefly explain the current problem, simpler alternative, and concrete benefit in the PR or relevant code documentation; no separate design report is needed. Possible future reuse alone is insufficient. Keep changes focused on the task.
 
 Use the exact Godot, export-template, and GUT versions recorded in `docs/development.md`. Upgrade them deliberately in a separate change, keeping local development and CI aligned.
-
-## Keep architecture documentation current
-
-Maintain PlantUML sources under `docs/architecture/`:
-
-- `components.puml`: the high-level component overview, responsibilities, and dependencies.
-- `classes/`: focused, readable class diagrams for significant systems.
-- `sequences/`: sequence diagrams for key feature interactions and meaningful alternate paths.
-
-Use names that match the implementation. Show the fields and methods needed to explain relationships, not exhaustive member lists. Split diagrams when necessary for readability. Do not invent classes solely to populate a diagram.
-
-Update affected diagrams in the same PR as the implementation, verify that changed sources render, and inspect their readability. Add diagrams only when they explain a useful relationship or interaction; routine bootstrap, tooling, and documentation changes do not need new diagrams or statements about unchanged diagrams.
 
 ## Automated validation and test integrity
 

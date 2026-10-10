@@ -83,7 +83,6 @@ try {
   }
   Assert-NoUnexpectedDiagnostics $gutResult @($report.tracked_errors)
   $summary['expected_errors'] = $report.tracked_errors.Count
-  & "$PSScriptRoot/render_diagrams.ps1" -OutputDirectory (Join-Path $reportDirectory 'diagrams') -TimeoutSeconds $TimeoutSeconds
   $summary.status = 'passed'
   Write-Host "PASS: $($summary.scripts_checked) project scripts checked; $($summary.tests) tests passed; 0 failed/skipped/pending."
 } catch {

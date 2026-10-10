@@ -1053,8 +1053,8 @@ Audit baseline: `acc2a6a` (merged milestone 7), 2026-10-02. Keep **8 — Final s
 as [one milestone](https://github.com/VHonzik/Ostinato/milestone/8), delivered through these packages.
 This is a delivery breakdown;
 existing FR/NFR criteria remain authoritative. Each feature PR must be runnable and
-testable when merged, including tests, persistence/reset changes, source records and
-affected diagrams. Do not defer these dependencies to a later package.
+testable when merged, including tests, persistence/reset changes and source records.
+Do not defer these dependencies to a later package.
 
 Working foundations include Loops, six-class training/summons, quests, inventory,
 five-slot saves, global rebinding/fullscreen and alternate relationship colors.

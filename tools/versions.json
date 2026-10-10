@@ -12,11 +12,5 @@
     "version": "9.7.1",
     "download_url": "https://github.com/bitwes/Gut/archive/refs/tags/v9.7.1.zip",
     "archive_sha256": "14969aa46adc84aa08cdd21b9f6d1a64addd92ae60b36f02d0521ed305aa4086"
-  },
-  "plantuml": {
-    "version": "1.2026.8",
-    "jar": "bin/plantuml-1.2026.8.jar",
-    "download_url": "https://github.com/plantuml/plantuml/releases/download/v1.2026.8/plantuml.jar",
-    "sha256": "5e1ecfa8ecd32c90b03bbf3b1eb6f020943f98ab0fcf4032be31a0002ee2c462"
   }
 }
