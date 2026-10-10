@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-7 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-8 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -271,7 +271,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if effect.duration < 1 or effect.started > world.turn_count or effect.delivered > effect.total:
 			return null
 		world.hero.restoration[kind] = _normalized_numbers(effect)
-	if not data.hotbar is Array or data.hotbar.size() != 5:
+	if not data.hotbar is Array or data.hotbar.size() != GridWorld.HOTBAR_SIZE:
 		return null
 	world.hotbar.clear()
 	for identifier in data.hotbar:

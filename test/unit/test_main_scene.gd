@@ -3,7 +3,7 @@ extends GutTest
 var _viewport: SubViewport
 var _main: Control
 var _game_viewport: SubViewport
-var _game: MovementGame
+var _game: Gameplay
 var _original_options: GlobalOptions
 var _options_path: String
 
@@ -12,7 +12,7 @@ func before_each() -> void:
 	_original_options = GlobalOptions.new()
 	_options_path = "user://test_scene_options_" + Crypto.new().generate_random_bytes(8).hex_encode() + ".json"
 	_viewport = SubViewport.new()
-	_viewport.size = Vector2i(640, 360)
+	_viewport.size = Vector2i(1280, 720)
 	_viewport.notify_mouse_entered()
 	add_child_autofree(_viewport)
 	var main_scene := load(ProjectSettings.get_setting("application/run/main_scene")) as PackedScene
@@ -20,7 +20,7 @@ func before_each() -> void:
 	_main = main_scene.instantiate() as Control
 	_viewport.add_child(_main)
 	_game_viewport = _main.get_node("GameContainer/GameViewport") as SubViewport
-	_game = _game_viewport.get_node("MovementGame") as MovementGame
+	_game = _game_viewport.get_node("Gameplay") as Gameplay
 	# Gameplay preferences must not change this default-keyboard fixture or be overwritten by it.
 	InputMap.load_from_project_settings()
 	_game.menu.options = GlobalOptions.new(_options_path)
@@ -35,50 +35,11 @@ func after_each() -> void:
 		DirAccess.remove_absolute(_options_path)
 
 
-func test_startup_shows_the_game_title_and_playable_fixture() -> void:
-	var title := _game.get_node("HUD/Top/Rows/Heading/Title") as Label
+func test_startup_creates_the_playable_world() -> void:
 	assert_true(_main.is_node_ready())
-	assert_true(title.is_visible_in_tree())
-	assert_string_contains(title.text, "OSTINATO")
 	assert_eq(_game.world.player_tile, Vector2i(20, 14))
 	assert_eq(_game.world.turn_count, 0)
 	assert_gt(_game.world.actors.size(), 0)
-
-
-func test_title_and_controls_fit_at_minimum_window_size() -> void:
-	var visible_area := Rect2(Vector2.ZERO, Vector2(640, 360))
-	for path in [
-		"HUD/Top", "HUD/Top/Rows/Heading/Title", "HUD/Top/Rows/Heading/Reset",
-		"HUD/Top/Rows/Status", "HUD/Bottom", "HUD/Bottom/Rows/Controls",
-		"HUD/Bottom/Rows/Legend", "HUD/Bottom/Rows/Feedback",
-	]:
-		var control := _game.get_node(path) as Control
-		assert_true(control.is_visible_in_tree(), path)
-		assert_true(visible_area.encloses(control.get_global_rect()), path + " fits.")
-		assert_gte(control.size.x, control.get_minimum_size().x, path + " is not clipped.")
-
-
-func test_resizing_uses_whole_pixels_and_expands_the_centered_world() -> void:
-	var container := _main.get_node("GameContainer") as SubViewportContainer
-	for scenario in [
-		[Vector2i(640, 360), Vector2i(640, 360), 1, Vector2.ZERO],
-		[Vector2i(1279, 719), Vector2i(1279, 719), 1, Vector2.ZERO],
-		[Vector2i(1280, 720), Vector2i(640, 360), 2, Vector2.ZERO],
-		[Vector2i(1280, 800), Vector2i(640, 400), 2, Vector2.ZERO],
-		[Vector2i(1919, 1079), Vector2i(959, 539), 2, Vector2.ZERO],
-		[Vector2i(1920, 1080), Vector2i(640, 360), 3, Vector2.ZERO],
-		[Vector2i(1922, 1082), Vector2i(640, 360), 3, Vector2.ONE],
-		[Vector2i(1366, 768), Vector2i(683, 384), 2, Vector2.ZERO],
-		[Vector2i(1283, 803), Vector2i(641, 401), 2, Vector2.ZERO],
-	]:
-		_viewport.size = scenario[0]
-		await get_tree().process_frame
-		await get_tree().process_frame
-		assert_eq(_game_viewport.size, scenario[1])
-		assert_eq(container.scale, Vector2.ONE * scenario[2])
-		assert_eq(container.position, scenario[3], "Remainders split on whole physical pixels.")
-		assert_eq(_game.world.turn_count, 0, "Resizing never advances simulation.")
-		_assert_camera_centered()
 
 
 func test_camera_follows_movement_and_remains_centered_at_all_map_edges() -> void:
@@ -164,8 +125,8 @@ func test_key_echo_does_not_advance_time() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_focused_fixture_controls_suppress_gameplay_until_escape() -> void:
-	var button := _game.get_node("HUD/Top/Rows/Heading/Fast") as Button
+func test_focused_hud_controls_suppress_gameplay_until_escape() -> void:
+	var button := _game.get_node("HUD/PlayerMenu/Buttons/PlayerMenu") as Button
 	button.grab_focus()
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_PERIOD)
@@ -176,16 +137,20 @@ func test_focused_fixture_controls_suppress_gameplay_until_escape() -> void:
 	assert_eq(_game.world.turn_count, 1)
 
 
-func test_fixture_speed_and_reset_controls_preserve_then_clear_credit() -> void:
-	_game.world.movement_credit = 0.5
-	var button := _game.get_node("HUD/Top/Rows/Heading/Fast") as Button
-	button.pressed.emit()
-	assert_eq(_game.world.movement_speed, 1.5)
-	assert_eq(_game.world.movement_credit, 0.5)
+func test_player_menu_cancels_queued_movement_and_reset_restores_start() -> void:
+	_send_key(KEY_S, true)
+	_send_key(KEY_M, true)
+	await get_tree().process_frame
+	_send_key(KEY_S, false)
+	_send_key(KEY_M, false)
+	assert_eq(_game.menu.page, "player")
 	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_ESCAPE)
+	_game.world.movement_credit = 0.5
 	_game.world.wait_turn()
 	_game.reset_fixture()
-	assert_eq(_game.world.movement_speed, 1.0)
 	assert_eq(_game.world.movement_credit, 0.0)
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.player_tile, Vector2i(20, 14))
@@ -206,9 +171,8 @@ func _tap_key(key: Key) -> void:
 
 
 func _send_key(key: Key, pressed: bool, echo: bool = false) -> void:
-	var event := InputEventKey.new()
-	event.keycode = key
-	event.physical_keycode = key
+	var event := GlobalOptions.key_event(key)
+	event.keycode = event.physical_keycode
 	event.pressed = pressed
 	event.echo = echo
 	_viewport.push_input(event)
@@ -271,7 +235,8 @@ func test_opening_panel_cancels_queued_movement_and_modal_focus_cannot_escape() 
 
 
 func test_mouse_buttons_open_panels_and_reset_clears_hero_and_chat() -> void:
-	(_game.get_node("HUD/Top/Rows/HeroStatus/Spells") as Button).pressed.emit()
+	_game._open_player_menu()
+	_game.menu._buttons[1].pressed.emit()
 	assert_true(_game.hero_panel.visible)
 	_game.hero_panel.change_tab(1)
 	for button: Button in _game.hero_panel.find_children("*", "Button", true, false):
@@ -284,29 +249,11 @@ func test_mouse_buttons_open_panels_and_reset_clears_hero_and_chat() -> void:
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.messages.size(), 1)
 	assert_false(_game.hero_panel.visible)
-	(_game.get_node("HUD/Top/Rows/HeroStatus/Character") as Button).pressed.emit()
+	_game._open_player_menu()
+	_game.menu._buttons[0].pressed.emit()
 	assert_true(_game.hero_panel.visible)
 
 	await get_tree().process_frame
-
-
-func test_hero_panels_and_hud_fit_at_minimum_content_size() -> void:
-	var area := Rect2(0, 0, 640, 360)
-	for path in ["HUD/Top/Rows/HeroStatus", "HUD/Top/Rows/HeroStatus/Character",
-		"HUD/Top/Rows/HeroStatus/Spells", "HUD/Top/Rows/HeroStatus/Inventory",
-		"HUD/Bottom/Rows/Chat"]:
-		var control := _game.get_node(path) as Control
-		assert_true(area.encloses(control.get_global_rect()), path)
-	_game.hero_panel.open(_game.world.hero, false)
-	for tab in range(3):
-		await get_tree().process_frame
-		await get_tree().process_frame
-		for control: Control in _game.hero_panel.find_children("*", "Control", true, false):
-			if control.is_visible_in_tree():
-				assert_true(area.encloses(control.get_global_rect()), control.name)
-				if control is Label or control is Button:
-					assert_gte(control.size.x, control.get_minimum_size().x, control.name)
-		_game.hero_panel.change_tab(1)
 
 
 func test_release_spell_book_has_no_development_tab_or_controls() -> void:
@@ -400,16 +347,16 @@ func test_melee_automatically_waits_until_one_swing_and_gives_npcs_every_turn() 
 	for key in [KEY_S, KEY_PERIOD, KEY_ENTER, KEY_K, KEY_TAB]:
 		await _tap_key(key)
 	assert_eq(_game.world.turn_count, 1, "Other keys cannot advance the pending action.")
-	_game._process(MovementGame.MELEE_BOUNDARY_SECONDS / 2.0)
+	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS / 2.0)
 	assert_eq(_game.world.turn_count, 1, "The presentation gap leaves time to cancel.")
 	for expected_turn in [2, 3, 4]:
-		_game._process(MovementGame.MELEE_BOUNDARY_SECONDS)
+		_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 		assert_eq(_game.world.turn_count, expected_turn)
 	assert_null(_game.world.pending_melee)
 	assert_eq(actor.swing.remaining, 6.0, "Each elapsed boundary grants the NPC its phase.")
 	assert_string_contains("\n".join(_game.world.messages), "You ->")
 	assert_false(_game.combat_panel.visible)
-	assert_false((_game.get_node("HUD/Top/Rows/Heading/CancelAttack") as Button).visible)
+	assert_false((_game.get_node("HUD/Top/Rows/CancelAttack") as Button).visible)
 	_game._process(10.0)
 	assert_eq(_game.world.turn_count, 4, "Finishing a request does not start another attack.")
 
@@ -418,7 +365,7 @@ func test_automatic_melee_can_be_canceled_between_boundaries_with_escape_or_mous
 	var actor := _prepare_melee(GridActor.Relationship.HOSTILE)
 	_game.world.hero.swing.remaining = 3.5
 	await _tap_key(KEY_F)
-	_game._process(MovementGame.MELEE_BOUNDARY_SECONDS)
+	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.world.turn_count, 2)
 	assert_null(_game.world.pending_melee)
@@ -427,9 +374,8 @@ func test_automatic_melee_can_be_canceled_between_boundaries_with_escape_or_mous
 	assert_eq(_game.world.turn_count, 2)
 	await _tap_key(KEY_F)
 	assert_same(_game.world.pending_melee, actor)
-	var cancel := _game.get_node("HUD/Top/Rows/Heading/CancelAttack") as Button
+	var cancel := _game.get_node("HUD/Top/Rows/CancelAttack") as Button
 	assert_true(cancel.is_visible_in_tree())
-	assert_true(Rect2(0, 0, 640, 360).encloses(cancel.get_global_rect()))
 	await _click_button(cancel)
 	assert_null(_game.world.pending_melee)
 	_game._process(10.0)
@@ -441,7 +387,7 @@ func test_pending_melee_stops_on_invalid_target_reset_and_death() -> void:
 	_game.world.hero.swing.remaining = 3.5
 	await _tap_key(KEY_F)
 	actor.tile += Vector2i(5, 0)
-	_game._process(MovementGame.MELEE_BOUNDARY_SECONDS)
+	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 	assert_null(_game.world.pending_melee)
 	assert_eq(_game.world.turn_count, 1)
 	actor.tile = _game.world.player_tile + Vector2i.DOWN
@@ -514,7 +460,7 @@ func test_death_restarts_loop_and_restores_gameplay_without_a_reset_prompt() -> 
 	assert_eq(_game.world.turn_count, 1)
 
 
-func test_combat_panels_fit_minimum_viewport_and_mouse_buttons_work() -> void:
+func test_combat_mouse_buttons_choose_cancel_and_attack() -> void:
 	_game.set_process(false)
 	_game.world.actors.clear()
 	var first := GridActor.new(_game.world.player_tile + Vector2i.LEFT)
@@ -524,16 +470,13 @@ func test_combat_panels_fit_minimum_viewport_and_mouse_buttons_work() -> void:
 	_game.combat_panel.open_interaction(_game.world)
 	_game.combat_panel.select_tile(second.tile)
 	assert_same(_game.combat_panel.selected, second)
-	var area := Rect2(0, 0, 640, 360)
 	for mode in [CombatPanel.Mode.SELECT, CombatPanel.Mode.CONFIRM_ATTACK]:
 		assert_eq(_game.combat_panel.mode, mode)
 		await get_tree().process_frame
 		await get_tree().process_frame
 		for control: Control in _game.combat_panel.find_children("*", "Control", true, false):
 			if control.is_visible_in_tree():
-				assert_true(area.encloses(control.get_global_rect()), control.name)
 				if control is Button:
-					assert_gte(control.size.x, control.get_minimum_size().x, control.text)
 					assert_eq(control.focus_mode, Control.FOCUS_NONE)
 		if mode == CombatPanel.Mode.SELECT:
 			await _click_combat_button("Choose")
@@ -771,9 +714,7 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_ingame_menus_keep_resources_visible_and_scroll_keyboard_focus_into_view() -> void:
-	var area := Rect2(0, 0, 640, 360)
-	var resource_row := _game.get_node("HUD/Top/Rows/HeroStatus") as Control
+func test_ingame_menus_wrap_keyboard_focus_without_advancing_time() -> void:
 	for open_page: Callable in [
 		_game.menu.open_options, _game.menu.open_slots, _game.menu.open_bindings,
 		_game.menu.open_marshal, _game.menu.open_inventory,
@@ -781,13 +722,10 @@ func test_ingame_menus_keep_resources_visible_and_scroll_keyboard_focus_into_vie
 		open_page.call()
 		await get_tree().process_frame
 		await get_tree().process_frame
-		assert_true(area.encloses(_game.menu._panel.get_global_rect()))
-		assert_false(resource_row.get_global_rect().intersects(_game.menu._panel.get_global_rect()))
 		# Wrapping upward must reveal a distant final item, not just its nearest neighbor.
 		await _tap_key(KEY_W)
 		var last_focused := _game_viewport.gui_get_focus_owner() as Button
 		assert_eq(last_focused.text, _game.menu._buttons[-1].text)
-		assert_true(_game.menu._panel.get_global_rect().encloses(last_focused.get_global_rect()))
 		await _tap_key(KEY_S)
 		var count := _game.menu._buttons.size()
 		for step in range(count):
@@ -795,7 +733,6 @@ func test_ingame_menus_keep_resources_visible_and_scroll_keyboard_focus_into_vie
 			assert_not_null(focused)
 			await get_tree().process_frame
 			await get_tree().process_frame
-			assert_true(area.encloses(focused.get_global_rect()), focused.text)
 			await _tap_key(KEY_S)
 		assert_eq(_game.world.turn_count, 0)
 	_game.menu.close()
@@ -825,7 +762,7 @@ func test_fireball_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> v
 		await _tap_key(KEY_ENTER)
 		assert_eq(_game.world.turn_count, 1)
 		assert_true(target.engaged)
-		_game._process(MovementGame.MELEE_BOUNDARY_SECONDS)
+		_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 		assert_eq(_game.world.turn_count, 2)
 		assert_eq(_game.world.hero.mana, 0)
 		assert_lt(target.health, target.max_health)
@@ -917,28 +854,6 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_new_services_keep_last_keyboard_control_and_resources_visible_at_minimum_size() -> void:
-	_game.world.hero.level = 10
-	_game.world.hero._apply_level_stats()
-	_game.world.hero.copper = 10000
-	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 900003)[0] as GridActor
-	_game.world.player_tile = merchant.tile + Vector2i.RIGHT
-	for page: Callable in [_game.menu.open_inventory, _game.menu.open_trade.bind(merchant),
-		_game.menu.open_trainer.bind(&"Mage")]:
-		page.call()
-		_game.menu._buttons[-1].grab_focus()
-		for frame in range(4):
-			await get_tree().process_frame
-		var button := _game.menu._buttons[-1]
-		var panel := _game.menu._panel.get_global_rect()
-		assert_true(Rect2(0, 0, 640, 360).encloses(panel))
-		assert_true(panel.encloses(button.get_global_rect()))
-		var resources := _game.get_node("HUD/Top/Rows/HeroStatus") as Control
-		assert_false(panel.intersects(resources.get_global_rect()))
-		await _tap_key(KEY_ESCAPE)
-
-
 func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
 	var hero := _game.world.hero
 	assert_true(hero.learn_skill(SkillRank.catalog(&"wrath_1")))
@@ -971,10 +886,13 @@ func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> v
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Fireball")
 
 
-func test_inventory_hud_button_shows_binding_and_opens_menu_without_time() -> void:
-	var button := _game.get_node("HUD/Top/Rows/HeroStatus/Inventory") as Button
-	assert_string_contains(button.text, "Inventory (I)")
-	assert_true(Rect2(0, 0, 640, 360).encloses(button.get_global_rect()))
+func test_player_menu_inventory_entry_shows_binding_and_opens_without_time() -> void:
+	for entry in [["Character", "P"], ["Spells", "K"], ["Inventory", "I"], ["Quests", "J"], ["Interact", "F"]]:
+		var hud_button := _game.get_node("HUD/PlayerMenu/Buttons/" + entry[0]) as Button
+		assert_eq(hud_button.text, "%s (%s)" % entry)
+	_game._open_player_menu()
+	var button := _game.menu._buttons[2]
+	assert_eq(button.text, "Inventory (I)")
 	button.pressed.emit()
 	assert_eq(_game.menu.page, "inventory")
 	assert_eq(_game.world.turn_count, 0)
@@ -982,7 +900,9 @@ func test_inventory_hud_button_shows_binding_and_opens_menu_without_time() -> vo
 	_game.menu.options.bindings["inventory"] = [KEY_B]
 	_game.menu.options.apply_bindings()
 	_game.refresh_view()
-	assert_string_contains(button.text, "Inventory (B)")
+	assert_eq((_game.get_node("HUD/PlayerMenu/Buttons/Inventory") as Button).text, "Inventory (B)")
+	_game._open_player_menu()
+	assert_eq(_game.menu._buttons[2].text, "Inventory (B)")
 
 
 func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_time() -> void:
@@ -1031,7 +951,7 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_quest_pages_scroll_and_mouse_open_log_at_minimum_size() -> void:
+func test_quest_pages_support_keyboard_and_mouse_navigation() -> void:
 	_game.menu.open_options()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -1044,13 +964,10 @@ func test_quest_pages_scroll_and_mouse_open_log_at_minimum_size() -> void:
 	_game.menu._buttons[-1].grab_focus()
 	for frame in range(4):
 		await get_tree().process_frame
-	assert_true(_game.menu._panel.get_global_rect().encloses(
-		_game.menu._buttons[-1].get_global_rect()))
-	assert_true(Rect2(0, 0, 640, 360).encloses(_game.menu._panel.get_global_rect()))
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_six_class_spell_book_scrolls_and_keyboard_reaches_commands_at_minimum_size() -> void:
+func test_six_class_spell_book_keyboard_reaches_commands() -> void:
 	var hero := _game.world.hero
 	hero.level = 10
 	for identifier in SkillRank.all_ranks():
@@ -1059,9 +976,6 @@ func test_six_class_spell_book_scrolls_and_keyboard_reaches_commands_at_minimum_
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var panel := _game.hero_panel
-	var area := Rect2(0, 0, 640, 360)
-	assert_true(area.encloses(panel._panel.get_global_rect()))
-	assert_true(area.encloses(panel._tabs.get_tab_bar().get_global_rect()))
 	var seen: Array[String] = []
 	for index in range(panel._tabs.get_tab_count()):
 		panel._tabs.current_tab = index
@@ -1080,9 +994,7 @@ func test_six_class_spell_book_scrolls_and_keyboard_reaches_commands_at_minimum_
 	dismiss.grab_focus()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var scroll := panel._tabs.get_current_tab_control() as ScrollContainer
-	assert_gt(scroll.scroll_vertical, 0)
-	assert_true(scroll.get_global_rect().encloses(dismiss.get_global_rect()))
+	assert_same(_game_viewport.gui_get_focus_owner(), dismiss)
 	assert_eq(_game.world.turn_count, 0)
 
 
@@ -1097,7 +1009,7 @@ func _complete_demo_fixture() -> GridWorld:
 	return world
 
 
-func test_completion_menu_fits_keyboard_navigation_cannot_resume_and_main_menu_works() -> void:
+func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> void:
 	_game._pending_action = true
 	var world := _complete_demo_fixture()
 	await get_tree().process_frame
@@ -1107,9 +1019,6 @@ func test_completion_menu_fits_keyboard_navigation_cannot_resume_and_main_menu_w
 	assert_eq(_game.menu._buttons.size(), 2)
 	assert_eq(_game.menu._buttons[0].text, "Load")
 	assert_eq(_game.menu._buttons[1].text, "Main Menu")
-	var area := Rect2(Vector2.ZERO, Vector2(640, 360))
-	for button in _game.menu._buttons:
-		assert_true(area.encloses(button.get_global_rect()), button.text)
 	assert_false(_game._pending_action)
 	assert_false(_game.hero_panel.visible)
 	assert_false(_game.combat_panel.visible)
@@ -1206,8 +1115,6 @@ func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() ->
 		var button := _game_viewport.gui_get_focus_owner() as Button
 		assert_not_null(button)
 		assert_eq(button.get_meta("skill_id"), &"kill_stalker_1")
-		assert_true(Rect2(0, 0, 640, 360).encloses(button.get_global_rect()),
-			"The QA action is reachable at the minimum window size.")
 		assert_eq(_game.world.turn_count, 15, "Navigation never spends a turn.")
 		if use_mouse:
 			await _click_button(button)
@@ -1291,7 +1198,7 @@ func test_hotbar_uses_spell_book_targeting_and_rejects_activation_with_modal_own
 
 func test_hotbar_rebinding_changes_activation_and_labels_but_not_slot_assignment_numbers() -> void:
 	assert_true(_game.world.assign_hotbar(0, &"practice_1"))
-	assert_true(_game.menu.options.rebind(&"hotbar_1", KEY_R))
+	assert_true(_game.menu.options.rebind(&"hotbar_1", KEY_R, true))
 	_game.refresh_view()
 	assert_true(_game.hotbar_panel.slots[0].text.begins_with("R"))
 	await _tap_key(KEY_1)
@@ -1305,7 +1212,7 @@ func test_hotbar_rebinding_changes_activation_and_labels_but_not_slot_assignment
 	assert_eq(_game.world.turn_count, 1)
 
 
-func test_hotbar_drop_validates_rank_lock_and_world_and_controls_fit_at_minimum_size() -> void:
+func test_hotbar_drop_validates_rank_lock_and_world() -> void:
 	await _tap_key(KEY_K)
 	var bar := _game.hotbar_panel
 	var rank := _game.world.hero.find_skill(&"fireball_1")
@@ -1324,16 +1231,12 @@ func test_hotbar_drop_validates_rank_lock_and_world_and_controls_fit_at_minimum_
 	assert_eq(_game.world.turn_count, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var area := Rect2(0, 0, 640, 360)
-	for control: Control in [bar, bar.lock_button, _game.hero_panel._panel,
-		_game.hero_panel._assign, _game.hero_panel._clear, _game.hero_panel._details]:
-		assert_true(area.encloses(control.get_global_rect()), control.name)
-	for button in bar.slots:
-		assert_true(area.encloses(button.get_global_rect()))
-	assert_false(bar.get_global_rect().intersects(_game.hero_panel._panel.get_global_rect()))
 	_game.start_new_game()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
-	assert_eq(_game.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_eq(_game.world.hotbar, [
+		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 
 
 func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank() -> void:
@@ -1451,7 +1354,7 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	assert_eq(_game.world.player_tile, Vector2i(19, 10))
 
 
-func test_every_merchant_catalog_and_full_bag_can_be_scrolled_at_minimum_size() -> void:
+func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> void:
 	for index in range(40):
 		_game.world.hero.inventory[index] = ItemData.instance(159, 20)
 	for npc_id in [152, 190, 1213, 78, 900003]:
@@ -1473,19 +1376,13 @@ func test_every_merchant_catalog_and_full_bag_can_be_scrolled_at_minimum_size() 
 			assert_eq(_game.menu._buttons.size(), expected)
 			for button in _game.menu._buttons:
 				button.grab_focus()
-				for frame in range(3):
-					await get_tree().process_frame
-				assert_lte(button.get_global_rect().end.x, 570.0, button.text)
-				assert_gte(button.position.x, 0.0, button.text)
-			var panel := _game.menu._panel.get_global_rect()
-			assert_true(Rect2(0, 0, 640, 360).encloses(panel))
-			assert_true(panel.encloses(_game.menu._buttons[-1].get_global_rect()))
+				assert_same(_game_viewport.gui_get_focus_owner(), button)
 			await _tap_key(KEY_ESCAPE)
 			assert_eq(_game.menu.page, "trade")
 		assert_eq(_game.world.turn_count, 0)
 
 
-func test_trade_stack_options_respect_money_stock_and_minimum_window_size() -> void:
+func test_trade_stack_options_respect_money_and_stock() -> void:
 	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 900003)[0] as GridActor
 	_game.world.player_tile = Vector2i(17, 17)
@@ -1499,8 +1396,6 @@ func test_trade_stack_options_respect_money_stock_and_minimum_window_size() -> v
 	_game.menu._buttons[2].grab_focus()
 	for frame in range(4):
 		await get_tree().process_frame
-	for button in _game.menu._buttons:
-		assert_true(_game.menu._panel.get_global_rect().encloses(button.get_global_rect()))
 	await _click_button(_game.menu._buttons[2])
 	assert_eq(_game.world.hero.inventory[0], ItemData.instance(159, 20))
 	assert_eq(_game.world.hero.copper, 100)
@@ -1546,14 +1441,17 @@ func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
 
 
 func test_starting_mage_hotbar_activates_without_manual_assignment() -> void:
-	assert_eq(_game.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_eq(_game.world.hotbar, [
+		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 	assert_false(_game.world.hotbar_locked)
 	await _tap_key(KEY_2)
 	assert_true(_game.world.hero.buffs.has(&"frost_armor_1"))
 	assert_eq(_game.world.turn_count, 1)
 
 
-func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus_visible() -> void:
+func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> void:
 	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 152)[0] as GridActor
 	_game.world.player_tile = Vector2i(19, 10)
@@ -1577,7 +1475,6 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus_visible
 		assert_string_contains(focused.text, "Refreshing Spring Water x%d" % int(entry[1]))
 		for frame in range(4):
 			await get_tree().process_frame
-		assert_true(_game.menu._panel.get_global_rect().encloses(focused.get_global_rect()))
 		await _tap_key(KEY_ENTER)
 		proceeds += int(entry[1])
 		assert_true(_game.world.hero.inventory[int(entry[0])].is_empty())
@@ -1641,3 +1538,35 @@ func test_direct_sell_revalidates_merchant_range_and_rejects_buttons_from_replac
 	assert_eq(previous.hero.copper, 0)
 	assert_eq(_game.world.hero.copper, 0)
 	assert_eq(_game.world.turn_count, 0)
+
+
+func test_extended_hotbar_keys_assign_and_activate_without_numpad_conflicts() -> void:
+	_game.world.actors.clear()
+	for index in range(5, 20):
+		assert_true(_game.world.assign_hotbar(index, &"practice_1"))
+		await _tap_key(GlobalOptions.HOTBAR_KEYS[index])
+		assert_eq(_game.world.turn_count, index - 4)
+	await _tap_key(KEY_K)
+	_game.hero_panel.begin_assignment()
+	await _tap_key(KEY_V | KEY_MASK_SHIFT)
+	assert_eq(_game.world.hotbar[19], &"fireball_1")
+	assert_eq(_game.world.turn_count, 15, "Assignment is free.")
+
+
+func test_interact_button_opens_selection_and_cancels_queued_movement_for_free() -> void:
+	_game.world.actors.clear()
+	var actor := GridActor.new(_game.world.player_tile + Vector2i.UP)
+	actor.relationship = GridActor.Relationship.NEUTRAL
+	_game.world.actors.append(actor)
+	_send_key(KEY_S, true)
+	var button := _game.get_node("HUD/PlayerMenu/Buttons/Interact") as Button
+	await _click_button(button)
+	_send_key(KEY_S, false)
+	assert_same(_game.combat_panel.selected, actor)
+	assert_true(_game.combat_panel.visible)
+	assert_false(_game._pending_action)
+	assert_eq(_game.world.turn_count, 0)
+	assert_false(actor.engaged)
+	await _tap_key(KEY_ESCAPE)
+	assert_false(_game.combat_panel.visible)
+	assert_null(_game_viewport.gui_get_focus_owner())

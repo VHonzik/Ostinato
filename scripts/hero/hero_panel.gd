@@ -31,8 +31,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel = PanelContainer.new()
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-300, -90)
-	_panel.size = Vector2(600, 216)
+	_panel.position = Vector2(-480, -220)
+	_panel.size = Vector2(960, 440)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.055, 0.09, 0.085, 1)
@@ -71,7 +71,7 @@ func _ready() -> void:
 	_stats = Label.new()
 	character.add_child(_stats)
 	_details = RichTextLabel.new()
-	_details.custom_minimum_size.y = 44
+	_details.custom_minimum_size.y = 72
 	_details.focus_mode = Control.FOCUS_ALL
 	rows.add_child(_details)
 	_tabs.tab_changed.connect(_on_tab_changed)
@@ -114,7 +114,7 @@ func refresh() -> void:
 	_clear.disabled = layout_locked
 	_lock.text = "Unlock" if layout_locked else "Lock"
 	if choosing_slot:
-		_details.text = "Choose slot: top-row 1–5 or click a slot. Esc cancels."
+		_details.text = "Choose slot: 1–6, R, T, G, V; Shift for row 2; or click a slot. Esc cancels."
 	elif _tabs.current_tab > 0:
 		var identifier: StringName = _last_spell_by_class.get(_last_class_tab, &"")
 		var skill := _hero.find_skill(identifier)
@@ -262,8 +262,8 @@ func handle_assignment_key(event: InputEventKey) -> bool:
 		return false
 	if event.is_action_pressed("ui_cancel"):
 		finish_assignment()
-	elif event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_5:
-		slot_chosen.emit(event.physical_keycode - KEY_1)
+	elif event.get_physical_keycode_with_modifiers() in GlobalOptions.HOTBAR_KEYS:
+		slot_chosen.emit(GlobalOptions.HOTBAR_KEYS.find(event.get_physical_keycode_with_modifiers()))
 	# The slot chooser owns all keys, including rebound gameplay actions.
 	return true
 

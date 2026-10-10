@@ -53,7 +53,9 @@ func test_new_game_resets_learning_hotbar_and_class_and_uses_requested_seed() ->
 	assert_eq(game.seed_value, 29)
 	assert_eq(game.loop_count, 1)
 	assert_null(game.world.hero.find_skill(&"wrath_1"))
-	assert_eq(game.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_eq(game.world.hotbar.size(), 20)
+	assert_eq(game.world.hotbar.slice(0, 2), [&"fireball_1", &"frost_armor_1"])
+	assert_eq(game.world.hotbar.count(&""), 18)
 	assert_eq(game.world.hero.selected_class, &"Mage")
 
 

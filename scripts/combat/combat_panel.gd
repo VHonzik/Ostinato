@@ -33,8 +33,8 @@ func _ready() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "Panel"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-224, -76)
-	_panel.size = Vector2(448, 152)
+	_panel.position = Vector2(-340, -100)
+	_panel.size = Vector2(680, 200)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#101d1b")
@@ -48,8 +48,8 @@ func _ready() -> void:
 	_detail = Label.new()
 	_detail.name = "Detail"
 	# Give wrapping text its known content width before the first layout pass.
-	_detail.custom_minimum_size.x = 428
-	_detail.size.x = 428
+	_detail.custom_minimum_size.x = 660
+	_detail.size.x = 660
 	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rows.add_child(_detail)
@@ -197,8 +197,8 @@ func _update_selection() -> void:
 
 func _configure_buttons(multiple: bool, confirm_text: String, cancel_visible: bool) -> void:
 	# Keep adjacent world targets visible during selection and attack confirmation.
-	_panel.position = size * 0.5 + Vector2(-224, 56)
-	_panel.size = Vector2(448, 116)
+	_panel.position = size * 0.5 + Vector2(-340, 88)
+	_panel.size = Vector2(680, 164)
 	_previous.visible = multiple
 	_next.visible = multiple
 	_confirm.text = confirm_text

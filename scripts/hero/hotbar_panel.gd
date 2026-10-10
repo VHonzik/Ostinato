@@ -1,5 +1,5 @@
 class_name HotbarPanel
-extends HBoxContainer
+extends Control
 
 signal slot_pressed(slot: int)
 signal rank_dropped(slot: int, identifier: StringName, source_hero: HeroState)
@@ -12,24 +12,35 @@ var _world: GridWorld
 
 
 func _ready() -> void:
-	set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	offset_left = 12
-	offset_right = -12
-	offset_top = -40
-	offset_bottom = -8
-	for index in range(5):
+	set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	offset_left = -340
+	offset_right = 340
+	offset_top = -120
+	offset_bottom = -12
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var rows: Array[HBoxContainer] = []
+	for row_index in range(2):
+		var row := HBoxContainer.new()
+		row.position = Vector2(0, 56 if row_index == 0 else 0)
+		row.size = Vector2(680, 52)
+		add_child(row)
+		rows.append(row)
+	for index in range(GridWorld.HOTBAR_SIZE):
 		var button := SkillButton.new()
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size = Vector2(72, 32)
+		button.custom_minimum_size = Vector2(64, 52)
 		button.clip_text = true
+		button.add_theme_font_size_override("font_size", 14)
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(func() -> void: slot_pressed.emit(index))
 		button.set_drag_forwarding(Callable(), _can_drop.bind(index), _drop.bind(index))
-		add_child(button)
+		rows[index / 10].add_child(button)
 		slots.append(button)
 	lock_button = Button.new()
 	lock_button.text = "Lock"
-	lock_button.custom_minimum_size.x = 72
+	lock_button.position = Vector2(608, -32)
+	lock_button.size = Vector2(72, 28)
+	lock_button.add_theme_font_size_override("font_size", 14)
 	lock_button.pressed.connect(func() -> void: lock_requested.emit())
 	add_child(lock_button)
 
@@ -42,8 +53,8 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		var button := slots[index]
 		var skill := world.hero.find_skill(world.hotbar[index])
 		button.describe(skill, world.hero)
-		var key := options.key_label(StringName("hotbar_%d" % (index + 1)))
-		button.text = "%s · %s" % [key, "Empty" if skill == null else skill.title]
+		var key := options.key_label(StringName("hotbar_%d" % (index + 1))).replace("Shift+", "S+")
+		button.text = "%s\n%s" % [key, "—" if skill == null else skill.title.get_slice(" ", 0)]
 		button.disabled = not (can_activate or (editing_enabled and choosing_slot))
 		if skill == null:
 			button.tooltip_text = "Slot %d (%s): empty. Assign a rank from the spell book." % [index + 1, key]

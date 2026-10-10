@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1920 1080">
+  <defs>
+    <style>
+      .cls-1{fill:#ffffff;stroke:#000000;stroke-width:3;stroke-miterlimit:10}
+      .cls-2{font-family:&apos;Source Sans 3&apos;;font-size:22;fill:#000000}
+      .cls-3{font-family:&apos;Source Sans 3&apos;;font-size:17;fill:#000000}
+      .cls-4{font-family:&apos;Source Sans 3&apos;;font-size:17;fill:#000000;text-anchor:middle}
+      .cls-5{font-family:&apos;Source Sans 3&apos;;font-size:14;fill:#000000}
+    </style>
+  </defs>
+  <title>Untitled-1</title>
+  <g id="Layer_1" data-name="Layer 1">
+    <g>
+      <path d="M35.074 774.087 L416.996 774.087 L416.996 1067.673 L35.074 1067.673 Z" class="cls-1"/>
+      <text transform="matrix(1 0 0 1 173.125 928.294)" x="0" y="0" xml:space="preserve" class="cls-2"><tspan x="0" y="0">Combat log</tspan></text>
+    </g>
+    <g>
+      <path d="M448.823 989.729 L1486.766 989.729 L1486.766 1063.775 L448.823 1063.775 Z" class="cls-1"/>
+      <text transform="matrix(1 0 0 1 852.781 1032.481)" x="0" y="0" xml:space="preserve" class="cls-3"><tspan x="0" y="0">Hotbar 1 - 10 slots -  123456RTGV</tspan></text>
+    </g>
+    <g>
+      <path d="M448.823 908.443 L1486.766 908.443 L1486.766 982.489 L448.823 982.489 Z" class="cls-1"/>
+      <text transform="matrix(1 0 0 1 908.787 951.195)" x="0" y="0" xml:space="preserve" class="cls-3"><tspan x="0" y="0">Hotbar 2 10 slots </tspan></text>
+    </g>
+    <g>
+      <path d="M1527.686 989.729 L1884.926 989.729 L1884.926 1058.579 L1527.686 1058.579 Z" class="cls-1"/>
+      <text transform="matrix(1 0 0 1 1706.306 1022.281)" x="0" y="0" xml:space="preserve" class="cls-4"><tspan x="0" y="0">Menu - Character, spells, game optiopns,</tspan><tspan x="0" y="20.4">quests, invetory buttons</tspan></text>
+    </g>
+    <g>
+      <path d="M26.982 15.832 L366.333 15.832 L366.333 113.261 L26.982 113.261 Z" class="cls-1"/>
+      <text transform="matrix(1.161 0 0 1.364 56.139 59.526)" x="0" y="0" xml:space="preserve" class="cls-5"><tspan x="0" y="0">Player character - HP, rage, combo points,</tspan><tspan x="0" y="16.8">level, xp, turn</tspan></text>
+    </g>
+    <g>
+      <path d="M713.18 774.087 L1206.82 774.087 L1206.82 861.123 L713.18 861.123 Z" class="cls-1"/>
+      <text transform="matrix(1 0 0 1 818.534 823.334)" x="0" y="0" xml:space="preserve" class="cls-3"><tspan x="0" y="0">Player buffs and debuffs , weak auras style</tspan></text>
+    </g>
+  </g>
+</svg>

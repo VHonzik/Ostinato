@@ -6,6 +6,7 @@ signal new_game_requested
 signal return_to_menu_requested
 signal refreshed
 signal fullscreen_changed
+signal hero_requested(spell_book: bool)
 
 var session: GameSession
 var saves := SaveStore.new()
@@ -29,8 +30,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel = PanelContainer.new()
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-250, -132)
-	_panel.size = Vector2(500, 264)
+	_panel.position = Vector2(-360, -240)
+	_panel.size = Vector2(720, 480)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#101d1b")
@@ -45,7 +46,7 @@ func _ready() -> void:
 	scroll.add_child(_rows)
 	_footer = HBoxContainer.new()
 	_footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	_footer.offset_top = -24
+	_footer.offset_top = -32
 	_footer.offset_left = 8
 	_footer.offset_right = -8
 	add_child(_footer)
@@ -81,6 +82,23 @@ func open_completion() -> void:
 
 func _completed() -> bool:
 	return session.world != null and session.world.attempt_state == GridWorld.AttemptState.COMPLETED
+
+
+func open_player() -> void:
+	_begin("player", "Player menu", close)
+	_button("Character (" + options.key_label(&"character") + ")", _open_hero.bind(false))
+	_button("Spell book (" + options.key_label(&"spell_book") + ")", _open_hero.bind(true))
+	_button("Inventory (" + options.key_label(&"inventory") + ")", open_inventory)
+	_button("Quest log (" + options.key_label(&"quest_log") + ")", open_quest_log)
+	_button("Options / Save / Load", open_options)
+	_label("Move: WASD + QEZC / arrows / numpad. Wait: period / numpad 5. F interacts.")
+	_button("Return to game (Esc)", close)
+	_finish()
+
+
+func _open_hero(spell_book: bool) -> void:
+	close()
+	hero_requested.emit(spell_book)
 
 
 func open_options() -> void:
@@ -404,9 +422,11 @@ func handle_key(event: InputEventKey) -> void:
 		if event.physical_keycode == KEY_ESCAPE:
 			open_bindings()
 			return
+		if event.physical_keycode in [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META]:
+			return
 		var action := _capture_action
 		_capture_action = &""
-		var key := int(event.physical_keycode)
+		var key := int(event.get_physical_keycode_with_modifiers())
 		var other := options.conflict(action, key)
 		if other != &"":
 			confirm("Swap %s with %s?" % [action, other], func() -> void:
@@ -466,8 +486,8 @@ func toggle_fullscreen() -> void:
 
 func _begin(next_page: String, title: String, back: Callable) -> void:
 	page = next_page
-	_panel.position = size * 0.5 + Vector2(-250, -86 if active_game else -100)
-	_panel.size = Vector2(500, 248 if active_game else 200)
+	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
+	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
 	_buttons.clear()
 	(_rows.get_parent() as ScrollContainer).scroll_vertical = 0
@@ -484,7 +504,7 @@ func _label(text: String) -> void:
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.custom_minimum_size.x = 460
+	label.custom_minimum_size.x = 680
 	_rows.add_child(label)
 
 
@@ -587,7 +607,6 @@ func _toggle_palette() -> void:
 
 
 func _ensure_button_visible(button: Button) -> void:
-	await get_tree().process_frame
 	if is_instance_valid(button) and _rows.is_ancestor_of(button):
 		(_rows.get_parent() as ScrollContainer).ensure_control_visible(button)
 

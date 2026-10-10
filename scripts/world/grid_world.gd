@@ -11,6 +11,7 @@ const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1),
 ]
 
+const HOTBAR_SIZE: int = 20
 const CHAT_LIMIT: int = 100
 const STALKER_DEADLINES: Array[int] = [15, 215, 395, 555, 695]
 const STALKER_ENTRIES: Array[Vector2i] = [
@@ -43,7 +44,7 @@ var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
 var ever_accepted_quest: bool = false
-var hotbar: Array[StringName] = [&"", &"", &"", &"", &""]
+var hotbar: Array[StringName] = []
 var hotbar_locked: bool = false
 var resolving_turn: bool = false
 var attempt_state: AttemptState = AttemptState.ACTIVE
@@ -60,6 +61,8 @@ func _init(
 	map_bounds: Rect2i, spawn: Vector2i, world_seed: int = 1,
 	development_build: bool = OS.is_debug_build()
 ) -> void:
+	hotbar.resize(HOTBAR_SIZE)
+	hotbar.fill(&"")
 	seed_value = world_seed
 	hero = HeroState.new(development_build)
 	bounds = map_bounds

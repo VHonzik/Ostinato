@@ -2,7 +2,7 @@ extends Control
 
 ## Use every whole logical pixel, including space left by integer scaling.
 ## A SubViewportContainer also leaves remainder pixels in the project's clear color.
-const BASE_SIZE := Vector2i(640, 360)
+const BASE_SIZE := Vector2i(1280, 720)
 
 @onready var _container: SubViewportContainer = $GameContainer
 @onready var _game_viewport: SubViewport = $GameContainer/GameViewport

@@ -55,12 +55,12 @@ func test_display_and_palette_preferences_persist_independently_of_game_state() 
 
 func test_hotbar_keys_are_global_distinct_from_numpad_and_conflicts_require_swap() -> void:
 	assert_false(_options.rebind(&"hotbar_1", KEY_KP_1))
-	assert_true(_options.rebind(&"hotbar_1", KEY_R))
+	assert_true(_options.rebind(&"hotbar_1", KEY_Y))
 	var loaded := GlobalOptions.new(_path)
 	loaded.load_options()
-	assert_eq(loaded.key_label(&"hotbar_1"), "R")
+	assert_eq(loaded.key_label(&"hotbar_1"), "Y")
 	var event := InputEventKey.new()
-	event.physical_keycode = KEY_R
+	event.physical_keycode = KEY_Y
 	event.pressed = true
 	assert_true(event.is_action_pressed("hotbar_1"))
 	event.physical_keycode = KEY_KP_1
@@ -88,9 +88,22 @@ func test_older_options_keep_number_key_bindings_without_duplicate_hotbar_activa
 	var loaded := GlobalOptions.new(_path)
 	loaded.load_options()
 	assert_eq(loaded.key_label(&"hotbar_1"), "Unbound")
-	assert_true(loaded.rebind(&"hotbar_1", KEY_R))
+	assert_true(loaded.rebind(&"hotbar_1", KEY_Y))
 	loaded.load_options()
 	assert_false(loaded.rebind(&"hotbar_1", KEY_1))
 	assert_true(loaded.rebind(&"hotbar_1", KEY_1, true))
-	assert_eq(loaded.key_label(&"move_north"), "R")
+	assert_eq(loaded.key_label(&"move_north"), "Y")
 	assert_eq(loaded.key_label(&"hotbar_1"), "1")
+
+
+func test_shift_binding_persists_and_only_matches_the_second_row() -> void:
+	assert_true(_options.rebind(&"hotbar_20", KEY_Y | KEY_MASK_SHIFT))
+	var loaded := GlobalOptions.new(_path)
+	loaded.load_options()
+	assert_string_contains(loaded.key_label(&"hotbar_20"), "Shift")
+	var event := GlobalOptions.key_event(KEY_Y | KEY_MASK_SHIFT)
+	event.pressed = true
+	assert_true(event.is_action_pressed("hotbar_20", false, true))
+	event.shift_pressed = false
+	assert_false(event.is_action_pressed("hotbar_20", false, true))
+	assert_false(_options.rebind(&"interact", KEY_ENTER | KEY_MASK_SHIFT))

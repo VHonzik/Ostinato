@@ -5,13 +5,16 @@ func test_assignments_reject_unknown_ranks_and_locked_edits_without_time_or_reso
 	var world := MovementFixture.create_world()
 	assert_false(world.assign_hotbar(0, &"fireball_2"))
 	assert_false(world.assign_hotbar(-1, &"fireball_1"))
-	assert_false(world.assign_hotbar(5, &"fireball_1"))
+	assert_false(world.assign_hotbar(20, &"fireball_1"))
 	assert_true(world.assign_hotbar(0, &"fireball_1"))
 	assert_true(world.assign_hotbar(4, &"frost_armor_1"))
 	world.hotbar_locked = true
 	assert_false(world.assign_hotbar(0, &"frost_armor_1"))
 	assert_false(world.assign_hotbar(4, &""))
-	assert_eq(world.hotbar, [&"fireball_1", &"", &"", &"", &"frost_armor_1"])
+	assert_eq(world.hotbar, [
+		&"fireball_1", &"", &"", &"", &"frost_armor_1", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.mana, world.hero.max_mana)
 	world.hotbar_locked = false
@@ -48,7 +51,10 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 	snapshot.hotbar[4] = "wrath_1"
 	assert_null(SaveCodec.restore(snapshot, true), "Unlearned saved assignments are invalid.")
 	session.new_game(318)
-	assert_eq(session.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_eq(session.world.hotbar, [
+		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 	assert_false(session.world.hotbar_locked)
 
 
@@ -68,14 +74,40 @@ func test_pet_commands_require_a_learned_summon_and_round_trip() -> void:
 func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death() -> void:
 	var session := GameSession.new()
 	session.new_game(318)
-	assert_eq(session.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	assert_eq(session.world.hotbar, [
+		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 	for index in [0, 1]:
 		assert_not_null(session.world.hero.find_skill(session.world.hotbar[index]))
 		assert_true(session.world.assign_hotbar(index, &""))
 	var restored := SaveCodec.restore(SaveCodec.capture(session), true)
 	assert_not_null(restored)
-	assert_eq(restored.hotbar, [&"", &"", &"", &"", &""])
+	assert_eq(restored.hotbar, [
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
 	session.restore(restored, 318, 1)
 	session.world.hero.health = 0
 	assert_true(session.restart_after_death())
-	assert_eq(session.world.hotbar, [&"", &"", &"", &"", &""])
+	assert_eq(session.world.hotbar, [
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+	])
+
+
+func test_last_slot_survives_save_load_and_death_and_short_arrays_are_rejected() -> void:
+	var session := GameSession.new()
+	session.new_game(319)
+	assert_true(session.world.assign_hotbar(19, &"fireball_1"))
+	var snapshot := SaveCodec.capture(session)
+	var restored := SaveCodec.restore(snapshot, true)
+	assert_not_null(restored)
+	assert_eq(restored.hotbar.size(), 20)
+	assert_eq(restored.hotbar[19], &"fireball_1")
+	session.restore(restored, 319, 1)
+	session.world.hero.health = 0
+	assert_true(session.restart_after_death())
+	assert_eq(session.world.hotbar[19], &"fireball_1")
+	snapshot.hotbar.resize(5)
+	assert_null(SaveCodec.restore(snapshot, true))

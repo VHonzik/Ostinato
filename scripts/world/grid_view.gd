@@ -1,7 +1,7 @@
 class_name GridView
 extends Node2D
 
-const TILE_SIZE: int = 16
+const TILE_SIZE: int = 32
 # Shared by the player and trainer NPCs.
 const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
 	&"Mage": Vector2i(3, 0),
@@ -83,17 +83,17 @@ func _draw() -> void:
 			[Vector2i(5, 18), "Wolves"], [Vector2i(29, 10), "Echo Ridge Mine"],
 			[Vector2i(34, 23), "Vineyards"], [Vector2i(43, 10), "Gate overlook"]]:
 			draw_string(ThemeDB.fallback_font, tile_center(sign[0]), sign[1],
-				HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#eddfb7"))
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#eddfb7"))
 	# Corpses remain visible under living occupants.
 	for actor in world.actors:
 		if not actor.alive and actor.corpse_visible:
 			var center := tile_center(actor.tile)
 			if actor.chest:
-				draw_rect(Rect2(center - Vector2(6, 4), Vector2(12, 9)), Color("#b38b45"))
-				draw_line(center - Vector2(6, 1), center + Vector2(6, -1), Color("#edd99b"), 1)
+				draw_rect(Rect2(center - Vector2(12, 8), Vector2(24, 18)), Color("#b38b45"))
+				draw_line(center - Vector2(12, 2), center + Vector2(12, -2), Color("#edd99b"), 1)
 				continue
-			draw_line(center + Vector2(-5, 2), center + Vector2(5, 2), Color("#a09a81"), 2)
-			draw_line(center + Vector2(-2, -1), center + Vector2(2, 5), Color("#a09a81"), 2)
+			draw_line(center + Vector2(-10, 4), center + Vector2(10, 4), Color("#a09a81"), 2)
+			draw_line(center + Vector2(-4, -2), center + Vector2(4, 10), Color("#a09a81"), 2)
 	for actor in world.actors:
 		if actor.alive:
 			var color: Color = [Color("#9acd95"), Color("#e8c979"), Color("#ee7871")][actor.relationship]
@@ -101,25 +101,25 @@ func _draw() -> void:
 				color = [Color("#56B4E9"), Color("#F0E442"), Color("#D55E00")][actor.relationship]
 			if actor.summon_kind in ["earth", "fire"]:
 				var totem_color := Color("#cf884c") if actor.summon_kind == "earth" else Color("#ffb75a")
-				draw_rect(Rect2(tile_center(actor.tile) - Vector2(3, 6), Vector2(6, 12)), totem_color)
-				draw_line(tile_center(actor.tile) - Vector2(5, 3), tile_center(actor.tile) + Vector2(5, -3), color, 2)
+				draw_rect(Rect2(tile_center(actor.tile) - Vector2(6, 12), Vector2(12, 24)), totem_color)
+				draw_line(tile_center(actor.tile) - Vector2(10, 6), tile_center(actor.tile) + Vector2(10, -6), color, 2)
 			else:
 				_draw_character(actor.tile, actor_sprite(actor), color)
 			if actor.polymorphed_until > world.turn_count:
-				draw_circle(tile_center(actor.tile), 5, Color.WHITE)
+				draw_circle(tile_center(actor.tile), 10, Color.WHITE)
 			if actor.rooted_until > world.turn_count:
-				draw_rect(Rect2(tile_center(actor.tile) - Vector2(6, 6), Vector2(12, 12)),
+				draw_rect(Rect2(tile_center(actor.tile) - Vector2(12, 12), Vector2(24, 24)),
 					Color("#71b580"), false, 1)
 			var center := tile_center(actor.tile)
-			draw_line(center, center + Vector2(actor.facing) * 6, color, 1)
+			draw_line(center, center + Vector2(actor.facing) * 12, color, 1)
 			if actor.health < actor.max_health:
-				draw_rect(Rect2(center + Vector2(-7, -9), Vector2(14, 2)), Color("#382524"))
-				draw_rect(Rect2(center + Vector2(-7, -9),
-					Vector2(14.0 * actor.health / actor.max_health, 2)), color)
+				draw_rect(Rect2(center + Vector2(-14, -18), Vector2(28, 3)), Color("#382524"))
+				draw_rect(Rect2(center + Vector2(-14, -18),
+					Vector2(28.0 * actor.health / actor.max_health, 3)), color)
 	if selected != null:
-		var selection := Rect2(Vector2(selected.tile * TILE_SIZE), Vector2(16, 16))
+		var selection := Rect2(Vector2(selected.tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 		draw_rect(selection.grow(2), Color.WHITE, false, 1)
-	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2(16, 16))
+	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_character(world.player_tile,
 		class_sprite(world.hero.selected_class),
@@ -127,8 +127,8 @@ func _draw() -> void:
 
 
 func _draw_character(tile: Vector2i, source: Vector2i, color: Color) -> void:
-	var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2(16, 16))
-	draw_rect(Rect2(rectangle.position + Vector2(3, 13), Vector2(10, 2)), Color("#12251f"))
+	var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
+	draw_rect(Rect2(rectangle.position + Vector2(6, 26), Vector2(20, 4)), Color("#12251f"))
 	draw_texture_rect_region(
 		CHARACTERS, rectangle, Rect2(Vector2(source * 16), Vector2(16, 16)), color
 	)

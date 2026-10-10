@@ -34,11 +34,15 @@ formulas, class lists, quest inventories, or balance targets.
 - Rework XP and encounter pacing around an approximately ten-minute first Loop ending
   at the stalker. This is a playtest target, not a forced death or real-time deadline.
   Rework misses/resists and reinforcements so later victory is plausible and enjoyable.
-- Double resolution while preserving roughly the apparent sprite size and amount of
-  visible world. Design the world and required sprite list before the owner creates
-  a replacement spritesheet. Give art and readability real development time.
-- Reduce combat-log prominence, enlarge hotbar capacity, and provide a dedicated menu
-  for other player screens. Exact geometry and slot count await a layout experiment.
+- Use a 1280×720 logical canvas and minimum window, with 32×32 world tiles. Double
+  the existing 16px art as a placeholder, preserving the base view’s world scale.
+  Design the reduced valley and sprite list before the owner creates replacement art.
+- Follow the owner’s [UI sketch](UI_design.svg): compact player frame at upper left,
+  a scrolling combat log at lower left, two centered hotbar rows, player menus at lower right,
+  and buffs/debuffs below the player. Ten slots per row: 1–6, R, T, G, V on the
+  bottom row; Shift plus the same keys on the upper row. Judge layout and text
+  readability through human review, without automated resolution/fit checks.
+  Keep the log compact with no separate log screen; menu buttons show their shortcuts.
 
 ## Still to decide, when the relevant task starts
 
@@ -47,7 +51,6 @@ formulas, class lists, quest inventories, or balance targets.
   advances each track, what survives death, and what prevents empty ability spamming?
 - What role remains for gear, inventory, gold, loot, quests, and traders? Their removal
   is not yet decided; do not mistake dissatisfaction with them for a settled redesign.
-- What are the exact art dimensions, minimum window size, and hotbar controls?
 - What should the first and later stalker encounters feel like, including reinforcements?
 
 Keep answers brief here when they become durable direction. Keep tuning values and

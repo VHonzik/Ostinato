@@ -22,7 +22,8 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 ## Current build
 
 New Game starts a mage. Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
-F interacts; I inventory; K spells; J quests; P character; top-row 1–5 hotbar.
+F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
+M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
 
 Start with Willem south of spawn and the marshal northwest. K → Development provides
@@ -31,7 +32,7 @@ arrives after 15 turns; killing it ends the demo. Death resets the attempt, pres
 learned ranks; the marshal offers class selection from Loop 2 before accepting a quest.
 These are current mechanics, not constraints on the pivot.
 
-Current saves are `demo` revision 7; older revisions are unsupported and left unchanged.
+Current saves are `demo` revision 8 (twenty hotbar slots); older revisions are unsupported and left unchanged.
 Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`; global settings are in
 `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.
@@ -59,7 +60,9 @@ protect behavior; remove obsolete tests when that behavior deliberately goes awa
 Each process has a 120-second timeout; override with `-TimeoutSeconds 240` when needed.
 Failures, unexpected diagnostics, incomplete test discovery, and pending/skipped tests
 within the selected scope fail the command. A quick or targeted pass does not certify
-all gameplay. Tests and startup checks do not establish visual quality or fun.
+all gameplay. UI layout, text readability, clipping, and resolution suitability are human review.
+Do not automate visual acceptance; UI tests cover input and state changes. Tests and
+startup checks do not establish visual quality or fun.
 
 Output is a short scope/result summary. Logs are temporary and removed on success;
 failures retain them under ignored `reports/validation/`. Use `-KeepLogs` to retain a

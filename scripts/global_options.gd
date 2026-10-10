@@ -5,8 +5,19 @@ const ACTIONS: Array[StringName] = [
 	&"move_north", &"move_northeast", &"move_east", &"move_southeast",
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
 	&"hotbar_1", &"hotbar_2", &"hotbar_3", &"hotbar_4", &"hotbar_5",
+	&"hotbar_6", &"hotbar_7", &"hotbar_8", &"hotbar_9", &"hotbar_10", &"hotbar_11", &"hotbar_12",
+	&"hotbar_13", &"hotbar_14", &"hotbar_15", &"hotbar_16",
+	&"hotbar_17", &"hotbar_18", &"hotbar_19", &"hotbar_20",
+	&"player_menu",
 	&"wait", &"interact", &"character", &"spell_book", &"inventory", &"quest_log", &"options", &"fullscreen",
 ]
+const HOTBAR_KEYS: Array[Key] = [
+	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_R, KEY_T, KEY_G, KEY_V,
+	KEY_1 | KEY_MASK_SHIFT, KEY_2 | KEY_MASK_SHIFT, KEY_3 | KEY_MASK_SHIFT,
+	KEY_4 | KEY_MASK_SHIFT, KEY_5 | KEY_MASK_SHIFT, KEY_6 | KEY_MASK_SHIFT,
+	KEY_R | KEY_MASK_SHIFT, KEY_T | KEY_MASK_SHIFT, KEY_G | KEY_MASK_SHIFT, KEY_V | KEY_MASK_SHIFT,
+]
+
 var path: String
 var bindings: Dictionary = {}
 var fullscreen: bool = false
@@ -16,19 +27,20 @@ var last_error: String = ""
 
 func _init(settings_path: String = "user://options.json") -> void:
 	path = settings_path
-	for entry in [[&"hotbar_1", KEY_1], [&"hotbar_2", KEY_2], [&"hotbar_3", KEY_3],
-		[&"hotbar_4", KEY_4], [&"hotbar_5", KEY_5], [&"quest_log", KEY_J],
-		[&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]:
+	var defaults: Array = [[&"player_menu", KEY_M], [&"quest_log", KEY_J],
+		[&"inventory", KEY_I], [&"options", KEY_ESCAPE], [&"fullscreen", KEY_F11]]
+	for index in range(HOTBAR_KEYS.size()):
+		defaults.append([StringName("hotbar_%d" % (index + 1)), HOTBAR_KEYS[index]])
+	for entry in defaults:
 		if not InputMap.has_action(entry[0]):
 			InputMap.add_action(entry[0])
-			var event := InputEventKey.new()
-			event.physical_keycode = entry[1]
+			var event := key_event(entry[1])
 			InputMap.action_add_event(entry[0], event)
 	for action in ACTIONS:
 		bindings[String(action)] = []
 		for event in InputMap.action_get_events(action):
 			if event is InputEventKey:
-				bindings[String(action)].append(int(event.physical_keycode))
+				bindings[String(action)].append(int(event.get_physical_keycode_with_modifiers()))
 
 
 func load_options() -> void:
@@ -47,7 +59,7 @@ func load_options() -> void:
 		if not data.bindings.has(String(action)):
 			continue
 		var keys: Variant = data.bindings[String(action)]
-		if not keys is Array or (keys.is_empty() and not String(action).begins_with("hotbar_")):
+		if not keys is Array or (keys.is_empty() and not _can_be_unbound(action)):
 			return
 		for key in keys:
 			if not (key is float or key is int) or key <= 0 or int(key) in used:
@@ -60,7 +72,7 @@ func load_options() -> void:
 		var keys: Array = bindings[String(action)].duplicate()
 		for key in keys.duplicate():
 			if int(key) in used:
-				if not String(action).begins_with("hotbar_"):
+				if not _can_be_unbound(action):
 					return
 				keys.erase(key)
 			else:
@@ -76,8 +88,7 @@ func apply_bindings() -> void:
 	for action in ACTIONS:
 		InputMap.action_erase_events(action)
 		for code in bindings[String(action)]:
-			var event := InputEventKey.new()
-			event.physical_keycode = int(code)
+			var event := key_event(int(code))
 			InputMap.action_add_event(action, event)
 
 
@@ -93,7 +104,9 @@ func conflict(action: StringName, key: int) -> StringName:
 
 func rebind(action: StringName, key: int, swap: bool = false) -> bool:
 	last_error = ""
-	if action not in ACTIONS or key in [0, KEY_ENTER, KEY_KP_ENTER, KEY_TAB]:
+	if action not in ACTIONS or (key & KEY_CODE_MASK) in [
+		0, KEY_ENTER, KEY_KP_ENTER, KEY_TAB, KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META,
+	]:
 		last_error = "Enter and Tab are reserved for menu navigation."
 		return false
 	var other := conflict(action, key)
@@ -133,3 +146,17 @@ func save_options() -> bool:
 func key_label(action: StringName) -> String:
 	var keys: Array = bindings[String(action)]
 	return "Unbound" if keys.is_empty() else OS.get_keycode_string(int(keys[0]))
+
+
+func _can_be_unbound(action: StringName) -> bool:
+	return String(action).begins_with("hotbar_") or action == &"player_menu"
+
+
+static func key_event(code: int) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = code & KEY_CODE_MASK
+	event.shift_pressed = (code & KEY_MASK_SHIFT) != 0
+	event.ctrl_pressed = (code & KEY_MASK_CTRL) != 0
+	event.alt_pressed = (code & KEY_MASK_ALT) != 0
+	event.meta_pressed = (code & KEY_MASK_META) != 0
+	return event
