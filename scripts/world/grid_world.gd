@@ -5,7 +5,7 @@ signal message_added(message: String)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
 
-## Player-driven movement and combat: FR-007 through FR-027 (milestone subset).
+## Player-driven movement and combat.
 const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, -1), Vector2i(1, -1), Vector2i(1, 0), Vector2i(1, 1),
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1),
@@ -69,7 +69,7 @@ func _init(
 
 
 func assign_hotbar(slot: int, identifier: StringName) -> bool:
-	# FR-045: store an explicit learned rank; layout editing never spends time.
+	# Store an explicit learned rank; layout editing never spends time.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
 	if identifier != &"":
@@ -359,7 +359,7 @@ func is_terminal() -> bool:
 	return attempt_state != AttemptState.ACTIVE or is_player_dead()
 
 
-## FR-006/013: latch the first terminal effect; victory wins simultaneous deaths.
+## Latch the first terminal effect; victory wins simultaneous deaths.
 func check_terminal() -> bool:
 	if attempt_state != AttemptState.ACTIVE:
 		return true
@@ -821,7 +821,7 @@ func _regenerate() -> void:
 func _arrive_stalker() -> void:
 	if is_terminal() or not stalker_schedule:
 		return
-	# FR-033: overdue identities enter in order; blocking never moves a deadline.
+	# Overdue identities enter in order; blocking never moves a deadline.
 	while stalkers_arrived < stalker_deadlines.size():
 		if turn_count < stalker_deadlines[stalkers_arrived]:
 			break
@@ -843,7 +843,7 @@ func _spawn_stalker(entry: Vector2i) -> void:
 	stalker.creature_type = "demon"
 	stalker.spawn_id = "gate/stalker/%d" % stalkers_arrived
 	stalker.relationship = GridActor.Relationship.HOSTILE
-	# Ordinary level-20 Wildthorn Stalker profile, DATA-002 M4 adaptation.
+	# Ordinary level-20 Wildthorn Stalker profile, pre-pivot tuning.
 	stalker.max_health = 494
 	stalker.health = 494
 	stalker.melee.level = 20
@@ -920,6 +920,20 @@ func loot_money(source: GridActor) -> bool:
 	return true
 
 
+## Best effort, preserving every stack that cannot currently be collected.
+func loot_all(source: GridActor) -> bool:
+	if not open_loot(source):
+		return false
+	var collected := loot_money(source)
+	var index := 0
+	while index < source.loot.size():
+		if LootData.collectable(self, source.loot[index]) and loot_item(source, index):
+			collected = true
+		else:
+			index += 1
+	return collected
+
+
 func _hide_empty_corpse(source: GridActor) -> void:
 	if source.loot.is_empty() and source.loot_copper == 0 and not source.story_guard:
 		source.corpse_visible = false
@@ -933,17 +947,15 @@ func trader_in_range(merchant: GridActor) -> bool:
 		and not MerchantData.catalog(merchant.npc_id).is_empty())
 
 
-func buy_item(merchant: GridActor, identifier: int, bundles: int) -> bool:
-	if not item_action_ready() or not trader_in_range(merchant) or bundles < 1 or bundles > 1000:
+func buy_item(merchant: GridActor, identifier: int, quantity: int) -> bool:
+	if not item_action_ready() or not trader_in_range(merchant) or quantity < 1 or quantity > 1000:
 		return false
 	var key := str(identifier)
 	var catalog := MerchantData.catalog(merchant.npc_id)
 	if not catalog.has(key):
 		return false
-	var offer: Dictionary = catalog[key]
 	var stock: Dictionary = vendor_stock[merchant.spawn_id]
-	var quantity := int(offer.quantity) * bundles
-	var cost := int(offer.price) * bundles
+	var cost := MerchantData.unit_price(merchant.npc_id, identifier) * quantity
 	if cost > hero.copper or (int(stock[key]) >= 0 and quantity > int(stock[key])):
 		add_message("Purchase rejected: insufficient money or stock.")
 		return false
@@ -973,6 +985,23 @@ func sell_item(merchant: GridActor, index: int, quantity: int) -> bool:
 	add_message("Sold %s x%d to %s for %s." % [data.title, quantity, merchant.title,
 		InventoryRules.money(int(data.sell) * quantity)])
 	return true
+
+
+func sell_all_grey(merchant: GridActor) -> bool:
+	if not item_action_ready() or not trader_in_range(merchant):
+		return false
+	var sold := false
+	for index in range(hero.inventory.size()):
+		var item := hero.inventory[index]
+		if item.is_empty():
+			continue
+		var data := ItemData.get_item(int(item.id))
+		if int(data.quality) == 0 and data.tradable:
+			if sell_item(merchant, index, int(item.quantity)):
+				sold = true
+	if not sold:
+		add_message("No grey items to sell.")
+	return sold
 
 
 func consume_item(index: int) -> bool:

@@ -1,7 +1,7 @@
 class_name NorthshireZone
 extends RefCounted
 
-## Fixed single-floor valley and per-slot seeded populations (FR-029/030/032).
+## Fixed single-floor valley and per-slot seeded populations.
 const NPCS: Array = [
 	[197, "Marshal McBride", 18, 12, "Marshal"],
 	[823, "Deputy Willem", 20, 16, ""],
@@ -36,6 +36,12 @@ const AREAS: Dictionary = {
 	"mine": {"rect": Rect2i(39, 2, 11, 7), "types": [80], "slots": 10},
 	"vineyard": {"rect": Rect2i(34, 25, 15, 14), "types": [38], "slots": 10},
 	"garrick": {"rect": Rect2i(49, 32, 4, 5), "types": [103], "slots": 1},
+}
+# Source pools 31006, 31007 and 31245; compressed grid counterparts, one chest each.
+const CHEST_POOLS: Dictionary = {
+	"mine": [Vector2i(40, 3), Vector2i(43, 7), Vector2i(47, 4), Vector2i(49, 8)],
+	"vineyard": [Vector2i(37, 29), Vector2i(43, 35), Vector2i(47, 31)],
+	"valley": [Vector2i(30, 29)],
 }
 
 
@@ -88,12 +94,18 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 		crate.loot_table = 161557
 		crate.spawn_id = "vineyard/crate/%d" % index
 		world.actors.append(crate)
-	var chest := GridActor.new(Vector2i(10, 16))
-	chest.title = "Abbey supplies"
-	chest.chest = true
-	chest.alive = false
-	chest.spawn_id = "abbey/chest/0"
-	world.actors.append(chest)
+	for pool in CHEST_POOLS:
+		var identity := "treasure/%s/0" % pool
+		var generator := RandomNumberGenerator.new()
+		generator.seed = world.seed_value ^ int(identity.hash()) ^ 67867967
+		var tiles: Array = CHEST_POOLS[pool]
+		var chest := GridActor.new(tiles[generator.randi_range(0, tiles.size() - 1)])
+		chest.title = "Battered Chest"
+		chest.chest = true
+		chest.alive = false
+		chest.loot_table = 2843
+		chest.spawn_id = identity
+		world.actors.append(chest)
 	world.vendor_stock = MerchantData.initial_stock(world.actors)
 	return world
 

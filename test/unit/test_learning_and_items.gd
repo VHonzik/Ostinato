@@ -90,6 +90,7 @@ func test_full_inventory_preserves_loot_and_repeated_collection_cannot_duplicate
 	chest.alive = false
 	chest.chest = true
 	chest.spawn_id = "chest/test/0"
+	chest.loot_table = 2843
 	world.actors.append(chest)
 	assert_true(world.open_loot(chest))
 	var original := chest.loot.duplicate(true)

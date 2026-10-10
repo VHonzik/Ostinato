@@ -1,7 +1,7 @@
 class_name SummonRules
 extends RefCounted
 
-## FR-018: summons use ordinary actor occupancy and stable saved actor ordering.
+## Summons use ordinary actor occupancy and stable saved actor ordering.
 static func slot(skill: SkillRank) -> String:
 	if skill.family in [&"summon_imp", &"summon_voidwalker"]:
 		return "pet"

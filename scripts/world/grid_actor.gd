@@ -1,7 +1,7 @@
 class_name GridActor
 extends RefCounted
 
-## Array position is stable spawn/turn identity until world recreation (FR-013).
+## Array position is stable spawn/turn identity until world recreation.
 enum Relationship { FRIENDLY, NEUTRAL, HOSTILE }
 
 var npc_id: int = 0

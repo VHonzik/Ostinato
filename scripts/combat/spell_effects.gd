@@ -1,7 +1,7 @@
 class_name SpellEffects
 extends RefCounted
 
-## Shared spell effects, isolated from input and cast pacing (DATA-002/003).
+## Shared spell effects, isolated from input and cast pacing.
 static func amount(world: GridWorld, skill: SkillRank, critical: bool = true, roll: bool = true) -> int:
 	var scaling := maxi(0, mini(world.hero.level, skill.scaling_max) - skill.training_level)
 	var value := world.combat_random.randi_range(skill.minimum, skill.maximum) if roll else skill.minimum

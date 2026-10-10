@@ -1,7 +1,7 @@
 class_name ClassSkillData
 extends RefCounted
 
-## Vanilla 1.12 DATA-003; see docs/data/renaissance.md.
+## Pre-pivot class skill data.
 const CLASSES: Array[StringName] = [&"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin"]
 const RANKS: Dictionary = {
 	"devotion_aura_1": {

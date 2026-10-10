@@ -2,7 +2,7 @@ class_name GridView
 extends Node2D
 
 const TILE_SIZE: int = 16
-# Shared by the player and trainer NPCs (FR-018).
+# Shared by the player and trainer NPCs.
 const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
 	&"Mage": Vector2i(3, 0),
 	&"Druid": Vector2i(4, 0),

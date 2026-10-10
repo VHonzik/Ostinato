@@ -1,10 +1,11 @@
 class_name ItemData
 extends RefCounted
 
-## Vanilla item values; DATA-004 in docs/data/learning-baseline.md.
+## Item definitions and equipment values.
 const ITEMS: Dictionary = {
 	"35": {
 		"title": "Bent Staff",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -26,6 +27,7 @@ const ITEMS: Dictionary = {
 	},
 	"55": {
 		"title": "Apprentice's Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -47,6 +49,7 @@ const ITEMS: Dictionary = {
 	},
 	"56": {
 		"title": "Apprentice's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -68,6 +71,7 @@ const ITEMS: Dictionary = {
 	},
 	"1395": {
 		"title": "Apprentice's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -89,6 +93,7 @@ const ITEMS: Dictionary = {
 	},
 	"6096": {
 		"title": "Apprentice's Shirt",
+		"quality": 1,
 		"slot": "shirt",
 		"level": 0,
 		"stack": 1,
@@ -110,6 +115,7 @@ const ITEMS: Dictionary = {
 	},
 	"6123": {
 		"title": "Novice's Robe",
+		"quality": 0,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -131,6 +137,7 @@ const ITEMS: Dictionary = {
 	},
 	"6124": {
 		"title": "Novice's Pants",
+		"quality": 0,
 		"slot": "legs",
 		"level": 1,
 		"stack": 1,
@@ -152,6 +159,7 @@ const ITEMS: Dictionary = {
 	},
 	"2139": {
 		"title": "Dirk",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -173,6 +181,7 @@ const ITEMS: Dictionary = {
 	},
 	"2129": {
 		"title": "Large Round Shield",
+		"quality": 1,
 		"slot": "off_hand",
 		"level": 1,
 		"stack": 1,
@@ -194,6 +203,7 @@ const ITEMS: Dictionary = {
 	},
 	"85": {
 		"title": "Dirty Leather Vest",
+		"quality": 1,
 		"slot": "chest",
 		"level": 1,
 		"stack": 1,
@@ -215,6 +225,7 @@ const ITEMS: Dictionary = {
 	},
 	"2572": {
 		"title": "Red Linen Robe",
+		"quality": 2,
 		"slot": "chest",
 		"level": 5,
 		"stack": 1,
@@ -238,6 +249,7 @@ const ITEMS: Dictionary = {
 	},
 	"6527": {
 		"title": "Ancestral Robe",
+		"quality": 2,
 		"slot": "chest",
 		"level": 8,
 		"stack": 1,
@@ -262,6 +274,7 @@ const ITEMS: Dictionary = {
 	},
 	"117": {
 		"title": "Tough Jerky",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -285,6 +298,7 @@ const ITEMS: Dictionary = {
 	},
 	"159": {
 		"title": "Refreshing Spring Water",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -308,6 +322,7 @@ const ITEMS: Dictionary = {
 	},
 	"118": {
 		"title": "Minor Healing Potion",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 5,
@@ -332,6 +347,7 @@ const ITEMS: Dictionary = {
 	},
 	"2455": {
 		"title": "Minor Mana Potion",
+		"quality": 1,
 		"slot": "",
 		"level": 5,
 		"stack": 5,
@@ -356,6 +372,7 @@ const ITEMS: Dictionary = {
 	},
 	"5349": {
 		"title": "Conjured Muffin",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -379,6 +396,7 @@ const ITEMS: Dictionary = {
 	},
 	"5350": {
 		"title": "Conjured Water",
+		"quality": 1,
 		"slot": "",
 		"level": 1,
 		"stack": 20,
@@ -402,6 +420,7 @@ const ITEMS: Dictionary = {
 	},
 	"2288": {
 		"title": "Conjured Fresh Water",
+		"quality": 1,
 		"slot": "",
 		"level": 5,
 		"stack": 20,
@@ -425,6 +444,7 @@ const ITEMS: Dictionary = {
 	},
 	"7073": {
 		"title": "Broken Fang",
+		"quality": 0,
 		"slot": "",
 		"level": 0,
 		"stack": 5,
@@ -446,6 +466,7 @@ const ITEMS: Dictionary = {
 	},
 	"7074": {
 		"title": "Chipped Claw",
+		"quality": 0,
 		"slot": "",
 		"level": 0,
 		"stack": 5,
@@ -467,6 +488,7 @@ const ITEMS: Dictionary = {
 	},
 	"4865": {
 		"title": "Ruined Pelt",
+		"quality": 0,
 		"slot": "",
 		"level": 0,
 		"stack": 5,
@@ -488,6 +510,7 @@ const ITEMS: Dictionary = {
 	},
 	"750": {
 		"title": "Tough Wolf Meat",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -509,6 +532,7 @@ const ITEMS: Dictionary = {
 	},
 	"4560": {
 		"title": "Fine Scimitar",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 1,
 		"stack": 1,
@@ -530,6 +554,7 @@ const ITEMS: Dictionary = {
 	},
 	"2950": {
 		"title": "Icicle Rod",
+		"quality": 2,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -556,7 +581,8 @@ const ITEMS: Dictionary = {
 
 static func get_item(identifier: int) -> Dictionary:
 	return ITEMS.get(str(identifier), NorthshireItems.ITEMS.get(str(identifier),
-		ClassItems.ITEMS.get(str(identifier), MerchantItems.ITEMS.get(str(identifier), {}))))
+		ClassItems.ITEMS.get(str(identifier), MerchantItems.ITEMS.get(str(identifier),
+		LootItems.ITEMS.get(str(identifier), {})))))
 
 
 static func instance(identifier: int, quantity: int = 1, starter: bool = false) -> Dictionary:
@@ -567,6 +593,8 @@ static func describe(identifier: int) -> String:
 	var item := get_item(identifier)
 	var detail := "%s / level %d / %s / armor %d" % [
 		item.title, item.level, item.slot if item.slot != "" else "Item", item.armor]
+	if int(item.quality) == 0:
+		detail += " / Poor (grey)"
 	if item.weapon:
 		detail += " / %.0f–%.0f damage, %.1fs" % [item.minimum, item.maximum, item.interval]
 	for stat in item.stats:
@@ -575,4 +603,6 @@ static func describe(identifier: int) -> String:
 		detail += " / two hands"
 	if item.use != "":
 		detail += " / restores " + String(item.use)
+	if item.has("note"):
+		detail += " / " + String(item.note)
 	return detail

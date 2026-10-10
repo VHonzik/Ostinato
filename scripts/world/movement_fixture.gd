@@ -79,6 +79,7 @@ static func create_world(
 		chest.title = "Training supplies"
 		chest.alive = false
 		chest.chest = true
+		chest.loot_table = LootData.DEVELOPMENT_SUPPLIES if development_build else 0
 		world.actors.append(chest)
 	for index in range(world.actors.size()):
 		world.actors[index].spawn_id = "grounds/%d/0" % index
@@ -90,7 +91,7 @@ static func create_world(
 
 
 static func _set_wolf_profile(actor: GridActor, timber: bool) -> void:
-	# ClassicDB 299 / 69: see DATA-002 melee record for the fixture adaptation.
+	# Young/Timber Wolf fixture profiles, originally based on ClassicDB 299 / 69.
 	actor.creature_type = "beast"
 	actor.loot_table = 299 if timber else 69
 	actor.max_health = 55 if timber else 42

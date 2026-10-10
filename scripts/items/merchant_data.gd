@@ -1,7 +1,7 @@
 class_name MerchantData
 extends RefCounted
 
-## Vanilla catalogs and the retained supply-trader adaptation: docs/data/merchants.md.
+## Merchant catalogs, prices, and finite stock.
 ## Quantity/price are per purchase bundle; stock counts individual items, -1 unlimited.
 const CATALOGS: Dictionary = {
 	"152": {
@@ -199,6 +199,13 @@ const CATALOGS: Dictionary = {
 
 static func catalog(npc_id: int) -> Dictionary:
 	return CATALOGS.get(str(npc_id), {})
+
+
+## Source bundle prices divide evenly into copper per item for every demo offer.
+static func unit_price(npc_id: int, identifier: int) -> int:
+	var offer: Dictionary = catalog(npc_id)[str(identifier)]
+	@warning_ignore("integer_division")
+	return int(offer.price) / int(offer.quantity)
 
 
 static func initial_stock(actors: Array[GridActor]) -> Dictionary:

@@ -17,6 +17,8 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_h
 	assert_true(world.open_loot(chest))
 	assert_true(world.loot_item(chest, 0))
 	assert_true(world.loot_money(chest))
+	# Real treasure is near hostiles; return to the safe spawn before advancing time.
+	world.player_tile = Vector2i(20, 14)
 	world.vendor_stock["fixed/900003"]["2455"] = 2
 	world.hero.potion_ready_turn = 120
 	world.hero.cooldowns["fire_blast"] = 8

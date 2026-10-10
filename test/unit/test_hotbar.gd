@@ -48,7 +48,7 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 	snapshot.hotbar[4] = "wrath_1"
 	assert_null(SaveCodec.restore(snapshot, true), "Unlearned saved assignments are invalid.")
 	session.new_game(318)
-	assert_eq(session.world.hotbar, [&"", &"", &"", &"", &""])
+	assert_eq(session.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
 	assert_false(session.world.hotbar_locked)
 
 
@@ -63,3 +63,19 @@ func test_pet_commands_require_a_learned_summon_and_round_trip() -> void:
 	var restored := SaveCodec.restore(SaveCodec.capture(session), true)
 	assert_not_null(restored)
 	assert_eq(restored.hotbar, session.world.hotbar)
+
+
+func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death() -> void:
+	var session := GameSession.new()
+	session.new_game(318)
+	assert_eq(session.world.hotbar, [&"fireball_1", &"frost_armor_1", &"", &"", &""])
+	for index in [0, 1]:
+		assert_not_null(session.world.hero.find_skill(session.world.hotbar[index]))
+		assert_true(session.world.assign_hotbar(index, &""))
+	var restored := SaveCodec.restore(SaveCodec.capture(session), true)
+	assert_not_null(restored)
+	assert_eq(restored.hotbar, [&"", &"", &"", &"", &""])
+	session.restore(restored, 318, 1)
+	session.world.hero.health = 0
+	assert_true(session.restart_after_death())
+	assert_eq(session.world.hotbar, [&"", &"", &"", &"", &""])

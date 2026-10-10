@@ -1,7 +1,7 @@
 class_name HeroState
 extends RefCounted
 
-## FR-015/016/017: mage baseline, excess XP, and explicit learned ranks.
+## Mage baseline, excess XP, and explicit learned ranks.
 var level: int = 1
 var experience: int = 0
 var strength: int

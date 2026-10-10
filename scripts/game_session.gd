@@ -1,7 +1,7 @@
 class_name GameSession
 extends RefCounted
 
-## FR-001/002/003: replace the complete attempt; old references cannot affect the new world.
+## Replace the complete attempt; old references cannot affect the new world.
 signal world_changed
 
 var world: GridWorld
@@ -17,7 +17,9 @@ func new_game(chosen_seed: int = -1) -> void:
 	generator.randomize()
 	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
-	_replace_world(NorthshireZone.create_world(seed_value, development_build))
+	var fresh := NorthshireZone.create_world(seed_value, development_build)
+	fresh.hotbar = [&"fireball_1", &"frost_armor_1", &"", &"", &""]
+	_replace_world(fresh)
 	world.add_message("Loop 1. You awaken as a mage. The marshal waits northwest.")
 
 

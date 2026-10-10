@@ -362,10 +362,11 @@ func test_quest_loot_filter_does_not_reroll_ordinary_loot_or_add_retroactive_dro
 	LootData.assign(first, thief)
 	LootData.assign(second, other)
 	assert_eq(thief.loot_copper, other.loot_copper)
-	assert_true(other.loot.is_empty())
+	var ordinary := thief.loot.filter(func(item: Dictionary) -> bool: return item.id != 752)
+	assert_eq(other.loot, ordinary)
 	second.loot_quests.append("18")
 	LootData.assign(second, other)
-	assert_true(other.loot.is_empty(), "Accepting later cannot change death-time eligibility.")
+	assert_eq(other.loot, ordinary, "Accepting later cannot change death-time eligibility.")
 	var first_crate: GridActor
 	for actor in first.actors:
 		if actor.loot_table == 161557:

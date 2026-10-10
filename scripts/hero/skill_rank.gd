@@ -1,7 +1,7 @@
 class_name SkillRank
 extends RefCounted
 
-## DATA-003 six-class ranks through level 10. Training levels never gate retained-rank use.
+## Pre-pivot six-class ranks through level 10. Training levels never gate retained-rank use.
 enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER }
 enum Target { NONE, ENEMY, ALLY, SELF }
 

@@ -1,7 +1,7 @@
 class_name NorthshireData
 extends RefCounted
 
-## Vanilla lower-level creature profiles; see DATA-004.
+## Pre-pivot lower-level creature profiles.
 const CREATURES: Dictionary = {
 	"6": {
 		"title": "Kobold Vermin",

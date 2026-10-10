@@ -1,10 +1,11 @@
 class_name NorthshireItems
 extends RefCounted
 
-## Vanilla item_template values (DATA-004).
+## Vanilla item_template values.
 const ITEMS: Dictionary = {
 	"182": {
 		"title": "Garrick's Head",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -26,6 +27,7 @@ const ITEMS: Dictionary = {
 	},
 	"6076": {
 		"title": "Tapered Pants",
+		"quality": 1,
 		"slot": "legs",
 		"level": 0,
 		"stack": 1,
@@ -47,6 +49,7 @@ const ITEMS: Dictionary = {
 	},
 	"60": {
 		"title": "Layered Tunic",
+		"quality": 1,
 		"slot": "chest",
 		"level": 0,
 		"stack": 1,
@@ -68,6 +71,7 @@ const ITEMS: Dictionary = {
 	},
 	"3070": {
 		"title": "Ensign Cloak",
+		"quality": 1,
 		"slot": "back",
 		"level": 0,
 		"stack": 1,
@@ -89,6 +93,7 @@ const ITEMS: Dictionary = {
 	},
 	"752": {
 		"title": "Red Burlap Bandana",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -110,6 +115,7 @@ const ITEMS: Dictionary = {
 	},
 	"2224": {
 		"title": "Militia Dagger",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -131,6 +137,7 @@ const ITEMS: Dictionary = {
 	},
 	"5580": {
 		"title": "Militia Hammer",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -152,6 +159,7 @@ const ITEMS: Dictionary = {
 	},
 	"1161": {
 		"title": "Militia Shortsword",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -173,6 +181,7 @@ const ITEMS: Dictionary = {
 	},
 	"5579": {
 		"title": "Militia Warhammer",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -194,6 +203,7 @@ const ITEMS: Dictionary = {
 	},
 	"1159": {
 		"title": "Militia Quarterstaff",
+		"quality": 1,
 		"slot": "main_hand",
 		"level": 0,
 		"stack": 1,
@@ -215,6 +225,7 @@ const ITEMS: Dictionary = {
 	},
 	"2186": {
 		"title": "Outfitter Belt",
+		"quality": 1,
 		"slot": "waist",
 		"level": 0,
 		"stack": 1,
@@ -236,6 +247,7 @@ const ITEMS: Dictionary = {
 	},
 	"2691": {
 		"title": "Outfitter Boots",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -257,6 +269,7 @@ const ITEMS: Dictionary = {
 	},
 	"11192": {
 		"title": "Outfitter Gloves",
+		"quality": 1,
 		"slot": "hands",
 		"level": 0,
 		"stack": 1,
@@ -278,6 +291,7 @@ const ITEMS: Dictionary = {
 	},
 	"80": {
 		"title": "Soft Fur-lined Shoes",
+		"quality": 1,
 		"slot": "feet",
 		"level": 0,
 		"stack": 1,
@@ -299,6 +313,7 @@ const ITEMS: Dictionary = {
 	},
 	"6070": {
 		"title": "Wolfskin Bracers",
+		"quality": 1,
 		"slot": "wrists",
 		"level": 0,
 		"stack": 1,
@@ -320,6 +335,7 @@ const ITEMS: Dictionary = {
 	},
 	"9571": {
 		"title": "Glyphic Letter",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -341,6 +357,7 @@ const ITEMS: Dictionary = {
 	},
 	"11119": {
 		"title": "Milly's Harvest",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
@@ -362,6 +379,7 @@ const ITEMS: Dictionary = {
 	},
 	"11125": {
 		"title": "Grape Manifest",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 1,
@@ -383,6 +401,7 @@ const ITEMS: Dictionary = {
 	},
 	"11475": {
 		"title": "Wine-stained Cloak",
+		"quality": 1,
 		"slot": "back",
 		"level": 0,
 		"stack": 1,
@@ -404,6 +423,7 @@ const ITEMS: Dictionary = {
 	},
 	"2690": {
 		"title": "Latched Belt",
+		"quality": 1,
 		"slot": "waist",
 		"level": 0,
 		"stack": 1,
@@ -425,6 +445,7 @@ const ITEMS: Dictionary = {
 	},
 	"2589": {
 		"title": "Linen Cloth",
+		"quality": 1,
 		"slot": "",
 		"level": 0,
 		"stack": 20,
