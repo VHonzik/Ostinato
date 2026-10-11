@@ -17,11 +17,11 @@ func new_game(chosen_seed: int = -1) -> void:
 	generator.randomize()
 	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
-	var fresh := NorthshireZone.create_world(seed_value, development_build)
+	var fresh := ValleyRoute.create_world(seed_value, development_build)
 	fresh.hotbar[0] = &"fireball_1"
 	fresh.hotbar[1] = &"frost_armor_1"
 	_replace_world(fresh)
-	world.add_message("Loop 1. You awaken as a mage. The marshal waits northwest.")
+	world.add_message("Valley. Marshal north, wolves west, mine farther north, vineyards east. Watch the gate.")
 
 
 func restart_after_death() -> bool:
@@ -34,7 +34,7 @@ func restart_after_death() -> bool:
 	var hotbar := world.hotbar.duplicate()
 	var locked := world.hotbar_locked
 	loop_count += 1
-	var fresh := NorthshireZone.create_world(seed_value, development_build)
+	var fresh := ValleyRoute.create_world(seed_value, development_build)
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar

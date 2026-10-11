@@ -26,20 +26,24 @@ and how to try it; the final chat carries temporary playtest instructions.
 - [x] Play the screen prototype. The owner's quick playtest found it satisfactory;
   the valley sketch and sprite plan are ready for the first playable map prototype.
 
-## Current milestone — A smaller, memorable world
+## Current milestone — A memorable valley
 
-- [ ] Build a playable route from the marshal through one encounter area using the
+- [x] Build a playable route from the marshal through one encounter area using the
   [valley sketch](map.svg) and selected AI-created sprites. Try ground, boundaries,
-  actors and props together before expanding to the whole valley.
-- [ ] Refine selected sprite equipment, remains, and terrain joins as they are used
-  in the map. Review silhouettes at native size and repack the selected atlas.
-- [ ] Expand the reduced valley with fewer NPCs, no within-Loop respawns, deliberate
-  encounters and exploration destinations. Adjust routes and XP through play.
+  actors and props together before expanding to the whole valley. The owner accepted the first slice;
+  **New Game** now uses the expanded valley as the sole game map.
+- [ ] Refine selected sprite equipment, remains, and terrain joins in the western
+  woods slice, especially cliff joins, abbey doors and wolf remains. The owner-selected
+  original sprites are restored for actors, abbey walls/entrance, nature, chests
+  and a shared corpse. Review silhouettes at native size before further art changes.
+- [x] Expand the valley with fewer NPCs, no within-Loop respawns, deliberate
+  encounters and exploration destinations. Add a timed arrival at the southwestern gate.
+  Branch rewards are an initial tuning pass; routes and XP still need playtesting.
 - [ ] Add a small story pass with recognizable contacts and dialogue that changes
   as the player realizes the Loop. NPCs remain unaware of it; settle the shaman's
   identity and keep invasion knowledge limited.
-- [ ] Playtest navigation, landmark recognition, encounters and early/returning-Loop
-  conversations; adjust the map, story and art together.
+- [ ] Playtest navigation, landmark recognition, encounter/XP pacing, the timed gate
+  threat and early/returning-Loop conversations; adjust the map, story and art together.
 
 ## Later playable milestones
 

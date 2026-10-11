@@ -617,7 +617,7 @@ func open_conversation(actor: GridActor) -> void:
 		return
 	QuestRules.event(session.world, "talk", str(actor.npc_id))
 	_begin("conversation", actor.title, close)
-	_label(NorthshireZone.greeting(actor.npc_id))
+	_label(ValleyRoute.greeting(actor.npc_id))
 	var choices := false
 	for identifier in QuestData.QUESTS:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
@@ -679,7 +679,7 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 	_begin("quest_detail", quest.title, back)
 	_label("Level %d / %s. Return to %s." % [quest.level,
 		QuestRules.difficulty(int(quest.level), world.hero.level),
-		NorthshireZone.npc_name(int(quest.receiver))])
+		ValleyRoute.npc_name(int(quest.receiver))])
 	for index in range(quest.objectives.size()):
 		var objective: Dictionary = quest.objectives[index]
 		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0

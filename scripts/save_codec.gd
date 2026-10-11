@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-8 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-11 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -51,6 +51,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"resistances": world.hero.resistances.duplicate(true), "indoors": [],
 		"debuffs": world.hero.debuffs.duplicate(true),
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
+		"valley_route": world.valley_route,
 	}
 	for tile in world.indoor_tiles:
 		data.indoors.append([tile.x, tile.y])
@@ -92,6 +93,17 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 1, 1), Vector2i.ZERO, int(data.seed), false)
 	if not _restore_fields(world, data.world, WORLD_FIELDS):
 		return null
+	if not data.get("valley_route", false) is bool:
+		return null
+	world.valley_route = data.get("valley_route", false)
+	if world.valley_route:
+		if world.bounds != ValleyRoute.BOUNDS or not world.northshire:
+			return null
+		ValleyRoute.build_terrain(world)
+		# Collision and indoor state below come from the saved attempt.
+		world.blocked_tiles.clear()
+		world.sight_blockers.clear()
+		world.indoor_tiles.clear()
 	if not _restore_fields(world.hero, data.hero, HERO_FIELDS):
 		return null
 	if (world.bounds.size.x < 1 or world.bounds.size.y < 1
@@ -309,7 +321,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if not message is String:
 			return null
 		world.messages.append(message)
-	if not QuestRules.restore(world, data.quests) or not NorthshireZone.restore(world, data.population):
+	if (not QuestRules.restore(world, data.quests) or not data.population is Array
+		or not data.population.is_empty()
+		or world.actors.any(func(actor: GridActor) -> bool: return actor.population_slot != -1)):
 		return null
 	if not _restore_stalkers(world, data.get("stalker_deadlines")):
 		return null
@@ -329,10 +343,11 @@ static func _restore_stalkers(world: GridWorld, deadlines: Variant) -> bool:
 	if (not deadlines is Array or deadlines.size() != GridWorld.STALKER_DEADLINES.size()
 		or world.stalkers_arrived < 0 or world.stalkers_arrived > deadlines.size()):
 		return false
+	var expected := ValleyRoute.STALKER_DEADLINES if world.valley_route else GridWorld.STALKER_DEADLINES
 	world.stalker_deadlines.clear()
 	for index in range(deadlines.size()):
 		if (not _integer(deadlines[index], 1)
-			or int(deadlines[index]) != GridWorld.STALKER_DEADLINES[index]):
+			or int(deadlines[index]) != expected[index]):
 			return false
 		world.stalker_deadlines.append(int(deadlines[index]))
 	var identities: Array[String] = []

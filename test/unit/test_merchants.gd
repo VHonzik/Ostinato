@@ -18,7 +18,7 @@ func _beside(world: GridWorld, merchant: GridActor) -> void:
 
 func test_source_catalogs_and_explicit_exclusions() -> void:
 	var game := GameSession.new()
-	game.new_game(819)
+	game.world = _world()
 	var expected := {
 		152: [4540, 159],
 		190: [2121, 3599, 2120, 2117, 3600, 2119, 2127, 2122, 2126, 2123, 2124, 2125],
@@ -40,7 +40,7 @@ func test_source_catalogs_and_explicit_exclusions() -> void:
 
 
 func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var danil := _merchant(world, 152)
 	var janos := _merchant(world, 78)
 	world.hero.copper = 1000
@@ -71,7 +71,7 @@ func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
 
 
 func test_quantities_reject_partial_money_and_capacity_without_changing_stock() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var danil := _merchant(world, 152)
 	_beside(world, danil)
 	world.hero.copper = 49
@@ -149,7 +149,7 @@ func test_stock_save_round_trip_continuation_reset_and_stale_merchant_rejection(
 
 func test_invalid_saved_stock_cannot_change_catalog_or_finite_unlimited_semantics() -> void:
 	var game := GameSession.new()
-	game.new_game(819)
+	game.world = _world()
 	var original := SaveCodec.capture(game)
 	for value in [-2, -1, 4, 1.5, "2"]:
 		var bad := original.duplicate(true)
@@ -174,7 +174,7 @@ func test_invalid_saved_stock_cannot_change_catalog_or_finite_unlimited_semantic
 
 
 func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var merchant := _merchant(world, 152)
 	_beside(world, merchant)
 	world.hero.copper = 100
@@ -192,7 +192,7 @@ func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
 
 
 func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var merchant := _merchant(world, 190)
 	_beside(world, merchant)
 	world.hero.copper = 1000
@@ -227,7 +227,7 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 
 
 func test_direct_purchase_units_preserve_prices_and_stack_limits() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var danil := _merchant(world, 152)
 	_beside(world, danil)
 	world.hero.copper = 155
@@ -245,7 +245,7 @@ func test_direct_purchase_units_preserve_prices_and_stack_limits() -> void:
 
 
 func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat_proceeds() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var merchant := _merchant(world, 152)
 	_beside(world, merchant)
 	world.hero.inventory[0] = ItemData.instance(7073, 5)
@@ -273,7 +273,7 @@ func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat
 
 
 func test_bulk_sale_rejects_distant_dead_stale_and_busy_merchants_without_transfer() -> void:
-	var world := NorthshireZone.create_world(819, false)
+	var world := _world()
 	var merchant := _merchant(world, 152)
 	world.hero.inventory[0] = ItemData.instance(7073, 2)
 	assert_false(world.sell_all_grey(merchant))
@@ -284,7 +284,7 @@ func test_bulk_sale_rejects_distant_dead_stale_and_busy_merchants_without_transf
 	world.pending_skill = SkillRank.catalog(&"fireball_1")
 	assert_false(world.sell_all_grey(merchant))
 	world.pending_skill = null
-	var other := NorthshireZone.create_world(819, false)
+	var other := _world()
 	assert_false(world.sell_all_grey(_merchant(other, 152)))
 	assert_eq(world.hero.inventory[0], ItemData.instance(7073, 2))
 	assert_eq(world.hero.copper, 0)
@@ -304,3 +304,17 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 	assert_eq(ItemData.get_item(35).quality, 1)
 	assert_eq(ItemData.get_item(159).quality, 1)
 	assert_eq(ItemData.get_item(2572).quality, 2)
+
+
+func _world() -> GridWorld:
+	var world := GridWorld.new(Rect2i(0, 0, 40, 24), Vector2i(20, 14), 819, false)
+	var identities := [152, 190, 1213, 78, 900003, 11940, 38]
+	for index in range(identities.size()):
+		var actor := GridActor.new(Vector2i(4 + index * 4, 8))
+		actor.npc_id = identities[index]
+		actor.spawn_id = "fixed/%d" % actor.npc_id
+		actor.service = &"Trader" if MerchantData.CATALOGS.has(str(actor.npc_id)) else &""
+		actor.relationship = GridActor.Relationship.HOSTILE if actor.npc_id == 38 else GridActor.Relationship.FRIENDLY
+		world.actors.append(actor)
+	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	return world

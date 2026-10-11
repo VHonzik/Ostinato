@@ -441,22 +441,6 @@ func test_fade_changes_threat_target_without_disengaging_or_allowing_combat_save
 	assert_null(SummonRules.enemy_target(world, enemy))
 
 
-func test_new_class_referrals_use_current_class_and_exact_source_letters() -> void:
-	for category: StringName in [&"Paladin", &"Priest", &"Warlock", &"Shaman"]:
-		var world := NorthshireZone.create_world(29, true)
-		world.hero.selected_class = category
-		var identifier: String = {&"Paladin": "3101", &"Priest": "3103", &"Warlock": "3105", &"Shaman": "shaman_referral"}[category]
-		var quest: Dictionary = QuestData.QUESTS[identifier]
-		assert_eq(quest.category, String(category))
-		var receiver: GridActor
-		for actor in world.actors:
-			if actor.npc_id == int(quest.receiver):
-				receiver = actor
-		assert_not_null(receiver)
-		assert_eq(receiver.service, category)
-	assert_eq(int(QuestData.QUESTS["3103"].source_item), 9548)
-
-
 func test_low_level_spell_power_scaling_and_curse_total_have_independent_numeric_fixtures() -> void:
 	var world := _world()
 	world.hero.level = 1

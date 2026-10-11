@@ -21,20 +21,37 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 
 ## Current build
 
+**New Game** launches the sketch-based valley, the sole playable game map.
+The marshal offers the western patrol, northern camp and mine objectives; Willem
+points to exploration caches, and Milly offers the vineyard encounter. The marshal
+also gives the stronger-wolf follow-up after the western patrol. Trees, walls
+and vine trellises block movement; flowers, small stones and sparse grass tufts are
+decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
+wolf types, kobold vermin and laborers are neutral until attacked; workers and bandits
+are hostile.
+The southwestern gate admits a timed stalker and reinforcements.
+There are no within-Loop NPC respawns. Friendly contacts are green; available quests
+and ready turn-ins alternate their contact sprite with an exclamation mark. Neutral and hostile sprites are yellow and red; injured enemies blink dark red.
+Occupants hide terrain decorations and corpses beneath them. Death rebuilds the
+map, contacts, enemies and chests, preserving learned ranks and hotbar. The current
+mage trainer, supply trader, Sammuel and shaman remain usable; warrior/rogue contacts await the class milestone.
+
 New Game starts a mage. Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
 F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
 M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
 
-Start with Willem south of spawn and the marshal northwest. K → Development provides
-XP, gold, Death trigger, and Kill stalker for quick experiments. The first stalker
-arrives after 15 turns; killing it ends the demo. Death resets the attempt, preserving
+Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
+XP, gold, Death trigger, and Kill stalker for quick experiments. The stalker
+arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
 learned ranks; the marshal offers class selection from Loop 2 before accepting a quest.
 These are current mechanics, not constraints on the pivot.
 
-Current saves are `demo` revision 8 (twenty hotbar slots); older revisions are unsupported and left unchanged.
-Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`; global settings are in
-`options.json` beside that directory. Tests use isolated save locations. Preserve user
+Current saves are `demo` revision 11, introducing the two-stage wolf hunt and expanded
+wolf population.
+Revision 10 and older saves are incompatible and left unchanged; start a fresh game.
+Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
+global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.
 
 ## Checks

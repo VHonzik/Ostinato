@@ -43,7 +43,7 @@ func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money
 	assert_true(game.select_class(&"Druid"))
 	var target: GridActor
 	for actor in game.world.actors:
-		if actor.relationship == GridActor.Relationship.NEUTRAL:
+		if actor.relationship == GridActor.Relationship.HOSTILE:
 			target = actor
 			break
 	for direction in GridWorld.DIRECTIONS:

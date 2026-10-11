@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Concrete quest transactions and objective updates.
 static func available(world: GridWorld, identifier: String) -> bool:
+	if world.valley_route != ValleyRoute.QUESTS.has(identifier):
+		return false
 	if not QuestData.QUESTS.has(identifier) or world.quests.has(identifier):
 		return false
 	var quest: Dictionary = QuestData.QUESTS[identifier]
@@ -14,6 +16,17 @@ static func available(world: GridWorld, identifier: String) -> bool:
 		if not world.quests.has(previous) or not world.quests[previous].handed_in:
 			return false
 	return true
+
+
+static func has_marker(world: GridWorld, actor: GridActor) -> bool:
+	if not actor.alive or actor.relationship != GridActor.Relationship.FRIENDLY:
+		return false
+	for identifier in QuestData.QUESTS:
+		var quest: Dictionary = QuestData.QUESTS[identifier]
+		if (int(quest.giver) == actor.npc_id and available(world, identifier)
+			or int(quest.receiver) == actor.npc_id and ready(world, identifier)):
+			return true
+	return false
 
 
 static func in_range(world: GridWorld, actor: GridActor, identity: int) -> bool:
@@ -36,6 +49,16 @@ static func accept(world: GridWorld, identifier: String, actor: GridActor) -> bo
 	var counts: Array[int] = []
 	counts.resize(quest.objectives.size())
 	counts.fill(0)
+	# Finite encounters stay completable if explored before accepting or after abandonment.
+	if world.valley_route:
+		for index in range(quest.objectives.size()):
+			var objective: Dictionary = quest.objectives[index]
+			if objective.kind != "kill":
+				continue
+			for creature in world.actors:
+				if str(creature.npc_id) == objective.target and not creature.alive:
+					counts[index] += 1
+			counts[index] = mini(counts[index], int(objective.count))
 	world.hero.inventory.assign(inventory)
 	world.quests[identifier] = {"handed_in": false, "counts": counts}
 	world.loot_quests.append(identifier)
@@ -83,8 +106,11 @@ static func event(world: GridWorld, kind: String, target: String) -> void:
 
 
 static func visit(world: GridWorld) -> void:
-	if world.northshire and Rect2i(43, 11, 3, 7).has_point(world.player_tile):
-		event(world, "location", "gate_overlook")
+	if world.valley_route:
+		for destination in ValleyRoute.CHESTS:
+			if world.tile_distance(world.player_tile, ValleyRoute.CHESTS[destination]) <= 1:
+				event(world, "location", destination)
+		return
 
 
 static func hand_in(
@@ -179,9 +205,16 @@ static func objective_label(objective: Dictionary) -> String:
 		"kill":
 			return NorthshireData.CREATURES[objective.target].title
 		"location":
+			match objective.target:
+				"mine_chest":
+					return "Explore the back of Echo Ridge Mine"
+				"ridge_chest":
+					return "Explore the eastern ridge above the vineyard"
+				"vineyard_chest":
+					return "Explore the southern vineyard edge"
 			return "Visit the gate overlook (43–45, 11–17)"
 		"talk":
-			return "Speak with " + NorthshireZone.npc_name(int(objective.target))
+			return "Speak with " + ValleyRoute.npc_name(int(objective.target))
 	return ""
 
 

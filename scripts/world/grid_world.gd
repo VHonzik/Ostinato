@@ -55,6 +55,9 @@ var population: Array[Dictionary] = []
 var northshire: bool = false
 var vendor_stock: Dictionary = {}
 var indoor_tiles: Dictionary[Vector2i, bool] = {}
+var valley_route: bool = false
+var ground_tiles: Dictionary[Vector2i, StringName] = {}
+var scenery_tiles: Dictionary[Vector2i, StringName] = {}
 
 
 func _init(
@@ -443,7 +446,7 @@ func interact(actor: GridActor) -> String:
 	if actor.relationship == GridActor.Relationship.FRIENDLY:
 		QuestRules.event(self, "talk", str(actor.npc_id))
 		if northshire:
-			return actor.title + ": " + NorthshireZone.greeting(actor.npc_id)
+			return actor.title + ": " + ValleyRoute.greeting(actor.npc_id)
 		return ("%s: Welcome. The Legion is invading. The cities are besieged, and the gate is unsafe. " +
 			"Some here still think this is only a bandit raid.") % actor.title
 	request_melee(actor)
@@ -531,8 +534,6 @@ func _finish_turn(player_timer_advanced: bool = false) -> void:
 	_regenerate()
 	_tick_restoration()
 	_arrive_stalker()
-	NorthshireZone.tick_population(self)
-	_respawn_friendlies()
 	_acquire_hostiles()
 	resolving_turn = false
 	for actor in actors:
@@ -678,7 +679,6 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			return
 		LootData.assign(self, target)
 		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
-		NorthshireZone.died(self, target)
 		if target.relationship != GridActor.Relationship.FRIENDLY:
 			QuestRules.event(self, "kill", str(target.npc_id))
 		var xp := MeleeRules.kill_experience(hero.level, target.melee.level)
@@ -829,7 +829,7 @@ func _arrive_stalker() -> void:
 		if turn_count < stalker_deadlines[stalkers_arrived]:
 			break
 		var entry := Vector2i(-1, -1)
-		for tile in STALKER_ENTRIES:
+		for tile in (ValleyRoute.STALKER_ENTRIES if valley_route else STALKER_ENTRIES):
 			if is_open(tile):
 				entry = tile
 				break
@@ -1059,20 +1059,3 @@ func _tick_restoration() -> void:
 			hero.mana = mini(hero.max_mana, hero.mana + amount)
 		if elapsed >= int(effect.duration):
 			hero.restoration.erase(kind)
-
-
-func _respawn_friendlies() -> void:
-	for actor in actors:
-		if (actor.alive or actor.chest or actor.story_guard or actor.summon_kind != ""
-			or actor.relationship != GridActor.Relationship.FRIENDLY
-			or actor.died_on_turn < 0 or turn_count < actor.died_on_turn + 30):
-			continue
-		if not is_open(actor.home_tile):
-			continue
-		actor.tile = actor.home_tile
-		actor.health = actor.max_health
-		actor.alive = true
-		actor.corpse_visible = true
-		actor.died_on_turn = -1
-		actor.buffs.clear()
-		actor.swing = SwingTimer.new()

@@ -1,13 +1,14 @@
 # Reduced valley and sprite plan
 
-Draft for the owner’s art work, not the current map. Keep Northshire recognizable
+Layout guidance for the valley and the owner’s art work. Keep Northshire recognizable
 through the abbey, wolf woods, mine, vineyard and gate. Aim for a few encounters
 with clear silhouettes and space to maneuver. Enemy counts and pacing await play.
 
 ## Valley sketch
 
 Use the owner’s [map sketch](map.svg) as the layout reference, replacing the earlier
-text map. This is the proposed world; the playable map has not been rebuilt yet.
+text map. The game map now connects the abbey, western wolf woods,
+northern camp and mine, southeastern vineyard, eastern ridge and southwestern gate.
 
 ![Owner’s valley map sketch](map.svg)
 
@@ -61,12 +62,18 @@ with visible feet and distinct equipment, like the original character sheet.
 | Player | Warrior, rogue, shaman, paladin | Broad weapon, low hood, totem, shield; recognizable beyond color |
 | Friends | Marshal, Willem, Milly, gate guard, four mentors, trader | Plume/map, robe/book, basket, spear, four class props, trader’s satchel/scales |
 | Enemies | Wolf, kobold miner, harder kobold/foreman, bandit, Garrick, stalker | Animal vs humanoid shapes; leaders differ in silhouette; stalker unmistakable |
-| Remains | Humanoid corpse, animal corpse | Shared, subdued shapes; lootability remains a UI marker |
-| Ground | Grass (two variants), dirt road, abbey floor, mine floor, tilled soil | Quiet surfaces beneath actors; no checkerboard required |
-| Boundaries | Abbey wall straight/corner/end/doorway; cliff face/corner | Rotate or reuse where lighting permits; add junctions only if the sketch needs them |
-| Nature | Broadleaf tree, pine, bush, boulder, small rock | Strong blocked-tile shapes, no hidden walkable gaps |
+| Remains | Shared corpse | One sprite for all creatures; lootability remains a UI marker |
+| Ground | Plain outdoor background; dirt road, abbey floor, mine floor, tilled soil | No repeating grass tiles; keep surfaces quiet beneath actors |
+| Boundaries | Original abbey wall tiles; cliff faces at valley edges; doorway/corner refinements | Rotate or reuse where lighting permits; add junctions only if the sketch needs them |
+| Nature | Broadleaf tree, pine, bush, boulder, small rock, grass tufts | Trees and boulders block; sparse grass is passable, with fewer tufts in woods |
 | Landmarks and props | Abbey entrance/cross, banner, bench, brazier; mine mouth, timber support, cart, ore; vine trellis, grape basket; gate post, fence/end, signpost | Distinct landmark clusters built from reusable pieces |
 | Interaction props | Closed/open chest, crate, dropped bag | Reuse across branches; keep chest states visibly different |
+
+The owner-selected characters, abbey entrance/walls, trees, stones, flowers, grass, chests
+and shared corpse use the original scroolo sheets, doubled to the world tile size.
+Other sprites retain the selected valley atlas. NPC facing remains part of combat,
+without a direction line drawn over the sprite. Each tile shows one sprite: the player
+or a living actor covers corpses, chests and terrain; scenery covers ground art.
 
 Use shared corpse and prop art rather than a sprite for every historical NPC/item.
 The old mage and other retiring classes keep their placeholder art during the transition.
@@ -75,12 +82,16 @@ The old mage and other retiring classes keep their placeholder art during the tr
 
 Deferred from the current generation pass, which covers world and static sprites only.
 
-Keep panel frames, text, bars, slot borders and selection markers drawn by Godot.
+Keep panel frames, text, player bars, slot borders and selection markers drawn by Godot.
+Friendly contacts are green. Available quests and ready turn-ins blink between the
+contact and the reference exclamation sprite. Neutral creatures are yellow and hostile
+creatures red, with no relationship underline. Injured enemies blink dark red.
 Use a small shared set of 32px icons initially: weapon strike, bleed, poison,
 wind, lightning shield, blessing/seal, healing and a generic effect fallback.
 Reuse the relevant ability icon for its buff; show remaining turns in text. Final
 ability-specific icons follow the chosen toolkit, rather than the old spell catalog.
 
 The current screen uses text placeholders in slots and for active effects. The next
-art pass should try player/hostile silhouettes, one wall, grass and road first in
-this screen, then fill out the list after human review.
+art pass should refine player/hostile silhouettes, remains and terrain joins in the
+expanded map. Outdoor ground stays plain, with trees, stones, flowers and sparse
+grass tufts. Use fewer grass tufts in wooded areas.

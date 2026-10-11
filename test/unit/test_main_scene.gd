@@ -37,7 +37,7 @@ func after_each() -> void:
 
 func test_startup_creates_the_playable_world() -> void:
 	assert_true(_main.is_node_ready())
-	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 	assert_eq(_game.world.turn_count, 0)
 	assert_gt(_game.world.actors.size(), 0)
 
@@ -116,7 +116,7 @@ func test_both_wait_keys_advance_exactly_one_turn_and_top_row_does_not_move() ->
 	await _tap_key(KEY_5)
 	await _tap_key(KEY_1)
 	assert_eq(_game.world.turn_count, 2)
-	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 
 
 func test_key_echo_does_not_advance_time() -> void:
@@ -153,7 +153,7 @@ func test_player_menu_cancels_queued_movement_and_reset_restores_start() -> void
 	_game.reset_fixture()
 	assert_eq(_game.world.movement_credit, 0.0)
 	assert_eq(_game.world.turn_count, 0)
-	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 	_assert_camera_centered()
 
 
@@ -200,7 +200,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.turn_count, 1)
 	assert_eq([_game.world.hero.level, _game.world.hero.experience], [2, 50])
-	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
 	assert_string_contains(chat.text, "450 XP")
 	assert_string_contains(chat.text, "level 2")
@@ -421,13 +421,13 @@ func test_friendly_corpse_and_no_candidate_results_go_to_chat_without_dialogue()
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
 	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
-	assert_string_contains(chat.text, "Welcome")
+	assert_string_contains(chat.text, "abbey")
 	actor.alive = false
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
 	assert_string_contains(chat.text, "no loot")
 	assert_eq(_game.world.turn_count, 0)
-	assert_eq(_game.world.player_tile, Vector2i(20, 14))
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 	var friend := GridActor.new(_game.world.player_tile + Vector2i.UP)
 	_game.world.actors.append(friend)
 	await _tap_key(KEY_F)
@@ -436,7 +436,7 @@ func test_friendly_corpse_and_no_candidate_results_go_to_chat_without_dialogue()
 	assert_same(_game.combat_panel.selected, friend)
 	await _tap_key(KEY_ENTER)
 	assert_false(_game.combat_panel.visible, "Choosing a friendly adds no second dialogue.")
-	assert_string_contains(_game.world.messages[-1], "Welcome")
+	assert_string_contains(_game.world.messages[-1], "abbey")
 	assert_eq(_game.world.turn_count, 0)
 
 
@@ -686,7 +686,7 @@ func test_switching_spell_target_type_and_loop_reset_clear_target_memory() -> vo
 func test_marshal_and_trainer_interactions_open_services_without_advancing_time() -> void:
 	_game.world.cast_skill(&"death_1")
 	_game.refresh_view()
-	_game.world.player_tile = Vector2i(19, 13)
+	_game.world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
@@ -700,17 +700,21 @@ func test_marshal_and_trainer_interactions_open_services_without_advancing_time(
 		choices.append(button.text)
 	assert_eq(choices, ["Choose Druid", "Choose Warlock", "Choose Priest", "Choose Shaman", "Choose Paladin", "Leave (Esc)"])
 	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Choose Druid")
+	_game.menu._buttons[3].grab_focus()
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.world.hero.selected_class, &"Druid")
-	assert_null(_game.world.hero.find_skill(&"wrath_1"))
-	_game.world.player_tile = Vector2i(12, 14)
+	assert_eq(_game.world.hero.selected_class, &"Shaman")
+	assert_null(_game.world.hero.find_skill(&"lightning_bolt_1"))
+	_game.world.player_tile = Vector2i(38, 38)
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trainer")
+	for button in _game.menu._buttons:
+		if button.text.begins_with("Lightning Bolt rank 1"):
+			button.grab_focus()
 	await _tap_key(KEY_ENTER)
-	assert_not_null(_game.world.hero.find_skill(&"wrath_1"))
+	assert_not_null(_game.world.hero.find_skill(&"lightning_bolt_1"))
 	assert_eq(_game.world.turn_count, 0)
 
 
@@ -835,7 +839,7 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 
 
 func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
-	_game.world.player_tile = Vector2i(17, 17)
+	_game.world.player_tile = _test_merchant(900003).tile + Vector2i.DOWN
 	_game.world.hero.copper = 200
 	_game.refresh_view()
 	await _tap_key(KEY_F)
@@ -850,7 +854,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.inventory[0].id, 2139)
 	assert_eq(_game.world.hero.copper, 143)
-	assert_eq(_game.world.player_tile, Vector2i(17, 17))
+	assert_eq(_game.world.player_tile, _test_merchant(900003).tile + Vector2i.DOWN)
 	assert_eq(_game.world.turn_count, 0)
 
 
@@ -906,16 +910,16 @@ func test_player_menu_inventory_entry_shows_binding_and_opens_without_time() -> 
 
 
 func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_time() -> void:
-	_game.world.player_tile = Vector2i(21, 15)
+	var marshal := _game.world.actors[0]
+	_game.world.player_tile = marshal.tile + Vector2i.DOWN
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quest_detail")
 	await _tap_key(KEY_ENTER)
-	assert_true(_game.world.quests.has("783"))
-	assert_true(_game.world.ever_accepted_quest)
-	assert_false(_game.menu.visible, "No remaining conversation choices return to play.")
+	assert_true(_game.world.quests.has("valley_patrol"))
+	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_J)
 	assert_eq(_game.menu.page, "quests")
 	assert_string_contains(_game.menu._buttons[0].text, "In progress")
@@ -923,30 +927,25 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	await _tap_key(KEY_S)
 	assert_eq(_game.world.player_tile, position)
 	await _tap_key(KEY_ESCAPE)
-	_game.world.player_tile = Vector2i(19, 13)
-	_game.refresh_view()
+	for count in range(8):
+		QuestRules.event(_game.world, "kill", "299")
 	await _tap_key(KEY_F)
-	assert_true(QuestRules.ready(_game.world, "783"))
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quest_detail")
 	await _tap_key(KEY_ENTER)
-	assert_true(_game.world.quests["783"].handed_in)
-	assert_eq(_game.world.hero.experience, 40)
-	# First follow-up at the marshal is Kobold Camp Cleanup.
+	assert_true(_game.world.quests["valley_patrol"].handed_in)
+	_game.world.hero.level = 10
+	_game.menu._quest_detail("valley_camp", marshal)
 	await _tap_key(KEY_ENTER)
-	await _tap_key(KEY_ENTER)
-	assert_true(_game.world.quests.has("7"))
-	await _tap_key(KEY_ESCAPE)
-	await _tap_key(KEY_J)
-	await _tap_key(KEY_ENTER)
-	assert_eq(_game.menu.page, "quest_detail")
+	assert_true(_game.world.quests.has("valley_camp"))
+	_game.menu._quest_detail("valley_camp", null)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "confirm")
 	await _tap_key(KEY_ESCAPE)
-	assert_true(_game.world.quests.has("7"), "Cancel abandonment preserves the quest.")
+	assert_true(_game.world.quests.has("valley_camp"))
 	await _tap_key(KEY_ENTER)
 	await _tap_key(KEY_ENTER)
-	assert_false(_game.world.quests.has("7"))
+	assert_false(_game.world.quests.has("valley_camp"))
 	assert_true(_game.world.ever_accepted_quest)
 	assert_eq(_game.world.turn_count, 0)
 
@@ -1104,7 +1103,7 @@ func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act()
 func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() -> void:
 	for use_mouse in [false, true]:
 		_game.start_new_game()
-		for boundary in range(15):
+		for boundary in range(ValleyRoute.STALKER_DEADLINES[0]):
 			_game.world.wait_turn()
 		assert_true(_game.world.stalkers_arrived > 0)
 		_game.refresh_view()
@@ -1115,13 +1114,13 @@ func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() ->
 		var button := _game_viewport.gui_get_focus_owner() as Button
 		assert_not_null(button)
 		assert_eq(button.get_meta("skill_id"), &"kill_stalker_1")
-		assert_eq(_game.world.turn_count, 15, "Navigation never spends a turn.")
+		assert_eq(_game.world.turn_count, ValleyRoute.STALKER_DEADLINES[0], "Navigation never spends a turn.")
 		if use_mouse:
 			await _click_button(button)
 		else:
 			await _tap_key(KEY_ENTER)
 		assert_eq(_game.world.attempt_state, GridWorld.AttemptState.COMPLETED)
-		assert_eq(_game.world.turn_count, 16)
+		assert_eq(_game.world.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 		assert_eq(_game.session.loop_count, 1)
 		assert_eq(_game.menu.page, "completion")
 		assert_true(_game.menu.visible)
@@ -1303,9 +1302,8 @@ func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() 
 
 
 func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mouse_sell() -> void:
-	var danil := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 152)[0] as GridActor
-	_game.world.player_tile = Vector2i(19, 10)
+	var danil := _test_merchant(152)
+	_game.world.player_tile = danil.tile + Vector2i.DOWN
 	_game.world.hero.copper = 100
 	_game.refresh_view()
 	await _tap_key(KEY_F)
@@ -1351,15 +1349,14 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	assert_eq(_game.world.hero.copper, 60)
 	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Back (Esc)")
 	assert_eq(_game.world.turn_count, 0)
-	assert_eq(_game.world.player_tile, Vector2i(19, 10))
+	assert_eq(_game.world.player_tile, danil.tile + Vector2i.DOWN)
 
 
 func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> void:
 	for index in range(40):
 		_game.world.hero.inventory[index] = ItemData.instance(159, 20)
 	for npc_id in [152, 190, 1213, 78, 900003]:
-		var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.npc_id == npc_id)[0] as GridActor
+		var merchant := _test_merchant(npc_id)
 		for direction in GridWorld.DIRECTIONS:
 			if _game.world.is_open(merchant.tile + direction):
 				_game.world.player_tile = merchant.tile + direction
@@ -1385,7 +1382,7 @@ func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> vo
 func test_trade_stack_options_respect_money_and_stock() -> void:
 	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 900003)[0] as GridActor
-	_game.world.player_tile = Vector2i(17, 17)
+	_game.world.player_tile = _test_merchant(900003).tile + Vector2i.DOWN
 	_game.world.hero.copper = 200
 	_game.menu.open_trade(merchant)
 	_game.menu._buy_options(2455)
@@ -1425,9 +1422,8 @@ func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
 	assert_false(_game.menu.visible)
 	assert_false(chest.corpse_visible)
 	assert_eq(_game.world.hero.copper, 8)
-	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 152)[0] as GridActor
-	_game.world.player_tile = Vector2i(19, 10)
+	var merchant := _test_merchant(152)
+	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.menu.open_sell(merchant)
 	var sell := _game.menu._buttons.filter(func(button: Button) -> bool:
 		return button.text == "Sell All Grey Items")[0] as Button
@@ -1452,9 +1448,8 @@ func test_starting_mage_hotbar_activates_without_manual_assignment() -> void:
 
 
 func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> void:
-	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 152)[0] as GridActor
-	_game.world.player_tile = Vector2i(19, 10)
+	var merchant := _test_merchant(152)
+	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.world.hero.inventory[0] = ItemData.instance(35)
 	for index in range(1, 39):
 		_game.world.hero.inventory[index] = ItemData.instance(117, 20)
@@ -1487,14 +1482,13 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 	assert_eq(_game.world.hero.inventory[1], ItemData.instance(117, 20))
 	assert_eq(_game.world.vendor_stock, stock)
 	assert_eq(_game.world.hero.copper, 28)
-	assert_eq(_game.world.player_tile, Vector2i(19, 10))
+	assert_eq(_game.world.player_tile, merchant.tile + Vector2i.DOWN)
 	assert_eq(_game.world.turn_count, 0)
 
 
 func test_sell_page_excludes_untradable_items_and_handles_empty_and_single_item_stacks() -> void:
-	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 152)[0] as GridActor
-	_game.world.player_tile = Vector2i(19, 10)
+	var merchant := _test_merchant(152)
+	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.world.hero.inventory[0] = ItemData.instance(750, 2)
 	_game.world.hero.inventory[1] = ItemData.instance(5349, 4)
 	_game.menu.open_sell(merchant)
@@ -1516,19 +1510,18 @@ func test_sell_page_excludes_untradable_items_and_handles_empty_and_single_item_
 
 
 func test_direct_sell_revalidates_merchant_range_and_rejects_buttons_from_replaced_world() -> void:
-	var merchant := _game.world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 152)[0] as GridActor
-	_game.world.player_tile = Vector2i(19, 10)
+	var merchant := _test_merchant(152)
+	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.world.hero.inventory[0] = ItemData.instance(159, 7)
 	_game.menu.open_sell(merchant)
-	_game.world.player_tile = Vector2i(20, 14)
+	_game.world.player_tile = ValleyRoute.SPAWN
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "notice")
 	assert_eq(_game.world.hero.inventory[0], ItemData.instance(159, 7))
 	assert_eq(_game.world.hero.copper, 0)
 	await _tap_key(KEY_ENTER)
 	assert_false(_game.menu.visible)
-	_game.world.player_tile = Vector2i(19, 10)
+	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.menu.open_sell(merchant)
 	var stale := _game_viewport.gui_get_focus_owner() as Button
 	var previous := _game.world
@@ -1570,3 +1563,31 @@ func test_interact_button_opens_selection_and_cancels_queued_movement_for_free()
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.combat_panel.visible)
 	assert_null(_game_viewport.gui_get_focus_owner())
+
+
+func test_new_game_launches_the_valley() -> void:
+	_game.menu.open_main()
+	_game.menu._buttons[0].pressed.emit()
+	await get_tree().process_frame
+	assert_true(_game.active_game)
+	assert_false(_game.menu.visible)
+	assert_true(_game.world.valley_route)
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
+	assert_true(_game.grid_view.visible)
+	await _tap_key(KEY_W)
+	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN + Vector2i.UP)
+	assert_eq(_game.world.turn_count, 1)
+
+
+func _test_merchant(identity: int) -> GridActor:
+	for actor in _game.world.actors:
+		if actor.npc_id == identity:
+			return actor
+	var merchant := GridActor.new(Vector2i(27, 55))
+	merchant.npc_id = identity
+	merchant.title = "Brother Danil" if identity == 152 else "Test merchant"
+	merchant.spawn_id = "test/merchant/%d" % identity
+	merchant.service = &"Trader"
+	_game.world.actors.append(merchant)
+	_game.world.vendor_stock.merge(MerchantData.initial_stock([merchant]))
+	return merchant

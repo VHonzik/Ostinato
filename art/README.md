@@ -17,9 +17,12 @@ This folder maintains generation and packing for the world/static sprites in
 
 The selected baseline contains the sprites from the accepted prototype. Its
 PNG pixels are preserved, and the catalog includes the actual settings used by
-those selected variants. Game rendering still uses the original reference sheets;
-map integration is separate work. Some equipment, remains, and tile connections
-will need refinement.
+those selected variants. The game map uses the selected atlas
+for roads/interiors and remaining boundaries, contacts, enemies and props. Owner-selected
+characters, abbey walls/entrance, nature, chests and the shared corpse instead use
+the original scroolo sheets directly; their mappings live in `GridView`. Outdoor ground
+is plain. The quest exclamation mark also uses the original environment sheet.
+The current mage and mage trainer retain reference art until the class pivot. Some equipment, remains, and tile connections need refinement.
 
 ## Generate a candidate
 

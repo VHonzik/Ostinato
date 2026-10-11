@@ -228,7 +228,7 @@ func test_each_of_five_stalkers_is_a_terminal_target_and_pending_arrivals_stop()
 func test_loop_reset_restarts_all_deadlines_identities_and_guard_story() -> void:
 	var game := GameSession.new()
 	game.new_game(97)
-	game.world.turn_count = 695
+	game.world.turn_count = ValleyRoute.STALKER_DEADLINES[-1]
 	game.world._arrive_stalker()
 	assert_eq(_stalkers(game.world).size(), 5)
 	var old := game.world
@@ -236,37 +236,28 @@ func test_loop_reset_restarts_all_deadlines_identities_and_guard_story() -> void
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.stalkers_arrived, 0)
 	assert_eq(game.world.turn_count, 0)
-	assert_eq(game.world.stalker_deadlines, [15, 215, 395, 555, 695])
+	assert_eq(game.world.stalker_deadlines, ValleyRoute.STALKER_DEADLINES)
 	assert_eq(_stalkers(game.world).size(), 0)
-	game.world.turn_count = 14
+	game.world.turn_count = ValleyRoute.STALKER_DEADLINES[0] - 1
 	game.world.wait_turn()
 	assert_eq(_stalkers(game.world)[0].spawn_id, "gate/stalker/0")
 	old._arrive_stalker()
 	assert_eq(_stalkers(game.world).size(), 1)
 
 
-func test_population_reserves_five_world_slots_and_summons_are_additional() -> void:
+func test_stalker_capacity_counts_world_actors_without_counting_summons() -> void:
 	var world := _world()
 	world.actors.clear()
-	for index in range(94):
+	for index in range(95):
 		world.actors.append(GridActor.new(Vector2i(1 + index % 30, 30 + index / 30)))
 	for index in range(3):
 		var summon := GridActor.new(Vector2i(40 + index, 30))
 		summon.summon_kind = ["pet", "earth", "fire"][index]
 		world.actors.append(summon)
-	world.population.append({"area": "wolves", "slot": 0, "ordinal": 0,
-		"due": 0, "pending": true})
-	world.population.append({"area": "wolves", "slot": 1, "ordinal": 0,
-		"due": 0, "pending": true})
-	NorthshireZone.tick_population(world)
-	assert_false(world.population[0].pending, "Summons do not consume ordinary world slots.")
-	assert_true(world.population[1].pending, "Ordinary spawns stop at 95.")
 	world.turn_count = 695
 	world._arrive_stalker()
-	NorthshireZone.tick_population(world)
 	assert_eq(_stalkers(world).size(), 5)
 	assert_eq(world.actors.size(), 103, "100 world NPCs plus pet and two totems.")
-	assert_true(world.population[1].pending)
 
 
 func test_all_five_pending_arrivals_survive_load_without_announcing_early() -> void:

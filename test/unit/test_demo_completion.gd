@@ -247,11 +247,11 @@ func test_development_kill_stalker_rejects_before_arrival_without_changing_simul
 	after.erase("messages")
 	assert_eq(after, before)
 	assert_null(world.pending_skill)
-	for boundary in range(15):
+	for boundary in range(ValleyRoute.STALKER_DEADLINES[0]):
 		world.wait_turn()
 	assert_true(world.stalkers_arrived > 0, "Rejected use does not skip or delay the schedule.")
 	assert_true(world.cast_skill(&"kill_stalker_1"))
-	assert_eq(world.turn_count, 16)
+	assert_eq(world.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 	assert_eq(session.loop_count, 1)
 	_assert_complete(world)
 

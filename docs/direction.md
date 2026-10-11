@@ -39,6 +39,9 @@ formulas, class lists, quest inventories, or balance targets.
 - Use a 1280×720 logical canvas and minimum window, with 32×32 world tiles. Double
   the existing 16px art as a placeholder, preserving the base view’s world scale.
   Design the reduced valley and sprite list before the owner creates replacement art.
+- Keep outdoor ground plain. Show prominent terrain features such as trees, stones,
+  flowers, sparse grass tufts, roads and landmarks rather than repeating grass tiles.
+  Use fewer grass tufts in wooded areas.
 - Follow the owner’s [UI sketch](UI_design.svg): compact player frame at upper left,
   a scrolling combat log at lower left, two centered hotbar rows, player menus at lower right,
   and buffs/debuffs below the player. Ten slots per row: 1–6, R, T, G, V on the
