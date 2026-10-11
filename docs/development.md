@@ -35,9 +35,13 @@ and ready turn-ins alternate their contact sprite with an exclamation mark. Neut
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting. Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
-The supply trader and warrior trainer Llane remain usable; other class trainers await later slices.
+Janos Hammerknuckle supplies warrior gear and trades; warrior trainer Llane remains
+usable; other class trainers await later slices.
 
-New Game starts a warrior with rage, Slam and Battle Shout. Other classes are currently unavailable.
+New Game starts a warrior with rage, Slam and Battle Shout, wearing travel clothes.
+Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
+warrior referrals, with a paladin referral from the second Loop; other classes are
+currently unavailable. Farseer Lopaa is the shaman contact.
 Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
 F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
 M opens the player menu.

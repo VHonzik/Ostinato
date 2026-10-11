@@ -161,16 +161,39 @@ func open_bindings() -> void:
 
 func open_marshal() -> void:
 	_begin("marshal", "Marshal McBride", close)
-	_label("The Legion has reached Northshire. Do I know you? These clothes may help.")
-	if session.can_select_class() and ClassSkillData.PLAYABLE_CLASSES.size() > 1:
-		for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
-			if category == session.world.hero.selected_class:
-				continue
-			_button("Choose " + String(category), _select_class.bind(category))
-	else:
-		_label("Warrior training is available from Llane Beshere inside the abbey.")
+	_label("Speak with Llane Beshere inside the abbey. " +
+		"Also check with Janos inside, he might give you some arms and armor.")
 	_button("Leave (Esc)", close)
 	_finish()
+
+
+func _paladin_referral(actor: GridActor) -> void:
+	if session.loop_count < 2 or not QuestRules.in_range(session.world, actor, 197):
+		close()
+		return
+	_begin("marshal", actor.title, open_conversation.bind(actor))
+	_label("Speak with Brother Sammuel inside the abbey. " +
+		"Also check with Janos inside, he might give you some arms and armor.")
+	_button("Back (Esc)", open_conversation.bind(actor))
+	_finish()
+
+
+func _request_spare_gear(actor: GridActor) -> void:
+	if not QuestRules.in_range(session.world, actor, 900003):
+		close()
+		return
+	if session.world.starter_gear_received:
+		open_conversation(actor)
+		return
+	if not session.world.receive_starter_gear(actor):
+		notice("Cannot exchange gear; make inventory space and try again.",
+			open_conversation.bind(actor))
+		return
+	_begin("spare_gear", actor.title, open_conversation.bind(actor))
+	_label("I can find some left overs if you are not picky.")
+	_button("Back (Esc)", open_conversation.bind(actor))
+	_finish()
+	refreshed.emit()
 
 
 func open_trainer(category: StringName) -> void:
@@ -637,9 +660,15 @@ func open_conversation(actor: GridActor) -> void:
 				else "In progress: ", _quest_detail.bind(identifier, actor))
 			choices = true
 	if actor.service == &"Marshal":
-		_button("Ask about warrior training", open_marshal)
+		_button("It's been a long journey, is there a warrior master?", open_marshal)
+		if session.loop_count >= 2:
+			_button("Uhm... I seek paladin teaching", _paladin_referral.bind(actor))
 		choices = true
 	elif actor.service == &"Trader":
+		if (actor.npc_id == 900003 and session.world.valley_route
+			and session.world.hero.selected_class == &"Warrior"
+			and not session.world.starter_gear_received):
+			_button("Do you have any spare gear for warrior?", _request_spare_gear.bind(actor))
 		_button("Trade", open_trade.bind(actor))
 		choices = true
 	elif actor.service in ClassSkillData.PLAYABLE_CLASSES:

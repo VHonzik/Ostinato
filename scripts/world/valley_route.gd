@@ -35,14 +35,14 @@ const TIMBER_WOLVES: Array[Vector2i] = [
 const CONTACTS: Array = [
 	[197, "Marshal McBride", MARSHAL, "Marshal"],
 	[823, "Deputy Willem", Vector2i(24, 45), ""],
-	[900003, "Abbey supply trader", Vector2i(28, 41), "Trader"],
+	[900003, "Janos Hammerknuckle", Vector2i(28, 41), "Trader"],
 	[198, "Khelden Bremen", Vector2i(32, 35), ""],
 	[9296, "Milly Osworth", Vector2i(35, 32), ""],
 	[1642, "Northshire Guard", Vector2i(12, 63), ""],
 	[911, "Llane Beshere", Vector2i(31, 34), "Warrior"],
 	[915, "Jorik Kerridan", Vector2i(39, 43), ""],
 	[925, "Brother Sammuel", Vector2i(30, 37), ""],
-	[900002, "Shaman trainer", Vector2i(38, 37), ""],
+	[900002, "Farseer Lopaa", Vector2i(38, 37), ""],
 ]
 # Identity, home tile, encounter name. No replacement population is scheduled.
 const ENCOUNTERS: Array = [
@@ -255,13 +255,21 @@ static func npc_name(identity: int) -> String:
 static func greeting(identity: int) -> String:
 	match identity:
 		197:
-			return "The woods lie west; kobolds camp north, below Echo Ridge. Pick a route and report back."
+			return "Greeting adventurer, welcome to Northshire Abbey. You look worn out from your travels."
 		911:
-			return "Practice Slam and Battle Shout. Return when you are ready to learn Anger Management."
+			return "Practice your warrior skills. Return when you are ready to learn new tricks."
 		823:
-			return "There are old supply caches in the mine, on the eastern ridge and south of the vines."
+			return "A new face is always a pleasant sight, how can I help?"
 		9296:
-			return "Bandits are among my vines. Garrick is camped at the far eastern end."
+			return "A gang of brigands, the Defias, moved into the Northshire Vineyards while I was harvesting!"
 		1642:
 			return "This is the road out of the valley. Stay alert; I heard something beyond the gate."
-	return "The abbey's south door is open. The paths lead north to the mine and east to the vines."
+		915:
+			return "Hello adventurer. Jorik Kerridan, famous rogue at your service."
+		925:
+			return "Hello adventurer. I am Brother Sammuel, follower of the light."
+		900002:
+			return "Hello adventurer, I am Farseer Lopaa, a storm-chaser."
+		900003:
+			return "Greetings, what can I get you?"
+	return "Hello adventurer."

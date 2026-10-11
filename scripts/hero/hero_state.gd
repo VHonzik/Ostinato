@@ -57,7 +57,7 @@ var debuffs: Dictionary = {}
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
 	_apply_level_stats()
-	StarterGear.equip_outfit(self)
+	StarterGear.equip_travel_clothes(self)
 	health = max_health
 	mana = max_mana
 	for skill in SkillRank.starting_skills():

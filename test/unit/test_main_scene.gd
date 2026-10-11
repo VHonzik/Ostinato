@@ -425,7 +425,7 @@ func test_friendly_interaction_and_empty_corpse_cleanup_skip_attack_dialogue() -
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
 	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
-	assert_string_contains(chat.text, "abbey")
+	assert_string_contains(chat.text, "Hello adventurer.")
 	actor.alive = false
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
@@ -443,7 +443,7 @@ func test_friendly_interaction_and_empty_corpse_cleanup_skip_attack_dialogue() -
 	assert_same(_game.combat_panel.selected, friend)
 	await _tap_key(KEY_ENTER)
 	assert_false(_game.combat_panel.visible, "Choosing a friendly adds no second dialogue.")
-	assert_string_contains(_game.world.messages[-1], "abbey")
+	assert_string_contains(_game.world.messages[-1], "Hello adventurer.")
 	assert_eq(_game.world.turn_count, 0)
 
 

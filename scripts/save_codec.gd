@@ -54,6 +54,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"debuffs": world.hero.debuffs.duplicate(true),
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
+		"starter_gear_received": world.starter_gear_received,
 	}
 	for category in world.hero.class_progress:
 		data.class_progress[String(category)] = world.hero.class_progress[category]
@@ -100,6 +101,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if not data.get("valley_route", false) is bool:
 		return null
 	world.valley_route = data.get("valley_route", false)
+	if not data.get("starter_gear_received", false) is bool:
+		return null
+	world.starter_gear_received = data.get("starter_gear_received", false)
 	if world.valley_route:
 		if world.bounds != ValleyRoute.BOUNDS or not world.northshire:
 			return null
@@ -158,6 +162,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		var actor := GridActor.new(Vector2i.ZERO)
 		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
 			return null
+		if world.valley_route and actor.npc_id in [900002, 900003]:
+			actor.title = ValleyRoute.npc_name(actor.npc_id)
 		if not _restore_fields(actor.melee, record.melee, MELEE_FIELDS):
 			return null
 		if not _restore_swing(actor.swing, record.swing) or not _buffs(record.buffs):

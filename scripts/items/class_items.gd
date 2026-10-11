@@ -367,7 +367,7 @@ const ITEMS: Dictionary = {
 		"buy": 45,
 		"sell": 9,
 		"armor": 0,
-		"two_handed": true,
+		"two_handed": false,
 		"unique": false,
 		"weapon": true,
 		"shield": false,

@@ -45,6 +45,7 @@ var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
+var starter_gear_received: bool = false
 var ever_accepted_quest: bool = false
 var hotbar: Array[StringName] = []
 var hotbar_locked: bool = false
@@ -1078,6 +1079,17 @@ func _hide_empty_corpse(source: GridActor) -> void:
 		return
 	if source.loot.is_empty() and source.loot_copper == 0:
 		source.corpse_visible = false
+
+
+func receive_starter_gear(merchant: GridActor) -> bool:
+	if (starter_gear_received or hero.selected_class != &"Warrior"
+		or not valley_route or not QuestRules.in_range(self, merchant, 900003)
+		or not trader_in_range(merchant)):
+		return false
+	if not StarterGear.exchange(hero, &"Warrior"):
+		return false
+	starter_gear_received = true
+	return true
 
 
 func trader_in_range(merchant: GridActor) -> bool:
