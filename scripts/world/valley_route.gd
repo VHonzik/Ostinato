@@ -36,13 +36,13 @@ const CONTACTS: Array = [
 	[197, "Marshal McBride", MARSHAL, "Marshal"],
 	[823, "Deputy Willem", Vector2i(24, 45), ""],
 	[900003, "Abbey supply trader", Vector2i(28, 41), "Trader"],
-	[198, "Khelden Bremen", Vector2i(32, 35), "Mage"],
+	[198, "Khelden Bremen", Vector2i(32, 35), ""],
 	[9296, "Milly Osworth", Vector2i(35, 32), ""],
 	[1642, "Northshire Guard", Vector2i(12, 63), ""],
-	[911, "Llane Beshere", Vector2i(31, 34), ""],
+	[911, "Llane Beshere", Vector2i(31, 34), "Warrior"],
 	[915, "Jorik Kerridan", Vector2i(39, 43), ""],
-	[925, "Brother Sammuel", Vector2i(30, 37), "Paladin"],
-	[900002, "Shaman trainer", Vector2i(38, 37), "Shaman"],
+	[925, "Brother Sammuel", Vector2i(30, 37), ""],
+	[900002, "Shaman trainer", Vector2i(38, 37), ""],
 ]
 # Identity, home tile, encounter name. No replacement population is scheduled.
 const ENCOUNTERS: Array = [
@@ -256,6 +256,8 @@ static func greeting(identity: int) -> String:
 	match identity:
 		197:
 			return "The woods lie west; kobolds camp north, below Echo Ridge. Pick a route and report back."
+		911:
+			return "Practice Slam and Battle Shout. Return when you are ready to learn Anger Management."
 		823:
 			return "There are old supply caches in the mine, on the eastern ridge and south of the vines."
 		9296:

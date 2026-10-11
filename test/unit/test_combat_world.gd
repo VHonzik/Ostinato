@@ -267,8 +267,10 @@ func test_pending_swing_revalidates_adjacency_without_refunding_time() -> void:
 	assert_eq(_world.turn_count, 1)
 
 
-func test_player_kill_awards_xp_once_and_corpse_is_nonblocking_selectable_and_expires() -> void:
+func test_player_kill_awards_xp_once_and_loot_corpse_is_nonblocking_selectable_and_expires() -> void:
 	var actor := _actor(Vector2i(11, 10))
+	actor.loot_assigned = true
+	actor.loot_copper = 1
 	actor.health = 1
 	_world.hero.melee.critical = 100.0
 	# Retry genuine attacks until a non-miss/dodge roll resolves.
@@ -285,8 +287,8 @@ func test_player_kill_awards_xp_once_and_corpse_is_nonblocking_selectable_and_ex
 	assert_true(_world.is_open(actor.tile))
 	_world.move_player(Vector2i.RIGHT)
 	assert_true(_world.interaction_candidates().has(actor))
-	assert_string_contains(_world.interact(actor), "no loot")
-	assert_string_contains(_world.interact(actor), "no loot")
+	assert_true(_world.open_loot(actor))
+	assert_eq(actor.loot_copper, 1)
 	assert_eq(_world.hero.experience, 50)
 	for index in range(300):
 		_world.wait_turn()
@@ -332,6 +334,8 @@ func test_identical_actions_reproduce_combat_and_do_not_consume_wander_randomnes
 func test_corpse_beneath_living_actor_remains_an_interaction_candidate() -> void:
 	var corpse := _actor(_world.player_tile + Vector2i.RIGHT)
 	corpse.alive = false
+	corpse.loot_assigned = true
+	corpse.loot_copper = 1
 	var living := _actor(corpse.tile, GridActor.Relationship.FRIENDLY)
 	assert_eq(_world.interaction_candidates(), [corpse, living])
 

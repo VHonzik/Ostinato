@@ -2,8 +2,37 @@ class_name ClassSkillData
 extends RefCounted
 
 ## Pre-pivot class skill data.
-const CLASSES: Array[StringName] = [&"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin"]
+const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior"]
+const CLASSES: Array[StringName] = [&"Warrior", &"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin"]
 const RANKS: Dictionary = {
+	"slam_1": {
+		"title": "Slam", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"rage_cost": 30, "cast_seconds": 2.0, "range_tiles": 1,
+		"family": "slam", "effect": "SLAM", "target": "ENEMY",
+		"weapon_multiplier": 1.5, "minimum": 5,
+		"detail": "150% weapon damage + 5 physical damage. Pauses auto-attack during the cast."
+	},
+	"battle_shout_1": {
+		"title": "Battle Shout", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"cast_seconds": 1.0, "duration": 30, "cooldown_seconds": 10,
+		"family": "battle_shout", "effect": "BATTLE_SHOUT", "target": "SELF",
+		"physical_percent": 10, "rage_generated": 10,
+		"detail": "Increases physical damage by 10% for 30 turns and instantly generates 10 rage. 10-turn cooldown."
+	},
+	"anger_management_1": {
+		"title": "Anger Management", "class_tab": "Warrior", "rank": 1,
+		"training_level": 1, "progress_required": 20,
+		"family": "anger_management", "effect": "PASSIVE", "target": "NONE",
+		"detail": "Passive: out-of-combat rage decay becomes 0.5 per turn. Retained across Loops."
+	},
+	"charge_1": {
+		"title": "Charge", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"progress_required": 50, "cast_seconds": 1.0, "range_tiles": 9,
+		"minimum_range_tiles": 2, "cooldown_seconds": 10,
+		"family": "charge", "effect": "CHARGE", "target": "ENEMY",
+		"travel_speed": 4, "rage_generated": 10,
+		"detail": "Wind up for one turn, then move at 4 tiles per turn to the nearest empty melee tile. Cannot act or cancel during Charge. Generates 10 rage on arrival. 10-turn cooldown."
+	},
 	"devotion_aura_1": {
 		"title": "Devotion Aura",
 		"class_tab": "Paladin",

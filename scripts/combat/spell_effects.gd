@@ -152,11 +152,11 @@ static func resistance(world: GridWorld, skill: SkillRank, target: GridActor) ->
 
 static func damage(
 	world: GridWorld, target: GridActor, value: int, title: String,
-	death_turn: int = -1, break_root: bool = true, source: GridActor = null
+	death_turn: int = -1, break_root: bool = true, source: GridActor = null, physical: bool = false
 ) -> void:
 	if world.is_terminal() or not target.alive:
 		return
-	value = ClassSpellEffects.absorb(world, target, value, title.begins_with("You ("))
+	value = ClassSpellEffects.absorb(world, target, value, physical or title.begins_with("You ("))
 	if target.relationship != GridActor.Relationship.FRIENDLY:
 		SummonRules.add_threat(world, target, source, value)
 	target.health = maxi(0, target.health - value)

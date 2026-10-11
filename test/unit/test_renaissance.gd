@@ -3,6 +3,7 @@ extends GutTest
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(10, 10), 97)
+	LegacyMageFixture.apply(world)
 	world.hero.level = 10
 	world.hero._apply_level_stats()
 	world.hero.copper = 100000
@@ -88,14 +89,15 @@ func test_every_new_active_rank_executes_and_passive_cannot_be_cast() -> void:
 				assert_gte(world.hero.health, 1, rank.id)
 
 
-func test_each_class_can_be_selected_trained_retained_and_cast_as_level_one_mage() -> void:
+func test_legacy_outfits_and_training_retain_castable_skills_across_death() -> void:
 	for category: StringName in [&"Warlock", &"Priest", &"Shaman", &"Paladin"]:
 		var game := GameSession.new()
+		LegacyMageFixture.session(game)
 		game.new_game(29)
 		game.world.hero.health = 0
 		game.restart_after_death()
 		var ranks_before := game.world.hero.learned_skills.size()
-		assert_true(game.select_class(category))
+		assert_true(StarterGear.exchange(game.world.hero, category))
 		assert_eq(game.world.hero.learned_skills.size(), ranks_before)
 		assert_eq(game.world.hero.level, 1)
 		assert_eq(game.world.hero.strength, 20)
@@ -301,6 +303,7 @@ func test_healthstone_is_unique_usable_in_combat_and_has_its_own_cooldown() -> v
 
 func test_save_roundtrip_preserves_summons_effects_rng_commands_and_rejects_invalid_targets() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.seed_value = 97
 	game.world = _world()
 	_cast(game.world, &"summon_imp_1")
@@ -313,6 +316,7 @@ func test_save_roundtrip_preserves_summons_effects_rng_commands_and_rejects_inva
 	if restored == null:
 		return
 	var copy := GameSession.new()
+	LegacyMageFixture.session(copy)
 	copy.world = restored
 	copy.seed_value = 97
 	assert_eq(SaveCodec.capture(copy), data)
@@ -330,6 +334,7 @@ func test_save_roundtrip_preserves_summons_effects_rng_commands_and_rejects_inva
 
 func test_death_clears_all_summons_cooldowns_and_effects_but_retains_parry_and_summons() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.seed_value = 97
 	game.world = _world()
 	_cast(game.world, &"summon_voidwalker_1")
@@ -507,6 +512,7 @@ func test_enemy_disengagement_clears_previous_pet_threat() -> void:
 
 func test_save_rejects_mismatched_pet_identity_and_negative_effect_deadlines() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.world = _world()
 	_cast(game.world, &"summon_imp_1")
 	var data := SaveCodec.capture(game)

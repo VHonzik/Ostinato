@@ -21,6 +21,10 @@ func before_each() -> void:
 	_viewport.add_child(_main)
 	_game_viewport = _main.get_node("GameContainer/GameViewport") as SubViewport
 	_game = _game_viewport.get_node("Gameplay") as Gameplay
+	LegacyMageFixture.session(_game.session)
+	_game.session.world_changed.connect(func() -> void:
+		_game.hero_panel._last_class_tab = &"Mage"
+		_game.refresh_view())
 	# Gameplay preferences must not change this default-keyboard fixture or be overwritten by it.
 	InputMap.load_from_project_settings()
 	_game.menu.options = GlobalOptions.new(_options_path)
@@ -206,7 +210,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	assert_string_contains(chat.text, "level 2")
 	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
 	assert_string_contains(status.text, "Lv 2")
-	assert_string_contains(status.text, "Mana 250/250")
+	assert_string_contains(status.text, "Rage 0/100")
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.hero_panel.visible)
 	assert_null(_game_viewport.gui_get_focus_owner())
@@ -260,7 +264,7 @@ func test_release_spell_book_has_no_development_tab_or_controls() -> void:
 	_game.hero_panel.open(HeroState.new(false), true)
 	var tabs := _game.hero_panel.find_children("*", "TabContainer", true, false)[0] as TabContainer
 	assert_eq(tabs.get_tab_count(), 2)
-	assert_eq(tabs.get_tab_title(1), "Mage")
+	assert_eq(tabs.get_tab_title(1), "Warrior")
 	for button: Button in _game.hero_panel.find_children("*", "Button", true, false):
 		assert_false(button.text.contains("450 XP"))
 		assert_false(button.text.contains("Death trigger"))
@@ -411,7 +415,7 @@ func test_pending_melee_stops_on_invalid_target_reset_and_death() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_friendly_corpse_and_no_candidate_results_go_to_chat_without_dialogue() -> void:
+func test_friendly_interaction_and_empty_corpse_cleanup_skip_attack_dialogue() -> void:
 	_game.world.actors.clear()
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
@@ -425,9 +429,12 @@ func test_friendly_corpse_and_no_candidate_results_go_to_chat_without_dialogue()
 	actor.alive = false
 	await _tap_key(KEY_F)
 	assert_false(_game.combat_panel.visible)
-	assert_string_contains(chat.text, "no loot")
+	assert_false(actor.corpse_visible)
+	assert_false(_game.world.interaction_candidates().has(actor))
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
+	var other := GridActor.new(actor.tile)
+	_game.world.actors.append(other)
 	var friend := GridActor.new(_game.world.player_tile + Vector2i.UP)
 	_game.world.actors.append(friend)
 	await _tap_key(KEY_F)
@@ -455,7 +462,7 @@ func test_death_restarts_loop_and_restores_gameplay_without_a_reset_prompt() -> 
 	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
 	assert_true(status.is_visible_in_tree())
 	assert_string_contains(status.text, "HP 51/51")
-	assert_string_contains(status.text, "Mana 165/165")
+	assert_string_contains(status.text, "Rage 0/100")
 	await _tap_key(KEY_PERIOD)
 	assert_eq(_game.world.turn_count, 1)
 
@@ -683,39 +690,33 @@ func test_switching_spell_target_type_and_loop_reset_clear_target_memory() -> vo
 	assert_eq(panel._last_target_type, SkillRank.Target.NONE)
 
 
-func test_marshal_and_trainer_interactions_open_services_without_advancing_time() -> void:
-	_game.world.cast_skill(&"death_1")
-	_game.refresh_view()
-	_game.world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
-	_game.refresh_view()
-	await _tap_key(KEY_F)
-	assert_eq(_game.menu.page, "conversation")
-	for button in _game.menu._buttons:
-		if button.text == "Discuss class selection":
-			button.grab_focus()
-	await _tap_key(KEY_ENTER)
-	assert_eq(_game.menu.page, "marshal")
-	var choices: Array[String] = []
-	for button: Button in _game.menu.find_children("*", "Button", true, false):
-		choices.append(button.text)
-	assert_eq(choices, ["Choose Druid", "Choose Warlock", "Choose Priest", "Choose Shaman", "Choose Paladin", "Leave (Esc)"])
-	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Choose Druid")
-	_game.menu._buttons[3].grab_focus()
-	await _tap_key(KEY_ENTER)
-	assert_eq(_game.world.hero.selected_class, &"Shaman")
-	assert_null(_game.world.hero.find_skill(&"lightning_bolt_1"))
-	_game.world.player_tile = Vector2i(38, 38)
+func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void:
+	var world := _game.world
+	StarterGear.exchange(world.hero, &"Warrior")
+	world.hero.learned_skills.clear()
+	for skill in SkillRank.starting_skills():
+		world.hero.learn_skill(skill)
+	world.player_tile = Vector2i(30, 33)
+	world.hero.warrior_progress = 19
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trainer")
+	var passive: Button
 	for button in _game.menu._buttons:
-		if button.text.begins_with("Lightning Bolt rank 1"):
+		if button.text.begins_with("Anger Management"):
+			passive = button
+	assert_not_null(passive)
+	assert_true(passive.disabled)
+	world.hero.warrior_progress = 20
+	_game.menu.open_trainer(&"Warrior")
+	for button in _game.menu._buttons:
+		if button.text.begins_with("Anger Management"):
 			button.grab_focus()
 	await _tap_key(KEY_ENTER)
-	assert_not_null(_game.world.hero.find_skill(&"lightning_bolt_1"))
-	assert_eq(_game.world.turn_count, 0)
+	assert_not_null(world.hero.find_skill(&"anger_management_1"))
+	assert_eq(world.turn_count, 0)
 
 
 func test_ingame_menus_wrap_keyboard_focus_without_advancing_time() -> void:

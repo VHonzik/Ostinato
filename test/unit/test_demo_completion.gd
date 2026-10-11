@@ -3,6 +3,7 @@ extends GutTest
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 60, 30), Vector2i(10, 10), 97)
+	LegacyMageFixture.apply(world)
 	world.hero.spell_hit = 100
 	world.hero.melee.hit = 100
 	return world
@@ -167,6 +168,7 @@ func test_first_lethal_player_effect_stops_retaliation_and_later_periodic_victor
 	SpellEffects.damage(world, stalker, 100, "Late callback")
 	assert_true(stalker.alive)
 	var session := GameSession.new()
+	LegacyMageFixture.session(session)
 	session.world = world
 	assert_true(session.restart_after_death())
 	assert_eq(session.loop_count, 2)
@@ -187,6 +189,7 @@ func test_one_effect_killing_player_and_any_stalker_wins_before_xp_can_revive() 
 	assert_eq(world.hero.level, 1)
 	_assert_complete(world)
 	var session := GameSession.new()
+	LegacyMageFixture.session(session)
 	session.world = world
 	assert_false(session.restart_after_death())
 	assert_eq(session.loop_count, 1)
@@ -221,6 +224,7 @@ func test_ordinary_death_keeps_xp_loot_and_later_turn_stages() -> void:
 
 func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
 	var session := GameSession.new()
+	LegacyMageFixture.session(session)
 	session.new_game(97)
 	var previous := session.world
 	session.new_game(98)
@@ -234,6 +238,7 @@ func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
 
 func test_development_kill_stalker_rejects_before_arrival_without_changing_simulation() -> void:
 	var session := GameSession.new()
+	LegacyMageFixture.session(session)
 	session.new_game(97)
 	var world := session.world
 	world.movement_credit = 0.75

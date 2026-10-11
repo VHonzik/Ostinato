@@ -162,13 +162,13 @@ func open_bindings() -> void:
 func open_marshal() -> void:
 	_begin("marshal", "Marshal McBride", close)
 	_label("The Legion has reached Northshire. Do I know you? These clothes may help.")
-	if session.can_select_class():
-		for category: StringName in ClassSkillData.CLASSES:
+	if session.can_select_class() and ClassSkillData.PLAYABLE_CLASSES.size() > 1:
+		for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
 			if category == session.world.hero.selected_class:
 				continue
 			_button("Choose " + String(category), _select_class.bind(category))
 	else:
-		_label("Class selection: once per Loop from Loop 2, at level 1, before accepting any quest.")
+		_label("Warrior training is available from Llane Beshere inside the abbey.")
 	_button("Leave (Esc)", close)
 	_finish()
 
@@ -176,14 +176,20 @@ func open_marshal() -> void:
 func open_trainer(category: StringName) -> void:
 	_trainer = category
 	_begin("trainer", "%s training" % category, close)
-	if session.world.hero.selected_class != category:
+	if category not in ClassSkillData.PLAYABLE_CLASSES:
+		_label("Training for this class is not available yet.")
+	elif session.world.hero.selected_class != category:
 		_label("Select %s before learning here. Retained skills remain usable." % category)
 	else:
-		_label("Money: " + InventoryRules.money(session.world.hero.copper))
+		if category == &"Warrior":
+			_label("Warrior progression: %d points (unlocks keep your points)" % session.world.hero.warrior_progress)
+		else:
+			_label("Money: " + InventoryRules.money(session.world.hero.copper))
 		for skill in SkillRank.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
 			var button := _button("%s rank %d / %s" % [
-				skill.title, skill.rank, "Learned" if known else InventoryRules.money(skill.training_cost)],
+				skill.title, skill.rank, "Learned" if known else ("Unlock at %d points" % skill.progress_required
+				if skill.progress_required > 0 else InventoryRules.money(skill.training_cost))],
 				_train.bind(skill.id))
 			button.tooltip_text = skill.description
 			var failure := session.world.training_failure(category, skill)
@@ -631,12 +637,12 @@ func open_conversation(actor: GridActor) -> void:
 				else "In progress: ", _quest_detail.bind(identifier, actor))
 			choices = true
 	if actor.service == &"Marshal":
-		_button("Discuss class selection", open_marshal)
+		_button("Ask about warrior training", open_marshal)
 		choices = true
 	elif actor.service == &"Trader":
 		_button("Trade", open_trade.bind(actor))
 		choices = true
-	elif actor.service in ClassSkillData.CLASSES:
+	elif actor.service in ClassSkillData.PLAYABLE_CLASSES:
 		_button("Train", open_trainer.bind(actor.service))
 		choices = true
 	if not choices:

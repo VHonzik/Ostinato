@@ -9,6 +9,7 @@ func before_each() -> void:
 	_directory = "user://test_saves_" + Crypto.new().generate_random_bytes(8).hex_encode()
 	_saves = SaveStore.new(_directory)
 	_session = GameSession.new()
+	LegacyMageFixture.session(_session)
 	_session.new_game(123456789)
 
 
@@ -40,7 +41,7 @@ func test_five_slots_save_copy_overwrite_confirmation_and_seed_preservation() ->
 func test_full_round_trip_restores_random_streams_effects_outfit_and_future_arrival() -> void:
 	_session.world.hero.health = 0
 	_session.restart_after_death()
-	_session.select_class(&"Druid")
+	StarterGear.exchange(_session.world.hero, &"Druid")
 	_session.world.train(&"Druid", &"healing_touch_1")
 	_session.world.train(&"Druid", &"mark_1")
 	_session.world.hero.casting_credit = 0.6

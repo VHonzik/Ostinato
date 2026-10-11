@@ -45,13 +45,27 @@ and how to try it; the final chat carries temporary playtest instructions.
 - [ ] Playtest navigation, landmark recognition, encounter/XP pacing, the timed gate
   threat and early/returning-Loop conversations; adjust the map, story and art together.
 
+## Current playable slice — Warrior first
+
+- [x] Replace the mage start with warrior, rage, Slam and Battle Shout while retaining
+  bump-to-next-swing timing. Expose only warrior for this slice; keep legacy class code
+  for later work.
+- [x] Add persistent warrior ability-use progression, a trainer notification and Llane's
+  first passive checkpoint; preserve learning across death and saves.
+- [x] Add a second-bump attack on stationary neutral enemies and reuse the last attacked
+  enemy for Slam in combat, preserving melee range and the existing swing wait.
+- [x] Make friendly bumps interact, add Charge as the next trainer checkpoint, retain
+  progression points on unlock, and add a development ability for class points.
+- [ ] Playtest rage generation, Slam's cast pause, Charge travel, shout upkeep and returning
+  to Llane; adjust the combat rhythm and early encounters from play feedback.
+
 ## Later playable milestones
 
-- **Warrior first:** prototype melee input and rage with a small signature toolkit.
-  Playtest the attack rhythm; replace the mage start and obsolete classes in runnable
-  slices. Decide the fate of item/economy systems before investing further in them.
-- **Learning across Loops:** one persistent class track, trainer checkpoint, and story
-  unlock; then add rogue, shaman, and paladin combinations. Settle progression credit,
+- **Broaden the warrior toolkit:** build on the rage prototype after playtesting its attack
+  rhythm. Replace obsolete class content in runnable slices. Decide the fate of
+  item/economy systems before investing further in them.
+- **Learning across Loops:** expand the warrior track and add story unlocks, then add
+  rogue, shaman, and paladin combinations. Settle progression credit,
   resource interaction, and retained abilities before expanding the tracks.
 - **A satisfying stalker:** tune first-Loop length, misses/resists, victory prospects,
   and reinforcement pacing against play sessions. Finish art/UI and prepare a demo build.

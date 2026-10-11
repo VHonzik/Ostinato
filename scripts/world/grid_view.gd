@@ -81,7 +81,7 @@ static func tile_center(tile: Vector2i) -> Vector2:
 
 
 static func class_sprite(category: StringName) -> Vector2i:
-	return CLASS_SPRITES.get(category, CLASS_SPRITES[&"Mage"])
+	return CLASS_SPRITES.get(category, CLASS_SPRITES[&"Warrior"])
 
 
 static func actor_sprite(actor: GridActor) -> Vector2i:

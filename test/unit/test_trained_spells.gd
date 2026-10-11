@@ -10,7 +10,7 @@ func test_all_included_mage_druid_ranks_are_trainable_and_resolvable() -> void:
 				assert_true(world.train(category, skill.id), skill.id)
 			assert_lte(skill.training_level, 10)
 			assert_gt(skill.source_id, 0)
-	assert_eq(world.hero.learned_skills.size(), 31, "26 sourced ranks plus five development skills.")
+	assert_eq(world.hero.learned_skills.size(), 32, "26 sourced ranks plus six development skills.")
 	assert_null(SkillRank.catalog(&"bear_form_1"))
 	assert_null(SkillRank.catalog(&"moonfire_3"))
 
@@ -230,6 +230,7 @@ func test_spell_power_healing_power_haste_and_resistance_have_numeric_effects() 
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 18, 18), Vector2i(4, 4), 97)
+	LegacyMageFixture.apply(world)
 	world.hero.level = 10
 	world.hero._apply_level_stats()
 	world.hero.copper = 10000

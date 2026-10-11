@@ -5,7 +5,7 @@ extends RefCounted
 
 
 static func outfit(category: StringName) -> Array[int]:
-	var outfits := {"Mage": [56, 1395, 55, 6096, 35], "Druid": [6123, 6124, 35], "Warlock": [57, 1396, 59, 6097, 2092], "Priest": [6144, 52, 51, 53, 36], "Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361]}
+	var outfits := {"Warrior": [43, 44, 45, 2361], "Mage": [56, 1395, 55, 6096, 35], "Druid": [6123, 6124, 35], "Warlock": [57, 1396, 59, 6097, 2092], "Priest": [6144, 52, 51, 53, 36], "Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361]}
 	var result: Array[int] = []
 	result.assign(outfits[String(category)])
 	return result
@@ -18,7 +18,7 @@ static func item(identifier: int) -> Dictionary:
 static func equip_outfit(hero: HeroState) -> void:
 	hero.inventory.resize(40)
 	hero.inventory.fill({})
-	for identifier in outfit(&"Mage"):
+	for identifier in outfit(hero.selected_class):
 		hero.equipment[ItemData.get_item(identifier).slot] = item(identifier)
 	hero.refresh_stats()
 

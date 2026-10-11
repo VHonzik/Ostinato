@@ -18,6 +18,7 @@ func _beside(world: GridWorld, merchant: GridActor) -> void:
 
 func test_source_catalogs_and_explicit_exclusions() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.world = _world()
 	var expected := {
 		152: [4540, 159],
@@ -98,6 +99,7 @@ func test_quantities_reject_partial_money_and_capacity_without_changing_stock() 
 
 func test_finite_stock_is_per_instance_and_never_refilled_by_waiting_or_selling() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 89, false)
+	LegacyMageFixture.apply(world)
 	var first := GridActor.new(Vector2i(4, 5))
 	var second := GridActor.new(Vector2i(6, 5))
 	for actor in [first, second]:
@@ -121,6 +123,7 @@ func test_finite_stock_is_per_instance_and_never_refilled_by_waiting_or_selling(
 
 func test_stock_save_round_trip_continuation_reset_and_stale_merchant_rejection() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(819)
 	var old := _merchant(game.world, 900003)
 	_beside(game.world, old)
@@ -149,6 +152,7 @@ func test_stock_save_round_trip_continuation_reset_and_stale_merchant_rejection(
 
 func test_invalid_saved_stock_cannot_change_catalog_or_finite_unlimited_semantics() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.world = _world()
 	var original := SaveCodec.capture(game)
 	for value in [-2, -1, 4, 1.5, "2"]:
@@ -308,6 +312,7 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 40, 24), Vector2i(20, 14), 819, false)
+	LegacyMageFixture.apply(world)
 	var identities := [152, 190, 1213, 78, 900003, 11940, 38]
 	for index in range(identities.size()):
 		var actor := GridActor.new(Vector2i(4 + index * 4, 8))

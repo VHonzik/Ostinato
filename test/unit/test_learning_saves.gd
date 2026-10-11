@@ -3,6 +3,7 @@ extends GutTest
 
 func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_healing() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(79)
 	var world := game.world
 	world.hero.level = 10
@@ -30,6 +31,7 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_h
 	if restored == null:
 		return
 	var copy := GameSession.new()
+	LegacyMageFixture.session(copy)
 	copy.restore(restored, game.seed_value, game.loop_count)
 	assert_eq(JSON.stringify(SaveCodec.capture(copy)), JSON.stringify(before))
 	for count in range(12):
@@ -40,6 +42,7 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_h
 
 func test_invalid_equipment_stacks_effects_and_stock_are_rejected_without_partial_restore() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(79)
 	var state := SaveCodec.capture(game)
 	var bad := state.duplicate(true)
@@ -66,6 +69,7 @@ func test_revision_one_save_is_incompatible_and_preserved_without_renaming() -> 
 	var directory := "user://test_m5_revision_" + Crypto.new().generate_random_bytes(8).hex_encode()
 	var saves := SaveStore.new(directory)
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(79)
 	assert_true(saves.save_slot(game, 1), saves.last_error)
 	var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(saves.slot_path(1)))

@@ -3,6 +3,7 @@ extends GutTest
 
 func test_death_rebuilds_world_and_preserves_only_game_progression() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(17)
 	game.world.hero.add_experience(400)
 	var learned := SkillRank.new(&"retained_test", "Retained", &"Druid", 2, 2,
@@ -42,10 +43,11 @@ func test_death_rebuilds_world_and_preserves_only_game_progression() -> void:
 
 func test_new_game_resets_learning_hotbar_and_class_and_uses_requested_seed() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(19)
 	game.world.hero.health = 0
 	game.restart_after_death()
-	assert_true(game.select_class(&"Druid"))
+	assert_true(StarterGear.exchange(game.world.hero, &"Druid"))
 	assert_null(game.world.hero.find_skill(&"wrath_1"))
 	assert_true(game.world.train(&"Druid", &"wrath_1"))
 	game.world.hotbar[0] = &"wrath_1"
@@ -59,15 +61,16 @@ func test_new_game_resets_learning_hotbar_and_class_and_uses_requested_seed() ->
 	assert_eq(game.world.hero.selected_class, &"Mage")
 
 
-func test_class_choice_is_once_per_eligible_loop_and_grants_no_skills_or_refill() -> void:
+func test_legacy_outfit_exchange_grants_no_skills_or_refill_and_training_requires_matching_class() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(3)
 	assert_false(game.select_class(&"Druid"))
 	game.world.hero.health = 0
 	game.restart_after_death()
 	game.world.hero.health = 12
 	game.world.hero.mana = 41
-	assert_true(game.select_class(&"Druid"))
+	assert_true(StarterGear.exchange(game.world.hero, &"Druid"))
 	assert_eq([game.world.hero.health, game.world.hero.mana], [12, 41])
 	assert_null(game.world.hero.find_skill(&"wrath_1"))
 	assert_not_null(game.world.hero.find_skill(&"fireball_1"))
@@ -83,6 +86,7 @@ func test_class_choice_is_once_per_eligible_loop_and_grants_no_skills_or_refill(
 
 func test_accepting_any_quest_or_leveling_closes_selection() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(3)
 	game.world.hero.health = 0
 	game.restart_after_death()
@@ -97,6 +101,9 @@ func test_accepting_any_quest_or_leveling_closes_selection() -> void:
 
 func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> void:
 	var hero := HeroState.new()
+	hero.selected_class = &"Mage"
+	hero.equipment.clear()
+	StarterGear.equip_outfit(hero)
 	hero.equipment.chest.starter = false
 	for index in range(40):
 		hero.inventory[index] = {"id": 35, "starter": false, "quantity": 1}
@@ -201,6 +208,7 @@ func test_mana_five_second_rule_and_health_regeneration_use_shared_two_turn_tick
 
 func test_first_stalker_is_pending_when_blocked_and_schedule_resets_after_death() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(101)
 	for tile in ValleyRoute.STALKER_ENTRIES:
 		game.world.blocked_tiles[tile] = true
@@ -217,7 +225,7 @@ func test_first_stalker_is_pending_when_blocked_and_schedule_resets_after_death(
 	for actor in game.world.actors:
 		if actor.story_guard:
 			assert_false(actor.alive)
-			assert_true(actor.corpse_visible)
+			assert_false(actor.corpse_visible, "The guard has no loot to leave behind.")
 	var announced := 0
 	for message in game.world.messages:
 		if message.contains("A demon stalker"):
@@ -231,10 +239,11 @@ func test_first_stalker_is_pending_when_blocked_and_schedule_resets_after_death(
 
 func test_retained_heal_and_damage_are_usable_after_returning_to_mage() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(31)
 	game.world.hero.health = 0
 	game.restart_after_death()
-	game.select_class(&"Druid")
+	StarterGear.exchange(game.world.hero, &"Druid")
 	game.world.train(&"Druid", &"healing_touch_1")
 	game.world.train(&"Druid", &"wrath_1")
 	game.world.hero.health = 0
@@ -250,6 +259,7 @@ func test_retained_heal_and_damage_are_usable_after_returning_to_mage() -> void:
 
 func _spell_world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(2, 2), 1)
+	LegacyMageFixture.apply(world)
 	var enemy := GridActor.new(Vector2i(5, 2))
 	enemy.relationship = GridActor.Relationship.NEUTRAL
 	enemy.max_health = 1000
@@ -299,6 +309,7 @@ func test_chill_slows_movement_with_fractional_remainder_and_applies_on_melee_co
 
 func test_ten_resets_restore_seeded_world_without_accumulating_actors_or_skills() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(97)
 	var starting_count := game.world.actors.size()
 	var skill_count := game.world.hero.learned_skills.size()
@@ -318,8 +329,11 @@ func test_ten_resets_restore_seeded_world_without_accumulating_actors_or_skills(
 func test_direct_and_periodic_kills_record_the_resolved_turn_for_corpse_expiry() -> void:
 	for periodic in [false, true]:
 		var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5))
+		LegacyMageFixture.apply(world)
 		var target := GridActor.new(Vector2i(5, 6))
 		target.health = 1
+		target.loot_assigned = true
+		target.loot_copper = 1
 		target.relationship = GridActor.Relationship.NEUTRAL
 		target.awards_experience = false
 		world.actors.append(target)
@@ -343,6 +357,7 @@ func test_direct_and_periodic_kills_record_the_resolved_turn_for_corpse_expiry()
 
 func test_current_class_cannot_consume_the_marshal_choice_or_replace_items() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(11)
 	game.world.hero.health = 0
 	game.restart_after_death()
@@ -350,7 +365,7 @@ func test_current_class_cannot_consume_the_marshal_choice_or_replace_items() -> 
 	assert_false(game.select_class(&"Mage"))
 	assert_eq(JSON.stringify(SaveCodec.capture(game)), before)
 	assert_true(game.can_select_class())
-	assert_true(game.select_class(&"Druid"))
+	assert_true(StarterGear.exchange(game.world.hero, &"Druid"))
 
 
 func test_fireball_mana_is_checked_at_start_and_again_at_completion() -> void:

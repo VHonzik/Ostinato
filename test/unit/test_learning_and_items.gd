@@ -25,6 +25,7 @@ func test_paid_training_enforces_class_level_money_and_previous_rank_without_spe
 
 func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money_and_stock() -> void:
 	var game := GameSession.new()
+	LegacyMageFixture.session(game)
 	game.new_game(97)
 	game.world.hero.level = 6
 	game.world.hero._apply_level_stats()
@@ -40,7 +41,7 @@ func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money
 	assert_true(game.world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	assert_eq(game.world.vendor_stock["fixed/900003"]["2455"], 3)
 	assert_eq(game.world.hero.cooldowns, {})
-	assert_true(game.select_class(&"Druid"))
+	assert_true(StarterGear.exchange(game.world.hero, &"Druid"))
 	var target: GridActor
 	for actor in game.world.actors:
 		if actor.relationship == GridActor.Relationship.HOSTILE:
@@ -58,7 +59,9 @@ func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money
 
 func test_loot_is_seeded_by_identity_independent_of_kill_order_and_combat_rng() -> void:
 	var first := GameSession.new()
+	LegacyMageFixture.session(first)
 	var second := GameSession.new()
+	LegacyMageFixture.session(second)
 	first.new_game(619)
 	second.new_game(619)
 	for index in [2, 5, 6]:
@@ -295,7 +298,9 @@ func test_shield_blocks_front_only_and_damage_reduction_uses_block_value() -> vo
 
 
 func _world() -> GridWorld:
-	return GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(4, 4), 97)
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(4, 4), 97)
+	LegacyMageFixture.apply(world)
+	return world
 
 
 func _fill(hero: HeroState) -> void:
@@ -314,3 +319,95 @@ func test_class_exchange_preserves_acquired_shield_and_stows_two_handed_starter(
 	assert_false(hero.equipment.has("main_hand"))
 	assert_eq(hero.inventory.filter(func(item: Dictionary) -> bool:
 		return not item.is_empty() and item.id == 35 and item.starter).size(), 1)
+
+
+func test_empty_death_removes_corpse_without_losing_kill_identity_or_xp() -> void:
+	var world := _world()
+	var corpse := GridActor.new(Vector2i(4, 5))
+	corpse.relationship = GridActor.Relationship.NEUTRAL
+	corpse.health = 0
+	world.actors.append(corpse)
+	var random_before := world.random.state
+	world._check_npc_death(corpse)
+	assert_false(corpse.alive)
+	assert_true(corpse.loot_assigned)
+	assert_false(corpse.corpse_visible)
+	assert_false(world.interaction_candidates().has(corpse))
+	assert_true(world.is_open(corpse.tile))
+	assert_same(world.actors[0], corpse, "Dead identities remain for quest progress and effect indices.")
+	assert_eq(world.hero.experience, 50)
+	world._check_npc_death(corpse)
+	assert_eq(world.hero.experience, 50)
+	assert_eq(world.random.state, random_before)
+	assert_eq(world.turn_count, 0)
+
+
+func test_corpse_remains_with_money_or_inventory_blocked_loot_then_disappears() -> void:
+	var world := _world()
+	var corpse := GridActor.new(Vector2i(4, 5))
+	corpse.relationship = GridActor.Relationship.NEUTRAL
+	corpse.health = 0
+	corpse.loot_assigned = true
+	corpse.loot_copper = 5
+	corpse.loot.append(ItemData.instance(118))
+	world.actors.append(corpse)
+	world._check_npc_death(corpse)
+	assert_true(corpse.corpse_visible)
+	_fill(world.hero)
+	assert_true(world.loot_all(corpse), "Money is collected even with a full inventory.")
+	assert_eq(corpse.loot_copper, 0)
+	assert_eq(corpse.loot.size(), 1)
+	assert_true(corpse.corpse_visible)
+	assert_true(world.interaction_candidates().has(corpse))
+	world.hero.inventory[0] = {}
+	assert_true(world.loot_item(corpse, 0))
+	assert_false(corpse.corpse_visible)
+	assert_false(world.open_loot(corpse))
+	assert_false(world.interaction_candidates().has(corpse))
+	assert_eq(world.turn_count, 0)
+
+
+func test_save_load_hides_empty_corpses_and_preserves_loot_and_unopened_chests() -> void:
+	var game := GameSession.new()
+	game.world = _world()
+	for tile in [Vector2i(4, 5), Vector2i(5, 5), Vector2i(5, 4)]:
+		var source := GridActor.new(tile)
+		source.alive = false
+		source.health = 0
+		game.world.actors.append(source)
+	game.world.actors[0].loot_assigned = true
+	game.world.actors[1].loot_assigned = true
+	game.world.actors[1].loot_copper = 1
+	game.world.actors[2].chest = true
+	game.world.actors[2].loot_table = 2843
+	game.world.actors[2].spawn_id = "chest/test/0"
+	var restored := SaveCodec.restore(SaveCodec.capture(game), true)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_false(restored.actors[0].corpse_visible)
+	assert_true(restored.actors[1].corpse_visible)
+	assert_true(restored.actors[2].corpse_visible)
+	assert_false(restored.actors[2].loot_assigned)
+	assert_true(restored.open_loot(restored.actors[2]))
+	assert_gt(restored.actors[2].loot_copper, 0)
+	assert_true(restored.loot_money(restored.actors[1]))
+	assert_false(restored.actors[1].corpse_visible)
+	var next_game := GameSession.new()
+	next_game.world = restored
+	var again := SaveCodec.restore(SaveCodec.capture(next_game), true)
+	assert_not_null(again)
+	if again != null:
+		assert_false(again.actors[0].corpse_visible)
+		assert_false(again.actors[1].corpse_visible)
+
+
+func test_opening_empty_source_hides_it_without_a_loot_panel_or_turn() -> void:
+	var world := _world()
+	var corpse := GridActor.new(Vector2i(4, 5))
+	corpse.alive = false
+	world.actors.append(corpse)
+	assert_false(world.open_loot(corpse))
+	assert_true(corpse.loot_assigned)
+	assert_false(corpse.corpse_visible)
+	assert_eq(world.turn_count, 0)

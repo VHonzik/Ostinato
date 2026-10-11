@@ -1,7 +1,7 @@
 # Development
 
-Windows x64, Godot Compatibility renderer, typed GDScript. The current game is the
-pre-pivot implementation; [direction](direction.md) describes planned changes.
+Windows x64, Godot Compatibility renderer, typed GDScript. The current game is in the
+warrior-first pivot; [direction](direction.md) describes planned changes.
 
 ## Setup and launch
 
@@ -32,24 +32,32 @@ are hostile.
 The southwestern gate admits a timed stalker and reinforcements.
 There are no within-Loop NPC respawns. Friendly contacts are green; available quests
 and ready turn-ins alternate their contact sprite with an exclamation mark. Neutral and hostile sprites are yellow and red; injured enemies blink dark red.
-Occupants hide terrain decorations and corpses beneath them. Death rebuilds the
-map, contacts, enemies and chests, preserving learned ranks and hotbar. The current
-mage trainer, supply trader, Sammuel and shaman remain usable; warrior/rogue contacts await the class milestone.
+Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
+corpses with items or money remain available for looting. Death rebuilds the
+map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
+The supply trader and warrior trainer Llane remain usable; other class trainers await later slices.
 
-New Game starts a mage. Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
+New Game starts a warrior with rage, Slam and Battle Shout. Other classes are currently unavailable.
+Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
 F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
 M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
+Bump a friendly NPC to interact; bump a stationary neutral enemy twice to attack.
+Slam uses your last attacked enemy in combat; before your first attack, choose an
+enemy in melee range.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
-XP, gold, Death trigger, and Kill stalker for quick experiments. The stalker
+XP, gold, class progression points, Death trigger, and Kill stalker for quick experiments. The stalker
 arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
-learned ranks; the marshal offers class selection from Loop 2 before accepting a quest.
+learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
+progression log notification to unlock Anger Management or Charge; unlocking keeps your
+points. Assign Charge to a hotbar slot through the spell book. Its wind-up and automatic
+travel keep the player casting until arrival, blocking other actions and cancellation.
 These are current mechanics, not constraints on the pivot.
 
-Current saves are `demo` revision 11, introducing the two-stage wolf hunt and expanded
-wolf population.
-Revision 10 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 12, introducing the warrior start, rage and persistent
+warrior progression.
+Revision 11 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

@@ -121,11 +121,18 @@ func _process(delta: float) -> void:
 	elif world.move_player(direction):
 		_feedback.text = "Action complete."
 	else:
-		_feedback.text = "Blocked. No time or movement credit spent."
+		var contact := world.actor_at(world.player_tile + direction)
+		_feedback.text = "Interacted with %s." % contact.title if (
+			contact != null and contact.relationship == GridActor.Relationship.FRIENDLY
+		) else "Blocked. No time or movement credit spent."
 	refresh_view()
 
 
 func _input(event: InputEvent) -> void:
+	if active_game and world.is_charging():
+		_pending_action = false
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		if event.is_action_pressed("fullscreen", false, true) and menu._capture_action == &"":
 			menu.toggle_fullscreen()
@@ -283,6 +290,7 @@ func _adopt_world() -> void:
 	active_game = true
 	menu.active_game = true
 	world.message_added.connect(_refresh_chat)
+	world.friendly_interaction_requested.connect(_interact_with_friendly)
 	grid_view.world = world
 	grid_view.show()
 	$HUD/Top.show()
@@ -310,8 +318,15 @@ func _return_to_menu() -> void:
 
 
 func _open_options() -> void:
+	if world.is_charging():
+		return
 	_pending_action = false
 	menu.open_options()
+
+
+func _interact_with_friendly(actor: GridActor) -> void:
+	_pending_action = false
+	combat_panel.interact_with(world, actor)
 
 
 func _open_service(actor: GridActor) -> void:
@@ -362,7 +377,8 @@ func refresh_view() -> void:
 	elif world.pending_skill != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
-		_feedback.text = "Casting %s. Esc cancels." % world.pending_skill.title
+		_feedback.text = "Charging. Actions resume on arrival." if world.is_charging() else (
+			"Casting %s. Esc cancels." % world.pending_skill.title)
 	elif world.pending_melee != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
@@ -372,7 +388,8 @@ func refresh_view() -> void:
 		_melee_delay_seconds = 0.0
 		if not combat_panel.visible:
 			_select_actor(null)
-	_cancel_attack.visible = world.pending_melee != null or world.pending_skill != null
+	_cancel_attack.visible = (world.pending_melee != null or world.pending_skill != null)
+	_cancel_attack.disabled = world.is_charging()
 	grid_view.alternate_palette = menu.options.alternate_palette
 	$HUD/PlayerMenu/Buttons/PlayerMenu.text = "Menu (%s)" % menu.options.key_label(&"player_menu")
 	$HUD/PlayerMenu/Buttons/Character.text = "Character (%s)" % menu.options.key_label(&"character")
@@ -384,8 +401,8 @@ func refresh_view() -> void:
 	camera.force_update_scroll()
 	grid_view.queue_redraw()
 	var hero := world.hero
-	_hero_status.text = "HP %d/%d   Mana %d/%d\nLv %d  XP %d/%d" % [
-		hero.health, hero.max_health, hero.mana, hero.max_mana,
+	_hero_status.text = "HP %d/%d   Rage %d/%d\nLv %d  XP %d/%d" % [
+		hero.health, hero.max_health, hero.rage, HeroState.MAX_RAGE,
 		hero.level, hero.experience, hero.experience_to_next_level(),
 	]
 	hero_panel.refresh()
@@ -441,7 +458,12 @@ func _cast_skill(identifier: StringName) -> void:
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
 		return
-	if skill.target in [SkillRank.Target.ENEMY, SkillRank.Target.ALLY]:
+	if (skill.effect == SkillRank.Effect.SLAM and world.in_combat()
+		and world.last_attacked_enemy != null):
+		hero_panel.close()
+		combat_panel.close()
+		world.cast_skill(identifier)
+	elif skill.target in [SkillRank.Target.ENEMY, SkillRank.Target.ALLY]:
 		hero_panel.close()
 		combat_panel.open_spell(world, skill)
 	else:
@@ -493,6 +515,8 @@ func _on_combat_panel_visibility_changed() -> void:
 
 
 func _cancel_pending_melee() -> void:
+	if world.is_charging():
+		return
 	world.cancel_melee()
 	world.cancel_cast()
 	_pending_action = false

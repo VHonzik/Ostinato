@@ -1,9 +1,9 @@
 class_name MeleeRules
 extends RefCounted
 
-## Mage versus unshielded beasts, one physical white-attack table.
+## Physical attack outcomes and weapon damage.
 static func outcome(
-	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float
+	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float, special: bool = false
 ) -> StringName:
 	var difference := 5 * (defender.level - attacker.level)
 	var miss := 5.0 + difference * 0.04
@@ -18,7 +18,7 @@ static func outcome(
 	if defender.player and behind:
 		dodge = 0.0
 	var glance := 0.0
-	if attacker.player and not defender.player and defender.level > 10:
+	if not special and attacker.player and not defender.player and defender.level > 10:
 		glance = mini(attacker.level, 30) + difference * 2.0
 	var critical := attacker.critical - difference * (0.04 if defender.player else 0.2)
 	var crush := 0.0
@@ -36,7 +36,7 @@ static func outcome(
 
 static func damage(
 	attacker: MeleeProfile, defender: MeleeProfile, result: StringName,
-	weapon_roll: float, glance_roll: float
+	weapon_roll: float, glance_roll: float, weapon_multiplier: float = 1.0, flat_bonus: int = 0
 ) -> int:
 	if result in [&"miss", &"dodge", &"parry"]:
 		return 0
@@ -46,7 +46,8 @@ static func damage(
 	var raw := minimum + mini(maximum - minimum, floori(weapon_roll * (maximum - minimum + 1)))
 	var armor := maxf(0.0, defender.armor)
 	var reduction := minf(0.75, armor / (armor + 400.0 + 85.0 * attacker.level))
-	var amount := maxi(1, floori(raw * (1.0 - reduction)))
+	var amount := maxi(1, floori((raw * weapon_multiplier + flat_bonus)
+		* attacker.damage_multiplier * (1.0 - reduction)))
 	match result:
 		&"critical":
 			amount *= 2

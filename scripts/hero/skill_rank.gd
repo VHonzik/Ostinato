@@ -1,8 +1,8 @@
 class_name SkillRank
 extends RefCounted
 
-## Pre-pivot six-class ranks through level 10. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER }
+## Warrior abilities and retained legacy ranks. Training levels never gate retained-rank use.
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, SLAM, BATTLE_SHOUT, CLASS_POINTS, CHARGE }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -14,9 +14,16 @@ var description: String
 var effect: Effect
 var development_only: bool
 var target: Target = Target.NONE
+var rage_cost: int = 0
+var progress_required: int = 0
+var weapon_multiplier: float = 1.0
+var physical_percent: int = 0
+var rage_generated: int = 0
+var travel_speed: int = 0
 var mana_cost: int = 0
 var cast_seconds: float = 1.0
 var range_tiles: int = 0
+var minimum_range_tiles: int = 0
 var minimum: int = 0
 var maximum: int = 0
 var duration: int = 0
@@ -55,7 +62,7 @@ func _init(
 
 
 static func starting_skills() -> Array[SkillRank]:
-	return [catalog(&"fireball_1"), catalog(&"frost_armor_1")]
+	return [catalog(&"slam_1"), catalog(&"battle_shout_1")]
 
 
 static func trainer_skills(category: StringName) -> Array[SkillRank]:
@@ -73,7 +80,24 @@ static func all_ranks() -> Dictionary:
 
 
 func cost(hero: HeroState) -> int:
+	if class_tab == &"Warrior":
+		return rage_cost
 	return mana_cost + int(HeroData.stats_for_level(hero.level)[6] * mana_percent / 100.0)
+
+
+func resource_name() -> String:
+	return "rage" if class_tab == &"Warrior" or development_only else "mana"
+
+
+func available_resource(hero: HeroState) -> int:
+	return hero.rage if resource_name() == "rage" else hero.mana
+
+
+func spend_resource(hero: HeroState) -> void:
+	if resource_name() == "rage":
+		hero.rage -= cost(hero)
+	else:
+		hero.mana -= cost(hero)
 
 
 static func catalog(identifier: StringName) -> SkillRank:
@@ -98,8 +122,11 @@ static func catalog(identifier: StringName) -> SkillRank:
 			skill.set(field, StringName(row[field]))
 		else:
 			skill.set(field, row[field])
-	skill.description = "%s rank %d: %d mana, %.1fs, range %d tiles. " % [
-		skill.title, skill.rank, skill.mana_cost, skill.cast_seconds, skill.range_tiles]
+	skill.description = "%s rank %d: %d %s, %.1f turns, range %d tiles. " % [
+		skill.title, skill.rank, skill.rage_cost if skill.class_tab == &"Warrior" else skill.mana_cost,
+		skill.resource_name(), skill.cast_seconds, skill.range_tiles]
+	if skill.minimum_range_tiles > 0:
+		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
 	if ClassSkillData.RANKS.has(String(identifier)) and skill.detail != "":
 		if skill.mana_percent > 0:
 			skill.description += "%d%% base mana. " % skill.mana_percent
@@ -142,14 +169,17 @@ static func catalog(identifier: StringName) -> SkillRank:
 static func development_skills() -> Array[SkillRank]:
 	return [
 		SkillRank.new(&"practice_1", "Practice", &"Development", 1, 1,
-			"One turn; 0 mana. Reports a harmless practice cast.", Effect.PRACTICE, true),
+			"One turn; 0 rage. Reports a harmless practice cast.", Effect.PRACTICE, true),
 		SkillRank.new(&"experience_1", "Gain 450 XP", &"Development", 1, 1,
-			"One turn; 0 mana. Awards 450 XP through ordinary leveling.", Effect.EXPERIENCE, true),
+			"One turn; 0 rage. Awards 450 XP through ordinary leveling.", Effect.EXPERIENCE, true),
 		SkillRank.new(&"gold_1", "Gain 1 gold", &"Development", 1, 1,
-			"One turn; 0 mana. Adds 1 gold (10,000 copper).", Effect.GOLD, true),
+			"One turn; 0 rage. Adds 1 gold (10,000 copper).", Effect.GOLD, true),
 		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
-			"One turn; 0 mana. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
+			"One turn; 0 rage. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
 		SkillRank.new(&"kill_stalker_1", "Kill stalker", &"Development", 1, 1,
-			"One turn; 0 mana. Kill the first living stalker anywhere and end the demo. "
+			"One turn; 0 rage. Kill the first living stalker anywhere and end the demo. "
 			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
+		SkillRank.new(&"class_points_1", "Gain 30 class points", &"Development", 1, 1,
+			"One turn; 0 rage. Awards 30 progression points to the current class.",
+			Effect.CLASS_POINTS, true),
 	]

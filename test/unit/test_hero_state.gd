@@ -1,13 +1,13 @@
 extends GutTest
 
 
-func test_starting_mage_has_raceless_attributes_resources_and_known_ranks() -> void:
+func test_starting_warrior_has_attributes_rage_and_known_abilities() -> void:
 	var hero := HeroState.new()
 	assert_eq(_attributes(hero), [20, 20, 20, 23, 22])
 	assert_eq([hero.level, hero.experience], [1, 0])
-	assert_eq([hero.health, hero.max_health, hero.mana, hero.max_mana], [51, 51, 165, 165])
-	assert_eq(hero.find_skill(&"fireball_1").rank, 1)
-	assert_eq(hero.find_skill(&"frost_armor_1").rank, 1)
+	assert_eq([hero.health, hero.max_health, hero.mana, hero.max_mana], [51, 51, 0, 0])
+	assert_eq(hero.find_skill(&"slam_1").rank, 1)
+	assert_eq(hero.find_skill(&"battle_shout_1").rank, 1)
 	assert_null(hero.find_skill(&"fireball_2"), "Leveling does not grant unlearned ranks.")
 
 
@@ -20,7 +20,7 @@ func test_exact_first_threshold_and_noop_awards() -> void:
 	assert_eq(hero.add_experience(1), PackedInt32Array([2]))
 	assert_eq([hero.level, hero.experience, hero.experience_to_next_level()], [2, 0, 900])
 	assert_eq(_attributes(hero), [20, 20, 20, 24, 24])
-	assert_eq([hero.health, hero.mana], [57, 250])
+	assert_eq([hero.health, hero.mana], [57, 0])
 
 
 func test_excess_xp_and_multiple_levels_are_retained() -> void:
@@ -31,7 +31,7 @@ func test_excess_xp_and_multiple_levels_are_retained() -> void:
 	assert_eq(another.add_experience(1350), PackedInt32Array([2, 3]))
 	assert_eq([another.level, another.experience], [3, 50])
 	assert_eq(_attributes(another), [20, 20, 21, 25, 25])
-	assert_eq([another.health, another.mana], [72, 276])
+	assert_eq([another.health, another.mana], [72, 0])
 
 
 func test_level_ten_growth_and_level_up_refills_resources_without_new_skills() -> void:
@@ -42,7 +42,7 @@ func test_level_ten_growth_and_level_up_refills_resources_without_new_skills() -
 	hero.add_experience(27600)
 	assert_eq([hero.level, hero.experience, hero.experience_to_next_level()], [10, 0, 7600])
 	assert_eq(_attributes(hero), [21, 22, 23, 34, 34])
-	assert_eq([hero.health, hero.mana], [177, 486])
+	assert_eq([hero.health, hero.mana], [177, 0])
 	assert_eq(hero.learned_skills.size(), ranks_before)
 
 
@@ -51,11 +51,11 @@ func test_classic_total_to_sixty_and_uncapped_development_fallback() -> void:
 	hero.add_experience(4084700)
 	assert_eq([hero.level, hero.experience, hero.experience_to_next_level()], [60, 0, 209800])
 	assert_eq(_attributes(hero), [30, 35, 45, 125, 126])
-	assert_eq([hero.health, hero.mana], [1630, 2868])
+	assert_eq([hero.health, hero.mana], [1630, 0])
 	hero.add_experience(419650)
 	assert_eq([hero.level, hero.experience], [62, 50])
 	assert_eq(_attributes(hero), [30, 35, 47, 129, 132])
-	assert_eq([hero.health, hero.mana], [1734, 2970])
+	assert_eq([hero.health, hero.mana], [1734, 0])
 
 
 func test_split_and_single_rewards_produce_identical_progression() -> void:

@@ -9,6 +9,7 @@ var slots: Array[SkillButton] = []
 var lock_button: Button
 var editing_enabled: bool = false
 var _world: GridWorld
+var _cooldown_labels: Array[Label] = []
 
 
 func _ready() -> void:
@@ -36,6 +37,20 @@ func _ready() -> void:
 		button.set_drag_forwarding(Callable(), _can_drop.bind(index), _drop.bind(index))
 		rows[index / 10].add_child(button)
 		slots.append(button)
+		var cooldown := Label.new()
+		cooldown.name = "Cooldown"
+		button.add_child(cooldown)
+		cooldown.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		cooldown.offset_left = -30
+		cooldown.offset_right = -3
+		cooldown.offset_top = 2
+		cooldown.offset_bottom = 18
+		cooldown.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cooldown.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cooldown.add_theme_font_size_override("font_size", 12)
+		cooldown.add_theme_color_override("font_color", Color("ff6464"))
+		cooldown.hide()
+		_cooldown_labels.append(cooldown)
 	lock_button = Button.new()
 	lock_button.text = "Lock"
 	lock_button.position = Vector2(608, -32)
@@ -56,6 +71,13 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		var key := options.key_label(StringName("hotbar_%d" % (index + 1))).replace("Shift+", "S+")
 		button.text = "%s\n%s" % [key, "—" if skill == null else skill.title.get_slice(" ", 0)]
 		button.disabled = not (can_activate or (editing_enabled and choosing_slot))
+		var remaining := 0
+		if skill != null:
+			remaining = maxi(0, int(world.hero.cooldowns.get(
+				String(world.cooldown_family(skill)), 0)) - world.turn_count)
+		var cooldown := _cooldown_labels[index]
+		cooldown.text = str(remaining) if remaining > 0 else ""
+		cooldown.visible = remaining > 0
 		if skill == null:
 			button.tooltip_text = "Slot %d (%s): empty. Assign a rank from the spell book." % [index + 1, key]
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"

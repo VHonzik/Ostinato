@@ -1,13 +1,14 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-11 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-12 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
 	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire",
 ]
 const HERO_FIELDS: Array[String] = [
+	"rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",
 	"level", "experience", "health", "mana", "selected_class", "copper",
 	"casting_credit", "last_mana_turn", "facing", "potion_ready_turn",
 	"spell_power", "healing_power", "spell_hit", "spell_critical", "haste",
@@ -26,7 +27,7 @@ const ACTOR_FIELDS: Array[String] = [
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
-	"interval", "critical", "dodge", "hit", "parry", "block", "block_value",
+	"interval", "damage_multiplier", "critical", "dodge", "hit", "parry", "block", "block_value",
 ]
 
 
@@ -42,6 +43,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"equipment": world.hero.equipment.duplicate(true),
 		"inventory": world.hero.inventory.duplicate(true),
 		"buffs": world.hero.buffs.duplicate(true), "hotbar": [],
+		"class_progress": {},
 		"periodic": world.periodic_effects.duplicate(true), "messages": Array(world.messages),
 		"hero_swing": [world.hero.swing.remaining, world.hero.swing._active],
 		"quests": world.quests.duplicate(true), "population": world.population.duplicate(true),
@@ -53,6 +55,8 @@ static func capture(session: GameSession) -> Dictionary:
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
 	}
+	for category in world.hero.class_progress:
+		data.class_progress[String(category)] = world.hero.class_progress[category]
 	for tile in world.indoor_tiles:
 		data.indoors.append([tile.x, tile.y])
 	for identifier in world.hotbar:
@@ -110,6 +114,11 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.bounds.size.x > 1024 or world.bounds.size.y > 1024
 		or not world.bounds.has_point(world.player_tile)
 		or world.turn_count < 0 or world.movement_speed <= 0 or world.movement_credit < 0
+		or world.hero.rage < 0 or world.hero.rage > HeroState.MAX_RAGE
+		or world.hero.rage_credit < 0.0 or world.hero.rage_credit >= 1.0
+		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
+		or world.hero.last_hit_rage_turn < -1 or world.hero.last_hit_rage_turn > world.turn_count
+		or world.hero.warrior_progress < 0
 		or world.hero.level < 1
 		or world.hero.experience < 0 or world.hero.copper < 0
 		or world.hero.haste <= 0 or world.hero.potion_ready_turn < 0
@@ -118,6 +127,18 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
 		or world.hero.selected_class not in ClassSkillData.CLASSES):
 		return null
+	if data.has("class_progress"):
+		if not data.class_progress is Dictionary:
+			return null
+		for category in data.class_progress:
+			if (not category is String or StringName(category) not in ClassSkillData.CLASSES
+				or not _integer(data.class_progress[category], 0)):
+				return null
+		if int(data.class_progress.get("Warrior", 0)) != world.hero.warrior_progress:
+			return null
+		world.hero.class_progress.clear()
+		for category in data.class_progress:
+			world.hero.class_progress[StringName(category)] = int(data.class_progress[category])
 	world.hero._apply_level_stats()
 	if world.hero.experience >= world.hero.experience_to_next_level():
 		return null
@@ -184,6 +205,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			if actor.alive and SummonRules.active(world, actor.summon_kind) != null:
 				return null
 		actor.buffs = _normalized_buffs(record.buffs)
+		world._hide_empty_corpse(actor)
 		world.actors.append(actor)
 	if not data.learned is Array or data.learned.size() > 1000:
 		return null
@@ -198,8 +220,14 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		learned.append(identifier)
 		if development_build or not skill.development_only:
 			world.hero.learned_skills.append(skill)
-	if not learned.has("fireball_1") or not learned.has("frost_armor_1"):
+	var starting := ["slam_1", "battle_shout_1"] if world.hero.selected_class == &"Warrior" else (
+		["fireball_1", "frost_armor_1"])
+	if not learned.has(starting[0]) or not learned.has(starting[1]):
 		return null
+	for identifier in learned:
+		var skill := SkillRank.catalog(StringName(identifier))
+		if world.hero.progression_points(skill.class_tab) < skill.progress_required:
+			return null
 	if not _inventory(data.inventory) or not data.equipment is Dictionary:
 		return null
 	for slot in data.equipment:
@@ -454,14 +482,14 @@ static func _buffs(data: Variant) -> bool:
 		return false
 	for key in data:
 		var skill := SkillRank.catalog(StringName(key))
-		if skill == null or skill.effect != SkillRank.Effect.ARMOR:
+		if skill == null or skill.effect not in [SkillRank.Effect.ARMOR, SkillRank.Effect.BATTLE_SHOUT]:
 			return false
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
 		for stat in buff:
 			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns", "regen", "next", "absorb", "physical_immunity",
-				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power"]:
+				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent"]:
 				return false
 	return true
 

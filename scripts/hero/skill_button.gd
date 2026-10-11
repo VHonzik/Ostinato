@@ -10,8 +10,8 @@ var drag_enabled: bool = false
 func describe(rank_data: SkillRank, owner_hero: HeroState) -> void:
 	skill = rank_data
 	hero = owner_hero
-	tooltip_text = "" if skill == null else "%s · Rank %d · %d mana\n%s" % [
-		skill.title, skill.rank, skill.cost(hero), skill.description]
+	tooltip_text = "" if skill == null else "%s · Rank %d · %d %s\n%s" % [
+		skill.title, skill.rank, skill.cost(hero), skill.resource_name(), skill.description]
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:

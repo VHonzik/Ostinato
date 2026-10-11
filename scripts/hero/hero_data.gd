@@ -1,7 +1,7 @@
 class_name HeroData
 extends RefCounted
 
-## Pre-pivot Vanilla mage baseline. Tune here when the progression design changes.
+## Transitional attribute/health curve; rage is independent of these legacy mana values.
 ## Columns: strength, agility, stamina, intellect, spirit, base health, base mana.
 const LEVEL_STATS: Array[Array] = [
 	[20, 20, 20, 23, 22, 31, 100], # 1

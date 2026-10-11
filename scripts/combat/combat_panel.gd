@@ -78,6 +78,15 @@ func open_interaction(world: GridWorld) -> void:
 		_update_selection()
 
 
+func interact_with(world: GridWorld, actor: GridActor) -> void:
+	if world.is_terminal() or not world.interaction_candidates().has(actor):
+		return
+	close()
+	_world = world
+	selected = actor
+	_interact_selected()
+
+
 func close() -> void:
 	hide()
 	selected = null
@@ -159,7 +168,11 @@ func _choose_selected() -> void:
 
 
 func _interact_selected() -> void:
-	if not selected.alive and _world.open_loot(selected):
+	if not selected.alive:
+		if not _world.open_loot(selected):
+			close()
+			action_taken.emit()
+			return
 		var source := selected
 		var available := source.loot_copper > 0
 		for item in source.loot:
@@ -221,9 +234,9 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	close()
 	_world = world
 	_skill = skill
-	if world.hero.mana < skill.cost(world.hero):
-		world.add_message("Not enough mana for %s: requires %d, have %d." % [
-			skill.title, skill.cost(world.hero), world.hero.mana])
+	if skill.available_resource(world.hero) < skill.cost(world.hero):
+		world.add_message("Not enough %s for %s: requires %d, have %d." % [
+			skill.resource_name(), skill.title, skill.cost(world.hero), skill.available_resource(world.hero)])
 		return
 	_candidates = world.spell_candidates(skill)
 	_self_target = null
