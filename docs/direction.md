@@ -2,8 +2,8 @@
 
 The October 2026 pivot replaces the old requirements and Vanilla content-completion plan.
 This is intended direction, not a claim about what the current build implements.
-The original [pivot and retrospective](big-pivot.md) explain why; current work lives in
-[the backlog](backlog.md). Earlier requirements and research remain in Git history.
+Current work lives in [the backlog](backlog.md). The transitional pivot retrospective,
+earlier requirements and research remain in Git history.
 
 ## Keep
 
@@ -27,6 +27,8 @@ formulas, class lists, quest inventories, or balance targets.
   Using class abilities advances it; reaching a checkpoint still requires a trainer
   visit. Unlock classes through the initial conversation, with more story. Bring
   signature abilities forward so retained learning creates useful combinations early.
+  Choose distinct tactical roles and cross-class synergies, avoiding redundant abilities
+  or a toolkit whose interesting combinations only arrive late.
 - Reduce NPC numbers and remove within-Loop NPC respawns. Build a deliberate world
   with recognizable characters rather than a complete Northshire database replica.
 - Let new Loops reveal dialogue and the player's realization of the Loop. NPCs do not
@@ -49,8 +51,9 @@ formulas, class lists, quest inventories, or balance targets.
 - What does a melee input commit to, and how does the player stop or change targets?
 - How do rage, combo points, and retained cross-class abilities work together? What
   advances each track, what survives death, and what prevents empty ability spamming?
-- What role remains for gear, inventory, gold, loot, quests, and traders? Their removal
-  is not yet decided; do not mistake dissatisfaction with them for a settled redesign.
+- What role remains for gear, inventory, gold, loot, quests, and traders? Repeated
+  looting, shopping and training quickly lose their appeal in short Loops; each system
+  should justify its contribution to play. Their removal is not yet decided.
 - What should the first and later stalker encounters feel like, including reinforcements?
 
 Keep answers brief here when they become durable direction. Keep tuning values and

@@ -74,6 +74,8 @@ successful run for debugging. No written validation report is required.
 - `scripts/world/`, `combat/`, `hero/`, `items/`, `quests/`: simulation, UI, and game data.
 - `scripts/game_session.gd`, `save_codec.gd`, `save_store.gd`: Loops and persistence.
 - `test/unit/`: behavioral GUT tests; `tools/`: setup, launch, and checks.
+- `art/`: [sprite generation and packing](../art/README.md); selected PNGs in
+  `assets/sprites/valley/`, maintained atlas in `assets/spritesheets/valley/`.
 - `docs/direction.md`: durable intent; `docs/backlog.md`: local work, separate from design.
 
 Follow [coding-style.md](coding-style.md); preserve `.gd.uid` and asset `.import` files.

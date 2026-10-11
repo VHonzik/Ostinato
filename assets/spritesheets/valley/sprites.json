@@ -1,0 +1,579 @@
+{
+  "texture": "sprites.png",
+  "cell_size": 32,
+  "columns": 10,
+  "rows": 6,
+  "sprite_count": 57,
+  "sprites": {
+    "warrior": {
+      "x": 0,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 0,
+      "group": "players",
+      "source": "assets/sprites/valley/warrior.png"
+    },
+    "rogue": {
+      "x": 32,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 0,
+      "group": "players",
+      "source": "assets/sprites/valley/rogue.png"
+    },
+    "shaman": {
+      "x": 64,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 0,
+      "group": "players",
+      "source": "assets/sprites/valley/shaman.png"
+    },
+    "paladin": {
+      "x": 96,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 0,
+      "group": "players",
+      "source": "assets/sprites/valley/paladin.png"
+    },
+    "marshal": {
+      "x": 128,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/marshal.png"
+    },
+    "willem": {
+      "x": 160,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/willem.png"
+    },
+    "milly": {
+      "x": 192,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/milly.png"
+    },
+    "gate_guard": {
+      "x": 224,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 7,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/gate_guard.png"
+    },
+    "llane": {
+      "x": 256,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 8,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/llane.png"
+    },
+    "jorrick": {
+      "x": 288,
+      "y": 0,
+      "width": 32,
+      "height": 32,
+      "column": 9,
+      "row": 0,
+      "group": "friends",
+      "source": "assets/sprites/valley/jorrick.png"
+    },
+    "sammuel": {
+      "x": 0,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 1,
+      "group": "friends",
+      "source": "assets/sprites/valley/sammuel.png"
+    },
+    "shaman_mentor": {
+      "x": 32,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 1,
+      "group": "friends",
+      "source": "assets/sprites/valley/shaman_mentor.png"
+    },
+    "trader": {
+      "x": 64,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 1,
+      "group": "friends",
+      "source": "assets/sprites/valley/trader.png"
+    },
+    "wolf": {
+      "x": 96,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/wolf.png"
+    },
+    "kobold_miner": {
+      "x": 128,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/kobold_miner.png"
+    },
+    "kobold_foreman": {
+      "x": 160,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/kobold_foreman.png"
+    },
+    "bandit": {
+      "x": 192,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/bandit.png"
+    },
+    "garrick": {
+      "x": 224,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 7,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/garrick.png"
+    },
+    "stalker": {
+      "x": 256,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 8,
+      "row": 1,
+      "group": "enemies",
+      "source": "assets/sprites/valley/stalker.png"
+    },
+    "humanoid_corpse": {
+      "x": 288,
+      "y": 32,
+      "width": 32,
+      "height": 32,
+      "column": 9,
+      "row": 1,
+      "group": "remains",
+      "source": "assets/sprites/valley/humanoid_corpse.png"
+    },
+    "animal_corpse": {
+      "x": 0,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 2,
+      "group": "remains",
+      "source": "assets/sprites/valley/animal_corpse.png"
+    },
+    "grass_a": {
+      "x": 32,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/grass_a.png"
+    },
+    "grass_b": {
+      "x": 64,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/grass_b.png"
+    },
+    "dirt_road": {
+      "x": 96,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/dirt_road.png"
+    },
+    "abbey_floor": {
+      "x": 128,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/abbey_floor.png"
+    },
+    "mine_floor": {
+      "x": 160,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/mine_floor.png"
+    },
+    "tilled_soil": {
+      "x": 192,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 2,
+      "group": "ground",
+      "source": "assets/sprites/valley/tilled_soil.png"
+    },
+    "abbey_wall_straight": {
+      "x": 224,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 7,
+      "row": 2,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/abbey_wall_straight.png"
+    },
+    "abbey_wall_corner": {
+      "x": 256,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 8,
+      "row": 2,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/abbey_wall_corner.png"
+    },
+    "abbey_wall_end": {
+      "x": 288,
+      "y": 64,
+      "width": 32,
+      "height": 32,
+      "column": 9,
+      "row": 2,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/abbey_wall_end.png"
+    },
+    "abbey_wall_doorway": {
+      "x": 0,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 3,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/abbey_wall_doorway.png"
+    },
+    "cliff_face": {
+      "x": 32,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 3,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/cliff_face.png"
+    },
+    "cliff_corner": {
+      "x": 64,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 3,
+      "group": "boundaries",
+      "source": "assets/sprites/valley/cliff_corner.png"
+    },
+    "broadleaf_tree": {
+      "x": 96,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 3,
+      "group": "nature",
+      "source": "assets/sprites/valley/broadleaf_tree.png"
+    },
+    "pine_tree": {
+      "x": 128,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 3,
+      "group": "nature",
+      "source": "assets/sprites/valley/pine_tree.png"
+    },
+    "bush": {
+      "x": 160,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 3,
+      "group": "nature",
+      "source": "assets/sprites/valley/bush.png"
+    },
+    "boulder": {
+      "x": 192,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 3,
+      "group": "nature",
+      "source": "assets/sprites/valley/boulder.png"
+    },
+    "small_rock": {
+      "x": 224,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 7,
+      "row": 3,
+      "group": "nature",
+      "source": "assets/sprites/valley/small_rock.png"
+    },
+    "abbey_entrance": {
+      "x": 256,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 8,
+      "row": 3,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/abbey_entrance.png"
+    },
+    "abbey_cross": {
+      "x": 288,
+      "y": 96,
+      "width": 32,
+      "height": 32,
+      "column": 9,
+      "row": 3,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/abbey_cross.png"
+    },
+    "banner": {
+      "x": 0,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/banner.png"
+    },
+    "bench": {
+      "x": 32,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/bench.png"
+    },
+    "brazier": {
+      "x": 64,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/brazier.png"
+    },
+    "mine_mouth": {
+      "x": 96,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/mine_mouth.png"
+    },
+    "timber_support": {
+      "x": 128,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/timber_support.png"
+    },
+    "mine_cart": {
+      "x": 160,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/mine_cart.png"
+    },
+    "ore": {
+      "x": 192,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/ore.png"
+    },
+    "vine_trellis": {
+      "x": 224,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 7,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/vine_trellis.png"
+    },
+    "grape_basket": {
+      "x": 256,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 8,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/grape_basket.png"
+    },
+    "gate_post": {
+      "x": 288,
+      "y": 128,
+      "width": 32,
+      "height": 32,
+      "column": 9,
+      "row": 4,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/gate_post.png"
+    },
+    "fence_straight": {
+      "x": 0,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 0,
+      "row": 5,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/fence_straight.png"
+    },
+    "fence_end": {
+      "x": 32,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 1,
+      "row": 5,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/fence_end.png"
+    },
+    "signpost": {
+      "x": 64,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 2,
+      "row": 5,
+      "group": "landmarks",
+      "source": "assets/sprites/valley/signpost.png"
+    },
+    "chest_closed": {
+      "x": 96,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 3,
+      "row": 5,
+      "group": "interaction",
+      "source": "assets/sprites/valley/chest_closed.png"
+    },
+    "chest_open": {
+      "x": 128,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 4,
+      "row": 5,
+      "group": "interaction",
+      "source": "assets/sprites/valley/chest_open.png"
+    },
+    "crate": {
+      "x": 160,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 5,
+      "row": 5,
+      "group": "interaction",
+      "source": "assets/sprites/valley/crate.png"
+    },
+    "dropped_bag": {
+      "x": 192,
+      "y": 160,
+      "width": 32,
+      "height": 32,
+      "column": 6,
+      "row": 5,
+      "group": "interaction",
+      "source": "assets/sprites/valley/dropped_bag.png"
+    }
+  }
+}

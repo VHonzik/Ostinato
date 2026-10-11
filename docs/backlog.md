@@ -11,7 +11,7 @@ and how to try it; the final chat carries temporary playtest instructions.
 - [x] Make local work the default; remove required PRs, source audits, and handoff files.
 - [x] Simplify validation into quick, targeted, and full modes and verify their failure paths.
 
-## Current milestone — A readable playground
+## Completed — A readable playground
 
 - [x] Build the screen prototype from [UI_design.svg](UI_design.svg): 1280×720,
   32px tiles, two rows of ten hotbar slots, compact log and dedicated player menus.
@@ -20,8 +20,26 @@ and how to try it; the final chat carries temporary playtest instructions.
   menu behavior, hotbar and save checks; visual acceptance belongs to human review.
 - [x] Draft the [reduced valley and sprite list](art-plan.md). World population changes
   belong to the later world milestone; the owner’s [map sketch](map.svg) supplies the layout.
-- [ ] Play the screen prototype and review the valley sketch with the owner. Adjust
-  layout, landmarks and sprite needs before replacement art work starts.
+- [x] Establish the [local art pipeline](../art/README.md): ComfyUI world/static
+  generation, selected individual PNGs, and separate atlas packing. The prototype
+  is accepted; rejected experiments are removed.
+- [x] Play the screen prototype. The owner's quick playtest found it satisfactory;
+  the valley sketch and sprite plan are ready for the first playable map prototype.
+
+## Current milestone — A smaller, memorable world
+
+- [ ] Build a playable route from the marshal through one encounter area using the
+  [valley sketch](map.svg) and selected AI-created sprites. Try ground, boundaries,
+  actors and props together before expanding to the whole valley.
+- [ ] Refine selected sprite equipment, remains, and terrain joins as they are used
+  in the map. Review silhouettes at native size and repack the selected atlas.
+- [ ] Expand the reduced valley with fewer NPCs, no within-Loop respawns, deliberate
+  encounters and exploration destinations. Adjust routes and XP through play.
+- [ ] Add a small story pass with recognizable contacts and dialogue that changes
+  as the player realizes the Loop. NPCs remain unaware of it; settle the shaman's
+  identity and keep invasion knowledge limited.
+- [ ] Playtest navigation, landmark recognition, encounters and early/returning-Loop
+  conversations; adjust the map, story and art together.
 
 ## Later playable milestones
 
@@ -31,8 +49,6 @@ and how to try it; the final chat carries temporary playtest instructions.
 - **Learning across Loops:** one persistent class track, trainer checkpoint, and story
   unlock; then add rogue, shaman, and paladin combinations. Settle progression credit,
   resource interaction, and retained abilities before expanding the tracks.
-- **A smaller, memorable world:** fewer NPCs, no respawns, tailored XP, deliberate
-  encounters, and dialogue that changes as the player learns about the Loop.
 - **A satisfying stalker:** tune first-Loop length, misses/resists, victory prospects,
   and reinforcement pacing against play sessions. Finish art/UI and prepare a demo build.
 

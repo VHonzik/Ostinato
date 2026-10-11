@@ -18,6 +18,7 @@
       .cls-14{fill:none;stroke:#754c24;stroke-width:3;stroke-miterlimit:10}
       .cls-15{fill:#f7931e}
       .cls-16{font-family:&apos;Source Sans 3&apos;;font-size:12;fill:#f7931e}
+      .cls-17{fill:none;stroke:#666666;stroke-width:3;stroke-miterlimit:10}
     </style>
   </defs>
   <title>Untitled-2</title>
@@ -81,5 +82,6 @@
       <path d="M956.01 782.523 L970.746 782.523 L970.746 796 L956.01 796 Z" class="cls-15"/>
       <text transform="matrix(1 0 0 1 974.514 793.044)" x="0" y="0" xml:space="preserve" class="cls-16"><tspan x="0" y="0">Chest</tspan></text>
     </g>
+    <path d="M618.9 254.333 L1194.533 254.333 L1194.533 804.46 L618.9 804.46 Z" class="cls-17"/>
   </g>
 </svg>

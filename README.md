@@ -18,5 +18,6 @@ Escape cancels or opens Options. Targeted spells require Enter confirmation.
 - [Game direction](docs/direction.md)
 - [Local backlog](docs/backlog.md)
 - [Setup, current build, and checks](docs/development.md)
+- [World art and sprite workflow](art/README.md)
 - [Coding style](docs/coding-style.md)
 - [Working rules](AGENTS.md)

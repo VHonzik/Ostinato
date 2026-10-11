@@ -46,8 +46,15 @@ needed to start that work.
 
 32×32 cells, transparent actor/prop backgrounds, nearest-neighbor sampling. Start
 with one facing/pose per actor; animation is optional later. Buildings assemble from
-tiles and props. Leave the atlas layout flexible until these shapes have been tried
-in game; no new packer or fixed sheet capacity is needed.
+tiles and props. Keep the atlas layout flexible until these shapes have been tried
+in game. The [local ComfyUI pipeline](../art/README.md) generates individual candidates;
+pack the selected sprites into a sheet as a separate final step, without a fixed capacity.
+
+Favor minimal solid silhouettes, sparse interior details, and very little shading,
+close to the existing reference sheets. Friends should read as resolute adults;
+hostile creatures should look dangerous rather than cute or sad. Distinguish roles
+through their outlines and props before relying on color. Use full-body NPC sprites
+with visible feet and distinct equipment, like the original character sheet.
 
 | Group | Sprites to draw | Distinction to aim for |
 | --- | --- | --- |
@@ -65,6 +72,8 @@ Use shared corpse and prop art rather than a sprite for every historical NPC/ite
 The old mage and other retiring classes keep their placeholder art during the transition.
 
 ## UI and effects
+
+Deferred from the current generation pass, which covers world and static sprites only.
 
 Keep panel frames, text, bars, slot borders and selection markers drawn by Godot.
 Use a small shared set of 32px icons initially: weapon strike, bleed, poison,
