@@ -3,11 +3,13 @@ extends RefCounted
 
 ## Warrior start, excess XP, and persistent learned abilities.
 const MAX_RAGE: int = 100
+const MAX_COMBO_POINTS: int = 5
 const SWING_RAGE_PER_BASE_TURN: float = 7.0
 const INCOMING_RAGE_PER_TURN: float = 3.0
 const BASE_CRITICAL_CHANCE: float = 5.0
 
 var rage: int = 0
+var combo_points: int = 0
 var rage_credit: float = 0.0
 var rage_decay_credit: float = 0.0
 var last_hit_rage_turn: int = -1
@@ -132,7 +134,7 @@ func refresh_stats() -> void:
 	intellect = attributes.intellect
 	spirit = attributes.spirit
 	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
-	max_mana = 0 if selected_class == &"Warrior" else (
+	max_mana = 0 if selected_class in ClassSkillData.PLAYABLE_CLASSES else (
 		values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15)
 	health = mini(health, max_health)
 	mana = mini(mana, max_mana)
@@ -179,6 +181,18 @@ func refresh_melee_stats() -> void:
 			melee.damage_max += float(buff.get("weapon_dps", 0)) * melee.interval
 		if buff.has("crusader"):
 			melee.interval /= 1.4
+
+
+func attack_haste() -> float:
+	var multiplier := haste
+	for buff in buffs.values():
+		multiplier *= 1.0 + float(buff.get("haste_percent", 0)) / 100.0
+	return multiplier
+
+
+func gain_combo_point() -> void:
+	if find_skill(&"relentless_assault_1") != null:
+		combo_points = mini(MAX_COMBO_POINTS, combo_points + 1)
 
 
 func gain_rage(amount: float) -> void:

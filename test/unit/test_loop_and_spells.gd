@@ -84,7 +84,7 @@ func test_legacy_outfit_exchange_grants_no_skills_or_refill_and_training_require
 	assert_eq(game.world.turn_count, 0)
 
 
-func test_accepting_any_quest_or_leveling_closes_selection() -> void:
+func test_accepting_any_quest_closes_selection_but_leveling_keeps_it_available() -> void:
 	var game := GameSession.new()
 	LegacyMageFixture.session(game)
 	game.new_game(3)
@@ -96,7 +96,7 @@ func test_accepting_any_quest_or_leveling_closes_selection() -> void:
 	game.restart_after_death()
 	assert_true(game.can_select_class())
 	game.world.hero.add_experience(400)
-	assert_false(game.can_select_class())
+	assert_true(game.can_select_class(), "The quest cutoff replaces the legacy level-one cutoff.")
 
 
 func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> void:

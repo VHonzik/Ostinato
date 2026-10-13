@@ -35,12 +35,10 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 						actor.rooted_until = world.turn_count + 1 + skill.duration
 						actor.root_skill = skill.id
 		return
+	if skill.effect == SkillRank.Effect.JUDGEMENT:
+		ClassSpellEffects.judge(world, skill, target)
+		return
 	if skill.target == SkillRank.Target.ENEMY and not _hits(world, skill, target):
-		if skill.effect == SkillRank.Effect.JUDGEMENT:
-			var current := ClassSpellEffects.seal(world.hero)
-			if not current.is_empty():
-				world.hero.buffs.erase(current.key)
-				world.hero.refresh_stats()
 		return
 	if ClassSpellEffects.resolve(world, skill, target):
 		return

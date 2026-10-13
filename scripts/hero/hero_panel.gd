@@ -131,12 +131,14 @@ func refresh() -> void:
 		+ "Health %d / %d     Rage %d / %d\n"
 		+ "Strength %d     Agility %d     Stamina %d\n"
 		+ "Intellect %d     Spirit %d\n"
-		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%"
+		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%\n"
+		+ "Class XP %d (cumulative)     Combo points %d / %d"
 	) % [
 		_hero.selected_class, _hero.level, _hero.experience, _hero.experience_to_next_level(),
 		_hero.health, _hero.max_health, _hero.rage, HeroState.MAX_RAGE,
 		_hero.strength, _hero.agility, _hero.stamina, _hero.intellect, _hero.spirit,
 		_hero.melee.attack_power, _hero.melee.armor, _hero.melee.critical, _hero.melee.dodge,
+		_hero.progression_points(_hero.selected_class), _hero.combo_points, HeroState.MAX_COMBO_POINTS,
 	]
 
 

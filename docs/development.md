@@ -35,13 +35,20 @@ and ready turn-ins alternate their contact sprite with an exclamation mark. Neut
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting. Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
-Janos Hammerknuckle supplies warrior gear and trades; warrior trainer Llane remains
-usable; other class trainers await later slices.
+Janos Hammerknuckle supplies warrior gear and trades. Llane teaches Warrior unlocks;
+Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
+and Rogue starters. Further class training awaits later slices.
 
 New Game starts a warrior with rage, Mortal Strike and Heroic Strike, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
-warrior referrals, with a paladin referral from the second Loop; other classes are
-currently unavailable. Farseer Lopaa is the shaman contact.
+warrior referrals, with a paladin referral from the second Loop. From Loop two, speak
+to the marshal before accepting any quest to choose the class whose ability uses grant
+class XP. Each returning Loop starts in the previous class; confirmation locks one choice
+until death, including keeping that same class. Class choice keeps gear and names the
+matching trainer. Visit that trainer to learn the class's starter skills for free, with
+no class XP requirement; actives fill empty hotbar slots. Learning is permanent and needs
+no relearning in later Loops. The initial Warrior pair remains known at New Game.
+Farseer Lopaa is the shaman contact.
 Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
 F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
 M opens the player menu.
@@ -56,7 +63,7 @@ The action effect resolves before player swings, followed by enemy actions. No a
 are banked out of range and target changes keep the weapon's remaining delay.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
-XP, gold, class progression points, Death trigger, and Kill stalker for quick experiments. The stalker
+XP, gold, class XP, Death trigger, and Kill stalker for quick experiments. The stalker
 arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
 progression log notification to unlock Battle Shout, Anger Management or Charge; unlocking keeps your
@@ -65,8 +72,16 @@ travel keep the player casting until arrival, blocking other actions and cancell
 Charge arrival also allows the ready weapon to attack its target. These are current
 mechanics; tuning and remaining v0.1 mechanics still need playtesting.
 
-Current saves are `demo` revision 13, replacing the starting kit and changing attack timing.
-Revision 12 and older saves are incompatible and left unchanged; start a fresh game.
+Shaman starts with Lightning Shield and Strength of Earth Totem; Paladin with Seal of
+Command and Judgement; Rogue with Slice and Dice and the Relentless Assault passive.
+All use rage. Retained abilities/passives work in every class, but only selected-class
+uses grant class XP; learning does not spend it. Relentless Assault builds player-held
+combo points from landed direct active attacks, across classes and targets. Slice and
+Dice needs points and spends them all for attack haste. Judgement leaves the seal active.
+Only these new starter pairs are exposed; their full class slices and tuning remain ahead.
+
+Current saves are `demo` revision 14, adding class selection, starter learning and combo points.
+Revision 13 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

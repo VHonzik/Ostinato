@@ -407,6 +407,8 @@ func refresh_view() -> void:
 		hero.health, hero.max_health, hero.rage, HeroState.MAX_RAGE,
 		hero.level, hero.experience, hero.experience_to_next_level(),
 	]
+	if hero.find_skill(&"relentless_assault_1") != null:
+		_hero_status.text += "   CP %d/%d" % [hero.combo_points, HeroState.MAX_COMBO_POINTS]
 	hero_panel.refresh()
 	_refresh_hotbar()
 	var effects: PackedStringArray = []
@@ -418,7 +420,7 @@ func refresh_view() -> void:
 		effects.append("%s (%dt)" % [String(identifier).capitalize(),
 			int(hero.debuffs[identifier].until) - world.turn_count])
 	$HUD/Auras.text = " · ".join(effects)
-	_status.text = "Turn %d  ·  Loop %d" % [world.turn_count, session.loop_count]
+	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, session.loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
 
 
 func _open_player_menu() -> void:

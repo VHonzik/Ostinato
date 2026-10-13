@@ -282,10 +282,12 @@ static func refresh_auras(world: GridWorld) -> void:
 		var distance := GridWorld.tile_distance(actor.tile, world.player_tile)
 		if actor.npc_id == 416 and actor.melee.level >= 4 and distance <= 6:
 			world.hero.aura_stamina = 2 + int((mini(actor.melee.level, 14) - 4) * 0.1)
+		if actor.summon_skill == &"strength_of_earth_totem_1":
+			var skill := SkillRank.catalog(actor.summon_skill)
+			if distance <= skill.range_tiles:
+				world.hero.aura_strength = skill.minimum
 		if distance <= 4:
-			if actor.summon_skill == &"strength_of_earth_totem_1":
-				world.hero.aura_strength = 10
-			elif actor.summon_skill == &"stoneskin_totem_1":
+			if actor.summon_skill == &"stoneskin_totem_1":
 				world.hero.aura_reduction = 4
 	world.hero.refresh_stats()
 

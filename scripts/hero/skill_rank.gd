@@ -18,6 +18,8 @@ var rage_cost: int = 0
 var progress_required: int = 0
 var weapon_multiplier: float = 1.0
 var physical_percent: int = 0
+var haste_percent: int = 0
+var duration_per_combo: int = 0
 var rage_generated: int = 0
 var travel_speed: int = 0
 var mana_cost: int = 0
@@ -61,14 +63,19 @@ func _init(
 	development_only = is_development
 
 
-static func starting_skills() -> Array[SkillRank]:
-	return [catalog(&"mortal_strike_1"), catalog(&"heroic_strike_1")]
+static func starting_skills(category: StringName = &"Warrior") -> Array[SkillRank]:
+	var result: Array[SkillRank] = []
+	for identifier: StringName in ClassSkillData.STARTERS.get(category, []):
+		result.append(catalog(identifier))
+	return result
 
 
 static func trainer_skills(category: StringName) -> Array[SkillRank]:
 	var result: Array[SkillRank] = []
 	for identifier in all_ranks():
-		if all_ranks()[identifier].class_tab == String(category):
+		if (all_ranks()[identifier].class_tab == String(category)
+			and (category not in ClassSkillData.PLAYABLE_CLASSES
+				or ClassSkillData.is_playable_rank(StringName(identifier)))):
 			result.append(catalog(StringName(identifier)))
 	return result
 
@@ -76,17 +83,18 @@ static func trainer_skills(category: StringName) -> Array[SkillRank]:
 static func all_ranks() -> Dictionary:
 	var ranks := TrainerData.RANKS.duplicate()
 	ranks.merge(ClassSkillData.RANKS)
+	ranks.merge(ClassSkillData.LOOP_RANKS, true)
 	return ranks
 
 
 func cost(hero: HeroState) -> int:
-	if class_tab == &"Warrior":
+	if resource_name() == "rage":
 		return rage_cost
 	return mana_cost + int(HeroData.stats_for_level(hero.level)[6] * mana_percent / 100.0)
 
 
 func resource_name() -> String:
-	return "rage" if class_tab == &"Warrior" or development_only else "mana"
+	return "rage" if ClassSkillData.is_playable_rank(id) or development_only else "mana"
 
 
 func available_resource(hero: HeroState) -> int:
@@ -123,14 +131,15 @@ static func catalog(identifier: StringName) -> SkillRank:
 		else:
 			skill.set(field, row[field])
 	skill.description = "%s rank %d: %d %s, %.1f turns, range %d tiles. " % [
-		skill.title, skill.rank, skill.rage_cost if skill.class_tab == &"Warrior" else skill.mana_cost,
+		skill.title, skill.rank, skill.rage_cost if skill.resource_name() == "rage" else skill.mana_cost,
 		skill.resource_name(), skill.cast_seconds, skill.range_tiles]
 	if skill.effect == Effect.HEROIC_STRIKE:
 		skill.description = "%s rank %d: %d rage, next main-hand swing, range %d tiles. " % [
 			skill.title, skill.rank, skill.rage_cost, skill.range_tiles]
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
-	if ClassSkillData.RANKS.has(String(identifier)) and skill.detail != "":
+	if (skill.detail != "" and (ClassSkillData.RANKS.has(String(identifier))
+		or ClassSkillData.LOOP_RANKS.has(String(identifier)))):
 		if skill.mana_percent > 0:
 			skill.description += "%d%% base mana. " % skill.mana_percent
 		skill.description += skill.detail
@@ -182,7 +191,7 @@ static func development_skills() -> Array[SkillRank]:
 		SkillRank.new(&"kill_stalker_1", "Kill stalker", &"Development", 1, 1,
 			"One turn; 0 rage. Kill the first living stalker anywhere and end the demo. "
 			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
-		SkillRank.new(&"class_points_1", "Gain 30 class points", &"Development", 1, 1,
-			"One turn; 0 rage. Awards 30 progression points to the current class.",
+		SkillRank.new(&"class_points_1", "Gain 30 class XP", &"Development", 1, 1,
+			"One turn; 0 rage. Awards 30 cumulative class XP to the selected class.",
 			Effect.CLASS_POINTS, true),
 	]

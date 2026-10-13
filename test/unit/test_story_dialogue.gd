@@ -233,11 +233,29 @@ func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> voi
 func test_contacts_without_services_log_their_new_greetings() -> void:
 	var session := _session()
 	var menu := _menu(session)
-	for identity in [198, 915, 925, 900002]:
+	var contact := _contact(session.world, 198)
+	_beside(session.world, contact)
+	menu.open_conversation(contact)
+	assert_false(menu.visible)
+	assert_eq(session.world.messages[-1], contact.title + ": " + ValleyRoute.greeting(198))
+	assert_eq(session.world.turn_count, 0)
+
+
+func test_new_class_contacts_keep_greetings_and_open_only_implemented_training() -> void:
+	var session := _session()
+	var menu := _menu(session)
+	for identity in [915, 925, 900002]:
 		var contact := _contact(session.world, identity)
 		_beside(session.world, contact)
 		menu.open_conversation(contact)
-		assert_false(menu.visible)
-		assert_eq(session.world.messages[-1], contact.title + ": " + ValleyRoute.greeting(identity))
-	assert_string_contains(session.world.messages[-1], "Farseer Lopaa, a storm-chaser.")
+		assert_true(menu.visible)
+		assert_string_contains(_text(menu), ValleyRoute.greeting(identity))
+		var train := _button(menu, "Train")
+		assert_not_null(train)
+		if train == null:
+			continue
+		train.pressed.emit()
+		assert_eq(menu.page, "trainer")
+		assert_string_contains(_text(menu), "Select %s before learning here." % contact.service)
+		assert_eq(session.world.hero.learned_skills.size(), 2)
 	assert_eq(session.world.turn_count, 0)

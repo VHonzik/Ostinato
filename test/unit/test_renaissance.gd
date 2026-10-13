@@ -8,6 +8,7 @@ func _world() -> GridWorld:
 	world.hero._apply_level_stats()
 	world.hero.copper = 100000
 	world.hero.spell_hit = 100
+	world.hero.rage = 100
 	return world
 
 
@@ -37,12 +38,10 @@ func _cast(world: GridWorld, identifier: StringName, target: GridActor = null) -
 	assert_null(world.pending_skill)
 
 
-func test_all_fifty_nine_new_source_ranks_train_with_no_omissions_or_duplicates() -> void:
+func test_remaining_legacy_warlock_and_priest_source_ranks_train_without_duplicates() -> void:
 	var expected := {
 		&"Warlock": [686, 687, 688, 348, 172, 702, 695, 1454, 5782, 980, 696, 697, 707, 1120, 6201],
 		&"Priest": [585, 2050, 1243, 589, 2052, 17, 591, 139, 586, 594, 2006, 2053, 8092],
-		&"Shaman": [331, 403, 8017, 8042, 8071, 332, 2484, 324, 529, 5730, 8018, 8044, 3599, 8024, 8050, 8075],
-		&"Paladin": [465, 635, 21084, 19740, 20271, 498, 639, 21082, 853, 1152, 3127, 633, 1022, 10290, 20287],
 	}
 	var world := _world()
 	var total := 0
@@ -60,14 +59,14 @@ func test_all_fifty_nine_new_source_ranks_train_with_no_omissions_or_duplicates(
 		actual.sort()
 		expected[category].sort()
 		assert_eq(actual, expected[category])
-	assert_eq(total, 59)
+	assert_eq(total, 28)
 	assert_eq(world.turn_count, 0)
 	for excluded: StringName in [&"redemption_1", &"desperate_prayer_1", &"health_funnel_1", &"bear_form_1"]:
 		assert_null(SkillRank.catalog(excluded))
 
 
-func test_every_new_active_rank_executes_and_passive_cannot_be_cast() -> void:
-	for category: StringName in [&"Warlock", &"Priest", &"Shaman", &"Paladin"]:
+func test_remaining_legacy_active_ranks_execute() -> void:
+	for category: StringName in [&"Warlock", &"Priest"]:
 		for rank in SkillRank.trainer_skills(category):
 			var world := _world()
 			_learn(world, rank.id)
@@ -90,7 +89,7 @@ func test_every_new_active_rank_executes_and_passive_cannot_be_cast() -> void:
 
 
 func test_legacy_outfits_and_training_retain_castable_skills_across_death() -> void:
-	for category: StringName in [&"Warlock", &"Priest", &"Shaman", &"Paladin"]:
+	for category: StringName in [&"Warlock", &"Priest"]:
 		var game := GameSession.new()
 		LegacyMageFixture.session(game)
 		game.new_game(29)
@@ -352,22 +351,21 @@ func test_death_clears_all_summons_cooldowns_and_effects_but_retains_parry_and_s
 	assert_eq(SummonRules.active(game.world, "pet").melee.level, 1)
 
 
-func test_judgement_is_free_spends_mana_consumes_seal_and_starts_cooldown() -> void:
+func test_judgement_spends_a_turn_and_rage_without_consuming_seal() -> void:
 	var world := _world()
-	var target := _enemy(world, Vector2i(11, 10))
-	_cast(world, &"seal_of_righteousness_1")
+	var target := _enemy(world, Vector2i(12, 10))
+	target.stunned_until = 999
+	_cast(world, &"seal_of_command_1")
 	_learn(world, &"judgement_1")
 	var turn := world.turn_count
-	var mana := world.hero.mana
-	world.hero.casting_credit = 0.6
+	var rage := world.hero.rage
+	world.hero.melee.hit = 100.0
 	assert_true(world.cast_skill(&"judgement_1", target))
-	assert_eq(world.turn_count, turn)
-	assert_eq(world.hero.casting_credit, 0.6)
-	assert_eq(world.hero.mana, mana - SkillRank.catalog(&"judgement_1").cost(world.hero))
-	assert_true(ClassSpellEffects.seal(world.hero).is_empty())
-	assert_eq(int(world.hero.cooldowns.judgement), turn + 10)
+	assert_eq(world.turn_count, turn + 1)
+	assert_eq(world.hero.rage, rage - SkillRank.catalog(&"judgement_1").cost(world.hero))
+	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
+	assert_eq(int(world.hero.cooldowns.judgement), turn + 1 + 6)
 	assert_false(world.cast_skill(&"judgement_1", target))
-	assert_eq(world.turn_count, turn)
 
 
 func test_devotion_aura_toggles_with_one_turn_and_applies_to_nearby_pet() -> void:

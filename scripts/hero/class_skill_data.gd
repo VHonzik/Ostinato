@@ -1,9 +1,60 @@
 class_name ClassSkillData
 extends RefCounted
 
-## Pre-pivot class skill data.
-const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior"]
-const CLASSES: Array[StringName] = [&"Warrior", &"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin"]
+## Runnable v0.1 ranks are explicitly separated from retained legacy mechanics.
+const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior", &"Shaman", &"Paladin", &"Rogue"]
+const STARTERS: Dictionary = {
+	&"Warrior": [&"mortal_strike_1", &"heroic_strike_1"],
+	&"Shaman": [&"lightning_shield_1", &"strength_of_earth_totem_1"],
+	&"Paladin": [&"seal_of_command_1", &"judgement_1"],
+	&"Rogue": [&"slice_and_dice_1", &"relentless_assault_1"],
+}
+const WARRIOR_RANKS: Array[StringName] = [
+	&"mortal_strike_1", &"heroic_strike_1", &"battle_shout_1", &"anger_management_1", &"charge_1",
+]
+# Starter tuning is provisional; full class slices extend this runnable set.
+const LOOP_RANKS: Dictionary = {
+	"lightning_shield_1": {
+		"title": "Lightning Shield", "class_tab": "Shaman", "rank": 1, "training_level": 1,
+		"rage_cost": 10, "cast_seconds": 1.0, "duration": 30, "minimum": 13,
+		"family": "lightning_shield", "effect": "ARMOR", "target": "SELF", "school": 3,
+		"detail": "Three Nature-damage charges for 30 turns. At most one discharge per 3 turns. Refreshing counts as a use."
+	},
+	"strength_of_earth_totem_1": {
+		"title": "Strength of Earth Totem", "class_tab": "Shaman", "rank": 1,
+		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
+		"minimum": 10, "range_tiles": 4,
+		"family": "strength_of_earth_totem", "effect": "SUMMON", "target": "NONE",
+		"detail": "Place a 5-health totem for 30 turns: +10 Strength within 4 tiles. Replaces your previous earth totem."
+	},
+	"seal_of_command_1": {
+		"title": "Seal of Command", "class_tab": "Paladin", "rank": 1,
+		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
+		"weapon_multiplier": 0.5, "family": "seal_of_command", "school": 1,
+		"effect": "ARMOR", "target": "SELF",
+		"detail": "Landed main-hand swings add 50% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Judgement leaves the seal active."
+	},
+	"judgement_1": {
+		"title": "Judgement", "class_tab": "Paladin", "rank": 1, "training_level": 1,
+		"rage_cost": 20, "cast_seconds": 1.0, "range_tiles": 2, "cooldown_seconds": 6,
+		"weapon_multiplier": 1.5, "family": "judgement", "school": 1,
+		"effect": "JUDGEMENT", "target": "ENEMY",
+		"detail": "Requires Seal of Command. Deal 150% weapon damage as Holy damage; hit chance and crit apply, armor does not. One turn; seal remains active."
+	},
+	"slice_and_dice_1": {
+		"title": "Slice and Dice", "class_tab": "Rogue", "rank": 1, "training_level": 1,
+		"rage_cost": 15, "cast_seconds": 1.0, "haste_percent": 30,
+		"duration": 5, "duration_per_combo": 3, "family": "slice_and_dice",
+		"effect": "ARMOR", "target": "SELF",
+		"detail": "Requires at least 1 combo point. Spend all held points for +30% attack speed, lasting 5 turns plus 3 per point. Ordinary ability cooldowns are unchanged."
+	},
+	"relentless_assault_1": {
+		"title": "Relentless Assault", "class_tab": "Rogue", "rank": 1, "training_level": 1,
+		"family": "relentless_assault", "effect": "PASSIVE", "target": "NONE",
+		"detail": "Passive: landed direct active attacks grant 1 player-held combo point, up to 5, across classes and targets. Auto-attacks, procs, buffs and misses grant none. Points reset on death."
+	},
+}
+const CLASSES: Array[StringName] = [&"Warrior", &"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin", &"Rogue"]
 const RANKS: Dictionary = {
 	"mortal_strike_1": {
 		"title": "Mortal Strike", "class_tab": "Warrior", "rank": 1, "training_level": 1,
@@ -135,31 +186,6 @@ const RANKS: Dictionary = {
 		"scaling_rate": 0,
 		"coefficient": 0,
 		"detail": "Adds 20 attack power for 300 turns; one blessing per target."
-	},
-	"judgement_1": {
-		"title": "Judgement",
-		"class_tab": "Paladin",
-		"source_id": 20271,
-		"rank": 1,
-		"training_level": 4,
-		"training_cost": 100,
-		"mana_cost": 0,
-		"mana_percent": 6,
-		"cast_seconds": 1.0,
-		"range_tiles": 2,
-		"duration": 0,
-		"school": 1,
-		"cooldown_seconds": 10,
-		"scaling_max": 0,
-		"family": "judgement",
-		"effect": "JUDGEMENT",
-		"target": "ENEMY",
-		"minimum": 0,
-		"maximum": 0,
-		"scaling_rate": 0,
-		"coefficient": 0,
-		"detail": "Consume the active seal to judge an enemy. No GCD or turn cost; 10-turn cooldown.",
-		"free_instant": true
 	},
 	"divine_protection_1": {
 		"title": "Divine Protection",
@@ -898,30 +924,6 @@ const RANKS: Dictionary = {
 		"coefficient": 0,
 		"detail": "Earth: 5 health, 45 turns, slows enemies 50% within 2 tiles."
 	},
-	"lightning_shield_1": {
-		"title": "Lightning Shield",
-		"class_tab": "Shaman",
-		"source_id": 324,
-		"rank": 1,
-		"training_level": 8,
-		"training_cost": 100,
-		"mana_cost": 45,
-		"mana_percent": 0,
-		"cast_seconds": 1.0,
-		"range_tiles": 0,
-		"duration": 600,
-		"school": 3,
-		"cooldown_seconds": 0,
-		"scaling_max": 0,
-		"family": "lightning_shield",
-		"effect": "ARMOR",
-		"target": "SELF",
-		"minimum": 13,
-		"maximum": 13,
-		"scaling_rate": 0,
-		"coefficient": 0,
-		"detail": "Three 13-nature-damage charges over 600 turns; at most one discharge per 3 turns."
-	},
 	"lightning_bolt_2": {
 		"title": "Lightning Bolt",
 		"class_tab": "Shaman",
@@ -1095,30 +1097,6 @@ const RANKS: Dictionary = {
 		"coefficient": 0.133875,
 		"tick_coefficient": 0.0625,
 		"detail": "Fire damage and a 12-turn burn; shares Shock cooldown."
-	},
-	"strength_of_earth_totem_1": {
-		"title": "Strength of Earth Totem",
-		"class_tab": "Shaman",
-		"source_id": 8075,
-		"rank": 1,
-		"training_level": 10,
-		"training_cost": 400,
-		"mana_cost": 25,
-		"mana_percent": 0,
-		"cast_seconds": 1.0,
-		"range_tiles": 0,
-		"duration": 120,
-		"school": 3,
-		"cooldown_seconds": 0,
-		"scaling_max": 0,
-		"family": "strength_of_earth_totem",
-		"effect": "SUMMON",
-		"target": "NONE",
-		"minimum": 5,
-		"maximum": 5,
-		"scaling_rate": 0,
-		"coefficient": 0,
-		"detail": "Earth: 5 health, 120 turns; +10 strength within 4 tiles."
 	},
 	"immolate_1": {
 		"title": "Immolate",
@@ -1498,6 +1476,10 @@ const RANKS: Dictionary = {
 		"detail": "Creates one unique Minor Healthstone, restoring 100 health when used. Reagents ignored."
 	}
 }
+
+
+static func is_playable_rank(identifier: StringName) -> bool:
+	return identifier in WARRIOR_RANKS or LOOP_RANKS.has(String(identifier))
 
 
 static func pet_command(identifier: StringName) -> SkillRank:

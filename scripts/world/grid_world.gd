@@ -201,7 +201,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	cast_elapsed = 0
 	cast_duration = maxf(1.0, skill.cast_seconds / hero.haste)
 	cast_turns = maxi(1, ceili(cast_duration - hero.casting_credit))
-	if skill.class_tab == &"Warrior":
+	if ClassSkillData.is_playable_rank(skill.id):
 		cast_duration = skill.cast_seconds
 		cast_turns = int(skill.cast_seconds)
 	if skill.effect == SkillRank.Effect.CHANNEL:
@@ -383,6 +383,9 @@ func training_failure(category: StringName, skill: SkillRank) -> String:
 		return "This attempt has ended."
 	if skill == null or skill.class_tab != category or hero.selected_class != category:
 		return "Requires the matching selected class."
+	if (category in ClassSkillData.PLAYABLE_CLASSES
+		and not ClassSkillData.is_playable_rank(skill.id)):
+		return "This ability is not available in the current class slice."
 	if hero.find_skill(skill.id) != null:
 		return "Already learned."
 	if hero.progression_points(category) < skill.progress_required:
@@ -406,6 +409,11 @@ func train(category: StringName, identifier: StringName) -> bool:
 	if not hero.learn_skill(skill):
 		return false
 	hero.copper -= skill.training_cost
+	if (skill.id in ClassSkillData.STARTERS.get(category, [])
+		and skill.effect != SkillRank.Effect.PASSIVE and not hotbar.has(skill.id)):
+		var empty_slot := hotbar.find(&"")
+		if empty_slot >= 0:
+			hotbar[empty_slot] = skill.id
 	if skill.progress_required > 0:
 		add_message("Learned %s. Your %s progression points remain at %d." % [
 			skill.title, String(category).to_lower(), hero.progression_points(category)])
@@ -423,8 +431,7 @@ func _first_living_stalker() -> GridActor:
 
 
 func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
-	if not skill.development_only and skill.class_tab in ClassSkillData.CLASSES:
-		add_class_progress(skill.class_tab, 1)
+	_award_ability_use(skill)
 	match skill.effect:
 		SkillRank.Effect.MORTAL_STRIKE:
 			last_attacked_enemy = target
@@ -434,6 +441,8 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 			var amount := MeleeRules.damage(hero.melee, target.melee, result,
 				combat_random.randf(), combat_random.randf(), skill.weapon_multiplier, skill.minimum)
 			SpellEffects.damage(self, target, amount, "Mortal Strike (%s)" % result, -1, true, null, true)
+			if result not in [&"miss", &"dodge", &"parry"] and not is_terminal():
+				hero.gain_combo_point()
 		SkillRank.Effect.BATTLE_SHOUT:
 			hero.gain_rage(skill.rage_generated)
 			hero.buffs[skill.id] = {"armor": 0, "physical_percent": skill.physical_percent,
@@ -471,6 +480,11 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 		_:
 			SpellEffects.resolve(self, skill, target)
 	check_terminal()
+
+
+func _award_ability_use(skill: SkillRank) -> void:
+	if not skill.development_only and skill.class_tab == hero.selected_class:
+		add_class_progress(skill.class_tab, 1)
 
 
 func add_class_progress(category: StringName, amount: int) -> void:
@@ -631,7 +645,7 @@ func _advance_player_weapon() -> void:
 		or auto_attack_target.relationship == GridActor.Relationship.FRIENDLY)):
 		auto_attack_target = null
 	var target := auto_attack_target
-	var swings := hero.swing.advance(_valid_melee(target), hero.melee.interval / hero.haste)
+	var swings := hero.swing.advance(_valid_melee(target), hero.melee.interval / hero.attack_haste())
 	for index in range(swings):
 		if not _valid_melee(target) or is_terminal():
 			break
@@ -817,7 +831,7 @@ func _player_swing(target: GridActor) -> void:
 	if strike == null:
 		hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
 	else:
-		add_class_progress(strike.class_tab, 1)
+		_award_ability_use(strike)
 	var result := MeleeRules.outcome(hero.melee, target.melee,
 		MeleeRules.is_behind(target.facing, player_tile - target.tile),
 		combat_random.randf() * 100.0, strike != null)
@@ -829,7 +843,10 @@ func _player_swing(target: GridActor) -> void:
 		amount = int(amount / 1.4)
 	SpellEffects.damage(self, target, amount, "%s (%s)" % [
 		"You" if strike == null else strike.title, result], turn_count, true, null, true)
-	ClassSpellEffects.on_melee(self, target, amount)
+	var landed := result not in [&"miss", &"dodge", &"parry"]
+	if strike != null and landed and not is_terminal():
+		hero.gain_combo_point()
+	ClassSpellEffects.on_melee(self, target, amount, landed)
 
 
 func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:

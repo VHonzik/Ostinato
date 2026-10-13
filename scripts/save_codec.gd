@@ -1,14 +1,14 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-13 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-14 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
 	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire",
 ]
 const HERO_FIELDS: Array[String] = [
-	"rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",
+	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",
 	"level", "experience", "health", "mana", "selected_class", "copper",
 	"casting_credit", "last_mana_turn", "facing", "potion_ready_turn",
 	"spell_power", "healing_power", "spell_hit", "spell_critical", "haste",
@@ -118,6 +118,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.bounds.size.x > 1024 or world.bounds.size.y > 1024
 		or not world.bounds.has_point(world.player_tile)
 		or world.turn_count < 0 or world.movement_speed <= 0 or world.movement_credit < 0
+		or world.hero.combo_points < 0 or world.hero.combo_points > HeroState.MAX_COMBO_POINTS
 		or world.hero.rage < 0 or world.hero.rage > HeroState.MAX_RAGE
 		or world.hero.rage_credit < 0.0 or world.hero.rage_credit >= 1.0
 		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
@@ -130,6 +131,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.hero.healthstone_ready_turn < 0
 		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
 		or world.hero.selected_class not in ClassSkillData.CLASSES):
+		return null
+	if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
+		and int(data.loop) == 1 and world.hero.selected_class != &"Warrior"):
 		return null
 	if data.has("class_progress"):
 		if not data.class_progress is Dictionary:
@@ -223,12 +227,22 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		var skill := SkillRank.catalog(StringName(identifier))
 		if skill == null:
 			return null
+		if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
+			and not skill.development_only and not ClassSkillData.is_playable_rank(skill.id)):
+			return null
 		learned.append(identifier)
 		if development_build or not skill.development_only:
 			world.hero.learned_skills.append(skill)
-	var starting := ["mortal_strike_1", "heroic_strike_1"] if world.hero.selected_class == &"Warrior" else (
-		["fireball_1", "frost_armor_1"])
-	if not learned.has(starting[0]) or not learned.has(starting[1]):
+	# New classes may be saved before visiting their trainer, or after learning one starter.
+	var mandatory: Array = []
+	if world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES:
+		mandatory = ClassSkillData.STARTERS[&"Warrior"]
+	else:
+		mandatory = [&"fireball_1", &"frost_armor_1"]
+	for identifier: StringName in mandatory:
+		if not learned.has(String(identifier)):
+			return null
+	if world.hero.combo_points > 0 and not learned.has("relentless_assault_1"):
 		return null
 	for identifier in learned:
 		var skill := SkillRank.catalog(StringName(identifier))
@@ -495,7 +509,7 @@ static func _buffs(data: Variant) -> bool:
 			return false
 		for stat in buff:
 			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns", "regen", "next", "absorb", "physical_immunity",
-				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent"]:
+				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent", "haste_percent"]:
 				return false
 	return true
 

@@ -79,11 +79,10 @@ Reuse the valley and selected art. Art refinement and a larger story pass remain
 Numerical tuning goes in code/data as each mechanic is implemented; do not copy the
 snapshot's provisional tables or simulation results into planning documents.
 
-### Current playable task — Warrior attack timing and starting kit
+### Implemented slice — Warrior attack timing and starting kit
 
 Implementation is ready for the owner's playtest, deferred at the owner's request.
-Proceed with Loop-start class selection and retained learning next; combat tuning
-remains provisional until that playtest and lives in code/data.
+Combat tuning remains provisional until that playtest and lives in code/data.
 
 - [x] Start with Mortal Strike and Heroic Strike; remove Slam from the runnable toolkit.
   Battle Shout is a trainer unlock; retain existing Anger Management and Charge learning.
@@ -106,18 +105,48 @@ remains provisional until that playtest and lives in code/data.
   interleave movement, waiting and both actives. Judge commitment, target control,
   rage economy and readability; revisit tuning when feedback arrives.
 
+### Current playable task — Loop-start class selection and retained learning
+
+Implementation is ready for the owner's playtest, deferred at the owner's request.
+Proceed with the small Execute slice next. Combat and starter tuning remain provisional;
+the earlier Warrior playtest is still deferred.
+
+- [x] Keep Warrior mandatory in Loop one. From Loop two, choose Warrior, Shaman,
+  Paladin or Rogue at the marshal before accepting any quest. Returning Loops start
+  in the previous class; confirm once, including the same class, to lock the track.
+  Selection preserves gear and costs no world turn.
+- [x] Keep the initial Warrior pair at New Game. The marshal locks class choice and
+  names its trainer; learn other classes' starters free at the matching trainer, with
+  no class XP requirement. Learning is permanent and fills empty hotbar slots for actives
+  without replacing assignments. Implement Lightning Shield and Strength of Earth Totem,
+  Seal of Command and Judgement, Slice and Dice and Relentless Assault. Use rage;
+  trainers expose only implemented ranks, leaving legacy mana kits unavailable.
+- [x] Retain learned abilities/passives and cumulative class XP across death and class
+  choice. Only uses belonging to the selected class grant XP; retained abilities grant
+  none to either track. Count misses and repeated buff uses without anti-spam filters.
+  Keep matching trainers, cumulative unlock thresholds and immediate availability.
+- [x] Build player-held combo points from landed direct active attacks after learning
+  Relentless Assault, across classes and targets. Exclude auto-attacks, procs, buffs and
+  misses. Slice and Dice requires points and spends all held points; Judgement leaves
+  Seal of Command active. Clear combat resources and effects on death.
+- [x] Save class choice, learning, class XP, combo points, buffs and totems in revision 14;
+  leave older files incompatible and unchanged. Cover selection confirmation, quest and
+  combat locks, retained passives, XP credit, starter interactions, saves before/between
+  trainer learning and death boundaries.
+- [ ] Owner playtest: return to the marshal before taking a quest, choose a class and
+  visit its referred trainer. Learn each starter pair over successive Loops, then combine
+  retained attacks and buffs in another class.
+  Judge selection clarity, starter usefulness, combo spending and progression feedback.
+
+### Next playable task — Warrior burst and execution
+
+Start with a small Execute slice: settle its damage/rage formula with the owner, add
+its trainer checkpoint, and try it alongside Mortal Strike and Heroic Strike. Review
+Charge commitment and Battle Shout when combat feedback arrives. Add related passives
+in subsequent runnable tasks; keep later class catalogues coarse until they are current.
+
 ### Remaining slices — in dependency order
 
-- [ ] **Loop-start class selection and retained learning:** Warrior is mandatory in the
-  first Loop; all three remaining classes become selectable from Loop two. Only the
-  selected track gains class XP, and only from abilities belonging to that class.
-  Retained abilities from other classes award no class XP to either track. Count all
-  uses of selected-class abilities without anti-spam filters for now. Check XP credit
-  when switching classes and using retained abilities. Keep the existing trainer
-  flow and immediate availability after learning,
-  with cumulative XP retained rather than spent; tune unlock thresholds and ordering.
-  Retain learned skills/passives across selection and death without restricting their
-  use to the selected class. Introduce the other starting kits in their class slices.
 - [ ] **Complete Warrior:** revisit Charge and Battle Shout, add Execute and Whirlwind, and every
   Warrior passive: Anger Management, Cruelty, Incite, Flurry, Battle Trance, Sudden Death,
   Victory Rush, Sweeping Strikes, Wrecking Crew and Juggernaut. Split burst/execution,
@@ -135,19 +164,22 @@ remains provisional until that playtest and lives in code/data.
   predefined points. Repeat the same seed across deaths and different action/loot orders.
   Decide ordinary respawning rather than silently adopting the current absence of it.
   Preserve temporary gear/gold/quest resets and avoid unbounded XP farming by accident.
-- [ ] **Complete Shaman:** start with Lightning Shield and Strength of Earth Totem;
-  add Windfury Weapon, Earth Shock and Feral Spirit. Include Improved Shields, Flurry,
+- [ ] **Complete Shaman:** develop the implemented Lightning Shield/Strength of Earth
+  starter pair; add Windfury Weapon, Earth Shock and Feral Spirit. Include Improved
+  Shields, Flurry,
   Static Shock, Elemental Weapons, Elemental Assault, Spirit Hunt, Elemental Warding,
   Toughness and Improved Earth Shock. Share or upgrade Warrior Flurry; settle wolf
   damage/healing and test retaliation, interrupts, totem range and nonrecursive procs.
-- [ ] **Complete Paladin:** start with Seal of Command and Judgement; add Blessing of
-  Might and Divine Shield. Include Benediction, Conviction, Vengeance, Art of War,
+- [ ] **Complete Paladin:** develop the implemented Seal of Command/Judgement starter
+  pair; add Blessing of Might and Divine Shield. Include Benediction, Conviction,
+  Vengeance, Art of War,
   Heart of the Crusader, Divine Purpose, Pursuit of Justice, Eye for an Eye, Guardian's
   Favor, Sacred Duty and Sanctity of Battle. Include the Seal/Judgement interaction,
   Art of War's per-action counting limit and Shield's action cost/damage penalty.
   Decide grid movement speed and the explicit haste-to-Judgement cooldown exception.
-- [ ] **Complete Rogue:** start with Slice and Dice and Relentless Assault; add Evasion
-  and Instant Poison. Include Opportunity, Ambidexterity, Eviscerate, Combat Potency,
+- [ ] **Complete Rogue:** develop the implemented Slice and Dice/Relentless Assault
+  starter pair; add Evasion and Instant Poison. Include Opportunity, Ambidexterity,
+  Eviscerate, Combat Potency,
   Seal Fate, Main Gauche, Restless Blades, Bandit's Guile, Ruthlessness, Relentless
   Strikes and Precision. Keep combo points on the player across targets, generated
   by qualifying cross-class actives and spent only through deliberate finishers.

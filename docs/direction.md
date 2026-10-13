@@ -28,11 +28,20 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 - Start as warrior. The roster is warrior, shaman, paladin and rogue; remove obsolete
   mage, druid, warlock and priest content in runnable gameplay changes.
-- Select a class at Loop start to choose which track is advanced. Learned skills stay
-  usable across classes; selection does not lock out the retained toolkit. Warrior is
-  mandatory in the first Loop; Shaman, Paladin and Rogue are all selectable from Loop two.
-- All classes use rage, with no mana or energy. Rogue adds player-held combo points
-  that persist across target changes and are spent deliberately on finishers.
+- Choose which class track to advance at the marshal before accepting any quest.
+  Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
+  from Loop two. Returning Loops begin in the previous class; confirming a class,
+  including that same class, locks the choice until death. Selection keeps gear and
+  refers the player to the matching trainer. Keep the initial Warrior pair at New Game;
+  learn other classes' starter skills free at their trainers, with no class XP requirement.
+  Once learned, skills stay usable across classes and death without relearning;
+  selection does not lock out the retained toolkit.
+- All classes use rage, with no mana or energy. Learned Relentless Assault builds
+  player-held combo points from landed direct active attacks, including retained
+  attacks across classes. Auto-attacks, procs, buffs and misses grant no points.
+  Points persist across targets and encounters and reset on death. Slice and Dice
+  requires points and deliberately spends all held points to extend its attack haste.
+  Judgement takes a turn and leaves Seal of Command active.
 - Warrior supplies physical burst, rage and execution; shaman supplies weapon
   enhancements, reactive damage and tactical procs; paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,

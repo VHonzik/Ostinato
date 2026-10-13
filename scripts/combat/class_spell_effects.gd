@@ -9,6 +9,10 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 		return SummonRules.placement(world, skill) != Vector2i(-1, -1)
 	if skill.family in [&"rockbiter_weapon", &"flametongue_weapon", &"seal_of_righteousness", &"seal_of_the_crusader"]:
 		return world.hero.equipment.has("main_hand")
+	if skill.family == &"seal_of_command":
+		return world.hero.equipment.has("main_hand")
+	if skill.family == &"slice_and_dice":
+		return world.hero.combo_points > 0
 	if skill.family == &"life_tap":
 		return world.hero.health > SpellEffects.amount(world, skill, false, false)
 	if skill.family == &"power_word_shield":
@@ -16,7 +20,7 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 	if skill.family in [&"blessing_of_protection", &"divine_protection"]:
 		return (world.hero.forbearance_until if target == null else target.forbearance_until) <= world.turn_count
 	if skill.family == &"judgement":
-		return not seal(world.hero).is_empty()
+		return world.hero.buffs.has(&"seal_of_command_1") and world.hero.equipment.has("main_hand")
 	if skill.effect == SkillRank.Effect.RESURRECT:
 		return (not world.in_combat() and target != null and not target.alive
 			and not target.story_guard and not target.chest and target.summon_kind == ""
@@ -49,8 +53,6 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> bo
 			world.hero.health -= value
 			world.hero.mana = mini(world.hero.max_mana, world.hero.mana + value)
 			world.add_message("Life Tap: %d health exchanged for mana." % value)
-		SkillRank.Effect.JUDGEMENT:
-			judge(world, target)
 		SkillRank.Effect.PURIFY:
 			var debuffs := world.hero.debuffs if target == null else target.debuffs
 			for kind in ["poison", "disease"]:
@@ -70,7 +72,9 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> bo
 				SpellEffects.heal(world, target, world.hero.max_health, skill.title)
 				world.hero.mana = 0
 				world.hero.last_mana_turn = world.turn_count + 1
-			elif skill.effect == SkillRank.Effect.ARMOR and ClassSkillData.RANKS.has(String(skill.id)):
+			elif (skill.effect == SkillRank.Effect.ARMOR
+				and (ClassSkillData.RANKS.has(String(skill.id))
+					or ClassSkillData.LOOP_RANKS.has(String(skill.id)))):
 				buff(world, skill, target)
 			else:
 				return false
@@ -131,6 +135,10 @@ static func buff(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
 				world.hero.forbearance_until = world.turn_count + 61
 			else:
 				target.forbearance_until = world.turn_count + 61
+		&"slice_and_dice":
+			effect["haste_percent"] = skill.haste_percent
+			effect.until += skill.duration_per_combo * world.hero.combo_points
+			world.hero.combo_points = 0
 		&"lightning_shield":
 			effect["charges"] = 3
 			effect["ready"] = 0
@@ -161,23 +169,28 @@ static func seal(hero: HeroState) -> Dictionary:
 	return {}
 
 
-static func judge(world: GridWorld, target: GridActor) -> void:
-	var current := seal(world.hero)
-	if current.is_empty():
+static func judge(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
+	world.last_attacked_enemy = target
+	world.auto_attack_target = target
+	var hit_chance := clampf(95.0 + world.hero.melee.hit, 0.0, 100.0)
+	if world.combat_random.randf() * 100.0 >= hit_chance:
+		world.add_message("Judgement misses %s; Seal of Command remains active." % target.title)
 		return
-	var skill: SkillRank = current.skill
-	world.hero.buffs.erase(current.key)
-	world.hero.refresh_stats()
-	if skill.family == &"seal_of_the_crusader":
-		target.debuffs["crusader"] = {"until": world.turn_count + 10, "holy_power": 20}
-		world.add_message("Judgement of the Crusader applied.")
-	else:
-		var value := 15 if skill.rank == 1 else 25
-		var scaling := maxi(0, mini(world.hero.level, 7 if skill.rank == 1 else 16) - skill.training_level)
-		value += int(scaling * (1.8 if skill.rank == 1 else 1.9))
-		var power := world.hero.spell_power + int(target.debuffs.get("crusader", {}).get("holy_power", 0))
-		value += int(power * 0.5 * (1.0 - (20 - skill.training_level) * 0.0375))
-		SpellEffects.damage(world, target, value, "Judgement of Righteousness", world.turn_count)
+	var value := _holy_weapon_damage(world, skill)
+	if world.combat_random.randf() * 100.0 < world.hero.melee.critical:
+		value *= 2
+	SpellEffects.damage(world, target, value, "Judgement", -1)
+	if not world.is_terminal():
+		world.hero.gain_combo_point()
+
+
+static func _holy_weapon_damage(world: GridWorld, skill: SkillRank) -> int:
+	var weapon := world.hero.melee
+	var bonus := weapon.attack_power / 14.0 * weapon.interval
+	var minimum := floori(weapon.damage_min + bonus)
+	var maximum := floori(weapon.damage_max + bonus)
+	return maxi(1, floori(world.combat_random.randi_range(minimum, maximum)
+		* skill.weapon_multiplier))
 
 
 static func immune(buffs: Dictionary) -> bool:
@@ -210,17 +223,21 @@ static func retaliate(world: GridWorld, attacker: GridActor, defender: GridActor
 		if int(shield.charges) > 0 and world.turn_count >= int(shield.ready):
 			shield.charges -= 1
 			shield.ready = world.turn_count + 3
-			var value := SpellResistance.mitigate(13, SpellResistance.percent(world.hero.level,
-				attacker.melee.level, int(attacker.resistances.get("3", 0)), false), world.combat_random.randf())
+			var value := SkillRank.catalog(&"lightning_shield_1").minimum
 			SpellEffects.damage(world, attacker, value, "Lightning Shield", world.turn_count)
 			if int(shield.charges) == 0:
 				buffs.erase(&"lightning_shield_1")
 
 
-static func on_melee(world: GridWorld, target: GridActor, amount: int) -> void:
-	if world.is_terminal() or amount <= 0 or not target.alive:
+static func on_melee(world: GridWorld, target: GridActor, amount: int, landed: bool) -> void:
+	if world.is_terminal() or not target.alive:
 		return
 	var current := seal(world.hero)
+	if landed and not current.is_empty() and current.skill.family == &"seal_of_command":
+		var value := _holy_weapon_damage(world, current.skill)
+		SpellEffects.damage(world, target, value, "Seal of Command", world.turn_count)
+	if amount <= 0:
+		return
 	if not current.is_empty() and current.skill.family == &"seal_of_righteousness":
 		var skill: SkillRank = current.skill
 		var two_handed := bool(ItemData.get_item(int(world.hero.equipment.get("main_hand", {}).get("id", 35))).two_handed)

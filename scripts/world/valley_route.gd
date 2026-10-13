@@ -40,9 +40,9 @@ const CONTACTS: Array = [
 	[9296, "Milly Osworth", Vector2i(35, 32), ""],
 	[1642, "Northshire Guard", Vector2i(12, 63), ""],
 	[911, "Llane Beshere", Vector2i(31, 34), "Warrior"],
-	[915, "Jorik Kerridan", Vector2i(39, 43), ""],
-	[925, "Brother Sammuel", Vector2i(30, 37), ""],
-	[900002, "Farseer Lopaa", Vector2i(38, 37), ""],
+	[915, "Jorik Kerridan", Vector2i(39, 43), "Rogue"],
+	[925, "Brother Sammuel", Vector2i(30, 37), "Paladin"],
+	[900002, "Farseer Lopaa", Vector2i(38, 37), "Shaman"],
 ]
 # Identity, home tile, encounter name. No replacement population is scheduled.
 const ENCOUNTERS: Array = [
@@ -250,6 +250,19 @@ static func npc_name(identity: int) -> String:
 		if int(row[0]) == identity:
 			return row[1]
 	return "the quest contact"
+
+
+static func trainer_referral(category: StringName) -> String:
+	match category:
+		&"Warrior":
+			return "Speak with %s inside the abbey." % npc_name(911)
+		&"Shaman":
+			return "Speak with %s east of the abbey." % npc_name(900002)
+		&"Paladin":
+			return "Speak with %s inside the abbey." % npc_name(925)
+		&"Rogue":
+			return "Speak with %s southeast of the abbey." % npc_name(915)
+	return ""
 
 
 static func greeting(identity: int) -> String:

@@ -167,6 +167,35 @@ func open_marshal() -> void:
 	_finish()
 
 
+func open_class_selection(marshal: GridActor) -> void:
+	if (not session.can_select_class() or not QuestRules.in_range(session.world, marshal, 197)
+		or marshal.service != &"Marshal"):
+		close()
+		return
+	_begin("class_selection", "Choose the class to advance this Loop", open_conversation.bind(marshal))
+	_label("You keep every learned ability and passive. Only uses of the chosen class's abilities grant class XP. Confirm once before accepting any quest; gear stays with you.")
+	var previous: Button
+	for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
+		var titles: PackedStringArray = []
+		for skill in SkillRank.starting_skills(category):
+			titles.append(skill.title)
+		var button := _button("%s / %d class XP / %s" % [category,
+			session.world.hero.progression_points(category), " + ".join(titles)],
+			_confirm_class.bind(category, marshal))
+		if category == session.world.hero.selected_class:
+			previous = button
+	_label("Visit the matching trainer to learn starter skills for free; learned actives fill empty hotbar slots. Rogue's Relentless Assault builds combo points from landed direct active attacks; Slice and Dice needs points.")
+	_button("Back (Esc)", open_conversation.bind(marshal))
+	_finish()
+	if previous != null:
+		previous.grab_focus()
+
+
+func _confirm_class(category: StringName, marshal: GridActor) -> void:
+	confirm("Advance %s for Loop %d? This locks your choice until death. Visit its trainer to learn starter skills." % [category, session.loop_count],
+		_select_class.bind(category, marshal), open_class_selection.bind(marshal))
+
+
 func _paladin_referral(actor: GridActor) -> void:
 	if session.loop_count < 2 or not QuestRules.in_range(session.world, actor, 197):
 		close()
@@ -204,15 +233,16 @@ func open_trainer(category: StringName) -> void:
 	elif session.world.hero.selected_class != category:
 		_label("Select %s before learning here. Retained skills remain usable." % category)
 	else:
-		if category == &"Warrior":
-			_label("Warrior progression: %d points (unlocks keep your points)" % session.world.hero.warrior_progress)
-		else:
-			_label("Money: " + InventoryRules.money(session.world.hero.copper))
+		_label("%s class XP: %d (cumulative; learning does not spend XP)" % [
+			category, session.world.hero.progression_points(category)])
+		if category != &"Warrior":
+			_label("Learn these starter skills for free, with no class XP requirement. Further training comes in a later slice.")
 		for skill in SkillRank.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
-			var button := _button("%s rank %d / %s" % [
-				skill.title, skill.rank, "Learned" if known else ("Unlock at %d points" % skill.progress_required
-				if skill.progress_required > 0 else InventoryRules.money(skill.training_cost))],
+			var price := "Free" if skill.training_cost == 0 else InventoryRules.money(skill.training_cost)
+			var status := "Learned" if known else ("Unlock at %d class XP" % skill.progress_required
+				if skill.progress_required > 0 else price)
+			var button := _button("%s rank %d / %s" % [skill.title, skill.rank, status],
 				_train.bind(skill.id))
 			button.tooltip_text = skill.description
 			var failure := session.world.training_failure(category, skill)
@@ -611,12 +641,18 @@ func _capture(action: StringName) -> void:
 	_begin("capture", "Press a key for %s (Esc cancels)." % action, open_bindings)
 
 
-func _select_class(category: StringName) -> void:
-	if session.select_class(category):
+func _select_class(category: StringName, marshal: GridActor) -> void:
+	if session.select_class(category, marshal):
 		refreshed.emit()
-		close()
+		_begin("class_referral", marshal.title, open_conversation.bind(marshal))
+		_label(ValleyRoute.trainer_referral(category))
+		_label("Visit your trainer to learn skills. Everything you already learned remains usable.")
+		_button("Back (Esc)", open_conversation.bind(marshal))
+		_button("Leave", close)
+		_finish()
 	else:
-		notice("Cannot exchange clothes; make inventory space and try again.", open_marshal)
+		notice("Class choice is unavailable. Speak to the marshal outside combat before accepting a quest.",
+			open_conversation.bind(marshal))
 
 
 func _train(identifier: StringName) -> void:
@@ -647,6 +683,9 @@ func open_conversation(actor: GridActor) -> void:
 	QuestRules.event(session.world, "talk", str(actor.npc_id))
 	_begin("conversation", actor.title, close)
 	_label(ValleyRoute.greeting(actor.npc_id))
+	if actor.service == &"Marshal" and session.can_select_class():
+		_label("Before taking a quest, you may choose the class to advance this Loop.")
+		_button("Choose my class for this Loop", open_class_selection.bind(actor))
 	var choices := false
 	for identifier in QuestData.QUESTS:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
@@ -660,6 +699,12 @@ func open_conversation(actor: GridActor) -> void:
 				else "In progress: ", _quest_detail.bind(identifier, actor))
 			choices = true
 	if actor.service == &"Marshal":
+		if session.loop_count == 1:
+			_label("Your first Loop begins as Warrior. Other classes are available from Loop two.")
+		elif session.world.class_selected or session.world.ever_accepted_quest:
+			_label("Advancing %s this Loop. Class choice is locked until death." % session.world.hero.selected_class)
+		elif not session.can_select_class():
+			_label("Return outside combat to choose your class before accepting a quest.")
 		_button("It's been a long journey, is there a warrior master?", open_marshal)
 		if session.loop_count >= 2:
 			_button("Uhm... I seek paladin teaching", _paladin_referral.bind(actor))

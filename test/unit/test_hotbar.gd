@@ -56,8 +56,9 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 	assert_false(session.world.hotbar_locked)
 
 
-func test_pet_commands_require_a_learned_summon_and_round_trip() -> void:
+func test_legacy_pet_commands_require_a_learned_summon_and_round_trip() -> void:
 	var session := GameSession.new()
+	LegacyMageFixture.session(session)
 	session.new_game(123)
 	assert_false(session.world.assign_hotbar(0, &"pet_attack"))
 	assert_true(session.world.hero.learn_skill(SkillRank.catalog(&"summon_imp_1")))

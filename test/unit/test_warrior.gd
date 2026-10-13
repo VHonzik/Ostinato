@@ -38,7 +38,7 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_false(game.select_class(&"Mage"))
-	assert_false(game.select_class(&"Shaman"))
+	assert_false(game.select_class(&"Shaman"), "Selection requires the marshal in range.")
 
 
 func test_two_turn_auto_attack_generates_fourteen_rage_and_hits_award_three() -> void:
