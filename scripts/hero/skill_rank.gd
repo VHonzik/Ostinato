@@ -2,7 +2,7 @@ class_name SkillRank
 extends RefCounted
 
 ## Warrior abilities and retained legacy ranks. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -17,6 +17,9 @@ var target: Target = Target.NONE
 var rage_cost: int = 0
 var progress_required: int = 0
 var weapon_multiplier: float = 1.0
+var execute_health_percent: int = 0
+var execute_rage_cap: int = 0
+var execute_damage_per_rage: int = 0
 var physical_percent: int = 0
 var haste_percent: int = 0
 var duration_per_combo: int = 0
@@ -88,9 +91,17 @@ static func all_ranks() -> Dictionary:
 
 
 func cost(hero: HeroState) -> int:
+	if effect == Effect.EXECUTE:
+		return clampi(hero.rage, rage_cost, execute_rage_cap)
 	if resource_name() == "rage":
 		return rage_cost
 	return mana_cost + int(HeroData.stats_for_level(hero.level)[6] * mana_percent / 100.0)
+
+
+func execute_eligible(target_actor: GridActor) -> bool:
+	return (target_actor != null and target_actor.alive and target_actor.health > 0
+		and target_actor.max_health > 0
+		and target_actor.health * 100 <= target_actor.max_health * execute_health_percent)
 
 
 func resource_name() -> String:

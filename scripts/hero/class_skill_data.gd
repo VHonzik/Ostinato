@@ -11,6 +11,7 @@ const STARTERS: Dictionary = {
 }
 const WARRIOR_RANKS: Array[StringName] = [
 	&"mortal_strike_1", &"heroic_strike_1", &"battle_shout_1", &"anger_management_1", &"charge_1",
+	&"execute_1",
 ]
 # Starter tuning is provisional; full class slices extend this runnable set.
 const LOOP_RANKS: Dictionary = {
@@ -90,6 +91,15 @@ const RANKS: Dictionary = {
 		"family": "charge", "effect": "CHARGE", "target": "ENEMY",
 		"travel_speed": 4, "rage_generated": 10,
 		"detail": "Wind up for one turn, then move at 4 tiles per turn to the nearest empty melee tile. Cannot act or cancel during Charge. Generates 10 rage on arrival. 10-turn cooldown."
+	},
+	# Execute tuning is provisional until combat playtesting.
+	"execute_1": {
+		"title": "Execute", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"progress_required": 75, "rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
+		"family": "execute", "effect": "EXECUTE", "target": "ENEMY",
+		"weapon_multiplier": 2.0, "execute_health_percent": 20,
+		"execute_rage_cap": 30, "execute_damage_per_rage": 2,
+		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 200% weapon damage + 2 damage per rage above 15. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
 	},
 	"devotion_aura_1": {
 		"title": "Devotion Aura",

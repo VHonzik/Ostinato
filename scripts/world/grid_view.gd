@@ -30,6 +30,8 @@ const ENVIRONMENT: Texture2D = preload(
 	"res://assets/spritesheets/scroolospritesenvironment_nobg.png"
 )
 
+const NPC_BASE_SPRITE: Texture2D = preload("res://assets/sprites/dev/npc_base.svg")
+
 const VALLEY_ATLAS: Texture2D = preload("res://assets/spritesheets/valley/sprites.png")
 const VALLEY_ACTORS: Dictionary[int, StringName] = {
 	197: &"marshal", 823: &"willem", 900003: &"trader", 299: &"wolf", 69: &"wolf",
@@ -64,8 +66,13 @@ const REFERENCE_ENVIRONMENT: Dictionary[StringName, Vector2i] = {
 }
 
 const BLINK_SECONDS: float = 2.0
-const LOW_HEALTH_COLOR := Color("#8b2222")
 const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
+
+## NPC keys match valley sprite names; totems use earth_totem/fire_totem,
+## and fallback characters use character_<column>_<row>.
+@export var npc_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
+## Player keys are class names. The default faction layer is empty.
+@export var player_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
 
 var world: GridWorld
 var selected: GridActor
@@ -74,6 +81,11 @@ var alternate_palette: bool = false
 var _valley_regions: Dictionary = {}
 var _blink_elapsed: float = 0.0
 var _blink_alternate_visible: bool = false
+var _quest_marker_sprite: AtlasTexture
+
+
+func _init() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 
 static func tile_center(tile: Vector2i) -> Vector2:
@@ -94,12 +106,50 @@ static func actor_sprite(actor: GridActor) -> Vector2i:
 	return ENEMY_SPRITES.get(actor.npc_id, Vector2i.ZERO)
 
 
+static func health_tint(health: int, max_health: int) -> Color:
+	if max_health <= 0 or health >= max_health:
+		return Color.WHITE
+	return Color.RED if health * 5 <= max_health else Color.YELLOW
+
+
+func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
+	var key: StringName
+	if actor.summon_kind in ["earth", "fire"]:
+		key = StringName(actor.summon_kind + "_totem")
+	elif (actor.stalker or VALLEY_ACTORS.has(actor.npc_id)
+		or VALLEY_CLASSES.has(actor.service)):
+		key = &"stalker" if actor.stalker else VALLEY_ACTORS.get(actor.npc_id,
+			VALLEY_CLASSES.get(actor.service, &"stalker"))
+	else:
+		var source := actor_sprite(actor)
+		key = StringName("character_%d_%d" % [source.x, source.y])
+	if not npc_sprites.has(key):
+		var faction: Texture2D
+		if actor.summon_kind in ["earth", "fire"]:
+			faction = _totem_sprite(actor.summon_kind)
+		elif key.begins_with("character_"):
+			faction = _character_sprite(actor_sprite(actor))
+		else:
+			faction = _valley_sprite_texture(key)
+		npc_sprites[key] = ActorSpriteLayers.new(NPC_BASE_SPRITE, faction)
+	return npc_sprites[key]
+
+
+func player_sprite_layers(category: StringName) -> ActorSpriteLayers:
+	if not player_sprites.has(category):
+		var base := (_valley_sprite_texture(VALLEY_CLASSES[category])
+			if VALLEY_CLASSES.has(category) else _character_sprite(class_sprite(category)))
+		player_sprites[category] = ActorSpriteLayers.new(base)
+	return player_sprites[category]
+
+
 func _ready() -> void:
 	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(
 		"res://assets/spritesheets/valley/sprites.json"))
 	for name in catalog.sprites:
 		var entry: Dictionary = catalog.sprites[name]
 		_valley_regions[StringName(name)] = Rect2(entry.x, entry.y, entry.width, entry.height)
+	_quest_marker_sprite = _atlas_sprite(ENVIRONMENT, QUEST_MARKER_REGION)
 
 
 func _process(delta: float) -> void:
@@ -130,10 +180,6 @@ func _terrain_sprite(tile: Vector2i, occupants: Dictionary[Vector2i, GridActor])
 
 
 func _actor_color(actor: GridActor) -> Color:
-	if (actor.alive and actor.relationship != GridActor.Relationship.FRIENDLY
-		and actor.max_health > 0 and actor.health * 10 < actor.max_health * 3
-		and _blink_alternate_visible):
-		return LOW_HEALTH_COLOR
 	if actor.relationship == GridActor.Relationship.FRIENDLY:
 		return Color("#9acd95")
 	if alternate_palette:
@@ -156,23 +202,7 @@ func _draw() -> void:
 			_draw_valley_sprite(actor.tile, sprite)
 	for actor: GridActor in occupants.values():
 		if actor.alive:
-			var color := _actor_color(actor)
-			if _blink_alternate_visible and QuestRules.has_marker(world, actor):
-				draw_texture_rect_region(ENVIRONMENT,
-					Rect2(Vector2(actor.tile * TILE_SIZE), Vector2.ONE * TILE_SIZE),
-					QUEST_MARKER_REGION, Color("#9acd95"))
-			elif actor.summon_kind in ["earth", "fire"]:
-				var totem_color := Color("#cf884c") if actor.summon_kind == "earth" else Color("#ffb75a")
-				draw_rect(Rect2(tile_center(actor.tile) - Vector2(6, 12), Vector2(12, 24)), totem_color)
-				draw_line(tile_center(actor.tile) - Vector2(10, 6), tile_center(actor.tile) + Vector2(10, -6), color, 2)
-			elif (actor.stalker or VALLEY_ACTORS.has(actor.npc_id)
-				or VALLEY_CLASSES.has(actor.service)):
-				var sprite: StringName = VALLEY_ACTORS.get(actor.npc_id,
-					VALLEY_CLASSES.get(actor.service, &"stalker"))
-				_draw_valley_sprite(actor.tile, &"stalker" if actor.stalker else sprite,
-					color)
-			else:
-				_draw_character(actor.tile, actor_sprite(actor), color)
+			_draw_actor(actor)
 			if actor.polymorphed_until > world.turn_count:
 				draw_circle(tile_center(actor.tile), 10, Color.WHITE)
 			if actor.rooted_until > world.turn_count:
@@ -183,19 +213,58 @@ func _draw() -> void:
 		draw_rect(selection.grow(2), Color.WHITE, false, 1)
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
-	if VALLEY_CLASSES.has(world.hero.selected_class):
-		_draw_valley_sprite(world.player_tile, VALLEY_CLASSES[world.hero.selected_class])
-	else:
-		_draw_character(world.player_tile,
-			class_sprite(world.hero.selected_class), Color("#d8f2ef"))
+	_draw_player()
 
 
-func _draw_character(tile: Vector2i, source: Vector2i, color: Color) -> void:
+func _draw_actor(actor: GridActor) -> void:
+	var sprites := npc_sprite_layers(actor)
+	var faction := sprites.faction_sprite
+	if _blink_alternate_visible and QuestRules.has_marker(world, actor):
+		faction = _quest_marker_sprite
+	_draw_sprite_layers(actor.tile, sprites.base_sprite, faction,
+		health_tint(actor.health, actor.max_health), _actor_color(actor))
+
+
+func _draw_player() -> void:
+	var sprites := player_sprite_layers(world.hero.selected_class)
+	_draw_sprite_layers(world.player_tile, sprites.base_sprite, sprites.faction_sprite,
+		health_tint(world.hero.health, world.hero.max_health), Color.WHITE)
+
+
+# Both textures use the entire tile, so matching asset pixels stay aligned.
+func _draw_sprite_layers(tile: Vector2i, base: Texture2D, faction: Texture2D,
+	base_color: Color, faction_color: Color) -> void:
 	var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
-	draw_rect(Rect2(rectangle.position + Vector2(6, 26), Vector2(20, 4)), Color("#12251f"))
-	draw_texture_rect_region(
-		CHARACTERS, rectangle, Rect2(Vector2(source * 16), Vector2(16, 16)), color
-	)
+	if base != null:
+		draw_texture_rect(base, rectangle, false, base_color)
+	if faction != null:
+		draw_texture_rect(faction, rectangle, false, faction_color)
+
+
+func _character_sprite(source: Vector2i) -> AtlasTexture:
+	return _atlas_sprite(CHARACTERS, Rect2(Vector2(source * 16), Vector2(16, 16)))
+
+
+func _valley_sprite_texture(key: StringName) -> AtlasTexture:
+	if REFERENCE_CHARACTERS.has(key):
+		return _character_sprite(REFERENCE_CHARACTERS[key])
+	return _atlas_sprite(VALLEY_ATLAS, _valley_regions[key])
+
+
+func _atlas_sprite(texture: Texture2D, region: Rect2) -> AtlasTexture:
+	var sprite := AtlasTexture.new()
+	sprite.atlas = texture
+	sprite.region = region
+	return sprite
+
+
+func _totem_sprite(kind: String) -> ImageTexture:
+	var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	image.fill(Color.TRANSPARENT)
+	image.fill_rect(Rect2i(5, 2, 6, 12),
+		Color("#cf884c") if kind == "earth" else Color("#ffb75a"))
+	image.fill_rect(Rect2i(3, 5, 10, 1), Color.WHITE)
+	return ImageTexture.create_from_image(image)
 
 
 func _draw_valley_ground(occupants: Dictionary[Vector2i, GridActor]) -> void:

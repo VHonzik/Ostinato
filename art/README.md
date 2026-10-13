@@ -24,6 +24,14 @@ the original scroolo sheets directly; their mappings live in `GridView`. Outdoor
 is plain. The quest exclamation mark also uses the original environment sheet.
 The current mage and mage trainer retain reference art until the class pivot. Some equipment, remains, and tile connections need refinement.
 
+Living actors use an `ActorSpriteLayers` resource with independent `base_sprite` and
+`faction_sprite` textures. Replace pairs through the GridView node's `npc_sprites` or
+`player_sprites` dictionaries; their keys are described in
+[grid_view.gd](../scripts/world/grid_view.gd). Use matching canvas sizes and pixel positions
+for the two textures: both fill the same tile rectangle with nearest filtering.
+NPCs temporarily use [a corner heart](../assets/sprites/dev/npc_base.svg) for the base;
+existing NPC art is the faction layer. Current player art is the base layer.
+
 ## Generate a candidate
 
 Start your existing ComfyUI ROCm server. Run these commands from the project root:

@@ -155,7 +155,8 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill.effect == SkillRank.Effect.KILL_STALKER and _first_living_stalker() == null:
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
-	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE]
+	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
+		SkillRank.Effect.EXECUTE]
 		and target == null and in_combat()):
 		target = last_attacked_enemy
 	if skill.effect == SkillRank.Effect.PASSIVE:
@@ -165,6 +166,11 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill.available_resource(hero) < skill.cost(hero):
 		add_message("Not enough %s for %s: requires %d, have %d." % [
 			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)])
+		return false
+	if (skill.effect == SkillRank.Effect.EXECUTE and target != null and target.alive
+		and not skill.execute_eligible(target)):
+		add_message("Cannot Execute: target must be at or below %d%% health. No turn spent." %
+			skill.execute_health_percent)
 		return false
 	if ((not skill.free_instant and global_cooldown_until > turn_count)
 		or int(hero.cooldowns.get(String(cooldown_family(skill)), 0)) > turn_count
@@ -211,7 +217,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		target.relationship = GridActor.Relationship.HOSTILE
 		target.engaged = true
 		target.returning_home = false
-		if skill.effect == SkillRank.Effect.MORTAL_STRIKE:
+		if skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE]:
 			auto_attack_target = target
 	if target != null:
 		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
@@ -250,12 +256,13 @@ func continue_cast() -> bool:
 		if (skill.available_resource(hero) >= skill.cost(hero) and valid_spell_target(skill, target)
 			and SpellEffects.can_apply(self, skill, target)):
 			hero.casting_credit += cast_turns - cast_duration
+			var resource_spent := skill.cost(hero)
 			skill.spend_resource(hero)
-			if skill.cost(hero) > 0:
+			if resource_spent > 0:
 				hero.last_mana_turn = turn_count + 1
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + skill.cooldown_seconds
-			_resolve_skill(skill, target)
+			_resolve_skill(skill, target, resource_spent)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
 	_finish_turn()
@@ -334,6 +341,8 @@ func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
 	if target == null:
 		return skill.target == SkillRank.Target.ALLY
 	if not actors.has(target) or not target.alive:
+		return false
+	if skill.effect == SkillRank.Effect.EXECUTE and not skill.execute_eligible(target):
 		return false
 	var distance := tile_distance(player_tile, target.tile)
 	if (distance < skill.minimum_range_tiles or distance > skill.range_tiles
@@ -430,17 +439,22 @@ func _first_living_stalker() -> GridActor:
 	return null
 
 
-func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
+func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0) -> void:
 	_award_ability_use(skill)
 	match skill.effect:
-		SkillRank.Effect.MORTAL_STRIKE:
+		SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE:
 			last_attacked_enemy = target
+			var flat_bonus := skill.minimum
+			if skill.effect == SkillRank.Effect.EXECUTE:
+				flat_bonus += (resource_spent - skill.rage_cost) * skill.execute_damage_per_rage
+				add_message("Execute: spent %d rage." % resource_spent)
 			var result := MeleeRules.outcome(hero.melee, target.melee,
 				MeleeRules.is_behind(target.facing, player_tile - target.tile),
 				combat_random.randf() * 100.0, true)
 			var amount := MeleeRules.damage(hero.melee, target.melee, result,
-				combat_random.randf(), combat_random.randf(), skill.weapon_multiplier, skill.minimum)
-			SpellEffects.damage(self, target, amount, "Mortal Strike (%s)" % result, -1, true, null, true)
+				combat_random.randf(), combat_random.randf(), skill.weapon_multiplier, flat_bonus)
+			SpellEffects.damage(self, target, amount, "%s (%s)" % [skill.title, result],
+				-1, true, null, true)
 			if result not in [&"miss", &"dodge", &"parry"] and not is_terminal():
 				hero.gain_combo_point()
 		SkillRank.Effect.BATTLE_SHOUT:

@@ -452,7 +452,21 @@ func test_tile_sprite_priority_hides_terrain_and_corpses_without_removing_them()
 	view.free()
 
 
-func test_actor_tints_follow_relationship_and_injury_blinks_below_thirty_percent() -> void:
+func test_base_health_tints_include_full_health_and_twenty_percent_boundaries() -> void:
+	var cases := [
+		[101, 100, Color.WHITE], [100, 100, Color.WHITE],
+		[99, 100, Color.YELLOW], [21, 100, Color.YELLOW],
+		[20, 100, Color.RED], [0, 100, Color.RED],
+		[51, 51, Color.WHITE], [50, 51, Color.YELLOW],
+		[11, 51, Color.YELLOW], [10, 51, Color.RED],
+		[5, 5, Color.WHITE], [2, 5, Color.YELLOW], [1, 5, Color.RED],
+	]
+	for entry: Array in cases:
+		assert_eq(GridView.health_tint(entry[0], entry[1]), entry[2],
+			"%d/%d HP" % [entry[0], entry[1]])
+
+
+func test_faction_tints_stay_independent_of_health_and_quest_blink_phase() -> void:
 	var view := GridView.new()
 	view.world = _session().world
 	var enemy := _actor(view.world, 299)
@@ -461,26 +475,116 @@ func test_actor_tints_follow_relationship_and_injury_blinks_below_thirty_percent
 	var hostile_color := view._actor_color(enemy)
 	assert_ne(neutral_color, hostile_color)
 	enemy.max_health = 100
-	enemy.health = 29
-	assert_eq(view._actor_color(enemy), hostile_color)
-	view._process(1.9)
-	assert_eq(view._actor_color(enemy), hostile_color)
-	view._process(0.1)
-	assert_eq(view._actor_color(enemy), GridView.LOW_HEALTH_COLOR)
-	enemy.health = 30
-	assert_eq(view._actor_color(enemy), hostile_color, "Exactly thirty percent does not blink.")
-	enemy.health = 29
-	view._process(2.0)
-	assert_eq(view._actor_color(enemy), hostile_color)
-	view._process(2.0)
-	assert_eq(view._actor_color(enemy), GridView.LOW_HEALTH_COLOR)
-	enemy.health = 80
-	assert_eq(view._actor_color(enemy), hostile_color, "Healing clears the injury indication immediately.")
-	enemy.health = 1
+	for health in [100, 99, 21, 20, 1]:
+		enemy.health = health
+		assert_eq(view._actor_color(enemy), hostile_color)
+		view._process(2.0)
+		assert_eq(view._actor_color(enemy), hostile_color)
+	view.alternate_palette = true
+	assert_eq(view._actor_color(enemy), Color("#D55E00"))
+	enemy.relationship = GridActor.Relationship.NEUTRAL
+	assert_eq(view._actor_color(enemy), Color("#F0E442"))
 	enemy.relationship = GridActor.Relationship.FRIENDLY
-	assert_eq(view._actor_color(enemy), Color("#9acd95"), "Friendly actors remain green.")
-	enemy.relationship = GridActor.Relationship.HOSTILE
-	enemy.alive = false
-	assert_eq(view._actor_color(enemy), hostile_color, "Corpses never blink.")
-	assert_eq(view.world.turn_count, 0, "The animation never advances gameplay time.")
+	assert_eq(view._actor_color(enemy), Color("#9acd95"))
+	assert_eq(view.world.turn_count, 0, "Rendering never advances gameplay time.")
 	view.free()
+
+
+func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_faction() -> void:
+	var view := GridView.new()
+	add_child_autofree(view)
+	view.world = _session().world
+	var actors: Array[GridActor] = view.world.actors.duplicate()
+	for kind in ["", "pet", "earth", "fire"]:
+		var actor := GridActor.new(Vector2i.ZERO)
+		actor.npc_id = 416 if kind == "pet" else 0
+		actor.summon_kind = kind
+		actors.append(actor)
+	var stalker := GridActor.new(Vector2i.ZERO)
+	stalker.stalker = true
+	actors.append(stalker)
+	for actor in actors:
+		if not actor.alive:
+			continue
+		var sprites := view.npc_sprite_layers(actor)
+		assert_same(sprites.base_sprite, GridView.NPC_BASE_SPRITE, actor.title)
+		assert_not_null(sprites.faction_sprite, actor.title)
+	var wolf := view.npc_sprite_layers(_actor(view.world, 299)).faction_sprite as AtlasTexture
+	assert_same(wolf.atlas, GridView.CHARACTERS)
+	assert_eq(wolf.region, Rect2(112, 64, 16, 16), "The current wolf art becomes its faction layer.")
+	for category in GridView.CLASS_SPRITES:
+		var sprites := view.player_sprite_layers(category)
+		assert_not_null(sprites.base_sprite, category)
+		assert_null(sprites.faction_sprite, category)
+	var warrior := view.player_sprite_layers(&"Warrior").base_sprite as AtlasTexture
+	assert_same(warrior.atlas, GridView.CHARACTERS)
+	assert_eq(warrior.region, Rect2(32, 0, 16, 16), "The current player art becomes its base layer.")
+
+
+func test_health_changes_reach_npc_and_player_base_layers_without_changing_faction() -> void:
+	var view := RecordingGridView.new()
+	add_child_autofree(view)
+	view.world = _session().world
+	var enemy := _actor(view.world, 299)
+	enemy.max_health = 100
+	view.world.hero.max_health = 100
+	var faction := view.npc_sprite_layers(enemy).faction_sprite
+	var player := view.player_sprite_layers(&"Warrior").base_sprite
+	for entry: Array in [[100, Color.WHITE], [99, Color.YELLOW], [20, Color.RED],
+		[21, Color.YELLOW], [100, Color.WHITE]]:
+		enemy.health = entry[0]
+		view.world.hero.health = entry[0]
+		view._draw_actor(enemy)
+		assert_eq(view.drawn_base_color, entry[1])
+		assert_same(view.drawn_faction, faction)
+		assert_eq(view.drawn_faction_color, view._actor_color(enemy))
+		view._draw_player()
+		assert_same(view.drawn_base, player)
+		assert_eq(view.drawn_base_color, entry[1])
+		assert_null(view.drawn_faction)
+	# Later art can replace either texture without changing the actor state.
+	view.npc_sprites[&"wolf"] = ActorSpriteLayers.new(player, faction)
+	view._draw_actor(enemy)
+	assert_same(view.drawn_base, player)
+	assert_same(view.drawn_faction, faction)
+
+
+func test_quest_marker_alternates_faction_layer_while_injured_base_stays_visible() -> void:
+	var view := RecordingGridView.new()
+	add_child_autofree(view)
+	view.world = _session().world
+	var marshal := _marshal(view.world)
+	assert_true(QuestRules.has_marker(view.world, marshal))
+	marshal.health = 1
+	view._draw_actor(marshal)
+	var base := view.drawn_base
+	var faction := view.drawn_faction
+	assert_eq(view.drawn_base_color, Color.RED)
+	view._process(2.0)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_base, base)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	assert_eq(view.drawn_base_color, Color.RED)
+	assert_eq(view.drawn_faction_color, Color("#9acd95"))
+	view._process(2.0)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_faction, faction)
+	assert_eq(view.drawn_base_color, Color.RED)
+	assert_eq(view.world.turn_count, 0)
+
+
+class RecordingGridView:
+	extends GridView
+
+	var drawn_base: Texture2D
+	var drawn_faction: Texture2D
+	var drawn_base_color: Color
+	var drawn_faction_color: Color
+
+
+	func _draw_sprite_layers(_tile: Vector2i, base: Texture2D, faction: Texture2D,
+		base_color: Color, faction_color: Color) -> void:
+		drawn_base = base
+		drawn_faction = faction
+		drawn_base_color = base_color
+		drawn_faction_color = faction_color

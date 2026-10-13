@@ -105,11 +105,11 @@ Combat tuning remains provisional until that playtest and lives in code/data.
   interleave movement, waiting and both actives. Judge commitment, target control,
   rage economy and readability; revisit tuning when feedback arrives.
 
-### Current playable task — Loop-start class selection and retained learning
+### Implemented slice — Loop-start class selection and retained learning
 
 Implementation is ready for the owner's playtest, deferred at the owner's request.
-Proceed with the small Execute slice next. Combat and starter tuning remain provisional;
-the earlier Warrior playtest is still deferred.
+Combat and starter tuning remain provisional; the earlier Warrior playtest is still
+deferred. The Execute slice is implemented below.
 
 - [x] Keep Warrior mandatory in Loop one. From Loop two, choose Warrior, Shaman,
   Paladin or Rogue at the marshal before accepting any quest. Returning Loops start
@@ -138,20 +138,44 @@ the earlier Warrior playtest is still deferred.
   retained attacks and buffs in another class.
   Judge selection clarity, starter usefulness, combo spending and progression feedback.
 
-### Next playable task — Warrior burst and execution
+### Implemented slice — Execute and Warrior trainer checkpoint
 
-Start with a small Execute slice: settle its damage/rage formula with the owner, add
-its trainer checkpoint, and try it alongside Mortal Strike and Heroic Strike. Review
-Charge commitment and Battle Shout when combat feedback arrives. Add related passives
-in subsequent runnable tasks; keep later class catalogues coarse until they are current.
+Implementation is ready for the owner's later playtest. Combat tuning remains provisional
+in code/data; optional combo empowerment remains unresolved for the later finisher slice.
+
+- [x] Add Execute as a melee finisher using the owner's chosen health eligibility,
+  weapon/rage damage formula and capped automatic rage spending. Spend rage on misses;
+  reject invalid uses without spending resources or turns. Keep a one-turn action with
+  no ability cooldown, continuous weapon timing and effect/swing/enemy ordering.
+- [x] Add Llane's free Execute checkpoint after Charge in cumulative Warrior XP order,
+  without requiring previous unlocks or spending XP. Notify on reaching the checkpoint;
+  expose learning, spell-book assignment, current rage cost and eligible target selection.
+- [x] Retain Execute across classes and death. Count all selected-Warrior uses, including
+  misses; retained uses grant neither class XP track. Landed Execute attacks build
+  Relentless Assault points across targets and never spend them.
+- [x] Cover health boundaries, capped rage/damage, physical mitigation/crit, misses,
+  target commitment, ordering, trainer/UI behavior, retained use, death and save loading.
+  Keep revision 14: the existing learned-rank format supports Execute without new state.
+- [ ] Owner playtest: learn Execute at Llane, assign it through K and compare it with
+  Mortal Strike and Heroic Strike near an enemy's health threshold. Try different rage
+  reserves, then use retained Execute with Relentless Assault in another class.
+  Judge the finishing window, rage payoff, trainer pacing and feedback.
+
+### Next playable task — Warrior crit and queue interactions
+
+Add a small Warrior passive checkpoint extending the current attacks. Settle the next
+unlock order and qualifying critical/queued-strike events before implementation; keep
+Incite nonrecursive. Review Charge commitment, Battle Shout and burst tuning when
+the owner's deferred combat feedback arrives. Leave shared Flurry and cleave for
+subsequent runnable tasks.
 
 ### Remaining slices — in dependency order
 
-- [ ] **Complete Warrior:** revisit Charge and Battle Shout, add Execute and Whirlwind, and every
+- [ ] **Complete Warrior:** revisit Charge and Battle Shout, add Whirlwind, and every
   Warrior passive: Anger Management, Cruelty, Incite, Flurry, Battle Trance, Sudden Death,
   Victory Rush, Sweeping Strikes, Wrecking Crew and Juggernaut. Split burst/execution,
   crit/queue interactions and cleave into playable tasks as this slice becomes current.
-  Settle Execute's formula and Charge's commitment; check that Incite cannot sustain itself.
+  Settle Charge's commitment; check that Incite cannot sustain itself.
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
   level ceiling and level-difference effects. Support main/off-hand or two-handed weapons,
   armor, two accessories and the proposed physical/crit/dodge/health/haste stats without

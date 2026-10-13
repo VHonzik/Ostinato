@@ -30,8 +30,10 @@ decorative. Grass appears less often in wooded areas. Outdoor ground is plain. B
 wolf types, kobold vermin and laborers are neutral until attacked; workers and bandits
 are hostile.
 The southwestern gate admits a timed stalker and reinforcements.
-There are no within-Loop NPC respawns. Friendly contacts are green; available quests
-and ready turn-ins alternate their contact sprite with an exclamation mark. Neutral and hostile sprites are yellow and red; injured enemies blink dark red.
+There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
+available quests and ready turn-ins alternate the faction layer with an exclamation mark.
+A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
+its current class artwork with an empty faction layer.
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting. Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
@@ -66,8 +68,11 @@ Start with the marshal north of spawn; Willem stands west of the abbey. K → De
 XP, gold, class XP, Death trigger, and Kill stalker for quick experiments. The stalker
 arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
-progression log notification to unlock Battle Shout, Anger Management or Charge; unlocking keeps your
-points. Assign Charge to a hotbar slot through the spell book. Its wind-up and automatic
+progression log notification to unlock Battle Shout, Anger Management, Charge or Execute;
+unlocking keeps your points. Assign checkpoint actives to a hotbar slot through the spell book.
+Execute uses the committed melee target, requires low target health, and shows current rage spending
+in its tooltip and target picker. Its one-turn attack keeps weapon timing running; optional combo
+empowerment remains for a later slice. Charge's wind-up and automatic
 travel keep the player casting until arrival, blocking other actions and cancellation.
 Charge arrival also allows the ready weapon to attack its target. These are current
 mechanics; tuning and remaining v0.1 mechanics still need playtesting.

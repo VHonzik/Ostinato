@@ -125,9 +125,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
 - Next: Heroic Strike versus Mortal Strike rage economy; world-turn buff expiry
-  ordering; Eviscerate's optional spending interface; gear ranges, weapon progression,
+  ordering; Eviscerate's spending interface and optional combo empowerment for
+  Execute/Judgement; gear ranges, weapon progression,
   respawns and healing.
-- When their abilities are built: Execute's formula, wolf damage/healing, shared Flurry,
+- When their abilities are built: wolf damage/healing, shared Flurry,
   Pursuit of Justice's movement-speed meaning in a turn-based grid, Sanctity of Battle's
   cooldown formula, qualifying proc events and any otherwise unspecified passive details.
 - Later: additional talents/synergies and leaderboard categories or achievements.
