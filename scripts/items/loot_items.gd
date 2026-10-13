@@ -894,8 +894,9 @@ const ITEMS: Dictionary = {
 		"use": "food",
 		"quest": "",
 		"tradable": true,
-		"restore": 61,
-		"duration": 18
+		"restore": 50,
+		"duration": 10,
+		"note": "Restores 5 HP per turn for 10 turns while standing still; movement or combat ends eating."
 	},
 	"4766": {
 		"title": "Feral Blade",

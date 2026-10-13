@@ -53,23 +53,23 @@ func test_selected_class_counts_misses_but_rejected_and_cancelled_uses_award_non
 	assert_eq(enemy.health, enemy.max_health)
 
 
-func test_selected_class_counts_every_buff_refresh_and_learning_keeps_cumulative_xp() -> void:
+func test_selected_class_counts_repeated_buffs_and_learning_keeps_cumulative_xp() -> void:
 	var world := _world()
-	world.add_class_progress(&"Warrior", 20)
+	world.add_class_progress(&"Warrior", 40)
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
-	assert_eq(world.hero.warrior_progress, 20)
+	assert_eq(world.hero.warrior_progress, 40)
 	assert_true(world.cast_skill(&"battle_shout_1"), "Unlock is usable immediately.")
-	for turn in range(10):
+	for turn in range(30):
 		world.wait_turn()
-	assert_true(world.hero.buffs.has(&"battle_shout_1"))
-	assert_true(world.cast_skill(&"battle_shout_1"), "Refreshing an existing buff counts.")
-	assert_eq(world.hero.warrior_progress, 22)
+	assert_false(world.hero.buffs.has(&"battle_shout_1"))
+	assert_true(world.cast_skill(&"battle_shout_1"), "Repeated buff uses count.")
+	assert_eq(world.hero.warrior_progress, 42)
 	world.hero.selected_class = &"Shaman"
-	for turn in range(10):
+	for turn in range(30):
 		world.wait_turn()
 	assert_true(world.cast_skill(&"battle_shout_1"))
-	assert_eq(world.hero.warrior_progress, 22)
+	assert_eq(world.hero.warrior_progress, 42)
 	assert_eq(world.hero.progression_points(&"Shaman"), 0)
 
 
@@ -318,7 +318,7 @@ func test_judgement_hits_and_misses_keep_seal_and_only_hits_build_points() -> vo
 
 func test_learning_class_xp_and_previous_class_survive_death_while_combat_state_resets() -> void:
 	var game := _returning_game()
-	game.world.add_class_progress(&"Warrior", 20)
+	game.world.add_class_progress(&"Warrior", 40)
 	assert_true(game.world.train(&"Warrior", &"anger_management_1"))
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		assert_true(game.select_class(category, _marshal(game)))
@@ -430,21 +430,55 @@ func _key(key: Key) -> InputEventKey:
 	return event
 
 
+func _class_choice(menu: MenuPanel, category: StringName) -> Button:
+	var title := "Uhm... I seek %s teaching" % String(category).to_lower()
+	for button in menu._buttons:
+		if button.text == title:
+			return button
+	return null
+
+
+func test_marshal_dialogue_offers_each_class_directly_and_confirmation_locks_all_choices() -> void:
+	for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
+		var game := _returning_game()
+		var menu := _menu(game)
+		var marshal := _marshal(game)
+		menu.open_conversation(marshal)
+		assert_false(menu._buttons.any(func(button: Button) -> bool:
+			return button.text == "Choose my class for this Loop"))
+		for offered: StringName in ClassSkillData.PLAYABLE_CLASSES:
+			assert_not_null(_class_choice(menu, offered))
+		var choice := _class_choice(menu, category)
+		if choice == null:
+			continue
+		choice.pressed.emit()
+		assert_eq(menu.page, "confirm")
+		menu.handle_key(_key(KEY_ENTER))
+		assert_eq(game.world.hero.selected_class, category)
+		assert_true(game.world.class_selected)
+		assert_true(game.world.trainer_referral_received)
+		assert_eq(game.world.turn_count, 0)
+		menu.open_conversation(marshal)
+		for offered: StringName in ClassSkillData.PLAYABLE_CLASSES:
+			assert_null(_class_choice(menu, offered), "The confirmed choice stays locked.")
+
+
 func test_marshal_keyboard_choice_focus_cancel_and_confirmation_spend_no_turns() -> void:
 	var game := _returning_game()
 	var menu := _menu(game)
-	menu.open_class_selection(_marshal(game))
+	menu.open_conversation(_marshal(game))
 	await get_tree().process_frame
-	assert_eq(menu.page, "class_selection")
-	assert_string_contains((get_viewport().gui_get_focus_owner() as Button).text, "Warrior")
+	assert_eq(menu.page, "conversation")
+	_class_choice(menu, &"Warrior").grab_focus()
 	menu.handle_key(_key(KEY_S))
-	assert_string_contains((get_viewport().gui_get_focus_owner() as Button).text, "Shaman")
+	assert_same(get_viewport().gui_get_focus_owner(), _class_choice(menu, &"Shaman"))
 	menu.handle_key(_key(KEY_ENTER))
 	assert_eq(menu.page, "confirm")
 	menu.handle_key(_key(KEY_ESCAPE))
-	assert_eq(menu.page, "class_selection")
+	assert_eq(menu.page, "conversation")
 	assert_eq(game.world.hero.selected_class, &"Warrior")
 	assert_true(game.can_select_class())
+	_class_choice(menu, &"Warrior").grab_focus()
 	menu.handle_key(_key(KEY_S))
 	menu.handle_key(_key(KEY_ENTER))
 	menu.handle_key(_key(KEY_ENTER))
@@ -457,14 +491,14 @@ func test_marshal_keyboard_choice_focus_cancel_and_confirmation_spend_no_turns()
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
-	menu.open_class_selection(_marshal(game))
-	assert_string_contains((get_viewport().gui_get_focus_owner() as Button).text, "Shaman")
+	menu.open_conversation(_marshal(game))
+	assert_not_null(_class_choice(menu, &"Shaman"), "Death restores the dialogue choices.")
 
 
 func test_stale_class_confirmation_cannot_bypass_quest_lock_or_grant_starters() -> void:
 	var game := _returning_game()
 	var menu := _menu(game)
-	menu.open_class_selection(_marshal(game))
+	menu.open_conversation(_marshal(game))
 	menu._confirm_class(&"Paladin", _marshal(game))
 	assert_true(QuestRules.accept(game.world, "valley_patrol", _marshal(game)))
 	menu.handle_key(_key(KEY_ENTER))

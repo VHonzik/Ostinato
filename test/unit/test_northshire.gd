@@ -48,23 +48,23 @@ func test_conversation_acceptance_and_rewards_are_free_and_once() -> void:
 	assert_false(QuestRules.available(world, "valley_patrol"))
 	assert_eq(world.turn_count, 0)
 
-func test_kill_objectives_credit_prior_kills_once_and_match_identity() -> void:
+func test_kill_objectives_ignore_prior_kills_and_match_identity() -> void:
 	var world := _game().world
 	var vermin := _npc(world, 6)
 	vermin.health = 0
 	world._check_npc_death(vermin, 0)
 	world.hero.level = 10
 	_accept(world, "valley_camp")
-	assert_eq(QuestRules.progress(world, "valley_camp", 0), 1)
+	assert_eq(QuestRules.progress(world, "valley_camp", 0), 0)
 	var wolf := _npc(world, 299)
 	wolf.health = 0
 	world._check_npc_death(wolf, 0)
-	assert_eq(QuestRules.progress(world, "valley_camp", 0), 1)
+	assert_eq(QuestRules.progress(world, "valley_camp", 0), 0)
 	vermin = _npc(world, 6)
 	vermin.health = 0
 	world._check_npc_death(vermin, 0)
 	world._check_npc_death(vermin, 0)
-	assert_eq(QuestRules.progress(world, "valley_camp", 0), 2)
+	assert_eq(QuestRules.progress(world, "valley_camp", 0), 1)
 	assert_false(QuestRules.hand_in(world, "valley_camp", _npc(world, 197)))
 
 func test_accept_and_hand_in_reject_remote_dead_and_wrong_contacts() -> void:
@@ -92,7 +92,7 @@ func test_abandonment_does_not_reopen_class_choice_or_reroll_loot() -> void:
 	assert_true(QuestRules.abandon(world, "valley_patrol"))
 	assert_false(game.can_select_class())
 	_accept(world, "valley_patrol")
-	assert_eq(QuestRules.progress(world, "valley_patrol", 0), 1)
+	assert_eq(QuestRules.progress(world, "valley_patrol", 0), 0)
 	LootData.assign(world, wolf)
 	assert_eq(wolf.loot, remaining)
 
@@ -107,6 +107,8 @@ func test_reward_choice_and_capacity_are_atomic_and_surplus_quest_items_are_remo
 	world.loot_quests.append("wolves")
 	for index in range(40):
 		world.hero.inventory[index] = ItemData.instance(118, 5)
+	# Occupy the reward slot so it must fit in the full inventory.
+	world.hero.equipment["waist"] = ItemData.instance(2649)
 	# A non-loot quest with an item reward exercises full capacity directly.
 	world.quests["21"] = {"handed_in": false, "counts": [12]}
 	world.loot_quests.append("21")

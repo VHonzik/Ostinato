@@ -31,6 +31,37 @@ static func add(inventory: Array[Dictionary], item: Dictionary) -> bool:
 	return true
 
 
+## Acquired gear fills vacant slots without displacing either hand or existing gear.
+static func receive(hero: HeroState, item: Dictionary) -> bool:
+	var data := ItemData.get_item(int(item.id))
+	var slot: String = data.slot
+	if slot in ["ring", "trinket"]:
+		slot += "_1" if not hero.equipment.has(slot + "_1") else "_2"
+	var can_equip: bool = (fits_slot(data, slot) and not hero.equipment.has(slot)
+		and hero.level >= int(data.level) and not (slot == "off_hand" and data.weapon))
+	if slot == "main_hand" and data.two_handed and hero.equipment.has("off_hand"):
+		can_equip = false
+	if slot == "off_hand" and hero.equipment.has("main_hand"):
+		if ItemData.get_item(int(hero.equipment.main_hand.id)).two_handed:
+			can_equip = false
+	if data.unique:
+		for equipped in hero.equipment.values():
+			if equipped.id == item.id:
+				can_equip = false
+	if not can_equip:
+		return add(hero.inventory, item)
+	var inventory := hero.inventory.duplicate(true)
+	if int(item.quantity) > 1:
+		var remaining := item.duplicate()
+		remaining.quantity -= 1
+		if not add(inventory, remaining):
+			return false
+	hero.inventory.assign(inventory)
+	hero.equipment[slot] = ItemData.instance(int(item.id), 1, item.starter)
+	hero.refresh_stats()
+	return true
+
+
 static func equip(hero: HeroState, index: int, slot: String = "") -> bool:
 	if index < 0 or index >= hero.inventory.size() or hero.inventory[index].is_empty():
 		return false

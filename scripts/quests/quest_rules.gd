@@ -49,16 +49,6 @@ static func accept(world: GridWorld, identifier: String, actor: GridActor) -> bo
 	var counts: Array[int] = []
 	counts.resize(quest.objectives.size())
 	counts.fill(0)
-	# Finite encounters stay completable if explored before accepting or after abandonment.
-	if world.valley_route:
-		for index in range(quest.objectives.size()):
-			var objective: Dictionary = quest.objectives[index]
-			if objective.kind != "kill":
-				continue
-			for creature in world.actors:
-				if str(creature.npc_id) == objective.target and not creature.alive:
-					counts[index] += 1
-			counts[index] = mini(counts[index], int(objective.count))
 	world.hero.inventory.assign(inventory)
 	world.quests[identifier] = {"handed_in": false, "counts": counts}
 	world.loot_quests.append(identifier)
@@ -126,11 +116,12 @@ static func hand_in(
 		return false
 	var inventory := world.hero.inventory.duplicate(true)
 	_remove_items(inventory, identifier)
-	if choice > 0 and not InventoryRules.add(inventory, ItemData.instance(choice)):
+	var previous_inventory := world.hero.inventory.duplicate(true)
+	world.hero.inventory.assign(inventory)
+	if choice > 0 and not InventoryRules.receive(world.hero, ItemData.instance(choice)):
+		world.hero.inventory.assign(previous_inventory)
 		world.add_message("Inventory full. Make room before collecting your reward.")
 		return false
-	# Nothing changes until the complete reward fits.
-	world.hero.inventory.assign(inventory)
 	world.quests[identifier].handed_in = true
 	_clear_loot(world, identifier)
 	world.hero.copper += int(quest.copper)

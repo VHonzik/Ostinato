@@ -48,6 +48,7 @@ var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
 var starter_gear_received: bool = false
+var trainer_referral_received: bool = false
 var ever_accepted_quest: bool = false
 var hotbar: Array[StringName] = []
 var hotbar_locked: bool = false
@@ -418,8 +419,7 @@ func train(category: StringName, identifier: StringName) -> bool:
 	if not hero.learn_skill(skill):
 		return false
 	hero.copper -= skill.training_cost
-	if (skill.id in ClassSkillData.STARTERS.get(category, [])
-		and skill.effect != SkillRank.Effect.PASSIVE and not hotbar.has(skill.id)):
+	if skill.effect != SkillRank.Effect.PASSIVE and not hotbar.has(skill.id):
 		var empty_slot := hotbar.find(&"")
 		if empty_slot >= 0:
 			hotbar[empty_slot] = skill.id
@@ -912,7 +912,7 @@ func _step_toward(
 	actor: GridActor, goals: Array[Vector2i], toward: Vector2i,
 	terrain_route: Array[Vector2i] = []
 ) -> void:
-	if actor.rooted_until > turn_count:
+	if actor.rooted_until > turn_count or _held_by_charge(actor):
 		return
 	var route := terrain_route
 	if route.is_empty():
@@ -935,10 +935,17 @@ func _step_toward(
 
 
 func _move_actor(actor: GridActor, tile: Vector2i) -> void:
+	if _held_by_charge(actor):
+		return
 	if actor == _neutral_bump_target and tile != actor.tile:
 		_neutral_bump_target = null
 	actor.facing = MeleeRules.facing_toward(tile - actor.tile)
 	actor.tile = tile
+
+
+func _held_by_charge(actor: GridActor) -> bool:
+	# Movement only: nearby summons may still be attacked during wind-up and travel.
+	return is_charging() and pending_target == actor and not _valid_melee(actor)
 
 
 func _route(
@@ -1114,7 +1121,7 @@ func loot_item(source: GridActor, index: int) -> bool:
 	if not LootData.collectable(self, item):
 		add_message("That quest item is no longer eligible.")
 		return false
-	if not InventoryRules.add(hero.inventory, item):
+	if not InventoryRules.receive(hero, item):
 		add_message("Inventory full. Loot remains at its source.")
 		return false
 	add_message("Looted %s x%d." % [ItemData.get_item(int(item.id)).title, item.quantity])
@@ -1185,7 +1192,7 @@ func buy_item(merchant: GridActor, identifier: int, quantity: int) -> bool:
 	if cost > hero.copper or (int(stock[key]) >= 0 and quantity > int(stock[key])):
 		add_message("Purchase rejected: insufficient money or stock.")
 		return false
-	if not InventoryRules.add(hero.inventory, ItemData.instance(identifier, quantity)):
+	if not InventoryRules.receive(hero, ItemData.instance(identifier, quantity)):
 		add_message("Purchase rejected: inventory full.")
 		return false
 	hero.copper -= cost

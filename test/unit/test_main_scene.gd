@@ -697,7 +697,7 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	for skill in SkillRank.starting_skills():
 		world.hero.learn_skill(skill)
 	world.player_tile = Vector2i(30, 33)
-	world.hero.warrior_progress = 19
+	world.hero.warrior_progress = 39
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
@@ -709,7 +709,7 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 			passive = button
 	assert_not_null(passive)
 	assert_true(passive.disabled)
-	world.hero.warrior_progress = 20
+	world.hero.warrior_progress = 40
 	_game.menu.open_trainer(&"Warrior")
 	for button in _game.menu._buttons:
 		if button.text.begins_with("Anger Management"):
@@ -1316,9 +1316,9 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, "Brother Danil")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "buy_list")
-	assert_eq(_game.menu._buttons.size(), 3, "Buying shows only this merchant's catalog and Back.")
+	assert_eq(_game.menu._buttons.size(), 2, "Buying shows only this merchant's catalog and Back.")
 	assert_string_contains(_game.menu._buttons[0].text, "Bread / 0g 0s 5c each")
-	assert_string_contains(_game.menu._buttons[1].text, "Water / 0g 0s 5c each")
+	assert_eq(_game.menu._buttons[1].text, "Back (Esc)")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "buy")
 	assert_eq(_game.menu._buttons.map(func(button: Button) -> String: return button.text),
@@ -1390,15 +1390,15 @@ func test_trade_stack_options_respect_money_and_stock() -> void:
 	assert_eq(_game.menu._buttons.size(), 3, "Potions offer 1 and stack, without 10.")
 	assert_true(_game.menu._buttons[1].text.begins_with("Buy stack (5)"))
 	assert_true(_game.menu._buttons[1].disabled, "Stock of three cannot fill a stack of five.")
-	_game.menu._buy_options(159)
+	_game.menu._buy_options(117)
 	_game.menu._buttons[2].grab_focus()
 	for frame in range(4):
 		await get_tree().process_frame
 	await _click_button(_game.menu._buttons[2])
-	assert_eq(_game.world.hero.inventory[0], ItemData.instance(159, 20))
+	assert_eq(_game.world.hero.inventory[0], ItemData.instance(117, 20))
 	assert_eq(_game.world.hero.copper, 100)
 	_game.world.hero.copper = 4
-	_game.menu._buy_options(159)
+	_game.menu._buy_options(117)
 	for index in range(3):
 		assert_true(_game.menu._buttons[index].disabled)
 	_game.menu.open_sell(merchant)

@@ -165,44 +165,59 @@ func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected(
 		assert_null(SaveCodec.restore(snapshot, false))
 
 
-func test_marshal_paladin_option_starts_on_second_loop_and_is_only_a_referral() -> void:
+func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starters() -> void:
 	var session := _session()
 	var world := session.world
 	var marshal := _contact(world, 197)
 	_beside(world, marshal)
 	var menu := _menu(session)
 	menu.open_conversation(marshal)
-	assert_string_contains(_text(menu), "You look worn out from your travels.")
+	assert_false(_text(menu).contains("Other classes"))
 	assert_null(_button(menu, "Uhm... I seek paladin teaching"))
-	var warrior := _button(menu, "It's been a long journey, is there a warrior master?")
-	assert_not_null(warrior)
-	if warrior == null:
-		return
-	warrior.pressed.emit()
+	_button(menu, "It's been a long journey, is there a warrior master?").pressed.emit()
 	assert_string_contains(_text(menu), "Speak with Llane Beshere inside the abbey.")
-	assert_false(_text(menu).contains("Legion"))
+	menu.open_conversation(marshal)
+	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
+	var restored := SaveCodec.restore(SaveCodec.capture(session), false)
+	assert_not_null(restored)
+	if restored != null:
+		assert_true(restored.trainer_referral_received)
 	world.hero.health = 0
 	assert_true(session.restart_after_death())
 	world = session.world
+	assert_false(world.trainer_referral_received)
 	marshal = _contact(world, 197)
 	_beside(world, marshal)
 	menu.open_conversation(marshal)
-	var paladin := _button(menu, "Uhm... I seek paladin teaching")
-	assert_not_null(paladin)
-	if paladin == null:
-		return
+	assert_not_null(_button(menu, "Uhm... I seek warrior teaching"))
+	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
 	var equipment := world.hero.equipment.duplicate(true)
-	var learned := world.hero.learned_skills.duplicate()
-	paladin.pressed.emit()
-	assert_string_contains(_text(menu), "Speak with Brother Sammuel inside the abbey.")
-	assert_string_contains(_text(menu), "Also check with Janos inside")
+	_button(menu, "Uhm... I seek paladin teaching").pressed.emit()
+	assert_eq(menu.page, "confirm")
 	assert_eq(world.hero.selected_class, &"Warrior")
+	_button(menu, "Confirm").pressed.emit()
+	assert_string_contains(_text(menu), "Speak with Brother Sammuel inside the abbey.")
+	assert_eq(world.hero.selected_class, &"Paladin")
 	assert_eq(world.hero.equipment, equipment)
-	assert_eq(world.hero.learned_skills, learned)
 	assert_eq(world.turn_count, 0)
-	assert_false(world.starter_gear_received)
-	assert_false(session.select_class(&"Paladin"))
-
+	menu.open_conversation(marshal)
+	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
+	assert_null(_button(menu, "Uhm... I seek paladin teaching"))
+	var trainer := _contact(world, 925)
+	_beside(world, trainer)
+	menu.open_conversation(trainer)
+	_button(menu, "Train").pressed.emit()
+	for identifier: StringName in ClassSkillData.STARTERS[&"Paladin"]:
+		var skill := SkillRank.catalog(identifier)
+		for button in menu._buttons:
+			if button.text.begins_with(skill.title + " rank 1 / Free"):
+				assert_false(button.disabled)
+				button.pressed.emit()
+				break
+		assert_not_null(world.hero.find_skill(identifier))
+		assert_true(world.hotbar.has(identifier))
+	assert_eq(world.hero.copper, 0)
+	assert_eq(world.hero.progression_points(&"Paladin"), 0)
 
 func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> void:
 	var session := _session()

@@ -143,7 +143,7 @@ func test_non_valley_codec_snapshots_need_no_route_marker() -> void:
 	assert_null(SaveCodec.restore(route, true))
 
 
-func test_patrol_credits_wolves_cleared_before_the_first_conversation() -> void:
+func test_patrol_ignores_wolves_cleared_before_the_first_conversation() -> void:
 	var world := _session().world
 	for actor in world.actors:
 		if actor.npc_id == 299:
@@ -151,10 +151,10 @@ func test_patrol_credits_wolves_cleared_before_the_first_conversation() -> void:
 			world._check_npc_death(actor, 0)
 	world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
 	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
-	assert_true(QuestRules.ready(world, "valley_patrol"))
+	assert_false(QuestRules.ready(world, "valley_patrol"))
 	assert_true(QuestRules.abandon(world, "valley_patrol"))
 	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
-	assert_true(QuestRules.hand_in(world, "valley_patrol", _marshal(world)))
+	assert_false(QuestRules.hand_in(world, "valley_patrol", _marshal(world)))
 
 
 func test_all_landmarks_and_loot_sources_are_reachable_without_overlapping_live_spawns() -> void:
@@ -175,7 +175,7 @@ func test_all_landmarks_and_loot_sources_are_reachable_without_overlapping_live_
 			"The gate road connects the arrival to the valley.")
 
 
-func test_finite_branches_remain_completable_after_exploration_and_abandonment() -> void:
+func test_finite_branches_ignore_kills_after_exploration_and_abandonment() -> void:
 	var session := _session()
 	var world := session.world
 	world.hero.add_experience(400)
@@ -187,10 +187,10 @@ func test_finite_branches_remain_completable_after_exploration_and_abandonment()
 		var giver := _actor(world, int(QuestData.QUESTS[identifier].giver))
 		_beside(world, giver)
 		assert_true(QuestRules.accept(world, identifier, giver))
-		assert_true(QuestRules.ready(world, identifier))
+		assert_false(QuestRules.ready(world, identifier))
 		assert_true(QuestRules.abandon(world, identifier))
 		assert_true(QuestRules.accept(world, identifier, giver))
-		assert_true(QuestRules.hand_in(world, identifier, giver))
+		assert_false(QuestRules.hand_in(world, identifier, giver))
 		assert_false(QuestRules.hand_in(world, identifier, giver))
 	world.stalker_schedule = false
 	world.turn_count = 1000
@@ -320,11 +320,11 @@ func test_quest_blink_uses_presentation_seconds_without_spending_turns() -> void
 
 
 func test_neutral_wolves_and_kobolds_only_retaliate_after_attack_and_reset_neutral() -> void:
-	for identity in [299, 69, 6, 80]:
+	for identity in [299, 69, 80]:
 		var session := _session()
 		var world := session.world
 		for actor in world.actors:
-			if actor.npc_id in [299, 69, 6, 80]:
+			if actor.npc_id in [299, 69, 80]:
 				assert_eq(actor.relationship, GridActor.Relationship.NEUTRAL, actor.title)
 				assert_false(actor.engaged)
 		assert_eq(_actor(world, 257).relationship, GridActor.Relationship.HOSTILE)
@@ -344,6 +344,20 @@ func test_neutral_wolves_and_kobolds_only_retaliate_after_attack_and_reset_neutr
 		world.hero.health = 0
 		assert_true(session.restart_after_death())
 		assert_eq(_actor(session.world, identity).relationship, GridActor.Relationship.NEUTRAL)
+
+
+func test_laborers_engage_on_proximity_and_reset_hostile_each_loop() -> void:
+	var session := _session()
+	var world := session.world
+	var laborer := _actor(world, 6)
+	assert_eq(laborer.relationship, GridActor.Relationship.HOSTILE)
+	world.actors.assign([laborer])
+	_beside(world, laborer)
+	world.wait_turn()
+	assert_true(laborer.engaged)
+	world.hero.health = 0
+	assert_true(session.restart_after_death())
+	assert_eq(_actor(session.world, 6).relationship, GridActor.Relationship.HOSTILE)
 
 
 func test_save_preserves_unprovoked_and_provoked_wolf_relationships() -> void:
@@ -371,7 +385,7 @@ func test_wolf_chain_uses_separate_species_same_contact_and_survives_save_and_ab
 	_beside(world, marshal)
 	assert_false(QuestRules.available(world, "valley_timber_wolves"))
 	assert_false(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	# Exploring the stronger wolves first must not make the finite follow-up impossible.
+	# Only kills after accepting the follow-up count.
 	var timber := _actor(world, 69)
 	timber.health = 0
 	world._check_npc_death(timber, 0)
@@ -387,9 +401,9 @@ func test_wolf_chain_uses_separate_species_same_contact_and_survives_save_and_ab
 	assert_true(QuestRules.hand_in(world, "valley_patrol", marshal))
 	assert_true(QuestRules.available(world, "valley_timber_wolves"))
 	assert_true(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 1)
+	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 0)
 	assert_false(QuestRules.ready(world, "valley_timber_wolves"), "Young wolves do not count twice.")
-	for count in range(3):
+	for count in range(4):
 		timber = world.actors.filter(func(actor: GridActor) -> bool:
 			return actor.npc_id == 69 and actor.alive)[0]
 		timber.health = 0
@@ -404,16 +418,17 @@ func test_wolf_chain_uses_separate_species_same_contact_and_survives_save_and_ab
 	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 4)
 	assert_true(QuestRules.abandon(world, "valley_timber_wolves"))
 	assert_true(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 4)
+	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 0)
+	# Abandoning discards kill credit; this finite encounter can no longer be completed.
 	timber = world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 69 and actor.alive)[0]
 	timber.health = 0
 	world._check_npc_death(timber, 0)
-	assert_true(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
+	assert_false(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
 	assert_false(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
 	for identity in [299, 69]:
 		assert_eq(world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.npc_id == identity and actor.alive).size(), 3)
+			return actor.npc_id == identity and actor.alive).size(), 3 if identity == 299 else 2)
 
 
 func test_tile_sprite_priority_hides_terrain_and_corpses_without_removing_them() -> void:

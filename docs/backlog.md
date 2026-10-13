@@ -156,7 +156,7 @@ in code/data; optional combo empowerment remains unresolved for the later finish
 - [x] Cover health boundaries, capped rage/damage, physical mitigation/crit, misses,
   target commitment, ordering, trainer/UI behavior, retained use, death and save loading.
   Keep revision 14: the existing learned-rank format supports Execute without new state.
-- [ ] Owner playtest: learn Execute at Llane, assign it through K and compare it with
+- [ ] Owner playtest: learn Execute at Llane, find it on the hotbar and compare it with
   Mortal Strike and Heroic Strike near an enemy's health threshold. Try different rage
   reserves, then use retained Execute with Relentless Assault in another class.
   Judge the finishing window, rage payoff, trainer pacing and feedback.

@@ -17,7 +17,7 @@ func after_each() -> void:
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 16, 16), Vector2i(5, 5), 97, false)
-	world.hero.warrior_progress = 75
+	world.hero.warrior_progress = 150
 	world.train(&"Warrior", &"execute_1")
 	world.hero.melee.hit = 100.0
 	world.hero.melee.critical = 0.0
@@ -54,14 +54,14 @@ func test_execute_health_boundary_is_inclusive_and_does_not_round_up_small_targe
 		assert_string_contains(world.messages[-1], "at or below 20% health")
 		assert_eq(world.turn_count, 0)
 		assert_eq(world.hero.rage, 30)
-		assert_eq(world.hero.warrior_progress, 75)
+		assert_eq(world.hero.warrior_progress, 150)
 		assert_false(enemy.engaged)
 		assert_eq(enemy.relationship, GridActor.Relationship.NEUTRAL)
 		assert_null(world.auto_attack_target)
 		enemy.health -= 1
 		assert_true(world.cast_skill(&"execute_1", enemy))
 		assert_eq(world.turn_count, 1)
-		assert_eq(world.hero.warrior_progress, 76)
+		assert_eq(world.hero.warrior_progress, 151)
 
 
 func test_execute_spends_available_rage_between_minimum_and_cap_and_scales_damage() -> void:
@@ -109,7 +109,7 @@ func test_invalid_execute_preserves_resources_points_time_and_attack_target() ->
 		assert_eq(world.hero.rage, rage_before, reason)
 		assert_eq(world.hero.combo_points, 2, reason)
 		assert_eq(enemy.health, health_before, reason)
-		assert_eq(world.hero.warrior_progress, 75, reason)
+		assert_eq(world.hero.warrior_progress, 150, reason)
 		assert_eq(world.turn_count, 0, reason)
 		assert_almost_eq(world.hero.swing.remaining, 10.0, 0.00001, reason)
 		assert_same(world.last_attacked_enemy, prior, reason)
@@ -128,7 +128,7 @@ func test_execute_is_one_turn_without_cooldown_even_with_haste_and_casting_credi
 	assert_true(world.cast_skill(&"execute_1"))
 	assert_eq(world.turn_count, 2)
 	assert_eq(world.hero.rage, 40)
-	assert_eq(world.hero.warrior_progress, 77)
+	assert_eq(world.hero.warrior_progress, 152)
 	assert_almost_eq(world.hero.swing.remaining, 1.5, 0.00001)
 	assert_almost_eq(world.hero.casting_credit, 0.9, 0.00001)
 	assert_false(world.hero.cooldowns.has("execute"))
@@ -165,7 +165,7 @@ func test_execute_misses_and_dodges_spend_rage_and_award_selected_class_xp_witho
 		assert_true(world.cast_skill(&"execute_1", enemy))
 		assert_eq(enemy.health, 2000)
 		assert_eq(world.hero.rage, 0)
-		assert_eq(world.hero.warrior_progress, 76)
+		assert_eq(world.hero.warrior_progress, 151)
 		assert_eq(world.hero.combo_points, 2)
 
 
@@ -184,7 +184,7 @@ func test_retained_execute_builds_points_across_targets_but_grants_neither_class
 	world.hero.rage = 30
 	assert_true(world.cast_skill(&"execute_1", second))
 	assert_eq(world.hero.combo_points, 5)
-	assert_eq(world.hero.warrior_progress, 75)
+	assert_eq(world.hero.warrior_progress, 150)
 	assert_eq(world.hero.progression_points(&"Shaman"), 0)
 	assert_same(world.last_attacked_enemy, second)
 
@@ -216,7 +216,7 @@ func test_execute_spends_before_due_swing_and_resolves_before_enemy_without_extr
 	assert_eq(world.hero.health, health_before - 1)
 	assert_eq(world.hero.rage, 17, "Only the later swing's 14 and incoming hit's 3 remain.")
 	assert_eq(world.hero.combo_points, 1, "The ordinary swing grants no extra point.")
-	assert_eq(world.hero.warrior_progress, 76)
+	assert_eq(world.hero.warrior_progress, 151)
 	var log := "\n".join(world.messages)
 	assert_gt(log.find("You ->"), log.find("Execute (hit)"))
 	assert_gt(log.find("Enemy ->"), log.find("You ->"))
@@ -304,7 +304,7 @@ func test_execute_hotbar_picker_filters_health_range_and_rechecks_on_confirmatio
 	assert_false(gameplay.combat_panel.visible)
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 30)
-	assert_eq(world.hero.warrior_progress, 75)
+	assert_eq(world.hero.warrior_progress, 150)
 	assert_eq(healthy.health, 2001)
 	assert_eq(distant.health, 2000)
 	enemy.health = 2000
@@ -316,7 +316,7 @@ func test_execute_hotbar_picker_filters_health_range_and_rechecks_on_confirmatio
 	assert_false(gameplay.combat_panel.visible)
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 76)
+	assert_eq(world.hero.warrior_progress, 151)
 	assert_same(world.last_attacked_enemy, enemy)
 
 
@@ -345,7 +345,7 @@ func test_execute_hotbar_uses_committed_enemy_and_never_opens_picker_for_another
 
 func test_execute_checkpoint_notifies_once_teaches_free_without_prior_unlocks_and_remains_learned() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 16, 16), Vector2i(5, 5), 97, false)
-	world.hero.warrior_progress = 74
+	world.hero.warrior_progress = 149
 	assert_false(world.train(&"Warrior", &"execute_1"))
 	assert_null(world.hero.find_skill(&"execute_1"))
 	world.add_class_progress(&"Warrior", 1)
@@ -359,7 +359,7 @@ func test_execute_checkpoint_notifies_once_teaches_free_without_prior_unlocks_an
 	world.hero.selected_class = &"Warrior"
 	assert_null(world.hero.find_skill(&"charge_1"))
 	assert_true(world.train(&"Warrior", &"execute_1"))
-	assert_eq(world.hero.warrior_progress, 76)
+	assert_eq(world.hero.warrior_progress, 151)
 	assert_eq(world.hero.copper, 0)
 	assert_eq(world.turn_count, 0)
 	assert_false(world.train(&"Warrior", &"execute_1"))
@@ -380,7 +380,7 @@ func test_warrior_trainer_menu_enables_execute_at_checkpoint_and_spell_book_can_
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
-	game.world.hero.warrior_progress = 74
+	game.world.hero.warrior_progress = 149
 	var menu := MenuPanel.new()
 	menu.session = game
 	menu.active_game = true
@@ -399,9 +399,9 @@ func test_warrior_trainer_menu_enables_execute_at_checkpoint_and_spell_book_can_
 	learn.pressed.emit()
 	assert_not_null(game.world.hero.find_skill(&"execute_1"))
 	assert_true(_trainer_button(menu, "Execute rank 1 / Learned").disabled)
-	assert_eq(game.world.hero.warrior_progress, 75)
+	assert_eq(game.world.hero.warrior_progress, 150)
 	assert_eq(game.world.turn_count, 0)
-	assert_false(game.world.hotbar.has(&"execute_1"), "Checkpoint actives use manual assignment.")
+	assert_true(game.world.hotbar.has(&"execute_1"), "Learned actives fill an empty slot.")
 	var gameplay := _live_gameplay(game.world)
 	gameplay.hero_panel.open(game.world.hero, true)
 	var rank_button: SkillButton
@@ -423,7 +423,7 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
-	game.world.hero.warrior_progress = 75
+	game.world.hero.warrior_progress = 150
 	var before := SaveCodec.restore(SaveCodec.capture(game), false)
 	assert_not_null(before)
 	if before == null:
@@ -448,8 +448,8 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	assert_eq(restored.hero.combo_points, 2)
 	assert_almost_eq(restored.hero.swing.remaining, 1.75, 0.00001)
 	var invalid := payload.duplicate(true)
-	invalid.hero.warrior_progress = 74
-	invalid.class_progress.Warrior = 74
+	invalid.hero.warrior_progress = 149
+	invalid.class_progress.Warrior = 149
 	assert_null(SaveCodec.restore(invalid, false), "Learning cannot precede its XP checkpoint.")
 	assert_not_null(restored.hero.find_skill(&"execute_1"), "Failed restore preserves live state.")
 	game.restore(restored, 97, 1)
@@ -458,7 +458,7 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	assert_true(game.restart_after_death())
 	assert_not_null(game.world.hero.find_skill(&"execute_1"))
 	assert_eq(game.world.hotbar[19], &"execute_1")
-	assert_eq(game.world.hero.warrior_progress, 75)
+	assert_eq(game.world.hero.warrior_progress, 150)
 	assert_eq([game.world.hero.rage, game.world.hero.combo_points], [0, 0])
 	assert_false(old_world.cast_skill(&"execute_1"), "A dead attempt cannot act.")
 	assert_true(game.world.can_save())
@@ -483,7 +483,7 @@ func test_execute_terminal_kill_spends_single_boundary_and_stops_swings_and_enem
 	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.rage, 70)
-	assert_eq(world.hero.warrior_progress, 76)
+	assert_eq(world.hero.warrior_progress, 151)
 	assert_eq(world.hero.health, 1)
 	assert_eq(other.health, 2000)
 	assert_false(world.can_save())

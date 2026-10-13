@@ -1,11 +1,11 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-14 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-15 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
-	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire",
+	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire", "trainer_referral_received",
 ]
 const HERO_FIELDS: Array[String] = [
 	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",

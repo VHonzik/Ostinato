@@ -10,11 +10,6 @@ const CATALOGS: Dictionary = {
 			"price": 25,
 			"stock": -1
 		},
-		"159": {
-			"quantity": 5,
-			"price": 25,
-			"stock": -1
-		}
 	},
 	"190": {
 		"2121": {
@@ -183,15 +178,15 @@ const CATALOGS: Dictionary = {
 			"price": 5,
 			"stock": -1
 		},
-		"159": {
-			"quantity": 1,
-			"price": 5,
-			"stock": -1
-		},
 		"2455": {
 			"quantity": 1,
 			"price": 40,
 			"stock": 3
+		},
+		"2132": {
+			"quantity": 1,
+			"price": 102,
+			"stock": -1
 		}
 	}
 }

@@ -6,7 +6,7 @@ extends RefCounted
 ## Group 0 rolls independently; a positive group selects at most one item.
 const TABLES: Dictionary = {
 	"6": [
-		[159, 6.5536, 0, 1, 1], # Refreshing Spring Water
+		[2132, 2, 0, 1, 1], # Short Staff
 		[755, 29.7889, 0, 1, 1], # Melted Candle
 		[2772, 0.0073, 0, 1, 1], # Iron Ore
 		[4536, 13.4595, 0, 1, 1], # Shiny Red Apple
@@ -16,7 +16,6 @@ const TABLES: Dictionary = {
 	],
 	"38": [
 		[117, 0.02, 0, 1, 1], # Tough Jerky
-		[159, 6.4011, 0, 1, 1], # Refreshing Spring Water
 		[752, -80, 0, 1, 1], # Red Burlap Bandana
 		[2057, 1.96, 0, 1, 1], # Pitted Defias Shortsword
 		[2070, 13.2319, 0, 1, 1], # Darnassian Bleu
@@ -36,7 +35,6 @@ const TABLES: Dictionary = {
 	],
 	"80": [
 		[117, 0.02, 0, 1, 1], # Tough Jerky
-		[159, 6.4425, 0, 1, 1], # Refreshing Spring Water
 		[755, 29.3913, 0, 1, 1], # Melted Candle
 		[2055, 2.04, 0, 1, 1], # Small Wooden Hammer
 		[2070, 0.02, 0, 1, 1], # Darnassian Bleu
@@ -49,7 +47,6 @@ const TABLES: Dictionary = {
 	],
 	"103": [
 		[117, 0.02, 0, 1, 1], # Tough Jerky
-		[159, 7.3689, 0, 1, 1], # Refreshing Spring Water
 		[182, -100, 0, 1, 1], # Garrick's Head
 		[2057, 0.83, 0, 1, 1], # Pitted Defias Shortsword
 		[2070, 12.364, 0, 1, 1], # Darnassian Bleu
@@ -58,7 +55,6 @@ const TABLES: Dictionary = {
 		[60441, 0.5, 0, -60441, 1], # Six-slot bag reference
 	],
 	"257": [
-		[159, 6.5174, 0, 1, 1], # Refreshing Spring Water
 		[755, 29.5539, 0, 1, 1], # Melted Candle
 		[2770, 0.02, 0, 1, 1], # Copper Ore
 		[2835, 0.02, 0, 1, 1], # Rough Stone
@@ -85,7 +81,6 @@ const TABLES: Dictionary = {
 	],
 	"2843": [
 		[117, 19, 1, 1, 2], # Tough Jerky
-		[159, 35, 0, 1, 2], # Refreshing Spring Water
 		[2070, 18, 1, 1, 2], # Darnassian Bleu
 		[4536, 19, 1, 1, 2], # Shiny Red Apple
 		[4540, 19, 1, 1, 2], # Tough Hunk of Bread

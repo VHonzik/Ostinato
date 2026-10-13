@@ -191,7 +191,7 @@ static func _creature(world: GridWorld, identity: int, tile: Vector2i, spawn_id:
 	creature.spawn_id = spawn_id
 	creature.loot_table = identity
 	creature.creature_type = "beast" if identity in [299, 69] else "humanoid"
-	creature.relationship = (GridActor.Relationship.NEUTRAL if identity in [299, 69, 6, 80]
+	creature.relationship = (GridActor.Relationship.NEUTRAL if identity in [299, 69, 80]
 		else GridActor.Relationship.HOSTILE)
 	creature.aggro_range = 4
 	creature.max_health = int(data.health)

@@ -188,7 +188,7 @@ func test_weapon_ability_bonus_precedes_armor_and_block() -> void:
 	assert_eq(MeleeRules.damage(attacker, defender, &"block", 0.0, 0.0, 1.5, 5), 15)
 
 
-func test_battle_shout_is_immediate_one_turn_free_and_has_ten_turn_cooldown() -> void:
+func test_battle_shout_is_immediate_one_turn_free_and_has_thirty_turn_cooldown() -> void:
 	var world := _world()
 	_learn_shout(world)
 	var observed_rage: Array[int] = []
@@ -200,16 +200,16 @@ func test_battle_shout_is_immediate_one_turn_free_and_has_ten_turn_cooldown() ->
 	assert_eq(observed_rage, [10])
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.rage, 8, "The one out-of-combat turn decays two rage.")
-	assert_eq(world.hero.warrior_progress, 11)
+	assert_eq(world.hero.warrior_progress, 21)
 	assert_almost_eq(world.hero.melee.damage_multiplier, 1.1, 0.00001)
 	assert_false(world.cast_skill(&"battle_shout_1"))
 	assert_eq(world.turn_count, 1)
-	for index in range(9):
+	for index in range(29):
 		world.wait_turn()
 	assert_false(world.cast_skill(&"battle_shout_1"))
 	world.wait_turn()
 	assert_true(world.cast_skill(&"battle_shout_1"))
-	assert_eq(world.hero.warrior_progress, 12)
+	assert_eq(world.hero.warrior_progress, 22)
 	assert_almost_eq(world.hero.melee.damage_multiplier, 1.1, 0.00001, "Refresh does not stack.")
 
 
@@ -225,14 +225,14 @@ func test_shout_lasts_thirty_turns_and_expires_without_damage_bonus() -> void:
 	assert_eq(world.hero.melee.damage_multiplier, 1.0)
 
 
-func test_twentieth_use_notifies_once_and_training_unlocks_fractional_decay() -> void:
+func test_fortieth_use_notifies_once_and_training_unlocks_fractional_decay() -> void:
 	var world := _world()
 	_learn_shout(world)
 	assert_false(world.train(&"Warrior", &"anger_management_1"))
-	world.hero.warrior_progress = 19
+	world.hero.warrior_progress = 39
 	world.cast_skill(&"battle_shout_1")
-	assert_eq(world.hero.warrior_progress, 20)
-	assert_eq(world.messages.count("20 warrior progression points! Visit Llane Beshere, the warrior trainer, to learn Anger Management."), 1)
+	assert_eq(world.hero.warrior_progress, 40)
+	assert_eq(world.messages.count("40 warrior progression points! Visit Llane Beshere, the warrior trainer, to learn Anger Management."), 1)
 	assert_null(world.hero.find_skill(&"anger_management_1"))
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_false(world.assign_hotbar(2, &"anger_management_1"))
@@ -242,13 +242,13 @@ func test_twentieth_use_notifies_once_and_training_unlocks_fractional_decay() ->
 	assert_eq(world.hero.rage, 4)
 	world.wait_turn()
 	assert_eq(world.hero.rage, 3)
-	assert_eq(world.hero.warrior_progress, 20)
+	assert_eq(world.hero.warrior_progress, 40)
 
 
 func test_save_roundtrip_preserves_rage_credits_progression_shout_and_future_decay() -> void:
 	var game := GameSession.new()
 	game.world = _world()
-	game.world.hero.warrior_progress = 20
+	game.world.hero.warrior_progress = 40
 	assert_true(game.world.train(&"Warrior", &"anger_management_1"))
 	_learn_shout(game.world)
 	game.world.cast_skill(&"battle_shout_1")
@@ -261,7 +261,7 @@ func test_save_roundtrip_preserves_rage_credits_progression_shout_and_future_dec
 	assert_eq(restored.hero.rage, game.world.hero.rage)
 	assert_eq(restored.hero.rage_decay_credit, 0.5)
 	assert_almost_eq(restored.hero.rage_credit, 0.3, 0.00001)
-	assert_eq(restored.hero.warrior_progress, 21)
+	assert_eq(restored.hero.warrior_progress, 41)
 	assert_almost_eq(restored.hero.melee.damage_multiplier, 1.1, 0.00001)
 	restored.wait_turn()
 	game.world.wait_turn()
@@ -280,14 +280,14 @@ func test_death_retains_points_passive_and_hotbar_but_resets_rage_and_buffs() ->
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
-	game.world.hero.warrior_progress = 20
+	game.world.hero.warrior_progress = 40
 	assert_true(game.world.train(&"Warrior", &"anger_management_1"))
 	_learn_shout(game.world)
 	game.world.cast_skill(&"battle_shout_1")
 	game.world.hero.rage_credit = 0.7
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.warrior_progress, 21)
+	assert_eq(game.world.hero.warrior_progress, 41)
 	assert_not_null(game.world.hero.find_skill(&"anger_management_1"))
 	assert_eq([game.world.hero.rage, game.world.hero.rage_credit, game.world.hero.rage_decay_credit], [0, 0.0, 0.0])
 	assert_eq(game.world.hero.buffs, {})
@@ -502,25 +502,25 @@ func test_neutral_bump_and_last_attack_history_reset_on_save_load_and_death() ->
 
 func _charge_world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(2, 10), 97, false)
-	world.hero.warrior_progress = 50
+	world.hero.warrior_progress = 100
 	world.train(&"Warrior", &"charge_1")
 	return world
 
 
 func test_charge_unlock_and_passive_training_keep_all_progression_points() -> void:
 	var world := _world()
-	world.hero.warrior_progress = 49
+	world.hero.warrior_progress = 99
 	assert_false(world.train(&"Warrior", &"charge_1"))
 	assert_null(world.hero.find_skill(&"charge_1"))
 	world.add_class_progress(&"Warrior", 1)
-	assert_string_contains(world.messages[-1], "50 warrior progression points!")
+	assert_string_contains(world.messages[-1], "100 warrior progression points!")
 	assert_string_contains(world.messages[-1], "learn Charge")
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_true(world.train(&"Warrior", &"charge_1"))
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_false(world.train(&"Warrior", &"charge_1"))
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_true(world.assign_hotbar(2, &"charge_1"))
 
 
@@ -528,17 +528,20 @@ func test_development_points_award_current_class_and_cross_both_unlocks() -> voi
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, true)
 	assert_true(world.cast_skill(&"class_points_1"))
 	assert_eq(world.hero.warrior_progress, 30)
-	assert_string_contains("\n".join(world.messages), "learn Anger Management")
+	assert_string_contains("\n".join(world.messages), "learn Battle Shout")
 	assert_null(world.hero.find_skill(&"anger_management_1"))
 	assert_true(world.cast_skill(&"class_points_1"))
 	assert_eq(world.hero.warrior_progress, 60)
+	assert_string_contains("\n".join(world.messages), "learn Anger Management")
+	assert_true(world.cast_skill(&"class_points_1"))
+	assert_true(world.cast_skill(&"class_points_1"))
 	assert_string_contains("\n".join(world.messages), "learn Charge")
 	assert_null(world.hero.find_skill(&"charge_1"))
 	world.hero.selected_class = &"Mage"
 	assert_true(world.cast_skill(&"class_points_1"))
 	assert_eq(world.hero.progression_points(&"Mage"), 30)
-	assert_eq(world.hero.warrior_progress, 60)
-	assert_eq(world.turn_count, 3)
+	assert_eq(world.hero.warrior_progress, 120)
+	assert_eq(world.turn_count, 5)
 	assert_false(_world().cast_skill(&"class_points_1"), "Development rank is unavailable in release.")
 
 
@@ -554,7 +557,7 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 	if restored == null:
 		return
 	assert_eq(restored.hero.progression_points(&"Mage"), 30)
-	assert_eq(restored.hero.warrior_progress, 50)
+	assert_eq(restored.hero.warrior_progress, 100)
 	assert_not_null(restored.hero.find_skill(&"charge_1"))
 	assert_eq(restored.hotbar[2], &"charge_1")
 	for invalid_value: Variant in [-1, 0.5, "30", [], {}]:
@@ -562,13 +565,13 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 		invalid.class_progress.Mage = invalid_value
 		assert_null(SaveCodec.restore(invalid, false))
 	var insufficient := saved.duplicate(true)
-	insufficient.hero.warrior_progress = 49
-	insufficient.class_progress.Warrior = 49
+	insufficient.hero.warrior_progress = 99
+	insufficient.class_progress.Warrior = 99
 	assert_null(SaveCodec.restore(insufficient, false), "Charge requires its progression checkpoint.")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.progression_points(&"Mage"), 30)
-	assert_eq(game.world.hero.warrior_progress, 50)
+	assert_eq(game.world.hero.warrior_progress, 100)
 	assert_not_null(game.world.hero.find_skill(&"charge_1"))
 	assert_eq(game.world.hotbar[2], &"charge_1")
 
@@ -576,14 +579,14 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 func test_existing_warrior_save_without_class_map_still_preserves_points() -> void:
 	var game := GameSession.new()
 	game.world = _world()
-	game.world.hero.warrior_progress = 20
+	game.world.hero.warrior_progress = 40
 	game.world.train(&"Warrior", &"anger_management_1")
 	var saved := SaveCodec.capture(game)
 	saved.erase("class_progress")
 	var restored := SaveCodec.restore(saved, false)
 	assert_not_null(restored)
 	if restored != null:
-		assert_eq(restored.hero.warrior_progress, 20)
+		assert_eq(restored.hero.warrior_progress, 40)
 		assert_not_null(restored.hero.find_skill(&"anger_management_1"))
 
 
@@ -602,7 +605,7 @@ func test_charge_winds_up_then_travels_four_tiles_per_turn_and_awards_on_arrival
 	assert_eq(world.player_tile, Vector2i(2, 10))
 	assert_true(world.is_charging())
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_true(world.continue_cast())
 	assert_eq(world.player_tile, route[4])
 	assert_true(world.is_charging())
@@ -613,10 +616,51 @@ func test_charge_winds_up_then_travels_four_tiles_per_turn_and_awards_on_arrival
 	assert_false(world.is_charging())
 	assert_eq(world.turn_count, 3)
 	assert_eq(world.hero.rage, 30)
-	assert_eq(world.hero.warrior_progress, 51)
+	assert_eq(world.hero.warrior_progress, 101)
 	assert_eq(world.movement_credit, 0.5)
 	assert_almost_eq(world.hero.casting_credit, 0.8, 0.00001)
 	assert_lt(enemy.health, enemy.max_health, "Arrival allows the ready weapon to swing.")
+
+
+func test_charge_holds_engaged_target_until_arrival_then_releases_it() -> void:
+	var world := _charge_world()
+	var enemy := _enemy(world, Vector2i(11, 10))
+	var home := enemy.tile
+	assert_true(world.cast_skill(&"charge_1", enemy))
+	assert_true(enemy.engaged)
+	assert_eq(enemy.tile, home, "Wind-up must not let the target run toward the player.")
+	assert_true(world.continue_cast())
+	assert_true(world.is_charging())
+	assert_eq(enemy.tile, home, "Travel holds the target until melee range.")
+	assert_true(world.continue_cast())
+	assert_false(world.is_charging())
+	assert_eq(enemy.tile, home)
+	assert_eq(GridWorld.tile_distance(world.player_tile, enemy.tile), 1)
+	world.auto_attack_target = null
+	world.last_attacked_enemy = null
+	world.player_tile = Vector2i(2, 10)
+	world.wait_turn()
+	assert_ne(enemy.tile, home, "The hold ends on arrival; subsequent pursuit works.")
+
+
+func test_charge_hold_allows_target_to_attack_adjacent_totem() -> void:
+	var world := _charge_world()
+	var enemy := _enemy(world, Vector2i(11, 10))
+	var totem := GridActor.new(Vector2i(11, 9))
+	totem.summon_kind = "totem"
+	totem.summon_skill = &"strength_of_earth_totem_1"
+	totem.expires_turn = 30
+	totem.awards_experience = false
+	totem.max_health = 100
+	totem.health = 100
+	totem.melee.dodge = 0.0
+	totem.melee.parry = 0.0
+	world.actors.append(totem)
+	SummonRules.add_threat(world, enemy, totem, 100)
+	assert_true(world.cast_skill(&"charge_1", enemy))
+	assert_eq(enemy.tile, Vector2i(11, 10))
+	assert_lt(totem.health, totem.max_health, "Charge holds movement, not attacks.")
+	assert_true(world.is_charging())
 
 
 func test_charge_checks_range_and_reachable_empty_melee_tile_before_starting() -> void:
@@ -633,7 +677,7 @@ func test_charge_checks_range_and_reachable_empty_melee_tile_before_starting() -
 	assert_false(world.cast_skill(&"charge_1", enemy))
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_false(enemy.engaged)
 	assert_null(world.pending_skill)
 
@@ -661,7 +705,8 @@ func test_charge_replans_moving_target_and_fails_without_rewards_when_target_die
 	var enemy := _enemy(world, Vector2i(9, 10))
 	enemy.stunned_until = 999
 	assert_true(world.cast_skill(&"charge_1", enemy))
-	world._move_actor(enemy, Vector2i(9, 12))
+	# Forced displacement still replans; ordinary NPC movement is held by Charge.
+	enemy.tile = Vector2i(9, 12)
 	var changed_route := world.charge_route(enemy)
 	world.continue_cast()
 	assert_eq(world.player_tile, changed_route[4])
@@ -671,7 +716,7 @@ func test_charge_replans_moving_target_and_fails_without_rewards_when_target_die
 	assert_false(world.is_charging())
 	assert_eq(world.player_tile, stopped_tile)
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_string_contains("\n".join(world.messages), "Charge stopped")
 
 
@@ -691,7 +736,7 @@ func test_charge_blocks_other_actions_and_cancellation_but_death_stops_it() -> v
 	world.hero.health = 0
 	assert_true(world.check_terminal())
 	assert_null(world.pending_skill)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 
 
 func test_charge_hotbar_targets_enemy_and_live_ui_cannot_cancel_or_pause_travel() -> void:
@@ -776,7 +821,7 @@ func test_charge_rejects_partial_route_and_stops_if_new_occupants_block_arrival(
 		trapped.blocked_tiles[trapped.player_tile + direction] = true
 	assert_false(trapped.cast_skill(&"charge_1", target))
 	assert_eq(trapped.turn_count, 0)
-	assert_eq(trapped.hero.warrior_progress, 50)
+	assert_eq(trapped.hero.warrior_progress, 100)
 	var world := _charge_world()
 	var enemy := _enemy(world, Vector2i(9, 10))
 	enemy.stunned_until = 999
@@ -788,7 +833,7 @@ func test_charge_rejects_partial_route_and_stops_if_new_occupants_block_arrival(
 	assert_false(world.is_charging())
 	assert_eq(world.player_tile, Vector2i(2, 10))
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 
 
 func test_charge_minimum_range_rejects_adjacent_targets_and_picker_omits_them() -> void:
@@ -804,7 +849,7 @@ func test_charge_minimum_range_rejects_adjacent_targets_and_picker_omits_them() 
 		assert_false(enemy.engaged)
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 0)
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 	assert_false(world.hero.cooldowns.has("charge"))
 	assert_string_contains(skill.description, "Minimum range: 2 tiles")
 	assert_string_contains(skill.description, "10-turn cooldown")
@@ -832,7 +877,7 @@ func test_charge_cooldown_starts_on_arrival_and_expires_after_ten_turns() -> voi
 		world.wait_turn()
 	assert_eq(world.turn_count, 12)
 	assert_false(world.cast_skill(&"charge_1", enemy))
-	assert_eq(world.hero.warrior_progress, 51)
+	assert_eq(world.hero.warrior_progress, 101)
 	world.wait_turn()
 	assert_eq(world.turn_count, 13)
 	assert_true(world.cast_skill(&"charge_1", enemy))
@@ -844,12 +889,12 @@ func test_charge_can_finish_when_target_enters_minimum_range_during_windup() -> 
 	var enemy := _enemy(world, Vector2i(4, 10))
 	enemy.stunned_until = 999
 	assert_true(world.cast_skill(&"charge_1", enemy))
-	world._move_actor(enemy, Vector2i(3, 10))
+	enemy.tile = Vector2i(3, 10)
 	world.continue_cast()
 	assert_false(world.is_charging())
 	assert_eq(world.player_tile, Vector2i(2, 10))
 	assert_eq(world.hero.rage, 30)
-	assert_eq(world.hero.warrior_progress, 51)
+	assert_eq(world.hero.warrior_progress, 101)
 	assert_eq(world.hero.cooldowns.get("charge"), 12)
 
 
@@ -875,7 +920,7 @@ func test_charge_arrival_cooldown_survives_save_and_failed_charge_starts_none() 
 	target.alive = false
 	world.continue_cast()
 	assert_false(world.hero.cooldowns.has("charge"))
-	assert_eq(world.hero.warrior_progress, 50)
+	assert_eq(world.hero.warrior_progress, 100)
 
 
 func test_charge_reaches_nine_tiles_and_picker_includes_extended_range() -> void:
@@ -891,12 +936,12 @@ func test_charge_reaches_nine_tiles_and_picker_includes_extended_range() -> void
 		assert_eq(world.turn_count, 3)
 		assert_eq(GridWorld.tile_distance(world.player_tile, enemy.tile), 1)
 		assert_eq(world.hero.rage, 30)
-		assert_eq(world.hero.warrior_progress, 51)
+		assert_eq(world.hero.warrior_progress, 101)
 		assert_false(too_far.engaged)
 
 
 func _learn_shout(world: GridWorld) -> void:
-	world.hero.warrior_progress = maxi(10, world.hero.warrior_progress)
+	world.hero.warrior_progress = maxi(20, world.hero.warrior_progress)
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 
 

@@ -236,9 +236,9 @@ func test_trade_quantity_is_atomic_and_finite_stock_does_not_replenish() -> void
 	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 0)
 	_fill(world.hero)
 	var money := world.hero.copper
-	assert_false(world.buy_item(trader, 159, 1))
+	assert_false(world.buy_item(trader, 117, 1))
 	assert_eq(world.hero.copper, money)
-	assert_eq(world.vendor_stock["fixed/900003"]["159"], -1)
+	assert_eq(world.vendor_stock["fixed/900003"]["117"], -1)
 
 
 func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:
@@ -281,6 +281,105 @@ func test_food_and_water_restore_only_on_turns_and_movement_or_combat_interrupts
 	assert_false(world.consume_item(0))
 	assert_eq(world.turn_count, turn)
 	assert_eq(world.hero.inventory[0].quantity, 1)
+
+
+func test_apple_heals_five_per_wait_for_ten_turns_and_save_preserves_remaining_meal() -> void:
+	var game := GameSession.new()
+	game.development_build = false
+	game.world = GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	var world := game.world
+	var control := GridWorld.new(world.bounds, world.player_tile, 97, false)
+	world.hero.level = 10
+	world.hero.refresh_stats()
+	control.hero.level = 10
+	control.hero.refresh_stats()
+	world.hero.health = 1
+	control.hero.health = 1
+	world.hero.inventory[0] = ItemData.instance(4536)
+	assert_true(world.consume_item(0))
+	control.wait_turn()
+	assert_eq(world.hero.health, control.hero.health, "Eating starts the next turn.")
+	for elapsed in range(1, 11):
+		world.wait_turn()
+		control.wait_turn()
+		assert_eq(world.hero.health - control.hero.health, elapsed * 5)
+		if elapsed == 4:
+			var restored := SaveCodec.restore(SaveCodec.capture(game), false)
+			assert_not_null(restored)
+			if restored == null:
+				return
+			game.restore(restored, 97, 1)
+			world = game.world
+	assert_true(world.hero.restoration.is_empty())
+	world.wait_turn()
+	control.wait_turn()
+	assert_eq(world.hero.health - control.hero.health, 50, "No eleventh healing tick.")
+
+
+func test_apple_ends_on_successful_movement_and_caps_health() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	world.hero.inventory[0] = ItemData.instance(4536, 2)
+	world.hero.health = world.hero.max_health - 1
+	assert_true(world.consume_item(0))
+	world.wait_turn()
+	assert_eq(world.hero.health, world.hero.max_health)
+	world.blocked_tiles[world.player_tile + Vector2i.RIGHT] = true
+	assert_false(world.move_player(Vector2i.RIGHT))
+	assert_false(world.hero.restoration.is_empty(), "Blocked movement keeps eating.")
+	assert_true(world.move_player(Vector2i.DOWN))
+	assert_true(world.hero.restoration.is_empty())
+	assert_true(world.consume_item(0))
+	var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	enemy.stunned_until = 999
+	world.actors.append(enemy)
+	world.wait_turn()
+	assert_true(world.hero.restoration.is_empty(), "Combat still interrupts eating.")
+
+
+func test_acquired_gear_fills_empty_slots_with_full_bag_and_never_displaces_hands() -> void:
+	var hero := HeroState.new(false)
+	_fill(hero)
+	assert_true(InventoryRules.receive(hero, ItemData.instance(2649)))
+	assert_eq(hero.equipment.waist.id, 2649)
+	var before := hero.inventory.duplicate(true)
+	assert_false(InventoryRules.receive(hero, ItemData.instance(2649)))
+	assert_eq(hero.inventory, before)
+	assert_false(InventoryRules.receive(hero, ItemData.instance(2129)),
+		"The starting two-handed staff prevents a shield from auto-equipping.")
+	assert_eq(hero.equipment.main_hand.id, 35)
+	assert_false(hero.equipment.has("off_hand"))
+	assert_false(InventoryRules.receive(hero, ItemData.instance(2653, 2)),
+		"An extra copy must fit before either copy is transferred.")
+	assert_false(hero.equipment.has("hands"))
+	hero.inventory[0] = {}
+	assert_true(InventoryRules.receive(hero, ItemData.instance(2129)))
+	assert_eq(hero.inventory[0].id, 2129)
+	assert_false(hero.equipment.has("off_hand"))
+
+
+func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	var corpse := GridActor.new(Vector2i(4, 5))
+	corpse.alive = false
+	corpse.loot_assigned = true
+	corpse.loot = [ItemData.instance(2649)]
+	world.actors.append(corpse)
+	assert_true(world.loot_item(corpse, 0))
+	assert_eq(world.hero.equipment.waist.id, 2649)
+	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
+	var trader := GridActor.new(Vector2i(6, 5))
+	trader.npc_id = 900003
+	trader.spawn_id = "fixed/900003"
+	trader.service = &"Trader"
+	world.actors.append(trader)
+	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.hero.equipment.erase("main_hand")
+	world.hero.copper = 102
+	assert_true(world.buy_item(trader, 2132, 1))
+	assert_eq(world.hero.equipment.main_hand.id, 2132)
+	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
+	assert_eq(world.turn_count, 0)
 
 
 func test_shield_blocks_front_only_and_damage_reduction_uses_block_value() -> void:

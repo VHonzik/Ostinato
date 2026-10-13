@@ -1,6 +1,33 @@
 extends GutTest
 
 
+func test_training_fills_first_empty_slot_even_when_locked_and_preserves_full_hotbar() -> void:
+	var session := GameSession.new()
+	session.development_build = false
+	session.new_game(97)
+	var world := session.world
+	world.hero.warrior_progress = 150
+	world.hotbar_locked = true
+	assert_true(world.train(&"Warrior", &"battle_shout_1"))
+	assert_eq(world.hotbar.slice(0, 3),
+		[&"mortal_strike_1", &"heroic_strike_1", &"battle_shout_1"])
+	assert_true(world.train(&"Warrior", &"anger_management_1"))
+	assert_false(world.hotbar.has(&"anger_management_1"))
+	for index in range(3, world.hotbar.size()):
+		world.hotbar[index] = &"mortal_strike_1"
+	var assignments := world.hotbar.duplicate()
+	assert_true(world.train(&"Warrior", &"charge_1"))
+	assert_eq(world.hotbar, assignments, "A full bar never loses an assignment.")
+	assert_not_null(world.hero.find_skill(&"charge_1"), "Learning still succeeds with a full bar.")
+	assert_false(world.train(&"Warrior", &"charge_1"))
+	assert_eq(world.hotbar, assignments)
+	assert_eq(world.turn_count, 0)
+	var restored := SaveCodec.restore(SaveCodec.capture(session), false)
+	assert_not_null(restored)
+	if restored != null:
+		assert_eq(restored.hotbar, assignments)
+
+
 func test_assignments_reject_unknown_ranks_and_locked_edits_without_time_or_resources() -> void:
 	var world := MovementFixture.create_world()
 	assert_false(world.assign_hotbar(0, &"fireball_2"))
@@ -29,7 +56,7 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 	session.new_game(317)
 	var world := session.world
 	assert_true(world.assign_hotbar(0, &"mortal_strike_1"))
-	world.hero.warrior_progress = 20
+	world.hero.warrior_progress = 40
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_eq(world.hotbar[0], &"mortal_strike_1")
 	assert_true(world.assign_hotbar(1, &"heroic_strike_1"))
@@ -114,7 +141,7 @@ func test_last_slot_survives_save_load_and_death_and_short_arrays_are_rejected()
 
 func test_cooldown_countdown_updates_and_clears_when_ready_or_slot_changes() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	world.hero.warrior_progress = 10
+	world.hero.warrior_progress = 20
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	world.assign_hotbar(0, &"battle_shout_1")
 	world.assign_hotbar(1, &"battle_shout_1")
@@ -126,19 +153,19 @@ func test_cooldown_countdown_updates_and_clears_when_ready_or_slot_changes() -> 
 	var cooldown := panel.slots[0].get_node("Cooldown") as Label
 	var duplicate := panel.slots[1].get_node("Cooldown") as Label
 	assert_true(cooldown.visible)
-	assert_eq(cooldown.text, "10")
-	assert_eq(duplicate.text, "10", "All slots assigned this family show its cooldown.")
+	assert_eq(cooldown.text, "30")
+	assert_eq(duplicate.text, "30", "All slots assigned this family show its cooldown.")
 	assert_true(panel.slots[0].text.begins_with(options.key_label(&"hotbar_1")))
 	world.wait_turn()
 	panel.refresh(world, options, false, false, false)
 	assert_true(panel.slots[0].disabled)
 	assert_true(cooldown.visible, "Countdown remains visible while other input is blocked.")
-	assert_eq(cooldown.text, "9")
+	assert_eq(cooldown.text, "29")
 	world.assign_hotbar(1, &"mortal_strike_1")
 	panel.refresh(world, options, true, true, false)
 	assert_false(duplicate.visible)
 	assert_eq(duplicate.text, "")
-	for index in range(9):
+	for index in range(29):
 		world.wait_turn()
 	panel.refresh(world, options, true, true, false)
 	assert_false(cooldown.visible)

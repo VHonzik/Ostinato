@@ -27,7 +27,7 @@ points to exploration caches, and Milly offers the vineyard encounter. The marsh
 also gives the stronger-wolf follow-up after the western patrol. Trees, walls
 and vine trellises block movement; flowers, small stones and sparse grass tufts are
 decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
-wolf types, kobold vermin and laborers are neutral until attacked; workers and bandits
+wolf types and kobold vermin are neutral until attacked; laborers, workers and bandits
 are hostile.
 The southwestern gate admits a timed stalker and reinforcements.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
@@ -43,7 +43,7 @@ and Rogue starters. Further class training awaits later slices.
 
 New Game starts a warrior with rage, Mortal Strike and Heroic Strike, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
-warrior referrals, with a paladin referral from the second Loop. From Loop two, speak
+warrior referrals, with "Uhm... I seek ... teaching" choices for each class from the second Loop. Speak
 to the marshal before accepting any quest to choose the class whose ability uses grant
 class XP. Each returning Loop starts in the previous class; confirmation locks one choice
 until death, including keeping that same class. Class choice keeps gear and names the
@@ -69,7 +69,7 @@ XP, gold, class XP, Death trigger, and Kill stalker for quick experiments. The s
 arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
 progression log notification to unlock Battle Shout, Anger Management, Charge or Execute;
-unlocking keeps your points. Assign checkpoint actives to a hotbar slot through the spell book.
+unlocking keeps your points. Newly learned actives fill empty hotbar slots; use the spell book to rearrange them.
 Execute uses the committed melee target, requires low target health, and shows current rage spending
 in its tooltip and target picker. Its one-turn attack keeps weapon timing running; optional combo
 empowerment remains for a later slice. Charge's wind-up and automatic
@@ -85,8 +85,8 @@ combo points from landed direct active attacks, across classes and targets. Slic
 Dice needs points and spends them all for attack haste. Judgement leaves the seal active.
 Only these new starter pairs are exposed; their full class slices and tuning remain ahead.
 
-Current saves are `demo` revision 14, adding class selection, starter learning and combo points.
-Revision 13 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 15, retaining the marshal referral per Loop and updated vendor stock.
+Revision 14 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.
