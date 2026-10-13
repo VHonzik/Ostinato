@@ -5,16 +5,23 @@ extends RefCounted
 const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior"]
 const CLASSES: Array[StringName] = [&"Warrior", &"Mage", &"Druid", &"Warlock", &"Priest", &"Shaman", &"Paladin"]
 const RANKS: Dictionary = {
-	"slam_1": {
-		"title": "Slam", "class_tab": "Warrior", "rank": 1, "training_level": 1,
-		"rage_cost": 30, "cast_seconds": 2.0, "range_tiles": 1,
-		"family": "slam", "effect": "SLAM", "target": "ENEMY",
+	"mortal_strike_1": {
+		"title": "Mortal Strike", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"rage_cost": 30, "cast_seconds": 1.0, "range_tiles": 1, "cooldown_seconds": 4,
+		"family": "mortal_strike", "effect": "MORTAL_STRIKE", "target": "ENEMY",
+		"weapon_multiplier": 2.0,
+		"detail": "200% weapon damage. One turn; weapon timing continues. 4-turn cooldown."
+	},
+	"heroic_strike_1": {
+		"title": "Heroic Strike", "class_tab": "Warrior", "rank": 1, "training_level": 1,
+		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
+		"family": "heroic_strike", "effect": "HEROIC_STRIKE", "target": "ENEMY",
 		"weapon_multiplier": 1.5, "minimum": 5,
-		"detail": "150% weapon damage + 5 physical damage. Pauses auto-attack during the cast."
+		"detail": "Reserve 15 rage and wait for the next main-hand swing: 150% weapon damage + 5. No ordinary swing rage; misses consume the strike. Esc or target loss refunds the reservation."
 	},
 	"battle_shout_1": {
 		"title": "Battle Shout", "class_tab": "Warrior", "rank": 1, "training_level": 1,
-		"cast_seconds": 1.0, "duration": 30, "cooldown_seconds": 10,
+		"progress_required": 10, "cast_seconds": 1.0, "duration": 30, "cooldown_seconds": 10,
 		"family": "battle_shout", "effect": "BATTLE_SHOUT", "target": "SELF",
 		"physical_percent": 10, "rage_generated": 10,
 		"detail": "Increases physical damage by 10% for 30 turns and instantly generates 10 rage. 10-turn cooldown."

@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-12 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-13 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -226,7 +226,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		learned.append(identifier)
 		if development_build or not skill.development_only:
 			world.hero.learned_skills.append(skill)
-	var starting := ["slam_1", "battle_shout_1"] if world.hero.selected_class == &"Warrior" else (
+	var starting := ["mortal_strike_1", "heroic_strike_1"] if world.hero.selected_class == &"Warrior" else (
 		["fireball_1", "frost_armor_1"])
 	if not learned.has(starting[0]) or not learned.has(starting[1]):
 		return null

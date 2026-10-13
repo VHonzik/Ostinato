@@ -5,7 +5,7 @@ func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> voi
 	var hero := HeroState.new()
 	assert_eq(hero.melee.attack_power, 10)
 	assert_eq(hero.melee.armor, 42, "Starter pants add 2 armor to the transitional attribute baseline.")
-	assert_almost_eq(hero.melee.critical, 1.550388, 0.00001)
+	assert_almost_eq(hero.melee.critical, 6.550388, 0.00001)
 	assert_almost_eq(hero.melee.dodge, 4.800388, 0.00001)
 	assert_eq(hero.melee.interval, 2.9)
 	assert_eq([hero.melee.damage_min, hero.melee.damage_max], [3.0, 5.0])
@@ -16,7 +16,7 @@ func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> voi
 	hero.refresh_melee_stats()
 	assert_eq(hero.melee.attack_power, 24)
 	assert_eq(hero.melee.armor, 62)
-	assert_gt(hero.melee.critical, 1.55)
+	assert_gt(hero.melee.critical, 6.55)
 
 
 func test_controlled_rolls_select_single_attack_table_outcomes() -> void:

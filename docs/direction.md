@@ -48,10 +48,16 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   spent on active abilities, movement and waiting; abilities must not pause the timer.
   Deliberate attack bumps and Heroic Strike commit to advancing until the next swing.
   Keep friendly-bump interaction and the existing second-bump protection for neutral
-  enemies; hostile enemies are attacked on the first bump. Prototype exact swing/
-  active-effect ordering, readiness, target changes and cancellation through play.
+  enemies; hostile enemies are attacked on the first bump. A fresh weapon is ready.
+  Resolve the action's effect, then due player swings, then enemy actions. Continue
+  attacking the selected enemy in melee range; never silently retarget or bank swings
+  while out of range. Retargeting retains remaining weapon delay. Resolve multiple
+  due swings in order and stop on death. Playtest this ordering and control rhythm.
 - Main-hand auto-attacks and incoming hits supply rage; rage decays outside combat.
-  Heroic Strike replaces the next main-hand swing and forfeits its ordinary rage.
+  Ordinary swing rage scales with base weapon speed, independently of haste.
+  Heroic Strike reserves rage and commits until the next main-hand swing, replacing it
+  and forfeiting its ordinary rage. A miss consumes the queue; cancellation or target
+  loss refunds the reservation while preserving elapsed turns.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
   Sanctity of Battle is an explicit cooldown exception with its formula still open.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
@@ -107,8 +113,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 ## Still to decide, when the relevant task starts
 
-- First: exact swing/active-effect ordering, readiness, targeting and cancellation
-  within the chosen timing model; unlock ordering and thresholds; character XP/level
+- First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
 - Next: Heroic Strike versus Mortal Strike rage economy; world-turn buff expiry
   ordering; Eviscerate's optional spending interface; gear ranges, weapon progression,

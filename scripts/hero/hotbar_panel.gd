@@ -76,8 +76,11 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			remaining = maxi(0, int(world.hero.cooldowns.get(
 				String(world.cooldown_family(skill)), 0)) - world.turn_count)
 		var cooldown := _cooldown_labels[index]
-		cooldown.text = str(remaining) if remaining > 0 else ""
-		cooldown.visible = remaining > 0
+		var queued := skill != null and world.queued_strike != null and skill.id == world.queued_strike.id
+		cooldown.text = "Q" if queued else (str(remaining) if remaining > 0 else "")
+		cooldown.visible = queued or remaining > 0
+		if queued:
+			button.tooltip_text += "\nQueued: rage reserved. Esc cancels and refunds it."
 		if skill == null:
 			button.tooltip_text = "Slot %d (%s): empty. Assign a rank from the spell book." % [index + 1, key]
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"

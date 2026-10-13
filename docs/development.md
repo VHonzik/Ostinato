@@ -38,7 +38,7 @@ map, contacts, enemies and chests, preserving learned abilities, class progressi
 Janos Hammerknuckle supplies warrior gear and trades; warrior trainer Llane remains
 usable; other class trainers await later slices.
 
-New Game starts a warrior with rage, Slam and Battle Shout, wearing travel clothes.
+New Game starts a warrior with rage, Mortal Strike and Heroic Strike, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
 warrior referrals, with a paladin referral from the second Loop; other classes are
 currently unavailable. Farseer Lopaa is the shaman contact.
@@ -47,21 +47,26 @@ F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, 
 M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
 Bump a friendly NPC to interact; bump a stationary neutral enemy twice to attack.
-Slam uses your last attacked enemy in combat; before your first attack, choose an
-enemy in melee range.
+Mortal Strike and Heroic Strike use your last attacked enemy in combat; before your
+first attack, choose an enemy in melee range. Automatic attacks continue on that enemy
+while it remains in melee range, including turns spent moving, waiting and using abilities.
+Heroic Strike reserves rage and commits until the next main-hand swing; Escape or target
+loss cancels and refunds it. Its hotbar shows Q while queued. A miss consumes the strike.
+The action effect resolves before player swings, followed by enemy actions. No attacks
+are banked out of range and target changes keep the weapon's remaining delay.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
 XP, gold, class progression points, Death trigger, and Kill stalker for quick experiments. The stalker
 arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
-progression log notification to unlock Anger Management or Charge; unlocking keeps your
+progression log notification to unlock Battle Shout, Anger Management or Charge; unlocking keeps your
 points. Assign Charge to a hotbar slot through the spell book. Its wind-up and automatic
 travel keep the player casting until arrival, blocking other actions and cancellation.
-These are current mechanics, not constraints on the pivot.
+Charge arrival also allows the ready weapon to attack its target. These are current
+mechanics; tuning and remaining v0.1 mechanics still need playtesting.
 
-Current saves are `demo` revision 12, introducing the warrior start, rage and persistent
-warrior progression.
-Revision 11 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 13, replacing the starting kit and changing attack timing.
+Revision 12 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

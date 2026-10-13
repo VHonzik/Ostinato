@@ -383,11 +383,13 @@ func refresh_view() -> void:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
 		_select_actor(world.pending_melee)
-		_feedback.text = "Attacking %s. Waiting for swing; Esc cancels." % world.pending_melee.title
+		_feedback.text = "%s on %s. Waiting for swing; Esc cancels." % [
+			"Attack" if world.queued_strike == null else "Heroic Strike queued",
+			world.pending_melee.title]
 	else:
 		_melee_delay_seconds = 0.0
 		if not combat_panel.visible:
-			_select_actor(null)
+			_select_actor(world.auto_attack_target)
 	_cancel_attack.visible = (world.pending_melee != null or world.pending_skill != null)
 	_cancel_attack.disabled = world.is_charging()
 	grid_view.alternate_palette = menu.options.alternate_palette
@@ -458,7 +460,8 @@ func _cast_skill(identifier: StringName) -> void:
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
 		return
-	if (skill.effect == SkillRank.Effect.SLAM and world.in_combat()
+	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE]
+		and world.in_combat()
 		and world.last_attacked_enemy != null):
 		hero_panel.close()
 		combat_panel.close()

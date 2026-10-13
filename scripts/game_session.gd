@@ -18,8 +18,8 @@ func new_game(chosen_seed: int = -1) -> void:
 	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
 	var fresh := ValleyRoute.create_world(seed_value, development_build)
-	fresh.hotbar[0] = &"slam_1"
-	fresh.hotbar[1] = &"battle_shout_1"
+	fresh.hotbar[0] = &"mortal_strike_1"
+	fresh.hotbar[1] = &"heroic_strike_1"
 	_replace_world(fresh)
 	world.add_message("Valley. Marshal north, wolves west, mine farther north, vineyards east. Watch the gate.")
 

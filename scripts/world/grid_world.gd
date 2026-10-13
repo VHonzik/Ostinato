@@ -27,6 +27,8 @@ var blocked_tiles: Dictionary[Vector2i, bool] = {}
 var sight_blockers: Dictionary[Vector2i, bool] = {}
 var pending_melee: GridActor
 var last_attacked_enemy: GridActor
+var auto_attack_target: GridActor
+var queued_strike: SkillRank
 var combat_random := RandomNumberGenerator.new()
 var actors: Array[GridActor] = []
 var player_tile: Vector2i
@@ -153,7 +155,8 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill.effect == SkillRank.Effect.KILL_STALKER and _first_living_stalker() == null:
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
-	if skill.effect == SkillRank.Effect.SLAM and target == null and in_combat():
+	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE]
+		and target == null and in_combat()):
 		target = last_attacked_enemy
 	if skill.effect == SkillRank.Effect.PASSIVE:
 		return false
@@ -171,6 +174,15 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	if skill.effect == SkillRank.Effect.CHARGE and charge_route(target).is_empty():
 		add_message("Cannot Charge: no reachable empty melee tile.")
 		return false
+	if skill.effect == SkillRank.Effect.HEROIC_STRIKE:
+		if not _valid_melee(target):
+			add_message("Cannot queue Heroic Strike: no valid melee target.")
+			return false
+		skill.spend_resource(hero)
+		queued_strike = skill
+		add_message("Heroic Strike queued on %s; %d rage reserved. Esc refunds it." % [
+			target.title, skill.cost(hero)])
+		return request_melee(target)
 	if skill.free_instant:
 		skill.spend_resource(hero)
 		if skill.cost(hero) > 0:
@@ -199,6 +211,8 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		target.relationship = GridActor.Relationship.HOSTILE
 		target.engaged = true
 		target.returning_home = false
+		if skill.effect == SkillRank.Effect.MORTAL_STRIKE:
+			auto_attack_target = target
 	if target != null:
 		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
 	continue_cast()
@@ -210,7 +224,6 @@ func continue_cast() -> bool:
 		cancel_cast(true)
 		return false
 	resolving_turn = true
-	var suspend_swing := pending_skill.effect == SkillRank.Effect.SLAM
 	cast_elapsed += 1
 	if is_charging():
 		return _continue_charge()
@@ -245,7 +258,7 @@ func continue_cast() -> bool:
 			_resolve_skill(skill, target)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
-	_finish_turn(suspend_swing)
+	_finish_turn()
 	return true
 
 
@@ -413,14 +426,14 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 	if not skill.development_only and skill.class_tab in ClassSkillData.CLASSES:
 		add_class_progress(skill.class_tab, 1)
 	match skill.effect:
-		SkillRank.Effect.SLAM:
+		SkillRank.Effect.MORTAL_STRIKE:
 			last_attacked_enemy = target
 			var result := MeleeRules.outcome(hero.melee, target.melee,
 				MeleeRules.is_behind(target.facing, player_tile - target.tile),
 				combat_random.randf() * 100.0, true)
 			var amount := MeleeRules.damage(hero.melee, target.melee, result,
 				combat_random.randf(), combat_random.randf(), skill.weapon_multiplier, skill.minimum)
-			SpellEffects.damage(self, target, amount, "Slam (%s)" % result, -1, true, null, true)
+			SpellEffects.damage(self, target, amount, "Mortal Strike (%s)" % result, -1, true, null, true)
 		SkillRank.Effect.BATTLE_SHOUT:
 			hero.gain_rage(skill.rage_generated)
 			hero.buffs[skill.id] = {"armor": 0, "physical_percent": skill.physical_percent,
@@ -429,6 +442,7 @@ func _resolve_skill(skill: SkillRank, target: GridActor) -> void:
 			add_message("Battle Shout: physical damage increased; gained %d rage." % skill.rage_generated)
 		SkillRank.Effect.CHARGE:
 			last_attacked_enemy = target
+			auto_attack_target = target
 			hero.gain_rage(skill.rage_generated)
 			add_message("Charge: reached %s; gained %d rage." % [target.title, skill.rage_generated])
 		SkillRank.Effect.CLASS_POINTS:
@@ -583,31 +597,47 @@ func request_melee(target: GridActor) -> bool:
 	hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
 	hero.restoration.clear()
 	pending_melee = target
+	auto_attack_target = target
 	continue_melee()
 	return true
 
 
 func continue_melee() -> bool:
 	if is_terminal() or not _valid_melee(pending_melee):
-		pending_melee = null
+		cancel_melee()
 		return false
 	resolving_turn = true
-	var target := pending_melee
-	var swings := hero.swing.advance(true, hero.melee.interval / hero.haste)
+	_finish_turn()
+	if pending_melee != null and not _valid_melee(pending_melee):
+		cancel_melee()
+	return true
+
+
+func cancel_melee() -> void:
+	pending_melee = null
+	auto_attack_target = null
+	if queued_strike != null:
+		var reserved := queued_strike.rage_cost
+		queued_strike = null
+		hero.gain_rage(reserved)
+		add_message("Heroic Strike cancelled; %d reserved rage refunded." % reserved)
+
+
+func _advance_player_weapon() -> void:
+	if queued_strike != null and not _valid_melee(pending_melee):
+		cancel_melee()
+	if (auto_attack_target != null and (not auto_attack_target.alive
+		or not actors.has(auto_attack_target)
+		or auto_attack_target.relationship == GridActor.Relationship.FRIENDLY)):
+		auto_attack_target = null
+	var target := auto_attack_target
+	var swings := hero.swing.advance(_valid_melee(target), hero.melee.interval / hero.haste)
 	for index in range(swings):
 		if not _valid_melee(target) or is_terminal():
 			break
 		_player_swing(target)
 	if swings > 0:
 		pending_melee = null
-	_finish_turn(true)
-	if is_terminal() or not _valid_melee(pending_melee):
-		pending_melee = null
-	return true
-
-
-func cancel_melee() -> void:
-	pending_melee = null
 
 
 func _valid_melee(target: GridActor) -> bool:
@@ -618,7 +648,7 @@ func _valid_melee(target: GridActor) -> bool:
 		and has_sight(player_tile, target.tile))
 
 
-func _finish_turn(player_timer_advanced: bool = false) -> void:
+func _finish_turn() -> void:
 	# A committed terminal player effect still consumes its boundary, exactly once.
 	if is_terminal() and not resolving_turn:
 		return
@@ -629,8 +659,11 @@ func _finish_turn(player_timer_advanced: bool = false) -> void:
 		cancel_cast(true)
 		resolving_turn = false
 		return
-	if not player_timer_advanced:
-		hero.swing.advance(false, hero.melee.interval / hero.haste)
+	# The action effect precedes player swings; enemies respond after those swings.
+	_advance_player_weapon()
+	if check_terminal():
+		resolving_turn = false
+		return
 	for actor in actors:
 		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
 			SummonRules.remove(self, actor)
@@ -753,7 +786,7 @@ func _act_npc(actor: GridActor) -> void:
 		if target == null:
 			hero.health = maxi(0, hero.health - amount)
 			if amount > 0 and hero.last_hit_rage_turn != turn_count:
-				hero.gain_rage(3.0)
+				hero.gain_rage(HeroState.INCOMING_RAGE_PER_TURN)
 				hero.last_hit_rage_turn = turn_count
 		else:
 			target.health = maxi(0, target.health - amount)
@@ -779,15 +812,23 @@ func _act_npc(actor: GridActor) -> void:
 
 func _player_swing(target: GridActor) -> void:
 	last_attacked_enemy = target
-	hero.gain_rage(7.0 * hero.melee.interval / hero.haste)
+	var strike := queued_strike
+	queued_strike = null
+	if strike == null:
+		hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
+	else:
+		add_class_progress(strike.class_tab, 1)
 	var result := MeleeRules.outcome(hero.melee, target.melee,
 		MeleeRules.is_behind(target.facing, player_tile - target.tile),
-		combat_random.randf() * 100.0)
+		combat_random.randf() * 100.0, strike != null)
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
-		combat_random.randf(), combat_random.randf())
+		combat_random.randf(), combat_random.randf(),
+		1.0 if strike == null else strike.weapon_multiplier,
+		0 if strike == null else strike.minimum)
 	if hero.buffs.has(&"seal_of_the_crusader_1"):
 		amount = int(amount / 1.4)
-	SpellEffects.damage(self, target, amount, "You (%s)" % result)
+	SpellEffects.damage(self, target, amount, "%s (%s)" % [
+		"You" if strike == null else strike.title, result], turn_count, true, null, true)
 	ClassSpellEffects.on_melee(self, target, amount)
 
 
@@ -946,6 +987,7 @@ func _tick_effects() -> void:
 func _regenerate() -> void:
 	if not in_combat():
 		last_attacked_enemy = null
+		auto_attack_target = null
 		hero.decay_rage()
 	if turn_count % 2 != 0:
 		return

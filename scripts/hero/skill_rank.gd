@@ -2,7 +2,7 @@ class_name SkillRank
 extends RefCounted
 
 ## Warrior abilities and retained legacy ranks. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, SLAM, BATTLE_SHOUT, CLASS_POINTS, CHARGE }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -62,7 +62,7 @@ func _init(
 
 
 static func starting_skills() -> Array[SkillRank]:
-	return [catalog(&"slam_1"), catalog(&"battle_shout_1")]
+	return [catalog(&"mortal_strike_1"), catalog(&"heroic_strike_1")]
 
 
 static func trainer_skills(category: StringName) -> Array[SkillRank]:
@@ -125,6 +125,9 @@ static func catalog(identifier: StringName) -> SkillRank:
 	skill.description = "%s rank %d: %d %s, %.1f turns, range %d tiles. " % [
 		skill.title, skill.rank, skill.rage_cost if skill.class_tab == &"Warrior" else skill.mana_cost,
 		skill.resource_name(), skill.cast_seconds, skill.range_tiles]
+	if skill.effect == Effect.HEROIC_STRIKE:
+		skill.description = "%s rank %d: %d rage, next main-hand swing, range %d tiles. " % [
+			skill.title, skill.rank, skill.rage_cost, skill.range_tiles]
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
 	if ClassSkillData.RANKS.has(String(identifier)) and skill.detail != "":

@@ -110,7 +110,7 @@ func test_janos_requires_living_nearby_trader_matching_class_and_no_pending_acti
 	world.hero.selected_class = &"Paladin"
 	assert_false(world.receive_starter_gear(janos), "Paladin has only a story referral in this slice.")
 	world.hero.selected_class = &"Warrior"
-	world.pending_skill = SkillRank.catalog(&"slam_1")
+	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
 	assert_false(world.receive_starter_gear(janos))
 	world.pending_skill = null
 	var impostor := GridActor.new(janos.tile)

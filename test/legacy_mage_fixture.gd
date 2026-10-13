@@ -18,9 +18,9 @@ static func apply(world: GridWorld) -> void:
 	world.hero.learned_skills.push_front(first)
 	world.hero.health = world.hero.max_health
 	world.hero.mana = world.hero.max_mana
-	if world.hotbar[0] == &"slam_1":
+	if world.hotbar[0] == &"mortal_strike_1":
 		world.hotbar[0] = &"fireball_1"
-	if world.hotbar[1] == &"battle_shout_1":
+	if world.hotbar[1] == &"heroic_strike_1":
 		world.hotbar[1] = &"frost_armor_1"
 
 

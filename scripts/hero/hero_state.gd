@@ -3,6 +3,9 @@ extends RefCounted
 
 ## Warrior start, excess XP, and persistent learned abilities.
 const MAX_RAGE: int = 100
+const SWING_RAGE_PER_BASE_TURN: float = 7.0
+const INCOMING_RAGE_PER_TURN: float = 3.0
+const BASE_CRITICAL_CHANCE: float = 5.0
 
 var rage: int = 0
 var rage_credit: float = 0.0
@@ -149,8 +152,8 @@ func refresh_melee_stats() -> void:
 	melee.armor = agility * 2 + armor + aura_armor
 	melee.parry = 5.0 if find_skill(&"parry_1") != null else 0.0
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
-	melee.critical = agility / agility_per_percent
-	melee.dodge = 3.25 + melee.critical
+	melee.critical = BASE_CRITICAL_CHANCE + agility / agility_per_percent
+	melee.dodge = 3.25 + agility / agility_per_percent
 	melee.damage_min = 1.0
 	melee.damage_max = 2.0
 	melee.interval = 2.0

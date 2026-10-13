@@ -79,29 +79,32 @@ Reuse the valley and selected art. Art refinement and a larger story pass remain
 Numerical tuning goes in code/data as each mechanic is implemented; do not copy the
 snapshot's provisional tables or simulation results into planning documents.
 
-### Next playable task — Warrior attack timing and starting kit
+### Current playable task — Warrior attack timing and starting kit
 
-- [ ] Replace the Slam/Battle Shout starting kit with Mortal Strike and Heroic Strike.
-  Battle Shout becomes an unlock; obsolete Slam behavior leaves the runnable toolkit.
-- [ ] Advance fractional weapon timers on every world turn, including active abilities,
-  movement and waits; remove Slam's timer pause with the obsolete ability. Keep the
-  deliberate bump-to-next-swing commitment. Preserve friendly interaction and the
-  existing second bump to attack neutral enemies. Settle exact effect ordering,
-  initial readiness, retargeting, leaving melee range and multiple due swings.
-  Haste must not grant extra player actions or shorten ordinary ability cooldowns.
-- [ ] Make Heroic Strike queue the next main-hand swing and advance until that swing,
-  replacing its damage and forfeiting its ordinary rage. Settle queue payment,
-  cancellation and a missed swing's outcome. Make Mortal Strike a direct active attack
-  whose elapsed turns also advance the weapon timer.
-- [ ] Bring baseline crits and rage generation/decay into line with the snapshot's
-  provisional data. Decide whether rage scales with base weapon speed or the
-  haste-adjusted interval; avoid an accidental resource change when adding haste.
-- [ ] Show target, queued strike, rage and cooldown state clearly through the existing
-  combat log/hotbar. Try a slow and a fast weapon against one enemy, then two;
-  interleave movement, waiting and both actives to judge control and rhythm.
-- [ ] Check meaningful timing, queue/rage and death/save cases with controlled turns
-  and randomness. Update tests for deliberately replaced behavior and run the relevant
-  checks from [development](development.md). Human playtesting decides combat feel.
+Implementation is ready for the owner's playtest, deferred at the owner's request.
+Proceed with Loop-start class selection and retained learning next; combat tuning
+remains provisional until that playtest and lives in code/data.
+
+- [x] Start with Mortal Strike and Heroic Strike; remove Slam from the runnable toolkit.
+  Battle Shout is a trainer unlock; retain existing Anger Management and Charge learning.
+- [x] Advance fractional weapon timers on every world turn, including active abilities,
+  movement and waits. Preserve bump commitment, friendly interaction and second-bump
+  neutral protection. Implement the owner's chosen effect/swing ordering, readiness,
+  targeting, no banking out of range and stopping multiple due swings on death.
+- [x] Reserve Heroic Strike's rage and commit until the next main-hand swing. Replace
+  that swing, forfeit its ordinary rage and consume misses. Cancellation or target
+  loss refunds the reservation; elapsed turns remain spent. Mortal Strike is a direct
+  active attack that leaves weapon timing running.
+- [x] Add provisional baseline crit tuning and base-speed swing rage, independent of
+  haste. Preserve incoming rage, out-of-combat decay and ordinary ability cooldown timing.
+- [x] Show the attack target, queued strike, rage and cooldown state through the existing
+  target highlight, log and hotbar. Preserve fractional timers and learning through saves;
+  bump the save revision while leaving incompatible files unchanged.
+- [x] Replace obsolete Slam checks and cover timing, cancellation/refunds, misses,
+  physical/critical damage, multiple due swings, death/save boundaries and UI input.
+- [ ] Owner playtest: compare slow and fast weapons against one enemy, then two;
+  interleave movement, waiting and both actives. Judge commitment, target control,
+  rage economy and readability; revisit tuning when feedback arrives.
 
 ### Remaining slices — in dependency order
 
@@ -115,7 +118,7 @@ snapshot's provisional tables or simulation results into planning documents.
   with cumulative XP retained rather than spent; tune unlock thresholds and ordering.
   Retain learned skills/passives across selection and death without restricting their
   use to the selected class. Introduce the other starting kits in their class slices.
-- [ ] **Complete Warrior:** add Charge, Battle Shout, Execute and Whirlwind, and every
+- [ ] **Complete Warrior:** revisit Charge and Battle Shout, add Execute and Whirlwind, and every
   Warrior passive: Anger Management, Cruelty, Incite, Flurry, Battle Trance, Sudden Death,
   Victory Rush, Sweeping Strikes, Wrecking Crew and Juggernaut. Split burst/execution,
   crit/queue interactions and cleave into playable tasks as this slice becomes current.

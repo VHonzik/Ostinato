@@ -57,7 +57,7 @@ func test_unlearned_and_invalid_target_casts_reject_without_simulation_changes()
 	var world := MovementFixture.create_world()
 	world.movement_credit = 0.75
 	var random_before := world.random.state
-	for identifier: StringName in [&"missing", &"slam_1"]:
+	for identifier: StringName in [&"missing", &"mortal_strike_1"]:
 		assert_false(world.cast_skill(identifier))
 		assert_eq(world.turn_count, 0)
 		assert_eq(world.random.state, random_before)
