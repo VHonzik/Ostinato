@@ -26,7 +26,12 @@ and how to try it; the final chat carries temporary playtest instructions.
 - [x] Play the screen prototype. The owner's quick playtest found it satisfactory;
   the valley sketch and sprite plan are ready for the first playable map prototype.
 
-## Current milestone — A memorable valley
+## Paused milestone — A memorable valley
+
+Paused at the owner's request for the time-loop RPG v0.1 milestone below. Keep the
+completed map and selected art as the prototype's starting area. Unfinished art, story
+and valley playtest work stays paused; revisit its relevance after the new combat and
+progression are playable.
 
 - [x] Build a playable route from the marshal through one encounter area using the
   [valley sketch](map.svg) and selected AI-created sprites. Try ground, boundaries,
@@ -45,7 +50,9 @@ and how to try it; the final chat carries temporary playtest instructions.
 - [ ] Playtest navigation, landmark recognition, encounter/XP pacing, the timed gate
   threat and early/returning-Loop conversations; adjust the map, story and art together.
 
-## Current playable slice — Warrior first
+## Completed playable slice — Warrior first
+
+The owner playtested the current Warrior state; that feedback led to the time-loop RPG v0.1 redesign. The implemented slice remains available in the current build.
 
 - [x] Replace the mage start with warrior, rage, Slam and Battle Shout while retaining
   bump-to-next-swing timing. Expose only warrior for this slice; keep legacy class code
@@ -56,19 +63,121 @@ and how to try it; the final chat carries temporary playtest instructions.
   enemy for Slam in combat, preserving melee range and the existing swing wait.
 - [x] Make friendly bumps interact, add Charge as the next trainer checkpoint, retain
   progression points on unlock, and add a development ability for class points.
-- [ ] Playtest rage generation, Slam's cast pause, Charge travel, shout upkeep and returning
-  to Llane; adjust the combat rhythm and early encounters from play feedback.
+- [x] Owner playtested rage generation, Slam, Charge, shout upkeep and trainer progression; feedback informed the v0.1 redesign, planned in the current milestone below.
+
+## Current milestone — Time-loop RPG v0.1
+
+Plan an end-to-end playable prototype of [the current direction](direction.md), including
+**every active and passive in the owner's consolidated v0.1 snapshot**. Deliver it through
+small runnable slices and playtest between them; do not build the whole catalogue before
+trying combat.
+
+The milestone should let a weak first-Loop warrior die, retain mastery and learning,
+develop the other classes, combine the full toolkit, rebuild temporary level and gear,
+and eventually defeat the exit boss and escape under pressure from timed clones.
+Reuse the valley and selected art. Art refinement and a larger story pass remain paused.
+Numerical tuning goes in code/data as each mechanic is implemented; do not copy the
+snapshot's provisional tables or simulation results into planning documents.
+
+### Next playable task — Warrior attack timing and starting kit
+
+- [ ] Replace the Slam/Battle Shout starting kit with Mortal Strike and Heroic Strike.
+  Battle Shout becomes an unlock; obsolete Slam behavior leaves the runnable toolkit.
+- [ ] Advance fractional weapon timers on every world turn, including active abilities,
+  movement and waits; remove Slam's timer pause with the obsolete ability. Keep the
+  deliberate bump-to-next-swing commitment. Preserve friendly interaction and the
+  existing second bump to attack neutral enemies. Settle exact effect ordering,
+  initial readiness, retargeting, leaving melee range and multiple due swings.
+  Haste must not grant extra player actions or shorten ordinary ability cooldowns.
+- [ ] Make Heroic Strike queue the next main-hand swing and advance until that swing,
+  replacing its damage and forfeiting its ordinary rage. Settle queue payment,
+  cancellation and a missed swing's outcome. Make Mortal Strike a direct active attack
+  whose elapsed turns also advance the weapon timer.
+- [ ] Bring baseline crits and rage generation/decay into line with the snapshot's
+  provisional data. Decide whether rage scales with base weapon speed or the
+  haste-adjusted interval; avoid an accidental resource change when adding haste.
+- [ ] Show target, queued strike, rage and cooldown state clearly through the existing
+  combat log/hotbar. Try a slow and a fast weapon against one enemy, then two;
+  interleave movement, waiting and both actives to judge control and rhythm.
+- [ ] Check meaningful timing, queue/rage and death/save cases with controlled turns
+  and randomness. Update tests for deliberately replaced behavior and run the relevant
+  checks from [development](development.md). Human playtesting decides combat feel.
+
+### Remaining slices — in dependency order
+
+- [ ] **Loop-start class selection and retained learning:** Warrior is mandatory in the
+  first Loop; all three remaining classes become selectable from Loop two. Only the
+  selected track gains class XP, and only from abilities belonging to that class.
+  Retained abilities from other classes award no class XP to either track. Count all
+  uses of selected-class abilities without anti-spam filters for now. Check XP credit
+  when switching classes and using retained abilities. Keep the existing trainer
+  flow and immediate availability after learning,
+  with cumulative XP retained rather than spent; tune unlock thresholds and ordering.
+  Retain learned skills/passives across selection and death without restricting their
+  use to the selected class. Introduce the other starting kits in their class slices.
+- [ ] **Complete Warrior:** add Charge, Battle Shout, Execute and Whirlwind, and every
+  Warrior passive: Anger Management, Cruelty, Incite, Flurry, Battle Trance, Sudden Death,
+  Victory Rush, Sweeping Strikes, Wrecking Crew and Juggernaut. Split burst/execution,
+  crit/queue interactions and cleave into playable tasks as this slice becomes current.
+  Settle Execute's formula and Charge's commitment; check that Incite cannot sustain itself.
+- [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
+  level ceiling and level-difference effects. Support main/off-hand or two-handed weapons,
+  armor, two accessories and the proposed physical/crit/dodge/health/haste stats without
+  selected-class stat bonuses. Make slow/fast and dual-wield/two-handed choices useful.
+  Simplify the old attack tables to armor, dodge, hit chance and the new crit rules;
+  remove parry, block, glancing/crushing and detailed spell resistance. Keep explicit
+  class defenses. Settle off-hand baseline, level differences and healing availability.
+- [ ] **Repeatable route rewards:** fixed merchants/prices and quest rewards; enemy loot
+  keyed by world seed plus stable enemy ID; seeded chest contents and placement from
+  predefined points. Repeat the same seed across deaths and different action/loot orders.
+  Decide ordinary respawning rather than silently adopting the current absence of it.
+  Preserve temporary gear/gold/quest resets and avoid unbounded XP farming by accident.
+- [ ] **Complete Shaman:** start with Lightning Shield and Strength of Earth Totem;
+  add Windfury Weapon, Earth Shock and Feral Spirit. Include Improved Shields, Flurry,
+  Static Shock, Elemental Weapons, Elemental Assault, Spirit Hunt, Elemental Warding,
+  Toughness and Improved Earth Shock. Share or upgrade Warrior Flurry; settle wolf
+  damage/healing and test retaliation, interrupts, totem range and nonrecursive procs.
+- [ ] **Complete Paladin:** start with Seal of Command and Judgement; add Blessing of
+  Might and Divine Shield. Include Benediction, Conviction, Vengeance, Art of War,
+  Heart of the Crusader, Divine Purpose, Pursuit of Justice, Eye for an Eye, Guardian's
+  Favor, Sacred Duty and Sanctity of Battle. Include the Seal/Judgement interaction,
+  Art of War's per-action counting limit and Shield's action cost/damage penalty.
+  Decide grid movement speed and the explicit haste-to-Judgement cooldown exception.
+- [ ] **Complete Rogue:** start with Slice and Dice and Relentless Assault; add Evasion
+  and Instant Poison. Include Opportunity, Ambidexterity, Eviscerate, Combat Potency,
+  Seal Fate, Main Gauche, Restless Blades, Bandit's Guile, Ruthlessness, Relentless
+  Strikes and Precision. Keep combo points on the player across targets, generated
+  by qualifying cross-class actives and spent only through deliberate finishers.
+  Settle optional empowered Judgement/Execute input, refund ordering and qualifying
+  hits; distinguish Combat Potency's explicit rage proc from ordinary bonus-strike rage.
+- [ ] **Exit boss and timed clones:** place the boss at the guarded exit early in every
+  Loop, replacing the delayed first-stalker/demo-kill ending. Add the escape outcome
+  and a fixed global clone schedule; define blocked arrival behavior and whether clones
+  must also be defeated. Tune readable attack patterns, HP/damage and clone pressure
+  against finite route XP/gear and roughly three developed classes. Keep exceptional
+  earlier wins possible rather than enforcing class or level victory gates.
+- [ ] **Integration, saves and playtesting:** keep learning/mastery and the seed while
+  clearing temporary levels/XP, gear, gold, quests, buffs, combat resources and clones
+  on death. Check mid-Loop saves at the existing out-of-combat action boundaries,
+  class selection, trainer eligibility/learning, fractional timers, proc consumption,
+  world-turn expiry, multi-hit death ordering and escape state. Keep the existing
+  session/save structure, using revision bumps for compatibility changes; preserve
+  old saves and failed-write/load protections without adding migrations.
+  Run full validation for the resulting changes across systems. Play an ordinary first
+  death, a returning Loop with mixed-class skills and a developed boss attempt; adjust
+  pacing, readable feedback and balance from human feedback.
+
+Later slices remain coarse until they become the next playable task. Qualifying attack,
+damage, crit and finisher events need explicit decisions as their consumers are added;
+use simple code suited to the active slice, not a speculative proc framework.
 
 ## Later playable milestones
 
-- **Broaden the warrior toolkit:** build on the rage prototype after playtesting its attack
-  rhythm. Replace obsolete class content in runnable slices. Decide the fate of
-  item/economy systems before investing further in them.
-- **Learning across Loops:** expand the warrior track and add story unlocks, then add
-  rogue, shaman, and paladin combinations. Settle progression credit,
-  resource interaction, and retained abilities before expanding the tracks.
-- **A satisfying stalker:** tune first-Loop length, misses/resists, victory prospects,
-  and reinforcement pacing against play sessions. Finish art/UI and prepare a demo build.
+- **Presentation and story:** revisit the paused valley art/dialogue work against the
+  new Loop and boss behavior; polish feedback and prepare a demo build.
+- **Challenges and expanded design:** choose per-seed leaderboard categories and
+  achievements, then consider additional synergies or optional talents. Hosted
+  leaderboards and new class content beyond v0.1 are outside the current milestone.
 
 ## Workflow experiment
 
