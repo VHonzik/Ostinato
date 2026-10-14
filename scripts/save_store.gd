@@ -3,7 +3,7 @@ extends RefCounted
 
 ## Validate before replacing either the save file or the world.
 const SLOT_COUNT: int = 5
-const REVISION: int = 7
+const REVISION: int = 18
 const MAX_BYTES: int = 8 * 1024 * 1024
 
 var directory: String

@@ -1,0 +1,205 @@
+[gd_scene load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/gameplay.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
+
+[ext_resource type="Script" path="res://scripts/hero/hero_panel.gd" id="3"]
+
+[ext_resource type="Script" path="res://scripts/combat/combat_panel.gd" id="4"]
+
+[sub_resource type="Theme" id="Theme_fixture"]
+default_font_size = 18
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.055, 0.09, 0.085, 0.97)
+content_margin_left = 12.0
+content_margin_right = 12.0
+content_margin_top = 6.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="Style_rage_border"]
+bg_color = Color(0.055, 0.09, 0.085, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.5, 0.5, 0.5, 1)
+
+[sub_resource type="StyleBoxEmpty" id="Style_rage_empty"]
+
+[sub_resource type="StyleBoxFlat" id="Style_rage_fill"]
+bg_color = Color(0.85, 0.15, 0.15, 1)
+
+[node name="Gameplay" type="Node2D"]
+script = ExtResource("1")
+texture_filter = 1
+
+[node name="GridView" type="Node2D" parent="."]
+script = ExtResource("2")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(328, 232)
+position_smoothing_enabled = false
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Top" type="PanelContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 312.0
+mouse_filter = 1
+theme = SubResource("Theme_fixture")
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Rows" type="VBoxContainer" parent="HUD/Top"]
+layout_mode = 2
+
+[node name="HeroStatus" type="Label" parent="HUD/Top/Rows"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
+text = "Mage"
+
+[node name="CancelAttack" type="Button" parent="HUD/Top/Rows"]
+visible = false
+layout_mode = 2
+focus_mode = 0
+text = "Cancel (Esc)"
+
+[node name="Status" type="Label" parent="HUD/Top/Rows"]
+layout_mode = 2
+text = "Turn 0 · Loop 1"
+
+[node name="Bottom" type="PanelContainer" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -208.0
+offset_right = 280.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme = SubResource("Theme_fixture")
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Rows" type="VBoxContainer" parent="HUD/Bottom"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Feedback" type="Label" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = ""
+clip_text = true
+mouse_filter = 2
+
+[node name="Chat" type="RichTextLabel" parent="HUD/Bottom/Rows"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 126)
+size_flags_vertical = 3
+theme_override_font_sizes/normal_font_size = 14
+scroll_following = true
+focus_mode = 2
+text = "Welcome, mage."
+
+[node name="PlayerMenu" type="PanelContainer" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_right = -16.0
+offset_top = -132.0
+offset_bottom = -12.0
+theme = SubResource("Theme_fixture")
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="Buttons" type="GridContainer" parent="HUD/PlayerMenu"]
+layout_mode = 2
+columns = 2
+
+[node name="Character" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Character (P)"
+
+[node name="Spells" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Spells (K)"
+
+[node name="Inventory" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Inventory (I)"
+
+[node name="Quests" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Quests (J)"
+
+[node name="Interact" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "Interact (F)"
+
+[node name="PlayerMenu" type="Button" parent="HUD/PlayerMenu/Buttons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Menu (M)"
+
+[node name="RageBar" type="PanelContainer" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_right = 100.0
+offset_top = -235.0
+offset_bottom = -220.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Style_rage_border")
+
+[node name="Fill" type="ProgressBar" parent="HUD/RageBar"]
+layout_mode = 2
+size_flags_vertical = 1
+mouse_filter = 2
+theme_override_styles/background = SubResource("Style_rage_empty")
+theme_override_styles/fill = SubResource("Style_rage_fill")
+show_percentage = false
+
+[node name="Auras" type="Label" parent="HUD"]
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_right = 260.0
+offset_top = -210.0
+offset_bottom = -158.0
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+mouse_filter = 2
+theme = SubResource("Theme_fixture")
+
+[node name="HeroPanel" type="Control" parent="HUD"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_fixture")
+script = ExtResource("3")
+
+[node name="CombatPanel" type="Control" parent="HUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = SubResource("Theme_fixture")
+script = ExtResource("4")

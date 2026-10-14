@@ -1,40 +1,40 @@
 class_name NorthshireData
 extends RefCounted
 
-## Pre-pivot lower-level creature profiles.
+## Valley combat profiles: first patrol/camp, wolves, mine, vineyard, then Garrick.
 const CREATURES: Dictionary = {
 	"6": {
 		"title": "Kobold Vermin",
 		"level": 1,
-		"health": 42,
-		"armor": 16,
-		"minimum": 0,
-		"maximum": 1,
+		"health": 40,
+		"armor": 20,
+		"minimum": 3,
+		"maximum": 4,
 		"power": 0,
 		"interval": 2.0,
-		"copper_min": 1,
-		"copper_max": 4
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"38": {
 		"title": "Defias Thug",
-		"level": 3,
-		"health": 71,
-		"armor": 76,
-		"minimum": 3,
-		"maximum": 5,
-		"power": 2,
-		"interval": 2.0,
-		"copper_min": 2,
-		"copper_max": 7
+		"level": 4,
+		"health": 70,
+		"armor": 85,
+		"minimum": 5,
+		"maximum": 7,
+		"power": 0,
+		"interval": 2.4,
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"69": {
 		"title": "Timber Wolf",
 		"level": 2,
-		"health": 55,
-		"armor": 16,
-		"minimum": 2,
-		"maximum": 2,
-		"power": 1,
+		"health": 50,
+		"armor": 35,
+		"minimum": 4,
+		"maximum": 5,
+		"power": 0,
 		"interval": 2.0,
 		"copper_min": 0,
 		"copper_max": 0
@@ -42,49 +42,59 @@ const CREATURES: Dictionary = {
 	"80": {
 		"title": "Kobold Laborer",
 		"level": 3,
-		"health": 71,
-		"armor": 76,
-		"minimum": 3,
-		"maximum": 5,
-		"power": 2,
+		"health": 60,
+		"armor": 65,
+		"minimum": 4,
+		"maximum": 6,
+		"power": 0,
 		"interval": 2.0,
-		"copper_min": 2,
+		"copper_min": 4,
 		"copper_max": 8
 	},
 	"103": {
 		"title": "Garrick Padfoot",
 		"level": 5,
-		"health": 102,
-		"armor": 120,
+		"health": 80,
+		"armor": 105,
 		"minimum": 6,
-		"maximum": 7,
-		"power": 3,
-		"interval": 2.0,
-		"copper_min": 3,
-		"copper_max": 9
+		"maximum": 8,
+		"power": 0,
+		"interval": 2.6,
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"257": {
 		"title": "Kobold Worker",
 		"level": 3,
-		"health": 70,
-		"armor": 41,
-		"minimum": 3,
-		"maximum": 4,
-		"power": 2,
+		"health": 60,
+		"armor": 65,
+		"minimum": 4,
+		"maximum": 6,
+		"power": 0,
 		"interval": 2.0,
-		"copper_min": 1,
-		"copper_max": 7
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"299": {
 		"title": "Young Wolf",
 		"level": 1,
-		"health": 42,
-		"armor": 15,
-		"minimum": 2,
-		"maximum": 2,
-		"power": 1,
+		"health": 40,
+		"armor": 20,
+		"minimum": 4,
+		"maximum": 5,
+		"power": 0,
 		"interval": 2.0,
 		"copper_min": 0,
 		"copper_max": 0
 	}
+}
+
+const STALKER: Dictionary = {
+	"level": 8,
+	"health": 600,
+	"armor": 240,
+	"minimum": 14,
+	"maximum": 18,
+	"power": 0,
+	"interval": 2.5,
 }

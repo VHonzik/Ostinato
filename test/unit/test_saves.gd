@@ -40,15 +40,16 @@ func test_five_slots_save_copy_overwrite_confirmation_and_seed_preservation() ->
 func test_full_round_trip_restores_random_streams_effects_outfit_and_future_arrival() -> void:
 	_session.world.hero.health = 0
 	_session.restart_after_death()
-	_session.select_class(&"Druid")
-	_session.world.train(&"Druid", &"healing_touch_1")
-	_session.world.train(&"Druid", &"mark_1")
+	StarterGear.exchange(_session.world.hero, &"Shaman")
+	_session.world.train(&"Shaman", &"lightning_shield_1")
+	_session.world.train(&"Shaman", &"strength_of_earth_totem_1")
+	_session.world.hero.rage = 100
 	_session.world.hero.casting_credit = 0.6
 	_session.world.movement_credit = 0.5
 	_session.world.hero.copper = 200
-	_session.world.hotbar[0] = &"healing_touch_1"
+	_session.world.hotbar[0] = &"lightning_shield_1"
 	_session.world.hotbar_locked = true
-	_session.world.cast_skill(&"mark_1")
+	_session.world.cast_skill(&"strength_of_earth_totem_1")
 	for index in range(12):
 		_session.world.wait_turn()
 	assert_true(_saves.save_slot(_session, 1), _saves.last_error)
@@ -77,8 +78,8 @@ func test_combat_and_pending_actions_cannot_save_and_load_discards_continuation(
 	assert_true(_saves.load_slot(_session, 1), _saves.last_error)
 	assert_null(abandoned.pending_melee)
 	assert_eq(_session.world.turn_count, 0)
-	_session.world.hero.learn_skill(SkillRank.catalog(&"healing_touch_1"))
-	_session.world.cast_skill(&"healing_touch_1")
+	_session.world.hero.find_skill(&"practice_1").cast_seconds = 2.0
+	assert_true(_session.world.cast_skill(&"practice_1"))
 	assert_false(_saves.save_slot(_session, 2))
 	assert_false(FileAccess.file_exists(_saves.slot_path(2)))
 
@@ -102,7 +103,7 @@ func test_damage_is_preserved_byte_for_byte_and_no_partial_state_is_loaded() -> 
 
 
 func test_unsupported_schema_stays_unchanged() -> void:
-	for revision in [1, 2, 3, 4, 5, 6, SaveStore.REVISION + 1]:
+	for revision in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, SaveStore.REVISION + 1]:
 		assert_true(_saves.save_slot(_session, 1, true), _saves.last_error)
 		var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))
 		record.revision = revision

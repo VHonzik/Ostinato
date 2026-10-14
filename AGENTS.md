@@ -42,6 +42,8 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
   playable task; leave later milestones coarse. Do not maintain duplicate GitHub plans.
 - End with a short chat summary: what changed, checks and limitations, and a few useful
   playtest steps. No handoff files. If temporary notes are needed, use ignored `reports/`.
+- Do not automate resolution, text readability, clipping, or control-fit acceptance.
+  Keep UI tests focused on behavior such as input, focus navigation, and state changes.
 - Human playtesting decides feel, readability, and balance. Do not claim human acceptance.
 - Keep tool output concise; inspect diagnostic logs on failure instead of dumping them.
   Do not generate written validation reports or introduce mandatory QA forms.

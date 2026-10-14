@@ -1,0 +1,126 @@
+extends "res://reports/balance_sim.gd"
+
+const BATCHES: int = 10
+const FIGHTS_PER_BATCH: int = 20
+const BUILDS: Array[String] = ["starter", "warrior", "warrior_shaman",
+	"warrior_paladin", "warrior_rogue", "warrior_rogue_2h", "mixed4", "mixed4_2h"]
+var shard: int = 0
+var cases: Array[Dictionary] = []
+var matrix_rows: Array[Dictionary] = []
+var started_msec: int = 0
+
+
+func _initialize() -> void:
+	for argument in OS.get_cmdline_user_args():
+		if argument.is_valid_int():
+			shard = int(argument)
+	for id: String in SkillRank.all_ranks():
+		ranks[id] = SkillRank.catalog(StringName(id))
+	policy = "efficient"
+	opening_rage = 0
+	started_msec = Time.get_ticks_msec()
+	var checkpoint := "res://reports/balance_matrix_%d.json" % shard
+	if FileAccess.file_exists(checkpoint):
+		matrix_rows.assign(JSON.parse_string(FileAccess.get_file_as_string(checkpoint)))
+	call_deferred("_run")
+
+
+func _run() -> void:
+	for level in [1, 2, 3]:
+		cases.append({"id": "garrick_p%d" % level, "label": "Garrick; player L%d" % level,
+			"hero_level": level, "enemy_level": 5, "count": 1, "profile": "garrick"})
+	for enemy_level in [3, 4, 5]:
+		for count in range(1, 5):
+			cases.append({"id": "group_l%d_n%d" % [enemy_level, count],
+				"label": "%d × L%d; player L3" % [count, enemy_level],
+				"hero_level": 3, "enemy_level": enemy_level, "count": count, "profile": "ordinary"})
+	cases.append({"id": "stalker_live", "label": "Live stalker L20; player L5",
+		"hero_level": 5, "enemy_level": 20, "count": 1, "profile": "live"})
+	cases.append({"id": "stalker_candidate", "label": "Candidate stalker L8; player L5",
+		"hero_level": 5, "enemy_level": 8, "count": 1, "profile": "candidate"})
+	for case_index in range(cases.size()):
+		if case_index % 3 != shard:
+			continue
+		var scenario := cases[case_index]
+		boss = {}
+		if scenario.profile == "candidate":
+			boss = {"name": "boss8", "level": 8, "health": 280, "armor": 240,
+				"minimum": 12, "maximum": 16, "interval": 2.5}
+		for build in BUILDS:
+			var variants: Array[bool] = [false]
+			if build.trim_suffix("_2h") in ["warrior_paladin", "warrior_rogue", "mixed4"]:
+				variants.append(true)
+			for enabled in variants:
+				if matrix_rows.any(func(row: Dictionary) -> bool:
+					return (row.case_id == scenario.id and row.build == build
+						and row.defensive_cooldowns == enabled)):
+					continue
+				defensive_cooldowns = enabled
+				_measure_matrix(scenario, case_index, build, enabled)
+		print("Shard %d: %s finished (%d cells, %.1fs)." % [shard, scenario.label,
+			matrix_rows.size(), (Time.get_ticks_msec() - started_msec) / 1000.0])
+	print("COMPLETE shard %d: %d cells, %d fights each, %.1fs." % [shard,
+		matrix_rows.size(), BATCHES * FIGHTS_PER_BATCH,
+		(Time.get_ticks_msec() - started_msec) / 1000.0])
+	quit()
+
+
+func _measure_matrix(scenario: Dictionary, case_index: int, build: String,
+	enabled: bool) -> void:
+	var wins := 0
+	var damage: Array[float] = []
+	var finishing_health: Array[float] = []
+	var win_health: Array[float] = []
+	var times: Array[float] = []
+	var rates: Array[float] = []
+	var unfinished := 0
+	var max_health := 0
+	var gear := "dual" if build in ["warrior_rogue", "mixed4"] else "janos"
+	if build.ends_with("_2h"):
+		gear = "two_hand"
+	for batch in range(BATCHES):
+		var batch_wins := 0
+		for fight in range(FIGHTS_PER_BATCH):
+			# Disjoint cases/batches, identical seeds across builds and cooldown variants.
+			var seed_value := 100000 + case_index * 10000 + batch * 100 + fight
+			var result := _battle(build.trim_suffix("_2h"), gear, scenario.hero_level, scenario.enemy_level,
+				scenario.count, scenario.profile in ["live", "candidate"], seed_value)
+			if result.win:
+				batch_wins += 1
+				win_health.append(result.health_hp)
+			if result.unfinished:
+				unfinished += 1
+			max_health = result.max_health_hp
+			damage.append(result.damage_hp)
+			finishing_health.append(result.health_hp)
+			times.append(result.turns)
+		wins += batch_wins
+		rates.append(100.0 * batch_wins / FIGHTS_PER_BATCH)
+	var mean := 100.0 * wins / (BATCHES * FIGHTS_PER_BATCH)
+	var squared := 0.0
+	for rate in rates:
+		squared += pow(rate - mean, 2.0)
+	matrix_rows.append({"case_id": scenario.id, "case_label": scenario.label,
+		"hero_level": scenario.hero_level, "enemy_level": scenario.enemy_level,
+		"enemy_count": scenario.count, "profile": scenario.profile, "build": build,
+		"gear": gear, "defensive_cooldowns": enabled, "batches": BATCHES,
+		"fights_per_batch": FIGHTS_PER_BATCH, "fights": BATCHES * FIGHTS_PER_BATCH,
+		"win_rate_mean": mean, "win_rate_std": sqrt(squared / (BATCHES - 1)),
+		"batch_win_rates": rates, "median_damage_hp": _median(damage),
+		"median_finishing_health_hp": _median(finishing_health), "max_health_hp": max_health,
+		"median_win_health_hp": _median(win_health), "median_turns": _median(times),
+		"unfinished": unfinished})
+	var file := FileAccess.open("res://reports/balance_matrix_%d.json" % shard, FileAccess.WRITE)
+	file.store_string(JSON.stringify(matrix_rows, "\t"))
+	file.close()
+	assert(unfinished == 0, "A capped or unfinished fight must not count as a completed trial.")
+
+
+func _median(values: Array[float]) -> Variant:
+	if values.is_empty():
+		return null
+	values.sort()
+	var middle := values.size() / 2
+	if values.size() % 2 == 0:
+		return (values[middle - 1] + values[middle]) / 2.0
+	return values[middle]

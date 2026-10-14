@@ -17,10 +17,12 @@ func new_game(chosen_seed: int = -1) -> void:
 	generator.randomize()
 	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
-	var fresh := NorthshireZone.create_world(seed_value, development_build)
-	fresh.hotbar = [&"fireball_1", &"frost_armor_1", &"", &"", &""]
+	var fresh := ValleyRoute.create_world(seed_value, development_build)
+	fresh.class_selected = true
+	fresh.hotbar[0] = &"mortal_strike_1"
+	fresh.hotbar[1] = &"heroic_strike_1"
 	_replace_world(fresh)
-	world.add_message("Loop 1. You awaken as a mage. The marshal waits northwest.")
+	world.add_message("Valley. Marshal north, wolves west, mine farther north, vineyards east. Watch the gate.")
 
 
 func restart_after_death() -> bool:
@@ -33,30 +35,35 @@ func restart_after_death() -> bool:
 	var hotbar := world.hotbar.duplicate()
 	var locked := world.hotbar_locked
 	loop_count += 1
-	var fresh := NorthshireZone.create_world(seed_value, development_build)
+	var fresh := ValleyRoute.create_world(seed_value, development_build)
+	if world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES:
+		fresh.hero.selected_class = world.hero.selected_class
+	fresh.hero.class_progress = world.hero.class_progress.duplicate()
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar
 	fresh.hotbar_locked = locked
 	_replace_world(fresh)
-	world.add_message("You died. Loop %d begins. Your learned ranks remain." % loop_count)
+	world.add_message("You died. Loop %d begins as %s. Learning and class XP remain; choose once at the marshal before accepting any quest." % [loop_count, world.hero.selected_class])
 	return true
 
 
 func can_select_class() -> bool:
-	return (world != null and not world.is_terminal() and loop_count >= 2 and world.hero.level == 1
+	return (world != null and world.can_save() and loop_count >= 2
 		and not world.class_selected and not world.ever_accepted_quest)
 
 
-func select_class(category: StringName) -> bool:
-	if (not can_select_class() or category not in ClassSkillData.CLASSES
-		or category == world.hero.selected_class):
+func select_class(category: StringName, marshal: GridActor = null) -> bool:
+	if (not can_select_class() or category not in ClassSkillData.PLAYABLE_CLASSES
+		or not QuestRules.in_range(world, marshal, 197) or marshal.service != &"Marshal"):
 		return false
-	if not StarterGear.exchange(world.hero, category):
-		world.add_message("Not enough inventory space. Class selection remains available.")
-		return false
+	world.resolving_turn = true
+	world.hero.selected_class = category
 	world.class_selected = true
-	world.add_message("Marshal: Welcome back, %s. These clothes should fit. Visit your trainer." % category)
+	world.hero.refresh_stats()
+	world.add_message("%s selected for Loop %d. Only its ability uses award class XP; learned skills remain usable." % [category, loop_count])
+	world.add_message("Marshal: " + ValleyRoute.trainer_referral(category))
+	world.resolving_turn = false
 	return true
 
 

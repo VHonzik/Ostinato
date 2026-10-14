@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Concrete quest transactions and objective updates.
 static func available(world: GridWorld, identifier: String) -> bool:
+	if world.valley_route != ValleyRoute.QUESTS.has(identifier):
+		return false
 	if not QuestData.QUESTS.has(identifier) or world.quests.has(identifier):
 		return false
 	var quest: Dictionary = QuestData.QUESTS[identifier]
@@ -14,6 +16,17 @@ static func available(world: GridWorld, identifier: String) -> bool:
 		if not world.quests.has(previous) or not world.quests[previous].handed_in:
 			return false
 	return true
+
+
+static func has_marker(world: GridWorld, actor: GridActor) -> bool:
+	if not actor.alive or actor.relationship != GridActor.Relationship.FRIENDLY:
+		return false
+	for identifier in QuestData.QUESTS:
+		var quest: Dictionary = QuestData.QUESTS[identifier]
+		if (int(quest.giver) == actor.npc_id and available(world, identifier)
+			or int(quest.receiver) == actor.npc_id and ready(world, identifier)):
+			return true
+	return false
 
 
 static func in_range(world: GridWorld, actor: GridActor, identity: int) -> bool:
@@ -83,8 +96,11 @@ static func event(world: GridWorld, kind: String, target: String) -> void:
 
 
 static func visit(world: GridWorld) -> void:
-	if world.northshire and Rect2i(43, 11, 3, 7).has_point(world.player_tile):
-		event(world, "location", "gate_overlook")
+	if world.valley_route:
+		for destination in ValleyRoute.CHESTS:
+			if world.tile_distance(world.player_tile, ValleyRoute.CHESTS[destination]) <= 1:
+				event(world, "location", destination)
+		return
 
 
 static func hand_in(
@@ -100,17 +116,27 @@ static func hand_in(
 		return false
 	var inventory := world.hero.inventory.duplicate(true)
 	_remove_items(inventory, identifier)
-	if choice > 0 and not InventoryRules.add(inventory, ItemData.instance(choice)):
-		world.add_message("Inventory full. Make room before collecting your reward.")
-		return false
-	# Nothing changes until the complete reward fits.
+	var previous_inventory := world.hero.inventory.duplicate(true)
+	var previous_equipment := world.hero.equipment.duplicate(true)
 	world.hero.inventory.assign(inventory)
+	var rewards: Array = quest.get("rewards", []).duplicate()
+	if choice > 0:
+		rewards.append(choice)
+	for reward in rewards:
+		if not InventoryRules.receive(world.hero, ItemData.instance(int(reward))):
+			world.hero.inventory.assign(previous_inventory)
+			world.hero.equipment = previous_equipment
+			world.hero.refresh_stats()
+			world.add_message("Inventory full. Make room before collecting your reward.")
+			return false
 	world.quests[identifier].handed_in = true
 	_clear_loot(world, identifier)
 	world.hero.copper += int(quest.copper)
 	var xp := experience(int(quest.xp), int(quest.level), world.hero.level)
 	world.add_message("Handed in %s: %d XP, %s." % [
 		quest.title, xp, InventoryRules.money(int(quest.copper))])
+	for reward in rewards:
+		world.add_message("Received " + String(ItemData.get_item(int(reward)).title) + ".")
 	for level in world.hero.add_experience(xp):
 		world.add_message("Level up! You are now level %d." % level)
 	return true
@@ -179,9 +205,16 @@ static func objective_label(objective: Dictionary) -> String:
 		"kill":
 			return NorthshireData.CREATURES[objective.target].title
 		"location":
+			match objective.target:
+				"mine_chest":
+					return "Explore the back of Echo Ridge Mine"
+				"ridge_chest":
+					return "Explore the eastern ridge above the vineyard"
+				"vineyard_chest":
+					return "Explore the southern vineyard edge"
 			return "Visit the gate overlook (43–45, 11–17)"
 		"talk":
-			return "Speak with " + NorthshireZone.npc_name(int(objective.target))
+			return "Speak with " + ValleyRoute.npc_name(int(objective.target))
 	return ""
 
 

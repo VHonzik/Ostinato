@@ -5,9 +5,10 @@ extends RefCounted
 
 
 static func outfit(category: StringName) -> Array[int]:
-	var outfits := {"Mage": [56, 1395, 55, 6096, 35], "Druid": [6123, 6124, 35], "Warlock": [57, 1396, 59, 6097, 2092], "Priest": [6144, 52, 51, 53, 36], "Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361]}
+	var outfits := {"Warrior": [2361, 2379], "Shaman": [36, 44],
+		"Paladin": [2361, 44], "Rogue": [35, 44]}
 	var result: Array[int] = []
-	result.assign(outfits[String(category)])
+	result.assign(outfits.get(String(category), []))
 	return result
 
 
@@ -15,15 +16,18 @@ static func item(identifier: int) -> Dictionary:
 	return {"id": identifier, "starter": true, "quantity": 1}
 
 
+static func equip_travel_clothes(hero: HeroState) -> void:
+	var identifiers: Array[int] = [35, 44]
+	_equip(hero, identifiers)
+
+
 static func equip_outfit(hero: HeroState) -> void:
-	hero.inventory.resize(40)
-	hero.inventory.fill({})
-	for identifier in outfit(&"Mage"):
-		hero.equipment[ItemData.get_item(identifier).slot] = item(identifier)
-	hero.refresh_stats()
+	_equip(hero, outfit(hero.selected_class))
 
 
 static func exchange(hero: HeroState, category: StringName) -> bool:
+	if category not in ClassSkillData.PLAYABLE_CLASSES:
+		return false
 	var equipment := hero.equipment.duplicate(true)
 	var inventory := hero.inventory.duplicate(true)
 	for slot in equipment.keys():
@@ -34,11 +38,7 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 			inventory[index] = {}
 	for identifier in outfit(category):
 		var slot: String = ItemData.get_item(identifier).slot
-		var hands_blocked: bool = (slot == "main_hand"
-			and ItemData.get_item(identifier).two_handed and equipment.has("off_hand"))
-		hands_blocked = hands_blocked or (slot == "off_hand" and equipment.has("main_hand")
-			and ItemData.get_item(int(equipment.main_hand.id)).two_handed)
-		if not equipment.has(slot) and not hands_blocked:
+		if not equipment.has(slot):
 			equipment[slot] = item(identifier)
 		else:
 			var empty := inventory.find({})
@@ -50,5 +50,13 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 	hero.selected_class = category
 	hero.refresh_stats()
 	hero.health = mini(hero.health, hero.max_health)
-	hero.mana = mini(hero.mana, hero.max_mana)
 	return true
+
+
+static func _equip(hero: HeroState, identifiers: Array[int]) -> void:
+	hero.equipment.clear()
+	hero.inventory.resize(40)
+	hero.inventory.fill({})
+	for identifier in identifiers:
+		hero.equipment[ItemData.get_item(identifier).slot] = item(identifier)
+	hero.refresh_stats()

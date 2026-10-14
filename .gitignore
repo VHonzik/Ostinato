@@ -5,3 +5,6 @@
 /reports/*
 !/reports/.gdignore
 *.translation
+/art/__pycache__/
+/art/runs/
+/assets/generated/

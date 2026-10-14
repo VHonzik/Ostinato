@@ -6,6 +6,7 @@ signal new_game_requested
 signal return_to_menu_requested
 signal refreshed
 signal fullscreen_changed
+signal hero_requested(spell_book: bool)
 
 var session: GameSession
 var saves := SaveStore.new()
@@ -29,8 +30,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel = PanelContainer.new()
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-250, -132)
-	_panel.size = Vector2(500, 264)
+	_panel.position = Vector2(-360, -240)
+	_panel.size = Vector2(720, 480)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#101d1b")
@@ -45,7 +46,7 @@ func _ready() -> void:
 	scroll.add_child(_rows)
 	_footer = HBoxContainer.new()
 	_footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	_footer.offset_top = -24
+	_footer.offset_top = -32
 	_footer.offset_left = 8
 	_footer.offset_right = -8
 	add_child(_footer)
@@ -81,6 +82,23 @@ func open_completion() -> void:
 
 func _completed() -> bool:
 	return session.world != null and session.world.attempt_state == GridWorld.AttemptState.COMPLETED
+
+
+func open_player() -> void:
+	_begin("player", "Player menu", close)
+	_button("Character (" + options.key_label(&"character") + ")", _open_hero.bind(false))
+	_button("Spell book (" + options.key_label(&"spell_book") + ")", _open_hero.bind(true))
+	_button("Inventory (" + options.key_label(&"inventory") + ")", open_inventory)
+	_button("Quest log (" + options.key_label(&"quest_log") + ")", open_quest_log)
+	_button("Options / Save / Load", open_options)
+	_label("Move: WASD + QEZC / arrows / numpad. Wait: period / numpad 5. F interacts.")
+	_button("Return to game (Esc)", close)
+	_finish()
+
+
+func _open_hero(spell_book: bool) -> void:
+	close()
+	hero_requested.emit(spell_book)
 
 
 func open_options() -> void:
@@ -142,30 +160,55 @@ func open_bindings() -> void:
 
 
 func open_marshal() -> void:
+	session.world.trainer_referral_received = true
 	_begin("marshal", "Marshal McBride", close)
-	_label("The Legion has reached Northshire. Do I know you? These clothes may help.")
-	if session.can_select_class():
-		for category: StringName in ClassSkillData.CLASSES:
-			if category == session.world.hero.selected_class:
-				continue
-			_button("Choose " + String(category), _select_class.bind(category))
-	else:
-		_label("Class selection: once per Loop from Loop 2, at level 1, before accepting any quest.")
+	_label("Speak with Llane Beshere inside the abbey. " +
+		"Also check with Janos inside, he might give you some arms and armor.")
 	_button("Leave (Esc)", close)
 	_finish()
+
+
+func _confirm_class(category: StringName, marshal: GridActor) -> void:
+	confirm("Advance %s for Loop %d? This locks your choice until death. Visit its trainer to learn starter skills." % [category, session.loop_count],
+		_select_class.bind(category, marshal), open_conversation.bind(marshal))
+
+
+func _request_spare_gear(actor: GridActor) -> void:
+	if not QuestRules.in_range(session.world, actor, 900003):
+		close()
+		return
+	if session.world.starter_gear_received:
+		open_conversation(actor)
+		return
+	if not session.world.receive_starter_gear(actor):
+		notice("Cannot exchange gear; make inventory space and try again.",
+			open_conversation.bind(actor))
+		return
+	_begin("spare_gear", actor.title, open_conversation.bind(actor))
+	_label("I can find some left overs if you are not picky.")
+	_button("Back (Esc)", open_conversation.bind(actor))
+	_finish()
+	refreshed.emit()
 
 
 func open_trainer(category: StringName) -> void:
 	_trainer = category
 	_begin("trainer", "%s training" % category, close)
-	if session.world.hero.selected_class != category:
+	if category not in ClassSkillData.PLAYABLE_CLASSES:
+		_label("Training for this class is not available yet.")
+	elif session.world.hero.selected_class != category:
 		_label("Select %s before learning here. Retained skills remain usable." % category)
 	else:
-		_label("Money: " + InventoryRules.money(session.world.hero.copper))
+		_label("%s class XP: %d (cumulative; learning does not spend XP)" % [
+			category, session.world.hero.progression_points(category)])
+		if category != &"Warrior":
+			_label("Learn these starter skills for free, with no class XP requirement. Further abilities unlock with class XP.")
 		for skill in SkillRank.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
-			var button := _button("%s rank %d / %s" % [
-				skill.title, skill.rank, "Learned" if known else InventoryRules.money(skill.training_cost)],
+			var price := "Free"
+			var status := "Learned" if known else ("Unlock at %d class XP" % skill.progress_required
+				if skill.progress_required > 0 else price)
+			var button := _button("%s rank %d / %s" % [skill.title, skill.rank, status],
 				_train.bind(skill.id))
 			button.tooltip_text = skill.description
 			var failure := session.world.training_failure(category, skill)
@@ -188,12 +231,16 @@ func open_inventory() -> void:
 		var button := _button("%s: %s" % [slot.replace("_", " "), title],
 			_equipped_detail.bind(slot))
 		button.disabled = item.is_empty()
+		if not item.is_empty():
+			_item_color(button, int(item.id))
 	for index in range(40):
 		var item := hero.inventory[index]
 		var title := "Empty" if item.is_empty() else "%s x%d" % [
 			ItemData.get_item(int(item.id)).title, item.quantity]
 		var button := _button("Slot %d: %s" % [index + 1, title], _item_detail.bind(index))
 		button.disabled = item.is_empty()
+		if not item.is_empty():
+			_item_color(button, int(item.id))
 	_button("Close (Esc)", close)
 	_finish()
 
@@ -201,7 +248,7 @@ func open_inventory() -> void:
 func _equipped_detail(slot: String) -> void:
 	var item: Dictionary = session.world.hero.equipment[slot]
 	_begin("equipment", slot.replace("_", " "), open_inventory)
-	_label(ItemData.describe(int(item.id)))
+	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
 	_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot), open_inventory))
 	_button("Back (Esc)", open_inventory)
 	_finish()
@@ -211,14 +258,15 @@ func _item_detail(index: int) -> void:
 	var item := session.world.hero.inventory[index]
 	var data := ItemData.get_item(int(item.id))
 	_begin("item", "%s x%d" % [data.title, item.quantity], open_inventory)
-	_label(ItemData.describe(int(item.id)))
+	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
 	if data.slot != "":
-		if data.slot in ["ring", "trinket"]:
+		if data.slot == "ring":
 			for suffix in ["_1", "_2"]:
 				_button("Equip in %s%s (1 turn)" % [data.slot, suffix],
 					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_inventory))
 		else:
-			_button("Equip (1 turn)", _transaction.bind(session.world.equip_item.bind(index), open_inventory))
+			_button("Equip (1 turn)",
+				_transaction.bind(session.world.equip_item.bind(index), open_inventory))
 	if data.use != "":
 		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_inventory))
 	_button("Move / split stack", func() -> void:
@@ -259,6 +307,7 @@ func open_loot(source: GridActor) -> void:
 		var button := _button("Take %s x%d" % [ItemData.get_item(int(item.id)).title, item.quantity],
 			_transaction.bind(session.world.loot_item.bind(source, index), _refresh_loot))
 		button.tooltip_text = ItemData.describe(int(item.id))
+		_item_color(button, int(item.id))
 	_button("Leave (Esc)", close)
 	_finish()
 
@@ -298,6 +347,7 @@ func open_buy(merchant: GridActor) -> void:
 			_buy_options.bind(int(key)))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(key))
+		_item_color(button, int(key))
 		button.disabled = stock == 0
 	_button("Back (Esc)", open_trade.bind(merchant))
 	_finish()
@@ -328,6 +378,7 @@ func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
 				open_sell.bind(merchant, int(item.id))))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(item.id))
+		_item_color(button, int(item.id))
 		if int(data.quality) == 0:
 			grey.disabled = false
 		if selected == null and (selected_item == 0 or int(item.id) == selected_item):
@@ -341,7 +392,7 @@ func _buy_options(identifier: int) -> void:
 	var merchant := _merchant
 	var data := ItemData.get_item(identifier)
 	_begin("buy", "Buy " + String(data.title), open_buy.bind(merchant))
-	_label(ItemData.describe(identifier))
+	_item_color(_label(ItemData.describe(identifier)), identifier)
 	var unit_price := MerchantData.unit_price(merchant.npc_id, identifier)
 	var amounts: Array[int] = [1]
 	if int(data.stack) > 10:
@@ -404,9 +455,11 @@ func handle_key(event: InputEventKey) -> void:
 		if event.physical_keycode == KEY_ESCAPE:
 			open_bindings()
 			return
+		if event.physical_keycode in [KEY_SHIFT, KEY_CTRL, KEY_ALT, KEY_META]:
+			return
 		var action := _capture_action
 		_capture_action = &""
-		var key := int(event.physical_keycode)
+		var key := int(event.get_physical_keycode_with_modifiers())
 		var other := options.conflict(action, key)
 		if other != &"":
 			confirm("Swap %s with %s?" % [action, other], func() -> void:
@@ -466,8 +519,8 @@ func toggle_fullscreen() -> void:
 
 func _begin(next_page: String, title: String, back: Callable) -> void:
 	page = next_page
-	_panel.position = size * 0.5 + Vector2(-250, -86 if active_game else -100)
-	_panel.size = Vector2(500, 248 if active_game else 200)
+	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
+	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
 	_buttons.clear()
 	(_rows.get_parent() as ScrollContainer).scroll_vertical = 0
@@ -480,12 +533,13 @@ func _begin(next_page: String, title: String, back: Callable) -> void:
 	show()
 
 
-func _label(text: String) -> void:
+func _label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.custom_minimum_size.x = 460
+	label.custom_minimum_size.x = 680
 	_rows.add_child(label)
+	return label
 
 
 func _button(text: String, action: Callable, parent: Node = null) -> Button:
@@ -562,12 +616,19 @@ func _capture(action: StringName) -> void:
 	_begin("capture", "Press a key for %s (Esc cancels)." % action, open_bindings)
 
 
-func _select_class(category: StringName) -> void:
-	if session.select_class(category):
+func _select_class(category: StringName, marshal: GridActor) -> void:
+	if session.select_class(category, marshal):
+		session.world.trainer_referral_received = true
 		refreshed.emit()
-		close()
+		_begin("class_referral", marshal.title, open_conversation.bind(marshal))
+		_label(ValleyRoute.trainer_referral(category))
+		_label("Visit your trainer to learn skills. Everything you already learned remains usable.")
+		_button("Back (Esc)", open_conversation.bind(marshal))
+		_button("Leave", close)
+		_finish()
 	else:
-		notice("Cannot exchange clothes; make inventory space and try again.", open_marshal)
+		notice("Class choice is unavailable. Speak to the marshal outside combat before accepting a quest.",
+			open_conversation.bind(marshal))
 
 
 func _train(identifier: StringName) -> void:
@@ -587,7 +648,6 @@ func _toggle_palette() -> void:
 
 
 func _ensure_button_visible(button: Button) -> void:
-	await get_tree().process_frame
 	if is_instance_valid(button) and _rows.is_ancestor_of(button):
 		(_rows.get_parent() as ScrollContainer).ensure_control_visible(button)
 
@@ -598,7 +658,7 @@ func open_conversation(actor: GridActor) -> void:
 		return
 	QuestRules.event(session.world, "talk", str(actor.npc_id))
 	_begin("conversation", actor.title, close)
-	_label(NorthshireZone.greeting(actor.npc_id))
+	_label(ValleyRoute.greeting(actor.npc_id))
 	var choices := false
 	for identifier in QuestData.QUESTS:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
@@ -612,12 +672,31 @@ func open_conversation(actor: GridActor) -> void:
 				else "In progress: ", _quest_detail.bind(identifier, actor))
 			choices = true
 	if actor.service == &"Marshal":
-		_button("Discuss class selection", open_marshal)
+		if session.loop_count > 1 and (session.world.class_selected or session.world.ever_accepted_quest):
+			_label("Advancing %s this Loop. Class choice is locked until death." % session.world.hero.selected_class)
+		elif session.loop_count > 1 and not session.can_select_class():
+			_label("Return outside combat to choose your class before accepting a quest.")
+		if session.can_select_class():
+			for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
+				var button := _button("Uhm... I seek %s teaching" % String(category).to_lower(),
+					_confirm_class.bind(category, actor))
+				var titles: PackedStringArray = []
+				for skill in SkillRank.starting_skills(category):
+					titles.append(skill.title)
+				button.tooltip_text = "%d class XP. Learn %s for free at the trainer. Gear and learned skills remain." % [
+					session.world.hero.progression_points(category), " + ".join(titles)]
+		elif (session.world.hero.selected_class == &"Warrior"
+			and not session.world.trainer_referral_received):
+			_button("It's been a long journey, is there a warrior master?", open_marshal)
 		choices = true
 	elif actor.service == &"Trader":
+		if (actor.npc_id == 900003 and session.world.valley_route
+			and session.world.hero.selected_class == &"Warrior"
+			and not session.world.starter_gear_received):
+			_button("Do you have any spare gear for warrior?", _request_spare_gear.bind(actor))
 		_button("Trade", open_trade.bind(actor))
 		choices = true
-	elif actor.service in ClassSkillData.CLASSES:
+	elif actor.service in ClassSkillData.PLAYABLE_CLASSES:
 		_button("Train", open_trainer.bind(actor.service))
 		choices = true
 	if not choices:
@@ -660,7 +739,7 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 	_begin("quest_detail", quest.title, back)
 	_label("Level %d / %s. Return to %s." % [quest.level,
 		QuestRules.difficulty(int(quest.level), world.hero.level),
-		NorthshireZone.npc_name(int(quest.receiver))])
+		ValleyRoute.npc_name(int(quest.receiver))])
 	for index in range(quest.objectives.size()):
 		var objective: Dictionary = quest.objectives[index]
 		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0
@@ -687,6 +766,17 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 				_quest_detail.bind(identifier, actor)))
 	if not quest.choices.is_empty():
 		for item in quest.choices:
-			_label(ItemData.describe(int(item)))
+			_item_color(_label(ItemData.describe(int(item))), int(item))
+	for item in quest.get("rewards", []):
+		_item_color(_label(ItemData.describe(int(item))), int(item))
 	_button("Back (Esc)", back)
 	_finish()
+
+
+func _item_color(control: Control, identifier: int) -> void:
+	var color := ItemData.quality_color(int(ItemData.get_item(identifier).quality))
+	if control is Label:
+		control.add_theme_color_override("font_color", color)
+	else:
+		for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+			control.add_theme_color_override(state, color)

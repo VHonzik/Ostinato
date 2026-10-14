@@ -1,0 +1,142 @@
+{
+  "captured_on": "2026-10-14",
+  "baseline_commit": "d87d78476c055c977a1fbd12d2ad5b950bdd6385",
+  "working_tree": "Local enemy tuning and level-gap changes, with the simulated level-8 stalker adopted; uncommitted.",
+  "versions": {
+    "godot": {
+      "version": "4.7.2.stable.official.ed1daf0bf",
+      "executable": "bin/Godot_v4.7.2-stable_win64.exe",
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "console_executable": "bin/Godot_v4.7.2-stable_win64_console.exe",
+      "console_sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+      "download_url": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip",
+      "export_templates_version": "4.7.2.stable"
+    },
+    "gut": {
+      "version": "9.7.1",
+      "download_url": "https://github.com/bitwes/Gut/archive/refs/tags/v9.7.1.zip",
+      "archive_sha256": "14969aa46adc84aa08cdd21b9f6d1a64addd92ae60b36f02d0521ed305aa4086"
+    }
+  },
+  "cells": 221,
+  "fights": 44200,
+  "batches_per_cell": 10,
+  "fights_per_batch": 20,
+  "seed_formula": "100000 + case_index * 10000 + batch * 100 + fight (zero-based indices)",
+  "case_order": [
+    "garrick_p1",
+    "garrick_p2",
+    "garrick_p3",
+    "group_l3_n1",
+    "group_l3_n2",
+    "group_l3_n3",
+    "group_l3_n4",
+    "group_l4_n1",
+    "group_l4_n2",
+    "group_l4_n3",
+    "group_l4_n4",
+    "group_l5_n1",
+    "group_l5_n2",
+    "group_l5_n3",
+    "group_l5_n4",
+    "stalker_live",
+    "stalker_candidate"
+  ],
+  "stalker_case_roles": {
+    "stalker_candidate": "Adopted live level-8 profile",
+    "stalker_live": "Historical pre-balance level-20 control"
+  },
+  "metrics": {
+    "median_finishing_health_hp": "Final player HP; losses contribute zero",
+    "median_win_health_hp": "Conditional median among wins, null when no wins",
+    "win_rate_std": "Sample standard deviation of batch win percentages, in percentage points",
+    "median_damage_hp": "Cumulative actual player HP lost to hits before healing; median includes losses",
+    "win_rate_mean": "Mean of ten batch win percentages"
+  },
+  "starting_state": {
+    "kill_xp": false,
+    "full_health": true,
+    "maximum_turns": 300,
+    "initially_adjacent_and_hostile": true,
+    "prebuffs": false,
+    "rage": 0,
+    "consumables": false,
+    "combo_points": 0
+  },
+  "cooldown_variants": "Only Evasion and Divine Shield are enabled/disabled; other cooldowns remain normal.",
+  "weapons": {
+    "dual": {
+      "off_hand": 2139,
+      "main_hand": 2361
+    },
+    "other_builds": "Janos free Warrior outfit with shield",
+    "two_hand": {
+      "main_hand": 2132
+    }
+  },
+  "limitations": [
+    "Fixed ability-priority policy; not optimal human play",
+    "Isolated fights; route, reinforcement pressure and level-up heals excluded",
+    "Ordinary level-5 groups use Garrick profiles",
+    "Medians of damage and health are independent and need not sum to starting HP"
+  ],
+  "rerun_commands": [
+    "./reports/run_balance_matrix.ps1 -Shard 0",
+    "./reports/run_balance_matrix.ps1 -Shard 1",
+    "./reports/run_balance_matrix.ps1 -Shard 2",
+    "./reports/render_balance_matrix.ps1"
+  ],
+  "source_sha256": {
+    "scripts/world/valley_route.gd": "b0e31441200bdcf9ab713aaa44cd08deddc6d604411b1bfda50803a805dff614",
+    "scripts/world/northshire_data.gd": "783180097717ecc027b8f4a690de192e167d5f277e5562ee57ae2d61889d8c06",
+    "scripts/world/movement_fixture.gd": "bc5cb975c1a4ca6eb7dbed031f9e5d1a66ef264cdea1de6da214183bb6b0cd6a",
+    "scripts/world/grid_world.gd": "7caba516bc8a9f5f7389fc4f4fe10cfef7c22403c260157661d080cb0c0fe028",
+    "scripts/world/grid_view.gd": "7a938780804f4eb77c8c27c309e1e28f8ee7c3fe30b184375d4439c97cb099d1",
+    "scripts/world/grid_actor.gd": "bbd1368327e04c27a3822817a3515da2556d4972911dfa9bf2b275564bd45a2f",
+    "scripts/world/actor_sprite_layers.gd": "4b25a70df848e30ba27c99e96a7cfafa3e81720d2626b04f889fab735b7edf9a",
+    "scripts/save_store.gd": "ed1e4416906d525813bc038891ce2bd289d058a92b6c9eee0b65666da0821a61",
+    "scripts/save_codec.gd": "5dbfb25307063a513b7b6773a13767ebc066c5d1dfc6daa357a37c2061c69f9d",
+    "scripts/quests/quest_rules.gd": "b5cdfcfba93cd15afdc387839cefb9e0041d7afbc4a4fd0fb927b625acf0fd51",
+    "scripts/quests/quest_data.gd": "302665d3b5619af66db6f15ebc8330cbdab8c74d2278af98645a794a0d939320",
+    "scripts/quests/northshire_items.gd": "5bae7ba84db4260778acafffd17f4eb53955570ef3a9f573ffda12979ef64e7d",
+    "scripts/pixel_viewport.gd": "e3c7bef0c5cad6777c98977870176781a32dd75e2ee31cf8c2b091f742de5cd8",
+    "scripts/menu_panel.gd": "b0cc767e13a187b52a05d7d71f1a47cb360413652a478e4549c2be26bfcc275e",
+    "scripts/items/northshire_loot.gd": "c3de343dd84d11002b54575ec15015a47ad69f048dfca572b57d17e936ed17ed",
+    "scripts/items/merchant_items.gd": "f887d351cd0d9d41c3f93ca11fefb060ffe6667084fe566ba6faac02c8d6c756",
+    "scripts/items/merchant_data.gd": "39020d235b20c26f4285a36057d08fedc744f0660f3fbe8fa9eaff07e5026e62",
+    "scripts/items/loot_items.gd": "2e3411c34b74e1e80c0f21fe666eeb37f27f30f803c6286e870791233db58d9c",
+    "scripts/items/loot_data.gd": "7b462f11b7995636427a95aed0c247e48ff80bdc3df7e319faee25906709bd58",
+    "scripts/items/item_data.gd": "71f64da7c08a23c24fcc648d2fae307225f5efe994ac2f237a893b9c762ba189",
+    "scripts/items/inventory_rules.gd": "dbda6ff505ce577474fc94f7a031a2bb2b24c9bcf255b89ee6ed7fe004b3e6c4",
+    "scripts/items/class_items.gd": "cb5c633db35f03d8c2ee16d8638e93fa23888c82e4ab3de1df3f6cb058f77831",
+    "scripts/hero/starter_gear.gd": "5ad615477f75ccb36459874520c10c6dcd205f3e36e00812b1f2f42b2b77801b",
+    "scripts/hero/skill_rank.gd": "e58ae6c9b541fd3ae8d61f3429e662fec15e28b493c8d95566f7bb24aaa8ffe2",
+    "scripts/hero/skill_button.gd": "d4ae13b8552f0e3b8436048c724adb96ad709d51e794044ce548a5f4f0adb2f2",
+    "scripts/hero/hotbar_panel.gd": "42bc0dff4faf1c9b1e98fa1b09c08864d05f0939771e5e35c5ffbb9f80aba872",
+    "scripts/hero/hero_state.gd": "bbe1c22d770e3b5c602952347a561292efe5414e8d328a1ff100e6bad5982c75",
+    "scripts/hero/hero_panel.gd": "c8110582a99b08aeccedc626a69e80aed31c95fd803415cb63539ccd345c6179",
+    "scripts/hero/hero_data.gd": "70f96890787fd1f43dec8dc19a0a462ca125fe34fd8b2f6a779beef695e5d0b1",
+    "scripts/hero/class_toolkit_data.gd": "44ac76b3d74e36247081f693ff83ad526dd099aadbe6f5965d500a607165f301",
+    "scripts/hero/class_skill_data.gd": "5eaac8b578ff44238fe088946c4836bb07d14ce3c9aa0dad8c424b706e8568e8",
+    "scripts/global_options.gd": "07cc515415e6de797993b9a05fc17e94f2daffc3a7235c6efbd4d918d171edd6",
+    "scripts/game_session.gd": "5477bc364e0adc88ca3ebd56e8dfc88728e5b3f8145fcc8777613fdb4ab153f8",
+    "scripts/gameplay.gd": "b6f799b8770b04f79610fc74a3203ad4c7d4e7996a4f07df3f1c8f484a2391a5",
+    "scripts/build_version.gd": "84a86d4ffaf11ae02e96930ce96d8d5c905c1a814f5c1ef7b6d75f9748d336fb",
+    "scripts/combat/class_spell_effects.gd": "6d32028c9ada64e600f3b5d16018deba795ed63c114e1b13c0ff016147115a4b",
+    "scripts/combat/combat_panel.gd": "b75fa33bda36c38690876dcf88c6cd82ccf9f878f51c9c72f0fac40ad6058c8c",
+    "scripts/combat/class_toolkit_rules.gd": "78858b553f4c73a7e7e056c24141d7a1bd5f1557094f239b49a8ba0500303993",
+    "scripts/combat/swing_timer.gd": "48254151a4cd6e084fd439ca715cdedb142b351b378ccc91a0fca9be78db9676",
+    "scripts/combat/summon_rules.gd": "51a4f034578ba90636cc4ad8260f191d37283da75f1276ca99017229d6d43649",
+    "scripts/combat/spell_effects.gd": "0e1326d7b2f8dd3b2296765e3d95a69a8e348faba8ac026aa3d882c1154bf199",
+    "scripts/combat/melee_rules.gd": "b6f29fbfdf3f3a92ef84e0b30b64393dc69b66440f0c5f193869c277ca3c3fc6",
+    "scripts/combat/melee_profile.gd": "1a596faae1a3022845490c59369b160446163efeb841c6cdd39a09b27839db64",
+    "project.godot": "1c91414885f8eb2e1abfd3ad8d48b7ec29c8ee11094521c9422b94156b9221dc",
+    "tools/versions.json": "ddcb5637ca4f0b826911f7abed17880dcb87fe9cfa63b6d471019360c05e3ee7"
+  },
+  "simulation_sha256": {
+    "balance_matrix.gd.txt": "4c9ec0cf1ec97f704a22616f0d836bbc88df2f18dbc032329754277ff50c8898",
+    "balance_sim.gd.txt": "8f83536997c6b50f2a854c13b185a7828c8790dcc6fafb3ae17b7e77ade908f6",
+    "render_balance_matrix.ps1.txt": "1eaa85fe36968a33380f4e951c6ce1d6baf4e6c1d2322cee10cc50d552fe2512",
+    "run_balance_matrix.ps1.txt": "f5bd81c1bbcb094a6e3b071f15a923fa72f3352dd28840c5ac6fabb2778a74c5"
+  }
+}

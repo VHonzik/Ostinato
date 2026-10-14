@@ -33,8 +33,8 @@ func _ready() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "Panel"
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-224, -76)
-	_panel.size = Vector2(448, 152)
+	_panel.position = Vector2(-340, -100)
+	_panel.size = Vector2(680, 200)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#101d1b")
@@ -48,8 +48,8 @@ func _ready() -> void:
 	_detail = Label.new()
 	_detail.name = "Detail"
 	# Give wrapping text its known content width before the first layout pass.
-	_detail.custom_minimum_size.x = 428
-	_detail.size.x = 428
+	_detail.custom_minimum_size.x = 660
+	_detail.size.x = 660
 	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	rows.add_child(_detail)
@@ -76,6 +76,15 @@ func open_interaction(world: GridWorld) -> void:
 		mode = Mode.SELECT
 		show()
 		_update_selection()
+
+
+func interact_with(world: GridWorld, actor: GridActor) -> void:
+	if world.is_terminal() or not world.interaction_candidates().has(actor):
+		return
+	close()
+	_world = world
+	selected = actor
+	_interact_selected()
 
 
 func close() -> void:
@@ -159,7 +168,11 @@ func _choose_selected() -> void:
 
 
 func _interact_selected() -> void:
-	if not selected.alive and _world.open_loot(selected):
+	if not selected.alive:
+		if not _world.open_loot(selected):
+			close()
+			action_taken.emit()
+			return
 		var source := selected
 		var available := source.loot_copper > 0
 		for item in source.loot:
@@ -190,6 +203,10 @@ func _update_selection() -> void:
 	_detail.text = "Level %d   Health %d/%d. Directions select; Enter chooses; Esc cancels." % [
 		selected.melee.level, selected.health if selected.alive else 0, selected.max_health,
 	]
+	if mode == Mode.SPELL and _skill.effect == SkillRank.Effect.EXECUTE:
+		_detail.text += "\nExecute spends %d rage; %s." % [
+			_skill.cost(_world.hero), "Sudden Death allows any health" if _world.hero.buffs.has(&"sudden_death_1")
+			else "requires at or below %d%% health" % _skill.execute_health_percent]
 	_configure_buttons(_candidates.size() > 1,
 		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)
@@ -197,8 +214,8 @@ func _update_selection() -> void:
 
 func _configure_buttons(multiple: bool, confirm_text: String, cancel_visible: bool) -> void:
 	# Keep adjacent world targets visible during selection and attack confirmation.
-	_panel.position = size * 0.5 + Vector2(-224, 56)
-	_panel.size = Vector2(448, 116)
+	_panel.position = size * 0.5 + Vector2(-340, 88)
+	_panel.size = Vector2(680, 164)
 	_previous.visible = multiple
 	_next.visible = multiple
 	_confirm.text = confirm_text
@@ -221,9 +238,9 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	close()
 	_world = world
 	_skill = skill
-	if world.hero.mana < skill.cost(world.hero):
-		world.add_message("Not enough mana for %s: requires %d, have %d." % [
-			skill.title, skill.cost(world.hero), world.hero.mana])
+	if skill.available_resource(world.hero) < skill.cost(world.hero):
+		world.add_message("Not enough %s for %s: requires %d, have %d." % [
+			skill.resource_name(), skill.title, skill.cost(world.hero), skill.available_resource(world.hero)])
 		return
 	_candidates = world.spell_candidates(skill)
 	_self_target = null

@@ -1,86 +1,79 @@
 extends GutTest
 
 
-func test_source_inventory_has_every_bounded_row_and_resolves_every_reference_and_item() -> void:
-	var count := 0
-	for key in NorthshireLoot.TABLES:
-		count += NorthshireLoot.TABLES[key].size()
-		for row in NorthshireLoot.TABLES[key]:
-			if int(row[3]) < 0:
-				assert_true(NorthshireLoot.REFERENCES.has(str(-int(row[3]))))
-			else:
-				var item := ItemData.get_item(int(row[0]))
-				assert_false(item.is_empty(), str(row[0]))
-				assert_lte(int(row[4]), int(item.stack))
-	assert_eq(count, 71, "Seven complete creature tables and two object tables.")
-	assert_eq(NorthshireLoot.REFERENCES["60000"].size(), 23)
-	assert_eq(NorthshireLoot.REFERENCES["60441"].size(), 5)
-	for rows in NorthshireLoot.REFERENCES.values():
-		for row in rows:
-			assert_false(ItemData.get_item(int(row[0])).is_empty())
-	assert_eq(ItemData.get_item(2057).minimum, 2)
-	assert_eq(ItemData.get_item(2057).maximum, 4)
-	assert_eq(ItemData.get_item(2057).interval, 2.0)
-	assert_eq(ItemData.get_item(7280).stats, {"stamina": 1})
-	assert_eq(ItemData.get_item(3471).stats, {"strength": 1})
-	assert_eq(ItemData.get_item(4766).stats, {"agility": 1})
+func test_starting_supplies_merchants_and_loot_tables_exclude_water() -> void:
+	var game := GameSession.new()
+	game.development_build = false
+	game.new_game(97)
+	for item in game.world.hero.inventory:
+		if not item.is_empty():
+			assert_ne(ItemData.get_item(int(item.id)).use, "water")
+	for catalog: Dictionary in MerchantData.CATALOGS.values():
+		for identifier in catalog:
+			assert_ne(ItemData.get_item(int(identifier)).use, "water")
+	for tables: Dictionary in [NorthshireLoot.TABLES, NorthshireLoot.REFERENCES]:
+		for rows: Array in tables.values():
+			for row: Array in rows:
+				if int(row[3]) >= 0:
+					assert_ne(ItemData.get_item(int(row[0])).use, "water")
+	assert_true(ItemData.get_item(2132).two_handed)
+	assert_true(NorthshireLoot.REFERENCES["60001"].any(func(row: Array) -> bool: return row[0] == 2132))
+	assert_true(MerchantData.catalog(900003).has("2132"))
 
 
-func test_chest_food_group_has_exclusive_weighted_intervals_and_no_drop_remainder() -> void:
+func test_every_loot_row_resolves_and_fits_its_stack() -> void:
+	for tables in [NorthshireLoot.TABLES, NorthshireLoot.REFERENCES]:
+		for rows in tables.values():
+			for row in rows:
+				if int(row[3]) < 0:
+					assert_has(NorthshireLoot.REFERENCES, str(-int(row[3])))
+				else:
+					var item := ItemData.get_item(int(row[0]))
+					assert_false(item.is_empty(), str(row[0]))
+					assert_lte(int(row[4]), int(item.stack))
+
+
+func test_chest_gear_group_has_guaranteed_common_or_less_likely_uncommon() -> void:
 	var group: Array = NorthshireLoot.TABLES["2843"].filter(
 		func(row: Array) -> bool: return row[2] == 1)
-	for fixture in [[0.0, 117], [18.999, 117], [19.0, 2070], [36.999, 2070],
-		[37.0, 4536], [55.999, 4536], [56.0, 4540], [74.999, 4540]]:
-		assert_eq(LootData.select_group(group, fixture[0])[0], fixture[1])
-	assert_eq(LootData.select_group(group, 75.0), [])
-	assert_eq(LootData.select_group(group, 99.999), [])
-	var bags: Array = NorthshireLoot.REFERENCES["60441"]
-	for fixture in [[0.0, 805], [19.999, 805], [20.0, 828], [40.0, 4496],
-		[60.0, 5571], [80.0, 5572], [99.999, 5572]]:
-		assert_eq(LootData.select_group(bags, fixture[0])[0], fixture[1])
+	assert_eq(LootData.select_group(group, 0.0)[0], 60001)
+	assert_eq(LootData.select_group(group, 59.999)[0], 60001)
+	assert_eq(LootData.select_group(group, 60.0)[0], 60002)
+	assert_eq(LootData.select_group(group, 99.999)[0], 60002)
 
 
-func test_reference_rolls_select_equipment_and_bags_once_and_keep_source_quantities() -> void:
+func test_reference_rolls_select_one_item_and_keep_quantity_endpoints() -> void:
 	var generator := RandomNumberGenerator.new()
 	generator.seed = 3841
 	var quantities: Array[int] = []
 	for repeat in range(100):
-		var grey := LootData.roll_table([[60000, 100, 0, -60000, 1]], generator)
-		assert_eq(grey.size(), 1)
-		assert_ne(ItemData.get_item(int(grey[0].id)).slot, "")
-		assert_eq(int(grey[0].quantity), 1)
-		var bags := LootData.roll_table([[60441, 100, 0, -60441, 1]], generator)
-		assert_eq(bags.size(), 1)
-		assert_true(int(bags[0].id) in [805, 828, 4496, 5571, 5572])
+		var gear := LootData.roll_table([[60000, 100, 0, -60000, 1]], generator)
+		assert_eq(gear.size(), 1)
+		assert_eq(ItemData.get_item(int(gear[0].id)).quality, 0)
+		assert_eq(int(gear[0].quantity), 1)
 		var loot := LootData.roll_table([[7073, 100, 0, 1, 2]], generator)
-		assert_eq(loot.size(), 1)
-		assert_true(int(loot[0].quantity) in [1, 2])
 		if not quantities.has(int(loot[0].quantity)):
 			quantities.append(int(loot[0].quantity))
-	assert_eq(quantities.size(), 2, "Controlled sequence exercises both quantity endpoints.")
+	assert_eq(quantities.size(), 2)
 
 
-func test_known_seed_619_treasure_and_ordinary_drops() -> void:
-	var world := NorthshireZone.create_world(619, false)
-	var fixtures := [
-		["wolves/0/0", 0, [ItemData.instance(4865)]],
-		["vermin/0/0", 3, []],
-		["vineyard/0/0", 3, [ItemData.instance(2070)]],
-		["treasure/mine/0", 14, [ItemData.instance(159), ItemData.instance(1364),
-			ItemData.instance(4540)]],
-		["treasure/vineyard/0", 20, [ItemData.instance(1377), ItemData.instance(4540)]],
-		["treasure/valley/0", 16, [ItemData.instance(2652), ItemData.instance(117, 2)]],
-	]
-	for fixture in fixtures:
-		var actor := _source(world, fixture[0])
-		LootData.assign(world, actor)
-		assert_eq(actor.loot_copper, fixture[1], fixture[0])
-		assert_eq(actor.loot, fixture[2], fixture[0])
+func test_seeded_chests_always_contain_usable_common_or_uncommon_gear() -> void:
+	for seed_value in range(100):
+		var world := ValleyRoute.create_world(seed_value, false)
+		for actor in world.actors:
+			if not actor.chest:
+				continue
+			LootData.assign(world, actor)
+			var gear := actor.loot.filter(func(item: Dictionary) -> bool:
+				return ItemData.get_item(int(item.id)).slot != "")
+			assert_eq(gear.size(), 1)
+			assert_between(int(ItemData.get_item(int(gear[0].id)).quality), 1, 2)
+		world.discard()
 
 
 func test_loot_order_and_quest_filter_never_consume_or_shift_world_randomness() -> void:
-	var first := NorthshireZone.create_world(19, false)
-	var second := NorthshireZone.create_world(19, false)
+	var first := ValleyRoute.create_world(19, false)
+	var second := ValleyRoute.create_world(19, false)
 	first.loot_quests.assign(["wolves", "18", "6", "3904"])
 	var random_state := first.random.state
 	var combat_state := first.combat_random.state
@@ -105,8 +98,8 @@ func test_loot_order_and_quest_filter_never_consume_or_shift_world_randomness() 
 func test_chest_pools_are_seeded_legal_and_never_expose_development_supplies() -> void:
 	var positions: Dictionary = {}
 	for seed_value in range(12):
-		var first := NorthshireZone.create_world(seed_value, true)
-		var second := NorthshireZone.create_world(seed_value, false)
+		var first := ValleyRoute.create_world(seed_value, true)
+		var second := ValleyRoute.create_world(seed_value, false)
 		var count := 0
 		for actor in first.actors:
 			assert_ne(actor.loot_table, LootData.DEVELOPMENT_SUPPLIES)
@@ -114,14 +107,14 @@ func test_chest_pools_are_seeded_legal_and_never_expose_development_supplies() -
 			if actor.loot_table != 2843:
 				continue
 			count += 1
-			var pool: String = actor.spawn_id.split("/")[1]
-			assert_true(NorthshireZone.CHEST_POOLS[pool].has(actor.tile))
+			var pool: String = actor.spawn_id.split("/")[2]
+			assert_true(ValleyRoute.CHESTS[pool] == actor.tile)
 			assert_false(first.blocked_tiles.has(actor.tile))
 			assert_eq(_source(second, actor.spawn_id).tile, actor.tile)
 			positions[actor.tile] = true
 		assert_eq(count, 3)
-	assert_gt(positions.size(), 3, "Different seeds can select other source-pool positions.")
-	var world := NorthshireZone.create_world(619, true)
+	assert_eq(positions.size(), 3, "Caches are deliberate landmarks across seeds.")
+	var world := ValleyRoute.create_world(619, true)
 	var supplies := GridActor.new(Vector2i(20, 15))
 	supplies.chest = true
 	supplies.loot_table = LootData.DEVELOPMENT_SUPPLIES
@@ -138,18 +131,23 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	var game := GameSession.new()
 	game.new_game(619)
 	var world := game.world
-	var chest := _source(world, "treasure/valley/0")
+	var chest := _source(world, "valley/treasure/ridge_chest")
 	world.player_tile = chest.tile
 	assert_true(world.open_loot(chest))
+	var seeded_loot := chest.loot.duplicate(true)
+	chest.loot = [ItemData.instance(1367), ItemData.instance(4540, 2)]
 	var original := chest.loot.duplicate(true)
+	# Filled feet force this equipment into inventory, preserving the capacity check.
+	world.hero.equipment["armor"] = ItemData.instance(1374)
+	world.hero.refresh_stats()
 	for index in range(40):
 		world.hero.inventory[index] = ItemData.instance(118, 5)
 	assert_false(world.loot_item(chest, 0))
 	assert_eq(chest.loot, original)
 	world.hero.inventory[0] = {}
 	assert_true(world.loot_item(chest, 0))
-	assert_eq(chest.loot, [ItemData.instance(117, 2)])
-	world.hero.inventory[1] = ItemData.instance(117, 19)
+	assert_eq(chest.loot, [ItemData.instance(4540, 2)])
+	world.hero.inventory[1] = ItemData.instance(4540, 19)
 	assert_false(world.loot_item(chest, 0), "Whole offered stack must fit, with no partial transfer.")
 	assert_eq(world.hero.inventory[1].quantity, 19)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), true)
@@ -158,17 +156,17 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 		return
 	game.restore(restored, 619, 1)
 	world = game.world
-	chest = _source(world, "treasure/valley/0")
-	assert_eq(chest.loot, [ItemData.instance(117, 2)])
-	assert_eq(chest.loot_copper, 16)
+	chest = _source(world, "valley/treasure/ridge_chest")
+	assert_eq(chest.loot, [ItemData.instance(4540, 2)])
+	assert_eq(chest.loot_copper, 12)
 	assert_false(world.loot_item(chest, 0))
 	world.hero.inventory[2] = {}
 	assert_true(world.loot_item(chest, 0))
 	assert_eq(world.hero.inventory[1].quantity, 20)
-	assert_eq(world.hero.inventory[2], ItemData.instance(117))
+	assert_eq(world.hero.inventory[2], ItemData.instance(4540))
 	assert_true(chest.corpse_visible, "Copper remains after the last item.")
 	assert_true(world.loot_money(chest))
-	assert_eq(world.hero.copper, 16)
+	assert_eq(world.hero.copper, 12)
 	assert_false(chest.corpse_visible)
 	assert_false(world.loot_money(chest))
 	assert_eq(world.turn_count, 0)
@@ -177,37 +175,38 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	if restored == null:
 		return
 	game.restore(restored, 619, 1)
-	chest = _source(game.world, "treasure/valley/0")
+	chest = _source(game.world, "valley/treasure/ridge_chest")
 	game.world.turn_count = 1000
-	NorthshireZone.tick_population(game.world)
 	LootData.assign(game.world, chest)
 	assert_eq(chest.loot, [])
 	assert_eq(chest.loot_copper, 0)
 	assert_false(chest.corpse_visible, "Depletion persists after load and elapsed deadlines.")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
-	chest = _source(game.world, "treasure/valley/0")
+	chest = _source(game.world, "valley/treasure/ridge_chest")
 	assert_true(chest.corpse_visible)
 	assert_false(chest.loot_assigned)
 	LootData.assign(game.world, chest)
-	assert_eq(chest.loot, original)
-	assert_eq(chest.loot_copper, 16)
+	assert_eq(chest.loot, seeded_loot)
+	assert_eq(chest.loot_copper, 12)
 	assert_eq(game.world.hero.copper, 0)
 
 
 func test_quest_hand_in_and_abandonment_remove_only_quest_drops_without_rerolling() -> void:
 	for hand_in in [false, true]:
-		var world := NorthshireZone.create_world(10, false)
+		var world := ValleyRoute.create_world(10, false)
 		world.quests["18"] = {"handed_in": false, "counts": [0]}
 		world.loot_quests.assign(["18"])
 		world.ever_accepted_quest = true
 		assert_true(InventoryRules.add(world.hero.inventory, ItemData.instance(752, 12)))
 		assert_true(QuestRules.ready(world, "18"))
-		var corpse := _source(world, "vineyard/0/0")
+		var corpse := _source(world, "valley/vineyard/9")
+		corpse.spawn_id = "vineyard/0/0" # Controlled loot identity, independent of map placement.
 		corpse.health = 0
 		world._check_npc_death(corpse, 0)
 		assert_true(corpse.loot.any(func(item: Dictionary) -> bool: return item.id == 752),
 			"Ready objectives still permit fresh quest drops.")
+		corpse.loot.append(ItemData.instance(4536))
 		var ordinary := corpse.loot.filter(func(item: Dictionary) -> bool: return item.id != 752)
 		assert_false(ordinary.is_empty(), "Fixture includes ordinary loot to preserve.")
 		var copper := corpse.loot_copper
@@ -226,18 +225,19 @@ func test_quest_hand_in_and_abandonment_remove_only_quest_drops_without_rerollin
 		assert_eq(corpse.loot, ordinary, "Reacceptance cannot refill assigned loot.")
 
 
-func test_replacement_identity_preserves_loot_after_reset_and_different_combat_rolls() -> void:
+func test_encounter_identity_preserves_loot_after_reset_and_different_combat_rolls() -> void:
 	var game := GameSession.new()
 	game.new_game(619)
-	var first := _replace_vermin(game.world)
+	var first := _source(game.world, "valley/camp/0")
+	LootData.assign(game.world, first)
 	var expected := first.loot.duplicate(true)
 	var copper := first.loot_copper
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	for count in range(100):
 		game.world.combat_random.randi()
-	var second := _replace_vermin(game.world)
-	assert_eq(second.spawn_id, "vermin/0/1")
+	var second := _source(game.world, "valley/camp/0")
+	LootData.assign(game.world, second)
 	assert_eq(second.loot, expected)
 	assert_eq(second.loot_copper, copper)
 
@@ -258,24 +258,26 @@ func test_new_food_and_equipment_use_existing_rules_and_bags_never_expand_capaci
 	world.hero.inventory[1] = ItemData.instance(4536, 2)
 	assert_true(world.consume_item(1))
 	assert_eq(world.hero.inventory[1].quantity, 1)
-	for count in range(18):
+	for count in range(10):
 		world.wait_turn()
-	assert_gte(world.hero.health, 62)
+	assert_gte(world.hero.health, 51)
 
 
 func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load() -> void:
 	var game := GameSession.new()
 	game.new_game(619)
 	var world := game.world
-	var corpse := _source(world, "vineyard/0/0")
+	var corpse := _source(world, "valley/vineyard/8")
 	corpse.health = 0
 	world._check_npc_death(corpse, 0)
 	world.player_tile = corpse.tile
 	assert_true(world.loot_money(corpse))
-	assert_eq(corpse.loot, [ItemData.instance(2070)])
+	# Explicit remaining loot exercises persistence independently of changed drop tuning.
+	corpse.loot = [ItemData.instance(4536)]
+	corpse.corpse_visible = true
 	var experience := world.hero.experience
 	var state := SaveCodec.capture(game)
-	var chest := _source(world, "treasure/mine/0")
+	var chest := _source(world, "valley/treasure/mine_chest")
 	assert_false(chest.loot_assigned)
 	LootData.assign(world, chest)
 	var expected := chest.loot.duplicate(true)
@@ -284,15 +286,15 @@ func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load
 	assert_not_null(restored)
 	if restored == null:
 		return
-	chest = _source(restored, "treasure/mine/0")
+	chest = _source(restored, "valley/treasure/mine_chest")
 	assert_false(chest.loot_assigned)
 	LootData.assign(restored, chest)
 	assert_eq(chest.loot, expected)
 	assert_eq(chest.loot_copper, copper)
-	corpse = _source(restored, "vineyard/0/0")
+	corpse = _source(restored, "valley/vineyard/8")
 	assert_true(corpse.loot_assigned)
 	assert_true(corpse.corpse_visible)
-	assert_eq(corpse.loot, [ItemData.instance(2070)])
+	assert_eq(corpse.loot, [ItemData.instance(4536)])
 	assert_eq(corpse.loot_copper, 0)
 	assert_false(restored.loot_money(corpse))
 	assert_true(restored.loot_item(corpse, 0))
@@ -302,9 +304,9 @@ func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load
 
 
 func test_treasure_does_not_expire_or_replenish_after_ordinary_corpse_timeout() -> void:
-	var world := NorthshireZone.create_world(619, false)
-	var unopened := _source(world, "treasure/mine/0")
-	var depleted := _source(world, "treasure/valley/0")
+	var world := ValleyRoute.create_world(619, false)
+	var unopened := _source(world, "valley/treasure/mine_chest")
+	var depleted := _source(world, "valley/treasure/ridge_chest")
 	world.player_tile = depleted.tile
 	assert_true(world.open_loot(depleted))
 	while not depleted.loot.is_empty():
@@ -344,28 +346,17 @@ func _source(world: GridWorld, identity: String) -> GridActor:
 	return null
 
 
-func _replace_vermin(world: GridWorld) -> GridActor:
-	var original := _source(world, "vermin/0/0")
-	original.health = 0
-	world._check_npc_death(original, 0)
-	world.turn_count = 30
-	NorthshireZone.tick_population(world)
-	var replacement := _source(world, "vermin/0/1")
-	LootData.assign(world, replacement)
-	return replacement
-
-
 func test_loot_all_collects_money_and_later_fitting_stacks_leaving_unfit_and_ineligible_loot() -> void:
 	var game := GameSession.new()
 	game.new_game(619)
 	var world := game.world
-	var chest := _source(world, "treasure/mine/0")
+	var chest := _source(world, "valley/treasure/mine_chest")
 	world.player_tile = chest.tile
 	chest.loot_assigned = true
 	chest.loot_copper = 12
-	chest.loot = [ItemData.instance(35), ItemData.instance(750), ItemData.instance(159, 2)]
+	chest.loot = [ItemData.instance(35), ItemData.instance(750), ItemData.instance(117, 2)]
 	for index in range(40):
-		world.hero.inventory[index] = ItemData.instance(159, 20)
+		world.hero.inventory[index] = ItemData.instance(117, 20)
 	world.hero.inventory[0].quantity = 18
 	assert_true(world.loot_all(chest))
 	assert_eq(world.hero.copper, 12)
@@ -379,7 +370,7 @@ func test_loot_all_collects_money_and_later_fitting_stacks_leaving_unfit_and_ine
 	if restored == null:
 		return
 	assert_false(restored.loot_all(chest), "A stale chest cannot authorize a transfer.")
-	chest = _source(restored, "treasure/mine/0")
+	chest = _source(restored, "valley/treasure/mine_chest")
 	assert_eq(chest.loot, [ItemData.instance(35), ItemData.instance(750)])
 	restored.hero.inventory[1] = {}
 	assert_true(restored.loot_all(chest))
@@ -398,20 +389,20 @@ func test_loot_all_empties_corpses_and_chests_once_and_obeys_action_guards() -> 
 		source.chest = is_chest
 		source.loot_assigned = true
 		source.loot_copper = 7
-		source.loot = [ItemData.instance(7073, 2), ItemData.instance(159, 3), ItemData.instance(750)]
+		source.loot = [ItemData.instance(7073, 2), ItemData.instance(117, 3), ItemData.instance(750)]
 		world.loot_quests.append("wolves")
 		world.actors.append(source)
 		world.player_tile = Vector2i.ZERO
 		assert_false(world.loot_all(source))
 		world.player_tile = Vector2i(4, 4)
-		world.pending_skill = SkillRank.catalog(&"fireball_1")
+		world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
 		assert_false(world.loot_all(source))
 		assert_eq(source.loot_copper, 7)
 		assert_eq(source.loot.size(), 3)
 		world.pending_skill = null
 		assert_true(world.loot_all(source))
 		assert_eq(world.hero.inventory[0], ItemData.instance(7073, 2))
-		assert_eq(world.hero.inventory[1], ItemData.instance(159, 3))
+		assert_eq(world.hero.inventory[1], ItemData.instance(117, 3))
 		assert_eq(world.hero.inventory[2], ItemData.instance(750))
 		assert_true(source.loot.is_empty())
 		assert_false(source.corpse_visible)

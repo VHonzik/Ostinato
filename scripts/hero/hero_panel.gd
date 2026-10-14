@@ -18,7 +18,7 @@ var _close: Button
 var _panel: PanelContainer
 var _skill_buttons: Array[Button] = []
 var _last_spell_by_class: Dictionary = {}
-var _last_class_tab: StringName = &"Mage"
+var _last_class_tab: StringName = &"Warrior"
 var _rebuilding: bool = false
 var _assign: Button
 var _clear: Button
@@ -31,8 +31,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel = PanelContainer.new()
 	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_panel.position = Vector2(-300, -90)
-	_panel.size = Vector2(600, 216)
+	_panel.position = Vector2(-480, -220)
+	_panel.size = Vector2(960, 440)
 	add_child(_panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.055, 0.09, 0.085, 1)
@@ -71,7 +71,7 @@ func _ready() -> void:
 	_stats = Label.new()
 	character.add_child(_stats)
 	_details = RichTextLabel.new()
-	_details.custom_minimum_size.y = 44
+	_details.custom_minimum_size.y = 72
 	_details.focus_mode = Control.FOCUS_ALL
 	rows.add_child(_details)
 	_tabs.tab_changed.connect(_on_tab_changed)
@@ -104,7 +104,7 @@ func close() -> void:
 
 func clear_selection() -> void:
 	_last_spell_by_class.clear()
-	_last_class_tab = &"Mage"
+	_last_class_tab = &"Warrior"
 
 
 func refresh() -> void:
@@ -114,29 +114,34 @@ func refresh() -> void:
 	_clear.disabled = layout_locked
 	_lock.text = "Unlock" if layout_locked else "Lock"
 	if choosing_slot:
-		_details.text = "Choose slot: top-row 1–5 or click a slot. Esc cancels."
+		_details.text = "Choose slot: 1–6, R, T, G, V; Shift for row 2; or click a slot. Esc cancels."
 	elif _tabs.current_tab > 0:
 		var identifier: StringName = _last_spell_by_class.get(_last_class_tab, &"")
 		var skill := _hero.find_skill(identifier)
 		if skill != null:
-			_details.text = "%s · Rank %d · %d mana\n%s" % [
-				skill.title, skill.rank, skill.cost(_hero), skill.description]
+			_assign.disabled = layout_locked or skill.effect == SkillRank.Effect.PASSIVE
+			_details.text = "%s · Rank %d · %d %s\n%s" % [
+				skill.title, skill.rank, skill.cost(_hero), skill.resource_name(), skill.description]
 	else:
 		_details.text = "A/D: tabs · W/S: skills · Tab: controls · Enter: activate · Esc: close"
 	for button in _skill_buttons:
 		(button as SkillButton).describe(_hero.find_skill(button.get_meta("skill_id")), _hero)
-		(button as SkillButton).drag_enabled = not layout_locked
+		var rank_data: SkillRank = (button as SkillButton).skill
+		(button as SkillButton).drag_enabled = not layout_locked and rank_data.effect != SkillRank.Effect.PASSIVE
 	_stats.text = (
 		"%s  /  Level %d     XP %d / %d\n"
-		+ "Health %d / %d     Mana %d / %d\n"
+		+ "Health %d / %d     Rage %d / %d\n"
 		+ "Strength %d     Agility %d     Stamina %d\n"
-		+ "Intellect %d     Spirit %d\n"
-		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%"
+		+ "Armor %d     Crit %.2f%%     Attack haste +%.2f%%\n"
+		+ "Weapon power %d     Dodge %.2f%%\n"
+		+ "Class XP %d (cumulative)     Combo points %d / %d"
 	) % [
 		_hero.selected_class, _hero.level, _hero.experience, _hero.experience_to_next_level(),
-		_hero.health, _hero.max_health, _hero.mana, _hero.max_mana,
-		_hero.strength, _hero.agility, _hero.stamina, _hero.intellect, _hero.spirit,
-		_hero.melee.attack_power, _hero.melee.armor, _hero.melee.critical, _hero.melee.dodge,
+		_hero.health, _hero.max_health, _hero.rage, HeroState.MAX_RAGE,
+		_hero.strength, _hero.agility, _hero.stamina,
+		_hero.melee.armor, _hero.melee.critical, (_hero.attack_haste() - 1.0) * 100.0,
+		_hero.melee.attack_power, _hero.melee.dodge,
+		_hero.progression_points(_hero.selected_class), _hero.combo_points, HeroState.MAX_COMBO_POINTS,
 	]
 
 
@@ -175,9 +180,6 @@ func _rebuild_skills() -> void:
 		child.queue_free()
 	var categories: Dictionary[StringName, VBoxContainer] = {}
 	var skills := _hero.learned_skills.duplicate()
-	if _hero.find_skill(&"pet_attack") != null:
-		for identifier: StringName in [&"pet_attack", &"pet_follow", &"pet_dismiss"]:
-			skills.append(ClassSkillData.pet_command(identifier))
 	for skill in skills:
 		if not categories.has(skill.class_tab):
 			var scroll := ScrollContainer.new()
@@ -191,10 +193,9 @@ func _rebuild_skills() -> void:
 			categories[skill.class_tab] = rows
 		var button := SkillButton.new()
 		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
-		button.text += "  ·  %s / %d mana" % ["Free" if skill.free_instant or skill.effect == SkillRank.Effect.PET_COMMAND else "%.1fs" % skill.cast_seconds, skill.cost(_hero)]
+		button.text += "  ·  %s / %d %s" % ["%.1f turns" % skill.cast_seconds, skill.cost(_hero), skill.resource_name()]
 		if skill.effect == SkillRank.Effect.PASSIVE:
 			button.text = skill.title + " · Passive (learned)"
-			button.disabled = true
 		button.describe(skill, _hero)
 		button.drag_enabled = not layout_locked
 		button.clip_text = true
@@ -212,6 +213,8 @@ func _request_cast(identifier: StringName) -> void:
 	var skill := _hero.find_skill(identifier)
 	if skill != null:
 		_remember_spell(skill.class_tab, identifier)
+		if skill.effect == SkillRank.Effect.PASSIVE:
+			return
 	cast_requested.emit(identifier)
 	refresh()
 
@@ -262,8 +265,8 @@ func handle_assignment_key(event: InputEventKey) -> bool:
 		return false
 	if event.is_action_pressed("ui_cancel"):
 		finish_assignment()
-	elif event.physical_keycode >= KEY_1 and event.physical_keycode <= KEY_5:
-		slot_chosen.emit(event.physical_keycode - KEY_1)
+	elif event.get_physical_keycode_with_modifiers() in GlobalOptions.HOTBAR_KEYS:
+		slot_chosen.emit(GlobalOptions.HOTBAR_KEYS.find(event.get_physical_keycode_with_modifiers()))
 	# The slot chooser owns all keys, including rebound gameplay actions.
 	return true
 

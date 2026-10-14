@@ -10,8 +10,8 @@ var drag_enabled: bool = false
 func describe(rank_data: SkillRank, owner_hero: HeroState) -> void:
 	skill = rank_data
 	hero = owner_hero
-	tooltip_text = "" if skill == null else "%s · Rank %d · %d mana\n%s" % [
-		skill.title, skill.rank, skill.cost(hero), skill.description]
+	tooltip_text = "" if skill == null else "%s · Rank %d · %d %s\n%s" % [
+		skill.title, skill.rank, skill.cost(hero), skill.resource_name(), skill.description]
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
@@ -19,7 +19,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 		return null
 	var preview := Label.new()
 	preview.text = "%s · Rank %d" % [skill.title, skill.rank]
-	preview.add_theme_font_size_override("font_size", 12)
+	preview.add_theme_font_size_override("font_size", 18)
 	set_drag_preview(preview)
 	return {"skill_id": skill.id, "hero": hero}
 
@@ -27,7 +27,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func _make_custom_tooltip(for_text: String) -> Object:
 	var label := Label.new()
 	label.text = for_text
-	label.custom_minimum_size.x = 300
+	label.custom_minimum_size.x = 420
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", 18)
 	return label

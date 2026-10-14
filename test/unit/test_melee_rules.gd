@@ -1,11 +1,11 @@
 extends GutTest
 
 
-func test_level_one_mage_stats_use_the_sourced_staff_and_attributes() -> void:
+func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> void:
 	var hero := HeroState.new()
 	assert_eq(hero.melee.attack_power, 10)
-	assert_eq(hero.melee.armor, 45, "Starter robe and pants add 5 armor to the mage baseline.")
-	assert_almost_eq(hero.melee.critical, 1.550388, 0.00001)
+	assert_eq(hero.melee.armor, 8, "The starting outfit contributes armor.")
+	assert_almost_eq(hero.melee.critical, 6.550388, 0.00001)
 	assert_almost_eq(hero.melee.dodge, 4.800388, 0.00001)
 	assert_eq(hero.melee.interval, 2.9)
 	assert_eq([hero.melee.damage_min, hero.melee.damage_max], [3.0, 5.0])
@@ -14,9 +14,9 @@ func test_level_one_mage_stats_use_the_sourced_staff_and_attributes() -> void:
 	hero.strength += 14
 	hero.agility += 10
 	hero.refresh_melee_stats()
-	assert_eq(hero.melee.attack_power, 24)
-	assert_eq(hero.melee.armor, 65)
-	assert_gt(hero.melee.critical, 1.55)
+	assert_eq(hero.melee.attack_power, 38)
+	assert_eq(hero.melee.armor, 8)
+	assert_gt(hero.melee.critical, 6.55)
 
 
 func test_controlled_rolls_select_single_attack_table_outcomes() -> void:
@@ -27,8 +27,8 @@ func test_controlled_rolls_select_single_attack_table_outcomes() -> void:
 	assert_eq(MeleeRules.outcome(attacker, target, false, 10.0), &"critical")
 	assert_eq(MeleeRules.outcome(attacker, target, false, 50.0), &"hit")
 	target.level = 4
-	assert_eq(MeleeRules.outcome(attacker, target, false, 8.99), &"miss")
-	assert_eq(MeleeRules.outcome(attacker, target, false, 9.0), &"dodge")
+	assert_eq(MeleeRules.outcome(attacker, target, false, 10.99), &"miss")
+	assert_eq(MeleeRules.outcome(attacker, target, false, 11.0), &"dodge")
 
 
 func test_rear_attacks_remove_player_dodge_but_keep_npc_dodge() -> void:
@@ -40,30 +40,75 @@ func test_rear_attacks_remove_player_dodge_but_keep_npc_dodge() -> void:
 	assert_eq(MeleeRules.outcome(npc, hero, true, 50.0), &"hit")
 
 
-func test_glancing_crushing_and_level_suppression() -> void:
+func test_level_differences_keep_misses_dodge_and_crit_without_extra_outcomes() -> void:
 	var hero := HeroState.new().melee
 	var npc := MeleeProfile.new()
 	hero.level = 11
 	npc.level = 11
-	assert_eq(MeleeRules.outcome(hero, npc, false, 15.0), &"glancing")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 15.0), &"critical")
 	npc.level = 14
-	assert_eq(MeleeRules.outcome(npc, hero, false, 15.0), &"crushing")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 50.0), &"glancing")
+	assert_eq(MeleeRules.outcome(npc, hero, false, 15.0), &"hit")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 50.0), &"hit")
 
 
 func test_damage_roll_armor_and_critical_have_independent_numeric_fixtures() -> void:
 	var hero := HeroState.new().melee
 	var npc := MeleeProfile.new()
 	npc.armor = 15
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0, 0.0), 4)
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 6)
-	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.99, 0.0), 12)
-	assert_eq(MeleeRules.damage(hero, npc, &"miss", 0.99, 0.0), 0)
-	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.99, 0.0), 0)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0), 5)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 6)
+	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.99), 12)
+	assert_eq(MeleeRules.damage(hero, npc, &"miss", 0.99), 0)
+	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.99), 0)
 	npc.armor = 485
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 3)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 3)
 	npc.armor = 100000
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 1)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 1)
+
+
+func test_higher_levels_reduce_accuracy_avoidance_crit_and_damage_with_precision_help() -> void:
+	var hero := MeleeProfile.new()
+	hero.player = true
+	hero.damage_min = 100.0
+	hero.damage_max = 100.0
+	var npc := MeleeProfile.new()
+	npc.level = 3
+	npc.damage_min = 100.0
+	npc.damage_max = 100.0
+	assert_eq(MeleeRules.outcome(hero, npc, false, 8.99), &"miss")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 9.0), &"dodge")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 16.0), &"critical")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 19.0), &"hit")
+	assert_eq(MeleeRules.outcome(npc, hero, false, 8.0), &"critical",
+		"The lower-level defender has less dodge; the higher attacker has more crit.")
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0), 76)
+	assert_eq(MeleeRules.damage(npc, hero, &"hit", 0.0), 124)
+	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.0), 152)
+	hero.hit = 5.0
+	assert_eq(MeleeRules.outcome(hero, npc, false, 4.0), &"dodge",
+		"Precision offsets five percentage points of miss chance, including level penalties.")
+	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.0), 0)
+
+
+func test_extreme_level_gaps_bound_damage_and_hit_bonuses_still_apply() -> void:
+	assert_almost_eq(MeleeRules.level_damage_multiplier(1, 100), 0.1, 0.00001)
+	assert_almost_eq(MeleeRules.level_damage_multiplier(100, 1), 1.9, 0.00001)
+	var attacker := MeleeProfile.new()
+	var defender := MeleeProfile.new()
+	defender.level = 100
+	assert_eq(MeleeRules.miss_chance(attacker, defender), 95.0)
+	attacker.hit = 5.0
+	assert_eq(MeleeRules.miss_chance(attacker, defender), 90.0)
+	attacker.hit = -1000.0
+	assert_eq(MeleeRules.miss_chance(attacker, defender), 100.0)
+
+
+func test_damage_level_modifiers_use_equal_percentage_increases_and_reductions() -> void:
+	for gap in range(1, 20):
+		var outgoing := MeleeRules.level_damage_multiplier(1, 1 + gap)
+		var incoming := MeleeRules.level_damage_multiplier(1 + gap, 1)
+		assert_almost_eq(1.0 - outgoing, incoming - 1.0, 0.00001)
+	assert_eq(MeleeRules.level_damage_multiplier(3, 3), 1.0)
 
 
 func test_all_eight_facings_have_exactly_three_rear_directions() -> void:

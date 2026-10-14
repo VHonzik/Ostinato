@@ -1,16 +1,16 @@
 extends GutTest
 
 
-func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_healing() -> void:
+func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_buff_expiry() -> void:
 	var game := GameSession.new()
 	game.new_game(79)
 	var world := game.world
 	world.hero.level = 10
 	world.hero._apply_level_stats()
 	world.hero.copper = 3000
-	assert_true(world.train(&"Mage", &"fireball_2"))
-	world.hero.learn_skill(SkillRank.catalog(&"rejuvenation_1"))
-	world.hero.inventory[0] = ItemData.instance(6527)
+	world.hero.warrior_progress = 20
+	assert_true(world.train(&"Warrior", &"battle_shout_1"))
+	world.hero.inventory[0] = ItemData.instance(2572)
 	assert_true(world.equip_item(0))
 	var chest := world.actors[-1]
 	world.player_tile = chest.tile + Vector2i.RIGHT
@@ -18,11 +18,11 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_periodic_h
 	assert_true(world.loot_item(chest, 0))
 	assert_true(world.loot_money(chest))
 	# Real treasure is near hostiles; return to the safe spawn before advancing time.
-	world.player_tile = Vector2i(20, 14)
-	world.vendor_stock["fixed/900003"]["2455"] = 2
+	world.player_tile = ValleyRoute.SPAWN
+	world.vendor_stock["fixed/900003"]["118"] = 2
 	world.hero.potion_ready_turn = 120
-	world.hero.cooldowns["fire_blast"] = 8
-	assert_true(world.cast_skill(&"rejuvenation_1"))
+	world.hero.cooldowns["mortal_strike"] = 8
+	assert_true(world.cast_skill(&"battle_shout_1"))
 	assert_true(world.can_save())
 	var before := SaveCodec.capture(game)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(before)), true)
@@ -49,16 +49,13 @@ func test_invalid_equipment_stacks_effects_and_stock_are_rejected_without_partia
 	bad.equipment.off_hand = ItemData.instance(2129)
 	assert_null(SaveCodec.restore(bad, true), "A staff occupies both hands.")
 	bad = state.duplicate(true)
-	bad.vendor_stock["fixed/900003"]["2455"] = -2
+	bad.vendor_stock["fixed/900003"]["118"] = -2
 	assert_null(SaveCodec.restore(bad, true))
 	bad = state.duplicate(true)
 	bad.restoration = {"water": {"total": 10, "duration": 0, "started": 0, "delivered": 0}}
 	assert_null(SaveCodec.restore(bad, true))
 	bad = state.duplicate(true)
 	bad.actors[0].loot = [ItemData.instance(999999)]
-	assert_null(SaveCodec.restore(bad, true))
-	bad = state.duplicate(true)
-	bad.periodic = [{"actor": -1, "skill": "fireball_1", "next": 1, "remaining": 2, "amount": 1}]
 	assert_null(SaveCodec.restore(bad, true))
 
 
