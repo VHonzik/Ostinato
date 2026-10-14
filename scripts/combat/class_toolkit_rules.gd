@@ -139,7 +139,8 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillRan
 	var value := MeleeRules.damage(world.hero.melee, target.melee, outcome.result,
 		world.combat_random.randf(), multiplier, flat_bonus)
 	value = floori(value * damage_multiplier(world.hero))
-	SpellEffects.damage(world, target, value, "%s (%s)" % [skill.title, outcome.result], -1, null, true)
+	SpellEffects.damage(world, target, value, "%s (%s)" % [skill.title, outcome.result],
+		-1, null, true, outcome.result)
 	on_attack(world, target, skill, outcome.landed, outcome.critical, value, true, false, build_points)
 
 
@@ -174,6 +175,7 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 	world.auto_attack_target = target
 	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
 	if world.combat_random.randf() * 100.0 >= hit_chance:
+		world.npc_combat_text.emit(target.tile, 0, &"miss")
 		world.add_message("%s misses %s." % [skill.title, target.title])
 		return {"landed": false, "critical": false}
 	var critical := false
@@ -196,7 +198,8 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 		world.hero.melee, weapon_roll)
 	if critical:
 		value *= 2
-	SpellEffects.damage(world, target, value, skill.title, -1)
+	SpellEffects.damage(world, target, value, skill.title, -1, null, false,
+		&"critical" if critical else &"hit")
 	on_attack(world, target, skill, true, critical, value, false)
 	if not world.is_terminal() and skill.school == 1:
 		holy_event(world)
@@ -331,7 +334,8 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 		result = &"hit"
 	var value := MeleeRules.damage(weapon, target.melee, result,
 		world.combat_random.randf(), multiplier)
-	SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), title, -1, null, true)
+	SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)),
+		title, -1, null, true, result)
 
 
 static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> void:
@@ -423,6 +427,7 @@ static func act_wolf(world: GridWorld, wolf: GridActor) -> void:
 		var value := MeleeRules.damage(wolf.melee, target.melee, result,
 			world.combat_random.randf())
 		var before := target.health
-		SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), wolf.title, world.turn_count, wolf, true)
+		SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)),
+			wolf.title, world.turn_count, wolf, true, result)
 		if not world.is_terminal() and has(world.hero, &"spirit_hunt_1"):
 			SpellEffects.heal(world, null, floori((before - target.health) * magnitude(world.hero, &"spirit_hunt_1") / 100.0), "Spirit Hunt")

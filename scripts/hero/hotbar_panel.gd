@@ -5,6 +5,12 @@ signal slot_pressed(slot: int)
 signal rank_dropped(slot: int, identifier: StringName, source_hero: HeroState)
 signal lock_requested
 
+const INSUFFICIENT_RAGE_COLOR := Color("ff6464")
+const LABEL_COLOR_STATES: Array[StringName] = [
+	&"font_color", &"font_hover_color", &"font_pressed_color", &"font_hover_pressed_color",
+	&"font_focus_color", &"font_disabled_color",
+]
+
 var slots: Array[SkillButton] = []
 var lock_button: Button
 var editing_enabled: bool = false
@@ -77,6 +83,13 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 				String(world.cooldown_family(skill)), 0)) - world.turn_count)
 		var cooldown := _cooldown_labels[index]
 		var queued := skill != null and world.queued_strike != null and skill.id == world.queued_strike.id
+		var insufficient_rage := (skill != null and not queued
+			and skill.available_resource(world.hero) < skill.cost(world.hero))
+		for color_state in LABEL_COLOR_STATES:
+			if insufficient_rage:
+				button.add_theme_color_override(color_state, INSUFFICIENT_RAGE_COLOR)
+			else:
+				button.remove_theme_color_override(color_state)
 		cooldown.text = "Q" if queued else (str(remaining) if remaining > 0 else "")
 		cooldown.visible = queued or remaining > 0
 		if queued:

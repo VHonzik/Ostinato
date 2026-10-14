@@ -14,7 +14,8 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 
 static func damage(
 	world: GridWorld, target: GridActor, value: int, title: String,
-	death_turn: int = -1, source: GridActor = null, physical: bool = false
+	death_turn: int = -1, source: GridActor = null, physical: bool = false,
+	result: StringName = &"hit"
 ) -> void:
 	if world.is_terminal() or not target.alive:
 		return
@@ -22,6 +23,7 @@ static func damage(
 	if target.relationship != GridActor.Relationship.FRIENDLY:
 		SummonRules.add_threat(world, target, source, value)
 	target.health = maxi(0, target.health - value)
+	world.npc_combat_text.emit(target.tile, value, result)
 	if title.begins_with("You ("):
 		world.add_message("You -> %s: %s, %d damage." % [target.title,
 			title.trim_prefix("You (").trim_suffix(")"), value])

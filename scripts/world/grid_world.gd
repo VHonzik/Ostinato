@@ -3,6 +3,7 @@ extends RefCounted
 
 signal message_added(message: String)
 signal friendly_interaction_requested(actor: GridActor)
+signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
 
@@ -760,6 +761,7 @@ func _act_npc(actor: GridActor) -> void:
 				hero.last_hit_rage_turn = turn_count
 		else:
 			target.health = maxi(0, target.health - amount)
+			npc_combat_text.emit(target.tile, amount, result)
 			_check_npc_death(target, turn_count)
 		add_message("%s -> %s: %s, %d damage." % [actor.title, "You" if target == null else target.title, result, amount])
 		# Retaliation is a subsequent effect, so a lethal incoming hit ends first.
@@ -793,7 +795,7 @@ func _player_swing(target: GridActor) -> void:
 		0 if strike == null else strike.minimum)
 	amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
 	SpellEffects.damage(self, target, amount, "%s (%s)" % [
-		"You" if strike == null else strike.title, result], turn_count, null, true)
+		"You" if strike == null else strike.title, result], turn_count, null, true, result)
 	var landed := result not in [&"miss", &"dodge"]
 	ClassSpellEffects.on_melee(self, target, amount, landed)
 	ClassToolkitRules.on_attack(self, target, strike, landed, outcome.critical, amount, true)
@@ -805,7 +807,8 @@ func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
 	var value := MeleeRules.damage(weapon, target.melee, outcome.result,
 		combat_random.randf())
 	value = floori(value * ClassToolkitRules.damage_multiplier(hero))
-	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result, turn_count, null, true)
+	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result,
+		turn_count, null, true, outcome.result)
 	ClassToolkitRules.on_attack(self, target, null, outcome.landed, outcome.critical, value, true, true)
 
 

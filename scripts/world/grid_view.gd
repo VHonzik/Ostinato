@@ -70,9 +70,19 @@ const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
 ## Player keys are class names. The default faction layer is empty.
 @export var player_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
 
-var world: GridWorld
+var world: GridWorld:
+	set(value):
+		if world == value:
+			return
+		if world != null:
+			world.npc_combat_text.disconnect(combat_text.spawn)
+		world = value
+		combat_text.clear()
+		if world != null:
+			world.npc_combat_text.connect(combat_text.spawn)
 var selected: GridActor
 var alternate_palette: bool = false
+var combat_text := FloatingCombatText.new()
 
 var _valley_regions: Dictionary = {}
 var _blink_elapsed: float = 0.0
@@ -82,6 +92,7 @@ var _quest_marker_sprite: AtlasTexture
 
 func _init() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(combat_text)
 
 
 static func tile_center(tile: Vector2i) -> Vector2:

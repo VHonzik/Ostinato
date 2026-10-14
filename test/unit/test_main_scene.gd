@@ -128,6 +128,86 @@ func test_key_echo_does_not_advance_time() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
+func test_held_movement_waits_two_seconds_then_repeats_each_second_until_release() -> void:
+	_prepare_held_movement()
+	_send_key(KEY_D, true)
+	_game._process(0.0)
+	assert_eq(_game.world.player_tile, Vector2i(21, 14))
+	_game._process(1.9)
+	assert_eq(_game.world.turn_count, 1)
+	_send_key(KEY_D, true, true)
+	_game._process(0.1)
+	assert_eq(_game.world.player_tile, Vector2i(22, 14))
+	_game._process(0.9)
+	assert_eq(_game.world.turn_count, 2)
+	_game._process(0.1)
+	assert_eq(_game.world.turn_count, 3)
+	_send_key(KEY_D, false)
+	_game._process(10.0)
+	assert_eq(_game.world.turn_count, 3)
+
+
+func test_held_arrow_diagonal_changes_to_remaining_key_without_catchup_bursts() -> void:
+	_prepare_held_movement()
+	_send_key(KEY_UP, true)
+	_send_key(KEY_RIGHT, true)
+	_game._process(0.0)
+	_game._process(2.0)
+	assert_eq(_game.world.player_tile, Vector2i(22, 12))
+	_send_key(KEY_UP, false)
+	_game._process(10.0)
+	assert_eq(_game.world.player_tile, Vector2i(23, 12))
+	assert_eq(_game.world.turn_count, 3)
+	_send_key(KEY_RIGHT, false)
+
+
+func test_menu_focus_and_world_replacement_cancel_held_movement() -> void:
+	_prepare_held_movement()
+	_send_key(KEY_D, true)
+	_game._process(0.0)
+	_game.menu.open_player()
+	_game._process(3.0)
+	_game.menu.close()
+	_game._process(3.0)
+	assert_eq(_game.world.turn_count, 1)
+	_send_key(KEY_D, false)
+	_send_key(KEY_D, true)
+	_game._process(0.0)
+	_game.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	_game._process(3.0)
+	assert_eq(_game.world.turn_count, 2)
+	_send_key(KEY_D, false)
+	_send_key(KEY_D, true)
+	_game._process(0.0)
+	_game.start_new_game()
+	_game._process(3.0)
+	assert_eq(_game.world.turn_count, 0)
+	_send_key(KEY_D, false)
+	await get_tree().process_frame
+
+
+func test_rebound_movement_repeats_but_held_wait_does_not() -> void:
+	_prepare_held_movement()
+	InputMap.action_erase_events(&"move_east")
+	InputMap.action_add_event(&"move_east", GlobalOptions.key_event(KEY_H))
+	_send_key(KEY_H, true)
+	_game._process(0.0)
+	_game._process(2.0)
+	assert_eq(_game.world.player_tile, Vector2i(22, 14))
+	_send_key(KEY_H, false)
+	_send_key(KEY_PERIOD, true)
+	_game._process(0.0)
+	_game._process(10.0)
+	assert_eq(_game.world.turn_count, 3)
+	_send_key(KEY_PERIOD, false)
+
+
+func _prepare_held_movement() -> void:
+	_game.set_process(false)
+	_game.world = GridWorld.new(Rect2i(0, 0, 40, 28), Vector2i(20, 14))
+	_game.grid_view.world = _game.world
+
+
 func test_focused_hud_controls_suppress_gameplay_until_escape() -> void:
 	var button := _game.get_node("HUD/PlayerMenu/Buttons/PlayerMenu") as Button
 	button.grab_focus()

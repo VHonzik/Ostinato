@@ -8,6 +8,8 @@ const MOVE_ACTIONS: Array[StringName] = [
 
 ## Brief presentation gap makes cancellation possible without another confirmation.
 const MELEE_BOUNDARY_SECONDS: float = 0.18
+const MOVE_REPEAT_DELAY_SECONDS: float = 2.0
+const MOVE_REPEAT_INTERVAL_SECONDS: float = 1.0
 
 var world: GridWorld
 var session := GameSession.new()
@@ -18,6 +20,10 @@ var _pending_action: bool = false
 var _pending_direction := Vector2i.ZERO
 var _pending_arrow: bool = false
 var _melee_delay_seconds: float = 0.0
+var _held_move_keys: Dictionary[Key, Vector2i] = {}
+var _repeat_key: Key = KEY_NONE
+var _repeat_seconds: float = 0.0
+var _repeat_arrow: bool = false
 
 @onready var grid_view: GridView = $GridView
 @onready var camera: Camera2D = $Camera2D
@@ -79,20 +85,24 @@ func _ready() -> void:
 	$HUD/Bottom.hide()
 	$HUD/PlayerMenu.hide()
 	$HUD/Auras.hide()
+	$HUD/RageBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 
 
 func _process(delta: float) -> void:
 	if not active_game or menu.visible or world.is_terminal():
+		_clear_movement_hold()
 		return
 	if world.pending_skill != null:
+		_clear_movement_hold()
 		_melee_delay_seconds -= delta
 		if _melee_delay_seconds <= 0.0:
 			world.continue_cast()
 			refresh_view()
 		return
 	if world.pending_melee != null:
+		_clear_movement_hold()
 		_melee_delay_seconds -= delta
 		if _melee_delay_seconds <= 0.0:
 			world.continue_melee()
@@ -100,18 +110,28 @@ func _process(delta: float) -> void:
 				_feedback.text = "Attack ended. Choose your next action."
 			refresh_view()
 		return
-	if not _pending_action:
-		return
-	_pending_action = false
 	if (world.is_terminal() or world.pending_melee != null
 		or world.pending_skill != null or combat_panel.visible or hero_panel.visible
 		or get_viewport().gui_get_focus_owner() != null):
+		_pending_action = false
+		_clear_movement_hold()
 		return
+	if not _pending_action and _repeat_key != KEY_NONE:
+		_repeat_seconds -= delta
+		if _repeat_seconds <= 0.0 or is_zero_approx(_repeat_seconds):
+			_pending_direction = _held_move_keys[_repeat_key]
+			_pending_arrow = _repeat_arrow
+			_pending_action = true
+			# Never catch up with a burst of turns after a stalled frame.
+			_repeat_seconds = MOVE_REPEAT_INTERVAL_SECONDS
+	if not _pending_action:
+		return
+	_pending_action = false
 	var direction := _pending_direction
 	if _pending_arrow:
 		var arrows := Vector2i(
-			int(Input.is_physical_key_pressed(KEY_RIGHT)) - int(Input.is_physical_key_pressed(KEY_LEFT)),
-			int(Input.is_physical_key_pressed(KEY_DOWN)) - int(Input.is_physical_key_pressed(KEY_UP))
+			int(_held_move_keys.has(KEY_RIGHT)) - int(_held_move_keys.has(KEY_LEFT)),
+			int(_held_move_keys.has(KEY_DOWN)) - int(_held_move_keys.has(KEY_UP))
 		)
 		if arrows != Vector2i.ZERO:
 			direction = arrows
@@ -129,11 +149,20 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and not event.is_pressed():
+		_release_movement_key(event.physical_keycode)
 	if active_game and world.is_charging():
 		_pending_action = false
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
+		var movement_key := false
+		for action in MOVE_ACTIONS:
+			if event.is_action_pressed(action, false, true):
+				movement_key = true
+				break
+		if not movement_key:
+			_clear_movement_hold()
 		if event.is_action_pressed("fullscreen", false, true) and menu._capture_action == &"":
 			menu.toggle_fullscreen()
 			get_viewport().set_input_as_handled()
@@ -256,12 +285,36 @@ func _unhandled_key_input(event: InputEvent) -> void:
 				_pending_arrow = (event.physical_keycode in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
 						and _default_arrow_bindings())
 				_pending_action = true
+				_held_move_keys[event.physical_keycode] = _pending_direction
+				_repeat_key = event.physical_keycode
+				_repeat_arrow = _pending_arrow
+				_repeat_seconds = MOVE_REPEAT_DELAY_SECONDS
 				matched = true
 				break
 		if not matched:
 			return
 	# Collect same-frame arrow presses into a single diagonal action.
 	get_viewport().set_input_as_handled()
+
+
+func _clear_movement_hold() -> void:
+	_held_move_keys.clear()
+	_repeat_key = KEY_NONE
+	_repeat_seconds = 0.0
+	_repeat_arrow = false
+
+
+func _release_movement_key(key: Key) -> void:
+	_held_move_keys.erase(key)
+	if key != _repeat_key:
+		return
+	if _held_move_keys.is_empty():
+		_clear_movement_hold()
+	else:
+		_repeat_key = _held_move_keys.keys()[-1]
+		_repeat_arrow = (_repeat_key in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
+			and _default_arrow_bindings())
+		_repeat_seconds = MOVE_REPEAT_DELAY_SECONDS
 
 
 func reset_fixture() -> void:
@@ -282,6 +335,7 @@ func start_new_game() -> void:
 
 
 func _adopt_world() -> void:
+	_clear_movement_hold()
 	menu.close()
 	hero_panel.close()
 	combat_panel.close()
@@ -303,6 +357,7 @@ func _adopt_world() -> void:
 
 
 func _return_to_menu() -> void:
+	_clear_movement_hold()
 	world.discard()
 	_pending_action = false
 	active_game = false
@@ -312,6 +367,7 @@ func _return_to_menu() -> void:
 	$HUD/Bottom.hide()
 	$HUD/PlayerMenu.hide()
 	$HUD/Auras.hide()
+	$HUD/RageBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 	session.world = null
@@ -345,12 +401,18 @@ func _apply_fullscreen() -> void:
 
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_pending_action = false
+		_clear_movement_hold()
 	if what == NOTIFICATION_WM_CLOSE_REQUEST and menu != null:
 		menu.request_exit()
 
 
 func refresh_view() -> void:
 	world.check_terminal()
+	if (world.is_terminal() or world.pending_skill != null or world.pending_melee != null
+		or menu.visible or combat_panel.visible or hero_panel.visible):
+		_clear_movement_hold()
 	if world.attempt_state == GridWorld.AttemptState.COMPLETED:
 		_pending_action = false
 		_melee_delay_seconds = 0.0
@@ -363,6 +425,7 @@ func refresh_view() -> void:
 		$HUD/Bottom.hide()
 		$HUD/PlayerMenu.hide()
 		$HUD/Auras.hide()
+		$HUD/RageBar.hide()
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
@@ -557,6 +620,9 @@ func _refresh_hotbar() -> void:
 		and not combat_panel.visible and not menu.visible)
 	$HUD/PlayerMenu.visible = hotbar_panel.visible and not hero_panel.visible
 	$HUD/Auras.visible = hotbar_panel.visible and not hero_panel.visible
+	$HUD/RageBar.visible = $HUD/Auras.visible
+	$HUD/RageBar/Fill.max_value = HeroState.MAX_RAGE
+	$HUD/RageBar/Fill.value = world.hero.rage
 	var can_edit := _hotbar_can_edit()
 	hotbar_panel.refresh(world, menu.options, can_edit and not hero_panel.visible,
 		can_edit, hero_panel.choosing_slot)
