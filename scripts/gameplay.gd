@@ -463,7 +463,8 @@ func _cast_skill(identifier: StringName) -> void:
 	if skill == null:
 		return
 	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
-		SkillRank.Effect.EXECUTE]
+		SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]
+		and skill.target == SkillRank.Target.ENEMY
 		and world.in_combat()
 		and world.last_attacked_enemy != null):
 		hero_panel.close()

@@ -42,6 +42,8 @@ var cast_turns: int = 0
 var cast_elapsed: int = 0
 var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
+var holy_event_counted: bool = false
+var queued_rage_cost: int = 0
 var periodic_effects: Array[Dictionary] = []
 var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
@@ -130,12 +132,13 @@ func move_player(direction: Vector2i) -> bool:
 		return false
 	hero.restoration.clear()
 	resolving_turn = true
-	movement_credit += movement_speed
-	while movement_credit >= 1.0 and is_open(player_tile + direction):
+	holy_event_counted = false
+	movement_credit += movement_speed * (1.0 + ClassToolkitRules.magnitude(hero, &"pursuit_of_justice_1") / 100.0)
+	while movement_credit >= 1.0 - 0.000001 and is_open(player_tile + direction):
 		player_tile += direction
 		QuestRules.visit(self)
 		hero.facing = direction
-		movement_credit -= 1.0
+		movement_credit = maxf(0.0, movement_credit - 1.0)
 		_acquire_hostiles()
 	_finish_turn()
 	return true
@@ -143,6 +146,7 @@ func move_player(direction: Vector2i) -> bool:
 
 func wait_turn() -> void:
 	if not is_terminal() and pending_melee == null and pending_skill == null:
+		holy_event_counted = false
 		_finish_turn()
 
 
@@ -157,8 +161,8 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
 	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
-		SkillRank.Effect.EXECUTE]
-		and target == null and in_combat()):
+		SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]
+		and skill.target == SkillRank.Target.ENEMY and target == null and in_combat()):
 		target = last_attacked_enemy
 	if skill.effect == SkillRank.Effect.PASSIVE:
 		return false
@@ -169,7 +173,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)])
 		return false
 	if (skill.effect == SkillRank.Effect.EXECUTE and target != null and target.alive
-		and not skill.execute_eligible(target)):
+		and not skill.execute_eligible(target) and not hero.buffs.has(&"sudden_death_1")):
 		add_message("Cannot Execute: target must be at or below %d%% health. No turn spent." %
 			skill.execute_health_percent)
 		return false
@@ -185,10 +189,12 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		if not _valid_melee(target):
 			add_message("Cannot queue Heroic Strike: no valid melee target.")
 			return false
+		queued_rage_cost = skill.cost(hero)
 		skill.spend_resource(hero)
+		ClassToolkitRules.consume_cost_proc(hero, skill)
 		queued_strike = skill
 		add_message("Heroic Strike queued on %s; %d rage reserved. Esc refunds it." % [
-			target.title, skill.cost(hero)])
+			target.title, queued_rage_cost])
 		return request_melee(target)
 	if skill.free_instant:
 		skill.spend_resource(hero)
@@ -218,7 +224,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		target.relationship = GridActor.Relationship.HOSTILE
 		target.engaged = true
 		target.returning_home = false
-		if skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE]:
+		if skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]:
 			auto_attack_target = target
 	if target != null:
 		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
@@ -230,6 +236,7 @@ func continue_cast() -> bool:
 	if pending_skill == null or is_terminal():
 		cancel_cast(true)
 		return false
+	holy_event_counted = false
 	resolving_turn = true
 	cast_elapsed += 1
 	if is_charging():
@@ -259,10 +266,11 @@ func continue_cast() -> bool:
 			hero.casting_credit += cast_turns - cast_duration
 			var resource_spent := skill.cost(hero)
 			skill.spend_resource(hero)
+			ClassToolkitRules.consume_cost_proc(hero, skill)
 			if resource_spent > 0:
 				hero.last_mana_turn = turn_count + 1
 			if skill.cooldown_seconds > 0:
-				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + skill.cooldown_seconds
+				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
 			_resolve_skill(skill, target, resource_spent)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
@@ -308,7 +316,7 @@ func _continue_charge() -> bool:
 			_acquire_hostiles()
 		if steps == route.size() - 1:
 			cancel_cast(true)
-			hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + skill.cooldown_seconds
+			hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
 			_resolve_skill(skill, target)
 	_finish_turn()
 	return true
@@ -343,7 +351,8 @@ func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
 		return skill.target == SkillRank.Target.ALLY
 	if not actors.has(target) or not target.alive:
 		return false
-	if skill.effect == SkillRank.Effect.EXECUTE and not skill.execute_eligible(target):
+	if (skill.effect == SkillRank.Effect.EXECUTE and not skill.execute_eligible(target)
+		and not hero.buffs.has(&"sudden_death_1")):
 		return false
 	var distance := tile_distance(player_tile, target.tile)
 	if (distance < skill.minimum_range_tiles or distance > skill.range_tiles
@@ -443,20 +452,13 @@ func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0
 	_award_ability_use(skill)
 	match skill.effect:
 		SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE:
-			last_attacked_enemy = target
 			var flat_bonus := skill.minimum
 			if skill.effect == SkillRank.Effect.EXECUTE:
-				flat_bonus += (resource_spent - skill.rage_cost) * skill.execute_damage_per_rage
+				flat_bonus += maxi(0, resource_spent - skill.rage_cost) * skill.execute_damage_per_rage
 				add_message("Execute: spent %d rage." % resource_spent)
-			var result := MeleeRules.outcome(hero.melee, target.melee,
-				MeleeRules.is_behind(target.facing, player_tile - target.tile),
-				combat_random.randf() * 100.0, true)
-			var amount := MeleeRules.damage(hero.melee, target.melee, result,
-				combat_random.randf(), combat_random.randf(), skill.weapon_multiplier, flat_bonus)
-			SpellEffects.damage(self, target, amount, "%s (%s)" % [skill.title, result],
-				-1, true, null, true)
-			if result not in [&"miss", &"dodge", &"parry"] and not is_terminal():
-				hero.gain_combo_point()
+			ClassToolkitRules.physical_attack(self, target, skill, flat_bonus)
+		SkillRank.Effect.TOOLKIT:
+			ClassToolkitRules.resolve(self, skill, target)
 		SkillRank.Effect.BATTLE_SHOUT:
 			hero.gain_rage(skill.rage_generated)
 			hero.buffs[skill.id] = {"armor": 0, "physical_percent": skill.physical_percent,
@@ -468,6 +470,7 @@ func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0
 			auto_attack_target = target
 			hero.gain_rage(skill.rage_generated)
 			add_message("Charge: reached %s; gained %d rage." % [target.title, skill.rage_generated])
+			ClassToolkitRules.apply(self, &"juggernaut_1", {"charges": 1})
 		SkillRank.Effect.CLASS_POINTS:
 			add_class_progress(hero.selected_class, 30)
 			add_message("Gained 30 %s progression points." % String(hero.selected_class).to_lower())
@@ -634,6 +637,7 @@ func continue_melee() -> bool:
 	if is_terminal() or not _valid_melee(pending_melee):
 		cancel_melee()
 		return false
+	holy_event_counted = false
 	resolving_turn = true
 	_finish_turn()
 	if pending_melee != null and not _valid_melee(pending_melee):
@@ -645,7 +649,8 @@ func cancel_melee() -> void:
 	pending_melee = null
 	auto_attack_target = null
 	if queued_strike != null:
-		var reserved := queued_strike.rage_cost
+		var reserved := queued_rage_cost
+		queued_rage_cost = 0
 		queued_strike = null
 		hero.gain_rage(reserved)
 		add_message("Heroic Strike cancelled; %d reserved rage refunded." % reserved)
@@ -659,11 +664,30 @@ func _advance_player_weapon() -> void:
 		or auto_attack_target.relationship == GridActor.Relationship.FRIENDLY)):
 		auto_attack_target = null
 	var target := auto_attack_target
-	var swings := hero.swing.advance(_valid_melee(target), hero.melee.interval / hero.attack_haste())
+	var haste := hero.attack_haste()
+	var interval := hero.melee.interval / haste
+	var swings := hero.swing.advance(_valid_melee(target), interval)
+	var off_weapon := hero.off_hand_melee()
+	var off_interval := off_weapon.interval / haste
+	var off_swings := hero.off_hand_swing.advance(hero.has_off_hand_weapon() and _valid_melee(target), off_interval)
+	var due: Array[Dictionary] = []
 	for index in range(swings):
+		due.append({"offset": hero.swing.remaining - interval * (swings - index), "off_hand": false})
+	for index in range(off_swings):
+		due.append({"offset": hero.off_hand_swing.remaining - off_interval * (off_swings - index), "off_hand": true})
+	due.sort_custom(func(first: Dictionary, second: Dictionary) -> bool:
+		if is_equal_approx(first.offset, second.offset):
+			return not first.off_hand and second.off_hand
+		return first.offset < second.offset)
+	for attack in due:
 		if not _valid_melee(target) or is_terminal():
 			break
-		_player_swing(target)
+		if attack.off_hand:
+			_player_off_hand_swing(target, off_weapon)
+		else:
+			_player_swing(target)
+	if queued_strike != null and not _valid_melee(pending_melee):
+		cancel_melee()
 	if swings > 0:
 		pending_melee = null
 
@@ -687,6 +711,7 @@ func _finish_turn() -> void:
 		cancel_cast(true)
 		resolving_turn = false
 		return
+	_expire_hero_buffs()
 	# The action effect precedes player swings; enemies respond after those swings.
 	_advance_player_weapon()
 	if check_terminal():
@@ -804,7 +829,8 @@ func _act_npc(actor: GridActor) -> void:
 			return
 		actor.facing = MeleeRules.facing_toward(target_tile - actor.tile)
 		var result := MeleeRules.outcome(actor.melee, hero.melee if target == null else target.melee,
-			MeleeRules.is_behind(hero.facing if target == null else target.facing, actor.tile - target_tile),
+			MeleeRules.is_behind(hero.facing if target == null else target.facing, actor.tile - target_tile)
+				and not (target == null and hero.buffs.has(&"evasion_1")),
 			combat_random.randf() * 100.0)
 		var amount := MeleeRules.damage(actor.melee, hero.melee if target == null else target.melee, result,
 			combat_random.randf(), combat_random.randf())
@@ -834,6 +860,8 @@ func _act_npc(actor: GridActor) -> void:
 		if check_terminal():
 			return
 		ClassSpellEffects.retaliate(self, actor, target, amount)
+		if target == null:
+			ClassToolkitRules.incoming(self, actor, amount, result == &"critical")
 		if not actor.alive:
 			return
 
@@ -842,25 +870,36 @@ func _player_swing(target: GridActor) -> void:
 	last_attacked_enemy = target
 	var strike := queued_strike
 	queued_strike = null
+	queued_rage_cost = 0
 	if strike == null:
 		hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
 	else:
 		_award_ability_use(strike)
-	var result := MeleeRules.outcome(hero.melee, target.melee,
-		MeleeRules.is_behind(target.facing, player_tile - target.tile),
-		combat_random.randf() * 100.0, strike != null)
+	ClassToolkitRules.consume_flurry(hero)
+	var outcome := ClassToolkitRules.weapon_outcome(self, target, strike, hero.melee)
+	var result: StringName = outcome.result
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
 		combat_random.randf(), combat_random.randf(),
 		1.0 if strike == null else strike.weapon_multiplier,
 		0 if strike == null else strike.minimum)
 	if hero.buffs.has(&"seal_of_the_crusader_1"):
 		amount = int(amount / 1.4)
+	amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
 	SpellEffects.damage(self, target, amount, "%s (%s)" % [
 		"You" if strike == null else strike.title, result], turn_count, true, null, true)
 	var landed := result not in [&"miss", &"dodge", &"parry"]
-	if strike != null and landed and not is_terminal():
-		hero.gain_combo_point()
 	ClassSpellEffects.on_melee(self, target, amount, landed)
+	ClassToolkitRules.on_attack(self, target, strike, landed, outcome.critical, amount, true)
+
+
+func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
+	ClassToolkitRules.consume_flurry(hero)
+	var outcome := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
+	var value := MeleeRules.damage(weapon, target.melee, outcome.result,
+		combat_random.randf(), combat_random.randf())
+	value = floori(value * ClassToolkitRules.damage_multiplier(hero))
+	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result, turn_count, true, null, true)
+	ClassToolkitRules.on_attack(self, target, null, outcome.landed, outcome.critical, value, true, true)
 
 
 func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
@@ -877,6 +916,8 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 		if check_terminal():
 			_hide_empty_corpse(target)
 			return
+		if target.relationship != GridActor.Relationship.FRIENDLY and ClassToolkitRules.has(hero, &"victory_rush_1"):
+			SpellEffects.heal(self, null, floori(hero.max_health * ClassToolkitRules.magnitude(hero, &"victory_rush_1") / 100.0), "Victory Rush")
 		LootData.assign(self, target)
 		_hide_empty_corpse(target)
 		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
@@ -1004,10 +1045,7 @@ func _tick_effects() -> void:
 	if check_terminal():
 		return
 	ClassSpellEffects.tick(self)
-	for key in hero.buffs.keys():
-		if int(hero.buffs[key].until) <= turn_count:
-			hero.buffs.erase(key)
-			hero.refresh_stats()
+	_expire_hero_buffs()
 	for actor in actors:
 		for key in actor.buffs.keys():
 			if int(actor.buffs[key].until) <= turn_count:
@@ -1020,6 +1058,16 @@ func _tick_effects() -> void:
 				actor.buffs.erase(key)
 
 	SummonRules.refresh_auras(self)
+
+
+func _expire_hero_buffs() -> void:
+	var changed := false
+	for key in hero.buffs.keys():
+		if int(hero.buffs[key].until) <= turn_count:
+			hero.buffs.erase(key)
+			changed = true
+	if changed:
+		hero.refresh_stats()
 
 
 func _regenerate() -> void:

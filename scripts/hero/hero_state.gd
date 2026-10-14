@@ -31,6 +31,7 @@ var max_mana: int
 var health: int
 var mana: int
 var swing := SwingTimer.new()
+var off_hand_swing := SwingTimer.new()
 var melee := MeleeProfile.new()
 var facing := Vector2i.DOWN
 var learned_skills: Array[SkillRank] = []
@@ -58,6 +59,7 @@ var aura_stamina: int = 0
 var aura_armor: int = 0
 var aura_reduction: int = 0
 var debuffs: Dictionary = {}
+var _passive_hit_bonus: float = 0.0
 
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
@@ -155,6 +157,11 @@ func refresh_melee_stats() -> void:
 	melee.parry = 5.0 if find_skill(&"parry_1") != null else 0.0
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
 	melee.critical = BASE_CRITICAL_CHANCE + agility / agility_per_percent
+	melee.critical += ClassToolkitRules.magnitude(self, &"cruelty_1")
+	melee.critical += ClassToolkitRules.magnitude(self, &"conviction_1")
+	melee.hit -= _passive_hit_bonus
+	_passive_hit_bonus = ClassToolkitRules.magnitude(self, &"precision_1")
+	melee.hit += _passive_hit_bonus
 	melee.dodge = 3.25 + agility / agility_per_percent
 	melee.damage_min = 1.0
 	melee.damage_max = 2.0
@@ -181,6 +188,31 @@ func refresh_melee_stats() -> void:
 			melee.damage_max += float(buff.get("weapon_dps", 0)) * melee.interval
 		if buff.has("crusader"):
 			melee.interval /= 1.4
+	melee.armor = floori(melee.armor * (1.0 + ClassToolkitRules.magnitude(self, &"toughness_1") / 100.0))
+	if buffs.has(&"evasion_1"):
+		melee.dodge += SkillRank.catalog(&"evasion_1").minimum
+
+
+func has_off_hand_weapon() -> bool:
+	return (equipment.has("off_hand")
+		and ItemData.get_item(int(equipment.off_hand.id)).weapon
+		and ClassToolkitRules.has(self, &"ambidexterity_1"))
+
+
+func off_hand_melee() -> MeleeProfile:
+	var weapon := MeleeProfile.new()
+	weapon.player = true
+	weapon.level = level
+	weapon.attack_power = melee.attack_power
+	weapon.critical = melee.critical
+	weapon.hit = melee.hit
+	weapon.damage_multiplier = melee.damage_multiplier * ClassToolkitRules.magnitude(self, &"ambidexterity_1") / 100.0
+	if has_off_hand_weapon():
+		var data := ItemData.get_item(int(equipment.off_hand.id))
+		weapon.damage_min = float(data.minimum)
+		weapon.damage_max = float(data.maximum)
+		weapon.interval = float(data.interval)
+	return weapon
 
 
 func attack_haste() -> float:

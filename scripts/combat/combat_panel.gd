@@ -204,8 +204,9 @@ func _update_selection() -> void:
 		selected.melee.level, selected.health if selected.alive else 0, selected.max_health,
 	]
 	if mode == Mode.SPELL and _skill.effect == SkillRank.Effect.EXECUTE:
-		_detail.text += "\nExecute spends %d rage; requires at or below %d%% health." % [
-			_skill.cost(_world.hero), _skill.execute_health_percent]
+		_detail.text += "\nExecute spends %d rage; %s." % [
+			_skill.cost(_world.hero), "Sudden Death allows any health" if _world.hero.buffs.has(&"sudden_death_1")
+			else "requires at or below %d%% health" % _skill.execute_health_percent]
 	_configure_buttons(_candidates.size() > 1,
 		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)

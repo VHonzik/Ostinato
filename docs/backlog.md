@@ -68,9 +68,10 @@ The owner playtested the current Warrior state; that feedback led to the time-lo
 ## Current milestone — Time-loop RPG v0.1
 
 Plan an end-to-end playable prototype of [the current direction](direction.md), including
-**every active and passive in the owner's consolidated v0.1 snapshot**. Deliver it through
-small runnable slices and playtest between them; do not build the whole catalogue before
-trying combat.
+**every active and passive in the owner's consolidated v0.1 snapshot**. The owner's
+current priority is to complete all four class toolkits next, before broader gear,
+route-reward and exit-boss work. Keep intermediate changes runnable; deferred playtests
+do not gate completion of the catalogue. Tuning still needs human playtesting.
 
 The milestone should let a weak first-Loop warrior die, retain mastery and learning,
 develop the other classes, combine the full toolkit, rebuild temporary level and gear,
@@ -161,54 +162,49 @@ in code/data; optional combo empowerment remains unresolved for the later finish
   reserves, then use retained Execute with Relentless Assault in another class.
   Judge the finishing window, rage payoff, trainer pacing and feedback.
 
-### Next playable task — Warrior crit and queue interactions
+### Implemented slice — Complete all four class toolkits
 
-Add a small Warrior passive checkpoint extending the current attacks. Settle the next
-unlock order and qualifying critical/queued-strike events before implementation; keep
-Incite nonrecursive. Review Charge commitment, Battle Shout and burst tuning when
-the owner's deferred combat feedback arrives. Leave shared Flurry and cleave for
-subsequent runnable tasks.
+The owner approved provisional mechanics for missing definitions. The full Warrior,
+Shaman, Paladin and Rogue catalogues are implemented; tuning and exact descriptions
+live in game data and the spell book. Human balance and readability review remains open.
 
-### Remaining slices — in dependency order
+- [x] Complete every v0.1 active and passive, with cumulative trainer checkpoints,
+  free learning, immediate use, and retained cross-class effects.
+- [x] Add shared Flurry, nonrecursive procs, guaranteed crit consumption, defenses,
+  deliberate finisher spending/refunds, and the Holy-event counting limit.
+- [x] Add independent off-hand attacks and equipment selection, spirit wolves with
+  damage-based healing, movement credit and the Judgement haste exception. Keep Charge's
+  existing commitment; tune it with the full toolkit during playtesting.
+- [x] Preserve selected targeting during cleave, stop multi-hit effects on terminal death,
+  and refund a queued strike when an earlier off-hand attack kills its target.
+- [x] Save off-hand timing, wolves and transient procs in revision 16, retaining learning
+  and mastery while clearing temporary effects on death. Leave older save files unchanged.
+- [x] Cover trainer eligibility, retained effects, proc consumption, finishers, defenses,
+  summons, timer ordering, save/death boundaries and keyboard inspection of passives.
 
-- [ ] **Complete Warrior:** revisit Charge and Battle Shout, add Whirlwind, and every
-  Warrior passive: Anger Management, Cruelty, Incite, Flurry, Battle Trance, Sudden Death,
-  Victory Rush, Sweeping Strikes, Wrecking Crew and Juggernaut. Split burst/execution,
-  crit/queue interactions and cleave into playable tasks as this slice becomes current.
-  Settle Charge's commitment; check that Incite cannot sustain itself.
+### Next playable task — Playtest the complete toolkit
+
+Try the complete learned toolkit over returning Loops before broader progression work.
+Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,
+defensive windows and mixed-class combinations. Adjust code/data from that feedback;
+do not treat catalogue completion or automated tests as balance/readability acceptance.
+Optional combo empowerment of Execute/Judgement remains a later design choice; the
+current deliberate spenders are Slice and Dice and Eviscerate.
+
+### Remaining slices — after class completion
+
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
   level ceiling and level-difference effects. Support main/off-hand or two-handed weapons,
   armor, two accessories and the proposed physical/crit/dodge/health/haste stats without
   selected-class stat bonuses. Make slow/fast and dual-wield/two-handed choices useful.
-  Simplify the old attack tables to armor, dodge, hit chance and the new crit rules;
-  remove parry, block, glancing/crushing and detailed spell resistance. Keep explicit
-  class defenses. Settle off-hand baseline, level differences and healing availability.
+  Finish any combat simplification left after class completion: armor, dodge, hit chance
+  and the new crit rules, with explicit class defenses. Retire remaining parry, block,
+  glancing/crushing and detailed spell resistance. Settle level differences and healing.
 - [ ] **Repeatable route rewards:** fixed merchants/prices and quest rewards; enemy loot
   keyed by world seed plus stable enemy ID; seeded chest contents and placement from
   predefined points. Repeat the same seed across deaths and different action/loot orders.
   Decide ordinary respawning rather than silently adopting the current absence of it.
   Preserve temporary gear/gold/quest resets and avoid unbounded XP farming by accident.
-- [ ] **Complete Shaman:** develop the implemented Lightning Shield/Strength of Earth
-  starter pair; add Windfury Weapon, Earth Shock and Feral Spirit. Include Improved
-  Shields, Flurry,
-  Static Shock, Elemental Weapons, Elemental Assault, Spirit Hunt, Elemental Warding,
-  Toughness and Improved Earth Shock. Share or upgrade Warrior Flurry; settle wolf
-  damage/healing and test retaliation, interrupts, totem range and nonrecursive procs.
-- [ ] **Complete Paladin:** develop the implemented Seal of Command/Judgement starter
-  pair; add Blessing of Might and Divine Shield. Include Benediction, Conviction,
-  Vengeance, Art of War,
-  Heart of the Crusader, Divine Purpose, Pursuit of Justice, Eye for an Eye, Guardian's
-  Favor, Sacred Duty and Sanctity of Battle. Include the Seal/Judgement interaction,
-  Art of War's per-action counting limit and Shield's action cost/damage penalty.
-  Decide grid movement speed and the explicit haste-to-Judgement cooldown exception.
-- [ ] **Complete Rogue:** develop the implemented Slice and Dice/Relentless Assault
-  starter pair; add Evasion and Instant Poison. Include Opportunity, Ambidexterity,
-  Eviscerate, Combat Potency,
-  Seal Fate, Main Gauche, Restless Blades, Bandit's Guile, Ruthlessness, Relentless
-  Strikes and Precision. Keep combo points on the player across targets, generated
-  by qualifying cross-class actives and spent only through deliberate finishers.
-  Settle optional empowered Judgement/Execute input, refund ordering and qualifying
-  hits; distinguish Combat Potency's explicit rage proc from ordinary bonus-strike rage.
 - [ ] **Exit boss and timed clones:** place the boss at the guarded exit early in every
   Loop, replacing the delayed first-stalker/demo-kill ending. Add the escape outcome
   and a fixed global clone schedule; define blocked arrival behavior and whether clones

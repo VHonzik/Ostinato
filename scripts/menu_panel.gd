@@ -262,6 +262,8 @@ func _item_detail(index: int) -> void:
 					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_inventory))
 		else:
 			_button("Equip (1 turn)", _transaction.bind(session.world.equip_item.bind(index), open_inventory))
+			if data.weapon and not data.two_handed and ClassToolkitRules.has(session.world.hero, &"ambidexterity_1"):
+				_button("Equip off-hand (1 turn)", _transaction.bind(session.world.equip_item.bind(index, "off_hand"), open_inventory))
 	if data.use != "":
 		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_inventory))
 	_button("Move / split stack", func() -> void:

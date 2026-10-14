@@ -75,8 +75,7 @@ static func equip(hero: HeroState, index: int, slot: String = "") -> bool:
 			slot += "_1" if not hero.equipment.has(slot + "_1") else "_2"
 	if not fits_slot(data, slot):
 		return false
-	# No included class learns dual wield: one-handed weapons still use the main hand.
-	if slot == "off_hand" and data.weapon:
+	if slot == "off_hand" and data.weapon and not ClassToolkitRules.has(hero, &"ambidexterity_1"):
 		return false
 	var equipment := hero.equipment.duplicate(true)
 	var inventory := hero.inventory.duplicate(true)
@@ -115,6 +114,7 @@ static func unequip(hero: HeroState, slot: String) -> bool:
 
 static func fits_slot(data: Dictionary, slot: String) -> bool:
 	return (SLOTS.has(slot) and (data.slot == slot
+		or (slot == "off_hand" and data.weapon and not data.two_handed)
 		or (data.slot == "ring" and slot in ["ring_1", "ring_2"])
 		or (data.slot == "trinket" and slot in ["trinket_1", "trinket_2"])))
 

@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Summons use ordinary actor occupancy and stable saved actor ordering.
 static func slot(skill: SkillRank) -> String:
+	if skill.family == &"feral_spirit":
+		return "wolf"
 	if skill.family in [&"summon_imp", &"summon_voidwalker"]:
 		return "pet"
 	return "fire" if skill.family == &"searing_totem" else "earth"
@@ -143,6 +145,9 @@ static func act(world: GridWorld, actor: GridActor) -> void:
 		return
 	if actor.expires_turn > 0 and world.turn_count >= actor.expires_turn:
 		remove(world, actor)
+		return
+	if actor.summon_kind == "wolf":
+		ClassToolkitRules.act_wolf(world, actor)
 		return
 	var skill := SkillRank.catalog(actor.summon_skill)
 	if actor.summon_kind == "pet":
@@ -285,7 +290,7 @@ static func refresh_auras(world: GridWorld) -> void:
 		if actor.summon_skill == &"strength_of_earth_totem_1":
 			var skill := SkillRank.catalog(actor.summon_skill)
 			if distance <= skill.range_tiles:
-				world.hero.aura_strength = skill.minimum
+				world.hero.aura_strength = floori(skill.minimum * (1.5 if ClassToolkitRules.has(world.hero, &"elemental_weapons_1") else 1.0))
 		if distance <= 4:
 			if actor.summon_skill == &"stoneskin_totem_1":
 				world.hero.aura_reduction = 4

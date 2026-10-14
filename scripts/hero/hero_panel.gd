@@ -119,13 +119,15 @@ func refresh() -> void:
 		var identifier: StringName = _last_spell_by_class.get(_last_class_tab, &"")
 		var skill := _hero.find_skill(identifier)
 		if skill != null:
+			_assign.disabled = layout_locked or skill.effect == SkillRank.Effect.PASSIVE
 			_details.text = "%s · Rank %d · %d %s\n%s" % [
 				skill.title, skill.rank, skill.cost(_hero), skill.resource_name(), skill.description]
 	else:
 		_details.text = "A/D: tabs · W/S: skills · Tab: controls · Enter: activate · Esc: close"
 	for button in _skill_buttons:
 		(button as SkillButton).describe(_hero.find_skill(button.get_meta("skill_id")), _hero)
-		(button as SkillButton).drag_enabled = not layout_locked
+		var rank_data: SkillRank = (button as SkillButton).skill
+		(button as SkillButton).drag_enabled = not layout_locked and rank_data.effect != SkillRank.Effect.PASSIVE
 	_stats.text = (
 		"%s  /  Level %d     XP %d / %d\n"
 		+ "Health %d / %d     Rage %d / %d\n"
@@ -196,7 +198,6 @@ func _rebuild_skills() -> void:
 		button.text += "  ·  %s / %d %s" % ["Free" if skill.free_instant or skill.effect == SkillRank.Effect.PET_COMMAND else "%.1f turns" % skill.cast_seconds, skill.cost(_hero), skill.resource_name()]
 		if skill.effect == SkillRank.Effect.PASSIVE:
 			button.text = skill.title + " · Passive (learned)"
-			button.disabled = true
 		button.describe(skill, _hero)
 		button.drag_enabled = not layout_locked
 		button.clip_text = true
@@ -214,6 +215,8 @@ func _request_cast(identifier: StringName) -> void:
 	var skill := _hero.find_skill(identifier)
 	if skill != null:
 		_remember_spell(skill.class_tab, identifier)
+		if skill.effect == SkillRank.Effect.PASSIVE:
+			return
 	cast_requested.emit(identifier)
 	refresh()
 

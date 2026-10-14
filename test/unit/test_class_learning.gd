@@ -169,9 +169,9 @@ func test_same_class_confirmation_locks_choice_and_full_hotbar_keeps_new_skills_
 func test_trainer_exposes_only_runnable_ranks_and_cannot_teach_legacy_mana_kit() -> void:
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		var ranks := SkillRank.trainer_skills(category)
-		assert_eq(ranks.size(), 2)
+		assert_gt(ranks.size(), 2, "The complete class kits extend the starters.")
 		for skill in ranks:
-			assert_true(ClassSkillData.STARTERS[category].has(skill.id))
+			assert_true(ClassSkillData.is_playable_rank(skill.id))
 	var world := _world(&"Paladin")
 	world.hero.level = 10
 	world.hero.copper = 100000

@@ -39,7 +39,8 @@ corpses with items or money remain available for looting. Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
 Janos Hammerknuckle supplies warrior gear and trades. Llane teaches Warrior unlocks;
 Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
-and Rogue starters. Further class training awaits later slices.
+and Rogue kits. Each trainer exposes the complete v0.1 catalogue, with free learning
+at cumulative class XP checkpoints. Tuning remains provisional.
 
 New Game starts a warrior with rage, Mortal Strike and Heroic Strike, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
@@ -83,10 +84,19 @@ All use rage. Retained abilities/passives work in every class, but only selected
 uses grant class XP; learning does not spend it. Relentless Assault builds player-held
 combo points from landed direct active attacks, across classes and targets. Slice and
 Dice needs points and spends them all for attack haste. Judgement leaves the seal active.
-Only these new starter pairs are exposed; their full class slices and tuning remain ahead.
+All four class kits are available, including their actives and passives. The spell book
+describes their provisional mechanics; passives can be focused and inspected but cannot
+be cast or assigned. New catalogue data lives in
+[class_toolkit_data.gd](../scripts/hero/class_toolkit_data.gd), alongside the existing
+[starter and Warrior data](../scripts/hero/class_skill_data.gd).
+Ambidexterity enables the inventory's off-hand equip action for one-handed weapons.
+Hands have independent timers; due swings resolve in time order, with main-hand first
+on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
+Finishers spend all held points before refunds; Execute and Judgement do not spend points.
+Hero buffs expire at the advanced turn boundary before player swings and enemy attacks.
 
-Current saves are `demo` revision 15, retaining the marshal referral per Loop and updated vendor stock.
-Revision 14 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 16, including off-hand timing, wolves and temporary procs.
+Revision 15 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

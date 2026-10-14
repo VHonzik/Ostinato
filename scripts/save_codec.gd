@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-15 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-16 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -46,6 +46,7 @@ static func capture(session: GameSession) -> Dictionary:
 		"class_progress": {},
 		"periodic": world.periodic_effects.duplicate(true), "messages": Array(world.messages),
 		"hero_swing": [world.hero.swing.remaining, world.hero.swing._active],
+		"off_hand_swing": [world.hero.off_hand_swing.remaining, world.hero.off_hand_swing._active],
 		"quests": world.quests.duplicate(true), "population": world.population.duplicate(true),
 		"vendor_stock": world.vendor_stock.duplicate(true), "loot_quests": Array(world.loot_quests),
 		"cooldowns": world.hero.cooldowns.duplicate(true),
@@ -85,7 +86,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
 		"blocked", "sight", "actors", "learned", "equipment", "inventory",
 		"buffs", "hotbar", "periodic", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population", "debuffs"]
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population", "debuffs", "off_hand_swing"]
 	for key in keys:
 		if not data.has(key):
 			return null
@@ -197,7 +198,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 				return null
 		actor.threat = _normalized_numbers(record.threat)
 		actor.debuffs = _normalized_buffs(record.debuffs)
-		if (actor.summon_kind not in ["", "pet", "earth", "fire"] or actor.mana < 0
+		if (actor.summon_kind not in ["", "pet", "earth", "fire", "wolf"] or actor.mana < 0
 			or actor.mana > actor.max_mana or actor.max_mana < 0 or actor.ability_ready < 0
 			or actor.secondary_ready < 0 or actor.expires_turn < 0
 			or actor.feared_until < 0 or actor.stunned_until < 0
@@ -206,14 +207,19 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			return null
 		if actor.summon_kind != "":
 			var summon := SkillRank.catalog(actor.summon_skill)
-			if (summon == null or summon.effect != SkillRank.Effect.SUMMON
+			if (summon == null or (summon.effect != SkillRank.Effect.SUMMON and summon.family != &"feral_spirit")
 				or SummonRules.slot(summon) != actor.summon_kind
 				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience
 				or (actor.summon_kind == "pet" and actor.npc_id !=
 					(416 if summon.family == &"summon_imp" else 1860))):
 				return null
-			if actor.alive and SummonRules.active(world, actor.summon_kind) != null:
+			if actor.alive and actor.summon_kind != "wolf" and SummonRules.active(world, actor.summon_kind) != null:
 				return null
+			if actor.alive and actor.summon_kind == "wolf":
+				var wolves := world.actors.filter(func(other: GridActor) -> bool:
+					return other.alive and other.summon_kind == "wolf")
+				if wolves.size() >= 2:
+					return null
 		actor.buffs = _normalized_buffs(record.buffs)
 		world._hide_empty_corpse(actor)
 		world.actors.append(actor)
@@ -263,14 +269,23 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	world.hero.equipment.clear()
 	for slot in data.equipment:
 		world.hero.equipment[slot] = _normalized_item(data.equipment[slot])
-	if not _buffs(data.buffs) or not _restore_swing(world.hero.swing, data.hero_swing):
+	if (not _buffs(data.buffs) or not _restore_swing(world.hero.swing, data.hero_swing)
+		or not _restore_swing(world.hero.off_hand_swing, data.off_hand_swing)):
 		return null
 	world.hero.buffs = _normalized_buffs(data.buffs)
+	for key in world.hero.buffs:
+		if ((ClassToolkitData.PASSIVES.has(String(key)) or ClassToolkitData.ACTIVES.has(String(key)))
+			and (world.hero.find_skill(key) == null or int(world.hero.buffs[key].until) <= world.turn_count)):
+			return null
+	for actor in world.actors:
+		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
+			return null
 	if world.hero.equipment.has("main_hand") and world.hero.equipment.has("off_hand"):
 		if ItemData.get_item(int(world.hero.equipment.main_hand.id)).two_handed:
 			return null
 	if world.hero.equipment.has("off_hand"):
-		if ItemData.get_item(int(world.hero.equipment.off_hand.id)).weapon:
+		if (ItemData.get_item(int(world.hero.equipment.off_hand.id)).weapon
+			and not ClassToolkitRules.has(world.hero, &"ambidexterity_1")):
 			return null
 	if not _debuffs(data.debuffs):
 		return null
@@ -502,14 +517,14 @@ static func _buffs(data: Variant) -> bool:
 		return false
 	for key in data:
 		var skill := SkillRank.catalog(StringName(key))
-		if skill == null or skill.effect not in [SkillRank.Effect.ARMOR, SkillRank.Effect.BATTLE_SHOUT]:
+		if skill == null or skill.effect not in [SkillRank.Effect.ARMOR, SkillRank.Effect.BATTLE_SHOUT, SkillRank.Effect.PASSIVE]:
 			return false
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
 		for stat in buff:
 			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns", "regen", "next", "absorb", "physical_immunity",
-				"charges", "ready", "weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent", "haste_percent"]:
+				"charges", "ready", "weapon_id", "off_weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent", "haste_percent", "immunity", "bonus_percent", "critical_ready"]:
 				return false
 	return true
 
@@ -569,6 +584,6 @@ static func _debuffs(data: Variant) -> bool:
 		if not key is String or not _number_map(data[key], 0) or not data[key].has("until"):
 			return false
 		for field in data[key]:
-			if field not in ["until", "reduction", "slow", "holy_power", "dispel"]:
+			if field not in ["until", "reduction", "slow", "holy_power", "dispel", "bonus"]:
 				return false
 	return true

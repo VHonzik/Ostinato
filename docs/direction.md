@@ -41,7 +41,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   attacks across classes. Auto-attacks, procs, buffs and misses grant no points.
   Points persist across targets and encounters and reset on death. Slice and Dice
   requires points and deliberately spends all held points to extend its attack haste.
-  Judgement takes a turn and leaves Seal of Command active.
+  Eviscerate also deliberately spends all held points; finisher refunds follow spending.
+  Judgement takes a turn and leaves Seal of Command active. Execute and Judgement
+  currently do not spend points; optional empowerment remains a future choice.
 - Warrior supplies physical burst, rage and execution; shaman supplies weapon
   enhancements, reactive damage and tactical procs; paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,
@@ -68,12 +70,18 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   and forfeiting its ordinary rage. A miss consumes the queue; cancellation or target
   loss refunds the reservation while preserving elapsed turns.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
-  Sanctity of Battle is an explicit cooldown exception with its formula still open.
+  Sanctity of Battle explicitly divides Judgement's cooldown by current attack haste,
+  rounding up to a whole turn. Pursuit of Justice adds fractional movement credit,
+  occasionally allowing an extra grid step in the chosen direction.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
   Define qualifying events consistently for crits, class XP, combo points and procs.
   Art of War counts at most one Holy event per attack action; Incite cannot retrigger
-  itself, and Warrior/Shaman Flurry must share or upgrade one effect.
-- Buffs persist between encounters until their duration expires. Simplify combat to
+  itself, and Shaman Flurry upgrades the one shared Warrior/Shaman effect. Bonus strikes
+  cannot crit or trigger primary attack hooks. Spirit wolves follow the selected enemy;
+  Spirit Hunt heals from their actual damage taken by the target.
+- Buffs persist between encounters until their duration expires. Hero buffs expire at
+  the advanced world-turn boundary before due player swings and enemy actions, after
+  the committed action's effect. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
   Holy and Nature damage and the explicit class defenses. Retire legacy parry, block,
   glancing/crushing and the detailed spell-resistance model. Revisit level differences
@@ -124,13 +132,11 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 - First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
-- Next: Heroic Strike versus Mortal Strike rage economy; world-turn buff expiry
-  ordering; Eviscerate's spending interface and optional combo empowerment for
+- Next: Heroic Strike versus Mortal Strike rage economy; optional combo empowerment for
   Execute/Judgement; gear ranges, weapon progression,
   respawns and healing.
-- When their abilities are built: wolf damage/healing, shared Flurry,
-  Pursuit of Justice's movement-speed meaning in a turn-based grid, Sanctity of Battle's
-  cooldown formula, qualifying proc events and any otherwise unspecified passive details.
+- During the complete-toolkit playtest: revise provisional passive/proc behavior,
+  wolf usefulness, movement credit and the Judgement haste exception as needed.
 - Later: additional talents/synergies and leaderboard categories or achievements.
 
 Keep answers brief here when they become durable direction. Keep tuning values and

@@ -97,6 +97,8 @@ static func class_sprite(category: StringName) -> Vector2i:
 
 
 static func actor_sprite(actor: GridActor) -> Vector2i:
+	if actor.summon_kind == "wolf":
+		return ENEMY_SPRITES[299]
 	if actor.summon_kind == "pet":
 		return Vector2i(5 if actor.npc_id == 416 else 6, 4)
 	if CLASS_SPRITES.has(actor.service):
@@ -116,6 +118,8 @@ func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 	var key: StringName
 	if actor.summon_kind in ["earth", "fire"]:
 		key = StringName(actor.summon_kind + "_totem")
+	elif actor.summon_kind == "wolf":
+		key = &"wolf"
 	elif (actor.stalker or VALLEY_ACTORS.has(actor.npc_id)
 		or VALLEY_CLASSES.has(actor.service)):
 		key = &"stalker" if actor.stalker else VALLEY_ACTORS.get(actor.npc_id,

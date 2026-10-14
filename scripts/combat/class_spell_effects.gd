@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Class-specific rules supplement shared SpellEffects.
 static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
+	if not ClassToolkitRules.can_apply(world, skill, target):
+		return false
 	if skill.effect == SkillRank.Effect.PASSIVE:
 		return false
 	if skill.effect == SkillRank.Effect.SUMMON:
@@ -74,7 +76,8 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> bo
 				world.hero.last_mana_turn = world.turn_count + 1
 			elif (skill.effect == SkillRank.Effect.ARMOR
 				and (ClassSkillData.RANKS.has(String(skill.id))
-					or ClassSkillData.LOOP_RANKS.has(String(skill.id)))):
+					or ClassSkillData.LOOP_RANKS.has(String(skill.id))
+					or ClassToolkitData.ACTIVES.has(String(skill.id)))):
 				buff(world, skill, target)
 			else:
 				return false
@@ -128,7 +131,17 @@ static func buff(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
 			else:
 				target.weakened_until = world.turn_count + 16
 		&"blessing_of_might":
-			effect["attack_power"] = 20
+			effect["strength"] = skill.minimum
+		&"divine_shield":
+			effect["immunity"] = 1
+			if ClassToolkitRules.has(world.hero, &"guardians_favor_1"):
+				effect.until += world.hero.find_skill(&"guardians_favor_1").duration
+		&"windfury_weapon":
+			effect["weapon_id"] = int(world.hero.equipment.main_hand.id)
+			effect["ready"] = 0
+		&"instant_poison":
+			effect["weapon_id"] = int(world.hero.equipment.main_hand.id)
+			effect["off_weapon_id"] = int(world.hero.equipment.get("off_hand", {}).get("id", 0))
 		&"blessing_of_protection", &"divine_protection":
 			effect["physical_immunity"] = 1
 			if target == null:
@@ -138,9 +151,11 @@ static func buff(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
 		&"slice_and_dice":
 			effect["haste_percent"] = skill.haste_percent
 			effect.until += skill.duration_per_combo * world.hero.combo_points
+			var points := world.hero.combo_points
 			world.hero.combo_points = 0
+			ClassToolkitRules.finish(world, points)
 		&"lightning_shield":
-			effect["charges"] = 3
+			effect["charges"] = 6 if ClassToolkitRules.has(world.hero, &"improved_shields_1") else 3
 			effect["ready"] = 0
 		&"rockbiter_weapon", &"flametongue_weapon":
 			effect["weapon_id"] = int(world.hero.equipment.main_hand.id)
@@ -170,18 +185,7 @@ static func seal(hero: HeroState) -> Dictionary:
 
 
 static func judge(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
-	world.last_attacked_enemy = target
-	world.auto_attack_target = target
-	var hit_chance := clampf(95.0 + world.hero.melee.hit, 0.0, 100.0)
-	if world.combat_random.randf() * 100.0 >= hit_chance:
-		world.add_message("Judgement misses %s; Seal of Command remains active." % target.title)
-		return
-	var value := _holy_weapon_damage(world, skill)
-	if world.combat_random.randf() * 100.0 < world.hero.melee.critical:
-		value *= 2
-	SpellEffects.damage(world, target, value, "Judgement", -1)
-	if not world.is_terminal():
-		world.hero.gain_combo_point()
+	ClassToolkitRules.magic_attack(world, target, skill)
 
 
 static func _holy_weapon_damage(world: GridWorld, skill: SkillRank) -> int:
@@ -202,6 +206,10 @@ static func immune(buffs: Dictionary) -> bool:
 
 static func absorb(world: GridWorld, target: GridActor, amount: int, physical: bool) -> int:
 	var buffs := world.hero.buffs if target == null else target.buffs
+	if buffs.has(&"divine_shield_1"):
+		return 0
+	if not physical and target == null:
+		amount = floori(amount * (1.0 - ClassToolkitRules.magnitude(world.hero, &"elemental_warding_1") / 100.0))
 	if physical and immune(buffs):
 		return 0
 	if physical:
@@ -218,6 +226,9 @@ static func retaliate(world: GridWorld, attacker: GridActor, defender: GridActor
 	if world.is_terminal() or amount <= 0 or not attacker.alive:
 		return
 	var buffs := world.hero.buffs if defender == null else defender.buffs
+	if defender == null:
+		ClassToolkitRules.discharge(world, attacker, true)
+		return
 	if buffs.has(&"lightning_shield_1"):
 		var shield: Dictionary = buffs[&"lightning_shield_1"]
 		if int(shield.charges) > 0 and world.turn_count >= int(shield.ready):
@@ -234,8 +245,10 @@ static func on_melee(world: GridWorld, target: GridActor, amount: int, landed: b
 		return
 	var current := seal(world.hero)
 	if landed and not current.is_empty() and current.skill.family == &"seal_of_command":
-		var value := _holy_weapon_damage(world, current.skill)
+		var value := floori(_holy_weapon_damage(world, current.skill) * ClassToolkitRules.damage_multiplier(world.hero))
 		SpellEffects.damage(world, target, value, "Seal of Command", world.turn_count)
+		if not world.is_terminal():
+			ClassToolkitRules.holy_event(world)
 	if amount <= 0:
 		return
 	if not current.is_empty() and current.skill.family == &"seal_of_righteousness":

@@ -2,7 +2,7 @@ class_name SkillRank
 extends RefCounted
 
 ## Warrior abilities and retained legacy ranks. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -87,10 +87,13 @@ static func all_ranks() -> Dictionary:
 	var ranks := TrainerData.RANKS.duplicate()
 	ranks.merge(ClassSkillData.RANKS)
 	ranks.merge(ClassSkillData.LOOP_RANKS, true)
+	ranks.merge(ClassToolkitData.ranks(), true)
 	return ranks
 
 
 func cost(hero: HeroState) -> int:
+	if ClassSkillData.is_playable_rank(id):
+		return ClassToolkitRules.cost(hero, self)
 	if effect == Effect.EXECUTE:
 		return clampi(hero.rage, rage_cost, execute_rage_cap)
 	if resource_name() == "rage":
@@ -141,6 +144,9 @@ static func catalog(identifier: StringName) -> SkillRank:
 			skill.set(field, StringName(row[field]))
 		else:
 			skill.set(field, row[field])
+	if skill.effect == Effect.PASSIVE:
+		skill.description = skill.title + ": " + skill.detail
+		return skill
 	skill.description = "%s rank %d: %d %s, %.1f turns, range %d tiles. " % [
 		skill.title, skill.rank, skill.rage_cost if skill.resource_name() == "rage" else skill.mana_cost,
 		skill.resource_name(), skill.cast_seconds, skill.range_tiles]
@@ -150,7 +156,8 @@ static func catalog(identifier: StringName) -> SkillRank:
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
 	if (skill.detail != "" and (ClassSkillData.RANKS.has(String(identifier))
-		or ClassSkillData.LOOP_RANKS.has(String(identifier)))):
+		or ClassSkillData.LOOP_RANKS.has(String(identifier))
+		or ClassToolkitData.ranks().has(String(identifier)))):
 		if skill.mana_percent > 0:
 			skill.description += "%d%% base mana. " % skill.mana_percent
 		skill.description += skill.detail

@@ -1489,7 +1489,9 @@ const RANKS: Dictionary = {
 
 
 static func is_playable_rank(identifier: StringName) -> bool:
-	return identifier in WARRIOR_RANKS or LOOP_RANKS.has(String(identifier))
+	return (identifier in WARRIOR_RANKS or LOOP_RANKS.has(String(identifier))
+		or ClassToolkitData.PASSIVES.has(String(identifier))
+		or ClassToolkitData.ACTIVES.has(String(identifier)))
 
 
 static func pet_command(identifier: StringName) -> SkillRank:
