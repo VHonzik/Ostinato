@@ -246,6 +246,13 @@ func test_stalker_uses_the_southwestern_gate_and_survives_save_roundtrip() -> vo
 		return
 	assert_eq(restored.stalker_deadlines, world.stalker_deadlines)
 	assert_eq(restored.actors[-1].spawn_id, world.actors[-1].spawn_id)
+	assert_eq(restored.actors[-1].health, 280)
+	assert_eq(restored.actors[-1].melee.level, 8)
+	assert_eq(restored.actors[-1].melee.armor, 240)
+	assert_eq(restored.actors[-1].melee.damage_min, 12.0)
+	assert_eq(restored.actors[-1].melee.damage_max, 16.0)
+	assert_eq(restored.actors[-1].melee.attack_power, 0)
+	assert_eq(restored.actors[-1].melee.interval, 2.5)
 	world.turn_count = world.stalker_deadlines[1]
 	restored.turn_count = restored.stalker_deadlines[1]
 	world._arrive_stalker()

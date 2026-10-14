@@ -991,14 +991,15 @@ func _spawn_stalker(entry: Vector2i) -> void:
 	stalker.creature_type = "demon"
 	stalker.spawn_id = "gate/stalker/%d" % stalkers_arrived
 	stalker.relationship = GridActor.Relationship.HOSTILE
-	# Ordinary level-20 Wildthorn Stalker profile, pre-pivot tuning.
-	stalker.max_health = 494
-	stalker.health = 494
-	stalker.melee.level = 20
-	stalker.melee.armor = 888
-	stalker.melee.damage_min = 31.0
-	stalker.melee.damage_max = 38.0
-	stalker.melee.attack_power = 16
+	var profile := NorthshireData.STALKER
+	stalker.max_health = int(profile.health)
+	stalker.health = stalker.max_health
+	stalker.melee.level = int(profile.level)
+	stalker.melee.armor = int(profile.armor)
+	stalker.melee.damage_min = float(profile.minimum)
+	stalker.melee.damage_max = float(profile.maximum)
+	stalker.melee.attack_power = int(profile.power)
+	stalker.melee.interval = float(profile.interval)
 	actors.append(stalker)
 	stalkers_arrived += 1
 	if stalkers_arrived == 1:

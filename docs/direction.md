@@ -84,7 +84,12 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
   Holy and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
   hit or crit; shields contribute armor. Holy and Nature damage bypass armor.
-  Revisit level differences without adding the old attack tables. Costs, durations, chances, damage formulas
+  Higher-level enemies reduce accuracy; their percentage penalty to player damage
+  matches their percentage increase to incoming damage,
+  without the old attack tables. A starter Warrior should struggle against one enemy
+  two levels higher or a pair near its own level; larger pulls should usually kill it.
+  Retained mixed-class learning should eventually make three enemies two levels higher
+  manageable. Costs, durations, chances, damage formulas
   and stat scaling belong in code/data; the snapshot's tuning remains provisional.
 - Keep the existing session/save structure and bump the save revision when compatibility
   changes. Preserve old files and failed-write/load protections; do not add experimental

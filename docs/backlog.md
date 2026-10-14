@@ -200,7 +200,21 @@ live in game data and the spell book. Human balance and readability review remai
 - [ ] Owner playtest: compare stat gear, shields and both weapon hands across classes;
   judge survivability, swing pacing, character/item feedback and retained mixed-class skills.
 
-### Implemented slice — Toolkit and shared-stat playtest
+### Implemented slice — Difficulty and toolkit playtest
+
+- [x] Give ordinary valley encounters increasing levels across the early patrol/camp,
+  stronger wolves, mine and vineyard, ending with Garrick. Tune their combat profiles
+  and implement shared level-gap accuracy, crit, dodge and damage effects.
+- [x] Explore starter, partial Warrior and retained mixed-class matchups with temporary
+  seeded simulations under ignored `reports/`; keep experiments out of game code.
+- [x] Adopt the simulated stalker combat profile for every arrival and reinforcement;
+  preserve the final [balance comparisons](../balance/2026-10-14/results.md) for later
+  class tuning. Arrival scheduling and the demo ending remain for the exit-boss slice.
+- [ ] Owner playtest: compare single enemies and multiple pulls before and after learning
+  skills, including enemies above character level. Adjust difficulty and route pacing
+  from play; simulations do not establish feel or balance acceptance.
+- [ ] Playtest the adopted stalker against attainable valley levels and equipment,
+  including pressure from reinforcements; revisit its tuning with the exit-boss slice.
 
 Try the complete learned toolkit over returning Loops alongside the new itemization.
 Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,

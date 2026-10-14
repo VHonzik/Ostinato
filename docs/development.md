@@ -111,6 +111,13 @@ final integer result, using the existing weapon roll for unbiased rounding.
 Mana, caster stats and the obsolete class catalogues
 are removed, along with parry, block, glancing, crushing and spell resistance.
 
+Ordinary enemy and stalker tuning lives in
+[northshire_data.gd](../scripts/world/northshire_data.gd); level-gap modifiers live in
+[melee_rules.gd](../scripts/combat/melee_rules.gd). New spawns and Loops use the current
+profiles; saved actors keep their recorded stats. The saved
+[October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
+simulation setup and two-handed/dual-wield comparisons for future class tuning.
+
 Current saves are `demo` revision 18, with gear stats rebuilt from equipment on load.
 Revision 17 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;

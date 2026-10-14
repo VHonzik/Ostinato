@@ -1,0 +1,61 @@
+$ErrorActionPreference = 'Stop'
+$balanceRows = @()
+foreach ($balanceShard in 0..2) {
+  $balanceRows += @(Get-Content -LiteralPath "$PSScriptRoot/balance_matrix_$balanceShard.json" -Raw | ConvertFrom-Json)
+}
+if ($balanceRows.Count -ne 221) { throw "Matrix incomplete: $($balanceRows.Count)/221 cells." }
+foreach ($balanceRow in $balanceRows) {
+  if ($balanceRow.unfinished -ne 0 -or $balanceRow.fights -ne 200) { throw 'Incomplete trial.' }
+  $balanceMean = ($balanceRow.batch_win_rates | Measure-Object -Average).Average
+  $balanceSquares = 0.0
+  foreach ($balanceRate in $balanceRow.batch_win_rates) {
+    $balanceSquares += [Math]::Pow($balanceRate - $balanceMean, 2)
+  }
+  $balanceStd = [Math]::Sqrt($balanceSquares / 9)
+  if ([Math]::Abs($balanceMean - $balanceRow.win_rate_mean) -gt 0.000001 -or
+      [Math]::Abs($balanceStd - $balanceRow.win_rate_std) -gt 0.000001) { throw 'Statistics mismatch.' }
+}
+function Format-BalanceNumber([double]$Value) {
+  return $Value.ToString('0.#', [Globalization.CultureInfo]::InvariantCulture)
+}
+$balanceBuilds = @('starter','warrior','warrior_shaman','warrior_paladin','warrior_rogue_2h','warrior_rogue','mixed4_2h','mixed4')
+$balanceCaseIds = @('garrick_p1','garrick_p2','garrick_p3')
+foreach ($balanceLevel in 3..5) {
+  foreach ($balanceCount in 1..4) { $balanceCaseIds += "group_l${balanceLevel}_n${balanceCount}" }
+}
+$balanceCaseIds += @('stalker_live','stalker_candidate')
+$balanceMarkdown = [Collections.Generic.List[string]]::new()
+$balanceMarkdown.Add('# Combat balance matrix')
+$balanceMarkdown.Add('')
+$balanceMarkdown.Add('Each cell: **win % ± batch SD · median damage taken / median finishing HP**.')
+$balanceMarkdown.Add('Both HP medians include every fight; losses finish at 0 HP. Damage is cumulative HP actually lost to hits, before healing, and can exceed starting health.')
+$balanceMarkdown.Add('Each cell uses ten independent batches of twenty fights (200 total). SD measures variation in batch win rates, in percentage points.')
+$balanceMarkdown.Add('')
+$balanceMarkdown.Add('Start: full HP, zero rage/combo points, no prebuffs or consumables, no kill XP/level-up heals. Public game actions, normal swing/ability timing, all enemies initially adjacent and hostile. Janos free Warrior outfit. Rogue and all-class builds: DW = Battleworn Hammer (3–5, 2.9 turns) + Dirk (1–3, 1.6 turns); 2H = Short Staff (5–8, 3.2 turns). Janos sells the Dirk for 57 copper and the Short Staff for 102 copper. Both remove the shield and preserve the other armor. Starting HP: L1 51, L2 57, L3 72, L5 102.')
+$balanceMarkdown.Add('')
+$balanceMarkdown.Add('Garrick uses the live L5 profile. Level-3 groups use the laborer profile, level-4 groups use the thug profile, and level-5 groups use the Garrick profile. Live stalker: L20, 494 HP, 888 armor. Experimental stalker: L8, 280 HP, 240 armor, 12–16 base damage, 2.5-turn swings. Both stalker rows use player L5.')
+$balanceMarkdown.Add('')
+foreach ($balanceCdMode in @($false,$true)) {
+  $balanceMarkdown.Add($(if ($balanceCdMode) { '## With Evasion / Divine Shield' } else { '## Without Evasion / Divine Shield' }))
+  $balanceMarkdown.Add('')
+  $balanceMarkdown.Add('| Encounter | Starter W | Full W | W + Shaman | W + Paladin | W + Rogue 2H | W + Rogue DW | All classes 2H | All classes DW |')
+  $balanceMarkdown.Add('|---|---:|---:|---:|---:|---:|---:|---:|---:|')
+  foreach ($balanceCaseId in $balanceCaseIds) {
+    $balanceCells = @()
+    foreach ($balanceBuild in $balanceBuilds) {
+      $balanceEnabled = $balanceCdMode -and $balanceBuild -in @('warrior_paladin','warrior_rogue','warrior_rogue_2h','mixed4','mixed4_2h')
+      $balanceCell = @($balanceRows | Where-Object {
+        $_.case_id -eq $balanceCaseId -and $_.build -eq $balanceBuild -and $_.defensive_cooldowns -eq $balanceEnabled
+      })
+      if ($balanceCell.Count -ne 1) { throw "Missing/duplicate cell: $balanceCaseId $balanceBuild $balanceEnabled" }
+      $balanceCell = $balanceCell[0]
+      $balanceCells += "$(Format-BalanceNumber $balanceCell.win_rate_mean)±$(Format-BalanceNumber $balanceCell.win_rate_std) · $(Format-BalanceNumber $balanceCell.median_damage_hp)/$(Format-BalanceNumber $balanceCell.median_finishing_health_hp)"
+    }
+    $balanceMarkdown.Add("| $($balanceCell.case_label) | $($balanceCells -join ' | ') |")
+  }
+  $balanceMarkdown.Add('')
+}
+$balanceMarkdown.Add('Only Evasion and Divine Shield differ between the two tables. All other cooldowns remain normal. Columns without Paladin/Rogue reuse their identical no-defense results.')
+[IO.File]::WriteAllText("$PSScriptRoot/balance_matrix.md", ($balanceMarkdown -join "`n") + "`n", [Text.UTF8Encoding]::new($false))
+[IO.File]::WriteAllText("$PSScriptRoot/balance_matrix.json", ($balanceRows | ConvertTo-Json -Depth 20), [Text.UTF8Encoding]::new($false))
+Write-Output "Verified 221 cells, 44,200 completed fights, batch statistics and table coverage. Saved reports/balance_matrix.md and balance_matrix.json."
