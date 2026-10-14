@@ -137,9 +137,9 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillRan
 	if behind:
 		multiplier *= 1.0 + magnitude(world.hero, &"opportunity_1") / 100.0
 	var value := MeleeRules.damage(world.hero.melee, target.melee, outcome.result,
-		world.combat_random.randf(), world.combat_random.randf(), multiplier, flat_bonus)
+		world.combat_random.randf(), multiplier, flat_bonus)
 	value = floori(value * damage_multiplier(world.hero))
-	SpellEffects.damage(world, target, value, "%s (%s)" % [skill.title, outcome.result], -1, true, null, true)
+	SpellEffects.damage(world, target, value, "%s (%s)" % [skill.title, outcome.result], -1, null, true)
 	on_attack(world, target, skill, outcome.landed, outcome.critical, value, true, false, build_points)
 
 
@@ -151,9 +151,9 @@ static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillRank
 	weapon.critical += extra
 	var result := MeleeRules.outcome(weapon, target.melee,
 		MeleeRules.is_behind(target.facing, world.player_tile - target.tile),
-		world.combat_random.randf() * 100.0, skill != null)
+		world.combat_random.randf() * 100.0)
 	weapon.critical -= extra
-	var landed := result not in [&"miss", &"dodge", &"parry"]
+	var landed := result not in [&"miss", &"dodge"]
 	var guaranteed := false
 	if skill != null and landed:
 		var key := &"incite_1" if skill.family == &"heroic_strike" else (
@@ -244,7 +244,7 @@ static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 		if direct and value > 0 and has(world.hero, &"sweeping_strikes_1"):
 			for other in world.actors:
 				if other != target and other.relationship == GridActor.Relationship.HOSTILE and eligible(world, other, 1):
-					SpellEffects.damage(world, other, floori(value * magnitude(world.hero, &"sweeping_strikes_1") / 100.0), "Sweeping Strikes", -1, true, null, true)
+					SpellEffects.damage(world, other, floori(value * magnitude(world.hero, &"sweeping_strikes_1") / 100.0), "Sweeping Strikes", -1, null, true)
 					break
 	if direct and skill.family == &"judgement" and not world.is_terminal():
 		if target.alive and has(world.hero, &"heart_of_the_crusader_1"):
@@ -308,13 +308,13 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 		return
 	var weapon := world.hero.off_hand_melee() if off_hand else world.hero.melee
 	var result := MeleeRules.outcome(weapon, target.melee,
-		MeleeRules.is_behind(target.facing, world.player_tile - target.tile), world.combat_random.randf() * 100, true)
+		MeleeRules.is_behind(target.facing, world.player_tile - target.tile), world.combat_random.randf() * 100)
 	# Bonus strikes use normal hit/armor but cannot crit or trigger any primary hooks.
 	if result == &"critical":
 		result = &"hit"
 	var value := MeleeRules.damage(weapon, target.melee, result,
-		world.combat_random.randf(), world.combat_random.randf(), multiplier)
-	SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), title, -1, true, null, true)
+		world.combat_random.randf(), multiplier)
+	SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), title, -1, null, true)
 
 
 static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> void:
@@ -401,8 +401,8 @@ static func act_wolf(world: GridWorld, wolf: GridActor) -> void:
 			break
 		var result := MeleeRules.outcome(wolf.melee, target.melee, false, world.combat_random.randf() * 100)
 		var value := MeleeRules.damage(wolf.melee, target.melee, result,
-			world.combat_random.randf(), world.combat_random.randf())
+			world.combat_random.randf())
 		var before := target.health
-		SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), wolf.title, world.turn_count, true, wolf, true)
+		SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)), wolf.title, world.turn_count, wolf, true)
 		if not world.is_terminal() and has(world.hero, &"spirit_hunt_1"):
 			SpellEffects.heal(world, null, floori((before - target.health) * magnitude(world.hero, &"spirit_hunt_1") / 100.0), "Spirit Hunt")

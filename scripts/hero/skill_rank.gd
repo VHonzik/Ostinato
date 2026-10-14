@@ -1,8 +1,8 @@
 class_name SkillRank
 extends RefCounted
 
-## Warrior abilities and retained legacy ranks. Training levels never gate retained-rank use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, DAMAGE, HEAL, ARMOR, HEAL_OVER_TIME, ROOT, POLYMORPH, NOVA, CHANNEL, CONJURE, GOLD, SUMMON, CURSE, FEAR, STUN, LIFE_TAP, JUDGEMENT, PURIFY, RESURRECT, PASSIVE, PET_COMMAND, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE, TOOLKIT }
+## Learned class ranks. Current character level never gates retained-rank use.
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, JUDGEMENT, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -25,29 +25,17 @@ var haste_percent: int = 0
 var duration_per_combo: int = 0
 var rage_generated: int = 0
 var travel_speed: int = 0
-var mana_cost: int = 0
 var cast_seconds: float = 1.0
 var range_tiles: int = 0
 var minimum_range_tiles: int = 0
 var minimum: int = 0
 var maximum: int = 0
 var duration: int = 0
-var periodic_damage: int = 0
-var source_id: int = 0
-var training_cost: int = 0
-var prerequisite: StringName = &""
 var family: StringName = &""
 var school: int = 0
 var cooldown_seconds: int = 0
-var scaling_max: int = 0
-var scaling_rate: float = 0.0
 var coefficient: float = 0.0
-var tick_seconds: int = 0
-var tick_coefficient: float = 0.0
-var item_id: int = 0
-var mana_percent: int = 0
 var detail: String = ""
-var free_instant: bool = false
 
 
 
@@ -84,21 +72,14 @@ static func trainer_skills(category: StringName) -> Array[SkillRank]:
 
 
 static func all_ranks() -> Dictionary:
-	var ranks := TrainerData.RANKS.duplicate()
-	ranks.merge(ClassSkillData.RANKS)
+	var ranks := ClassSkillData.RANKS.duplicate()
 	ranks.merge(ClassSkillData.LOOP_RANKS, true)
 	ranks.merge(ClassToolkitData.ranks(), true)
 	return ranks
 
 
 func cost(hero: HeroState) -> int:
-	if ClassSkillData.is_playable_rank(id):
-		return ClassToolkitRules.cost(hero, self)
-	if effect == Effect.EXECUTE:
-		return clampi(hero.rage, rage_cost, execute_rage_cap)
-	if resource_name() == "rage":
-		return rage_cost
-	return mana_cost + int(HeroData.stats_for_level(hero.level)[6] * mana_percent / 100.0)
+	return ClassToolkitRules.cost(hero, self)
 
 
 func execute_eligible(target_actor: GridActor) -> bool:
@@ -108,26 +89,20 @@ func execute_eligible(target_actor: GridActor) -> bool:
 
 
 func resource_name() -> String:
-	return "rage" if ClassSkillData.is_playable_rank(id) or development_only else "mana"
+	return "rage"
 
 
 func available_resource(hero: HeroState) -> int:
-	return hero.rage if resource_name() == "rage" else hero.mana
+	return hero.rage
 
 
 func spend_resource(hero: HeroState) -> void:
-	if resource_name() == "rage":
-		hero.rage -= cost(hero)
-	else:
-		hero.mana -= cost(hero)
+	hero.rage -= cost(hero)
 
 
 static func catalog(identifier: StringName) -> SkillRank:
 	var ranks := all_ranks()
 	if not ranks.has(String(identifier)):
-		var command := ClassSkillData.pet_command(identifier)
-		if command != null:
-			return command
 		for skill in development_skills():
 			if skill.id == identifier:
 				return skill
@@ -140,58 +115,20 @@ static func catalog(identifier: StringName) -> SkillRank:
 			continue
 		if field == "target":
 			skill.target = Target[row.target]
-		elif field in ["family", "class_tab", "prerequisite"]:
+		elif field in ["family", "class_tab"]:
 			skill.set(field, StringName(row[field]))
 		else:
 			skill.set(field, row[field])
 	if skill.effect == Effect.PASSIVE:
 		skill.description = skill.title + ": " + skill.detail
 		return skill
-	skill.description = "%s rank %d: %d %s, %.1f turns, range %d tiles. " % [
-		skill.title, skill.rank, skill.rage_cost if skill.resource_name() == "rage" else skill.mana_cost,
-		skill.resource_name(), skill.cast_seconds, skill.range_tiles]
+	skill.description = "%s rank %d: %d rage, %.1f turns, range %d tiles. " % [
+		skill.title, skill.rank, skill.rage_cost, skill.cast_seconds, skill.range_tiles]
 	if skill.effect == Effect.HEROIC_STRIKE:
 		skill.description = "%s rank %d: %d rage, next main-hand swing, range %d tiles. " % [
 			skill.title, skill.rank, skill.rage_cost, skill.range_tiles]
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
-	if (skill.detail != "" and (ClassSkillData.RANKS.has(String(identifier))
-		or ClassSkillData.LOOP_RANKS.has(String(identifier))
-		or ClassToolkitData.ranks().has(String(identifier)))):
-		if skill.mana_percent > 0:
-			skill.description += "%d%% base mana. " % skill.mana_percent
-		skill.description += skill.detail
-		return skill
-	match skill.effect:
-		Effect.DAMAGE, Effect.CHANNEL, Effect.NOVA:
-			skill.description += "%d–%d damage%s. " % [skill.minimum, skill.maximum,
-				" each second for 3 turns" if skill.effect == Effect.CHANNEL else ""]
-		Effect.HEAL:
-			skill.description += "Restore %d–%d health. " % [skill.minimum, skill.maximum]
-		Effect.ARMOR:
-			var stat := "intellect" if skill.family == &"intellect" else "armor"
-			if skill.family == &"thorns":
-				stat = "nature damage to melee attackers"
-			skill.description += "+%d %s for %d turns. " % [skill.minimum, stat, skill.duration]
-			if skill.id == &"mark_2":
-				skill.description += "+2 to all attributes. "
-		Effect.POLYMORPH:
-			skill.description += "Sheep one beast/humanoid/critter for 20 turns; heals rapidly; damage breaks. "
-		Effect.ROOT:
-			skill.description += "Root one enemy outdoors for 12 turns; damage can break. "
-		Effect.CONJURE:
-			skill.description += "Conjure food/water into inventory. "
-	if skill.periodic_damage > 0:
-		skill.description += "%d every %d turns for %d turns. " % [
-			skill.periodic_damage, skill.tick_seconds, skill.duration]
-	if skill.cooldown_seconds > 0:
-		skill.description += "%d-turn cooldown. " % skill.cooldown_seconds
-	if skill.family == &"frostbolt":
-		skill.description += "Slows movement 40%. "
-	if skill.family == &"frost_armor":
-		skill.description += "Chills melee attackers for 5 turns. "
-	if skill.mana_percent > 0:
-		skill.description += "%d%% of base mana. " % skill.mana_percent
 	skill.description += skill.detail
 	return skill
 

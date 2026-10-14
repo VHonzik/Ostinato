@@ -212,33 +212,6 @@ const QUESTS: Dictionary = {
 		"choices": [],
 		"source_item": 0
 	},
-	"3104": {
-		"title": "Glyphic Letter",
-		"level": 1,
-		"minimum": 1,
-		"previous": [
-			"7"
-		],
-		"giver": 197,
-		"receiver": 198,
-		"category": "Mage",
-		"objectives": [
-			{
-				"kind": "loot",
-				"target": "9571",
-				"count": 1
-			},
-			{
-				"kind": "talk",
-				"target": "198",
-				"count": 1
-			}
-		],
-		"xp": 40,
-		"copper": 0,
-		"choices": [],
-		"source_item": 9571
-	},
 	"3903": {
 		"title": "Milly Osworth",
 		"level": 4,
@@ -335,28 +308,6 @@ const QUESTS: Dictionary = {
 		"choices": [],
 		"source_item": 0
 	},
-	"druid_referral": {
-		"title": "A Druid at the Abbey",
-		"level": 1,
-		"minimum": 1,
-		"previous": [
-			"7"
-		],
-		"giver": 197,
-		"receiver": 900001,
-		"category": "Druid",
-		"objectives": [
-			{
-				"kind": "talk",
-				"target": "900001",
-				"count": 1
-			}
-		],
-		"xp": 40,
-		"copper": 0,
-		"choices": [],
-		"source_item": 0
-	},
 	"gate_survey": {
 		"title": "Watch the Northshire Gate",
 		"level": 2,
@@ -405,50 +356,6 @@ const QUESTS: Dictionary = {
 		"copper": 0,
 		"choices": [],
 		"source_item": 9570
-	},
-	"3103": {
-		"title": "Hallowed Letter",
-		"level": 1,
-		"minimum": 1,
-		"previous": [
-			"7"
-		],
-		"giver": 197,
-		"receiver": 375,
-		"category": "Priest",
-		"objectives": [
-			{
-				"kind": "talk",
-				"target": "375",
-				"count": 1
-			}
-		],
-		"xp": 40,
-		"copper": 0,
-		"choices": [],
-		"source_item": 9548
-	},
-	"3105": {
-		"title": "Tainted Letter",
-		"level": 1,
-		"minimum": 1,
-		"previous": [
-			"7"
-		],
-		"giver": 197,
-		"receiver": 459,
-		"category": "Warlock",
-		"objectives": [
-			{
-				"kind": "talk",
-				"target": "459",
-				"count": 1
-			}
-		],
-		"xp": 40,
-		"copper": 0,
-		"choices": [],
-		"source_item": 9576
 	},
 	"shaman_referral": {
 		"title": "A Shaman at the Abbey",

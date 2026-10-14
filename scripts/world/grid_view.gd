@@ -4,10 +4,6 @@ extends Node2D
 const TILE_SIZE: int = 32
 # Shared by the player and trainer NPCs.
 const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
-	&"Mage": Vector2i(3, 0),
-	&"Druid": Vector2i(4, 0),
-	&"Warlock": Vector2i(5, 0),
-	&"Priest": Vector2i(6, 0),
 	&"Shaman": Vector2i(6, 0),
 	&"Paladin": Vector2i(2, 2),
 	&"Warrior": Vector2i(2, 0),
@@ -68,7 +64,7 @@ const REFERENCE_ENVIRONMENT: Dictionary[StringName, Vector2i] = {
 const BLINK_SECONDS: float = 2.0
 const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
 
-## NPC keys match valley sprite names; totems use earth_totem/fire_totem,
+## NPC keys match valley sprite names; totems use earth_totem,
 ## and fallback characters use character_<column>_<row>.
 @export var npc_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
 ## Player keys are class names. The default faction layer is empty.
@@ -99,8 +95,6 @@ static func class_sprite(category: StringName) -> Vector2i:
 static func actor_sprite(actor: GridActor) -> Vector2i:
 	if actor.summon_kind == "wolf":
 		return ENEMY_SPRITES[299]
-	if actor.summon_kind == "pet":
-		return Vector2i(5 if actor.npc_id == 416 else 6, 4)
 	if CLASS_SPRITES.has(actor.service):
 		return class_sprite(actor.service)
 	if actor.stalker:
@@ -207,11 +201,6 @@ func _draw() -> void:
 	for actor: GridActor in occupants.values():
 		if actor.alive:
 			_draw_actor(actor)
-			if actor.polymorphed_until > world.turn_count:
-				draw_circle(tile_center(actor.tile), 10, Color.WHITE)
-			if actor.rooted_until > world.turn_count:
-				draw_rect(Rect2(tile_center(actor.tile) - Vector2(12, 12), Vector2(24, 24)),
-					Color("#71b580"), false, 1)
 	if selected != null:
 		var selection := Rect2(Vector2(selected.tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 		draw_rect(selection.grow(2), Color.WHITE, false, 1)

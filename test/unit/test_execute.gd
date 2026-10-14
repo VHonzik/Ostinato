@@ -135,19 +135,16 @@ func test_execute_is_one_turn_without_cooldown_even_with_haste_and_casting_credi
 	assert_null(world.pending_skill)
 
 
-func test_execute_uses_physical_buffs_armor_crit_and_absorption_for_whole_damage() -> void:
+func test_execute_uses_physical_buffs_armor_and_crit_for_whole_damage() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
 	world.hero.rage = 30
 	world.hero.melee.damage_multiplier = 1.1
 	world.hero.melee.critical = 100.0
 	enemy.melee.armor = 485
-	enemy.aura_reduction = 4
-	enemy.buffs[&"power_word_shield_1"] = {"absorb": 7, "until": 999}
 	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 2000 - 65,
-		"(20 * 2 + 30) * 1.1 * 0.5 = 38, then crit * 2, reduction 4 and shield 7.")
-	assert_eq(int(enemy.buffs[&"power_word_shield_1"].absorb), 0)
+	assert_eq(enemy.health, 2000 - 76,
+		"(20 * 2 + 30) * 1.1 * 0.5 = 38, then crit * 2.")
 	assert_eq(world.hero.rage, 0)
 
 

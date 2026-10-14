@@ -95,8 +95,14 @@ on ties. Feral Spirit creates a temporary pair of wolves following your selected
 Finishers spend all held points before refunds; Execute and Judgement do not spend points.
 Hero buffs expire at the advanced turn boundary before player swings and enemy attacks.
 
-Current saves are `demo` revision 16, including off-hand timing, wolves and temporary procs.
-Revision 15 and older saves are incompatible and left unchanged; start a fresh game.
+The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
+with weapon power and dodge as derived values. Gear works equally in all four classes.
+Janos offers a Red Linen Robe with stamina, crit and haste, plus finite healing-potion
+stock. Shields contribute armor. Mana, caster stats and the obsolete class catalogues
+are removed, along with parry, block, glancing, crushing and spell resistance.
+
+Current saves are `demo` revision 17, with gear stats rebuilt from equipment on load.
+Revision 16 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

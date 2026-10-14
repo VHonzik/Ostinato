@@ -4,7 +4,7 @@ extends GutTest
 func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> void:
 	var hero := HeroState.new()
 	assert_eq(hero.melee.attack_power, 10)
-	assert_eq(hero.melee.armor, 42, "Starter pants add 2 armor to the transitional attribute baseline.")
+	assert_eq(hero.melee.armor, 2, "Starter pants contribute armor.")
 	assert_almost_eq(hero.melee.critical, 6.550388, 0.00001)
 	assert_almost_eq(hero.melee.dodge, 4.800388, 0.00001)
 	assert_eq(hero.melee.interval, 2.9)
@@ -15,7 +15,7 @@ func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> voi
 	hero.agility += 10
 	hero.refresh_melee_stats()
 	assert_eq(hero.melee.attack_power, 24)
-	assert_eq(hero.melee.armor, 62)
+	assert_eq(hero.melee.armor, 2)
 	assert_gt(hero.melee.critical, 6.55)
 
 
@@ -40,30 +40,30 @@ func test_rear_attacks_remove_player_dodge_but_keep_npc_dodge() -> void:
 	assert_eq(MeleeRules.outcome(npc, hero, true, 50.0), &"hit")
 
 
-func test_glancing_crushing_and_level_suppression() -> void:
+func test_level_differences_keep_misses_dodge_and_crit_without_extra_outcomes() -> void:
 	var hero := HeroState.new().melee
 	var npc := MeleeProfile.new()
 	hero.level = 11
 	npc.level = 11
-	assert_eq(MeleeRules.outcome(hero, npc, false, 15.0), &"glancing")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 15.0), &"critical")
 	npc.level = 14
-	assert_eq(MeleeRules.outcome(npc, hero, false, 15.0), &"crushing")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 50.0), &"glancing")
+	assert_eq(MeleeRules.outcome(npc, hero, false, 15.0), &"hit")
+	assert_eq(MeleeRules.outcome(hero, npc, false, 50.0), &"hit")
 
 
 func test_damage_roll_armor_and_critical_have_independent_numeric_fixtures() -> void:
 	var hero := HeroState.new().melee
 	var npc := MeleeProfile.new()
 	npc.armor = 15
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0, 0.0), 4)
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 6)
-	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.99, 0.0), 12)
-	assert_eq(MeleeRules.damage(hero, npc, &"miss", 0.99, 0.0), 0)
-	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.99, 0.0), 0)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0), 4)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 6)
+	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.99), 12)
+	assert_eq(MeleeRules.damage(hero, npc, &"miss", 0.99), 0)
+	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.99), 0)
 	npc.armor = 485
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 3)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 3)
 	npc.armor = 100000
-	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99, 0.0), 1)
+	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.99), 1)
 
 
 func test_all_eight_facings_have_exactly_three_rear_directions() -> void:

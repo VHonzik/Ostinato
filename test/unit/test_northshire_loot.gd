@@ -380,9 +380,9 @@ func test_loot_all_collects_money_and_later_fitting_stacks_leaving_unfit_and_ine
 	world.player_tile = chest.tile
 	chest.loot_assigned = true
 	chest.loot_copper = 12
-	chest.loot = [ItemData.instance(35), ItemData.instance(750), ItemData.instance(159, 2)]
+	chest.loot = [ItemData.instance(35), ItemData.instance(750), ItemData.instance(117, 2)]
 	for index in range(40):
-		world.hero.inventory[index] = ItemData.instance(159, 20)
+		world.hero.inventory[index] = ItemData.instance(117, 20)
 	world.hero.inventory[0].quantity = 18
 	assert_true(world.loot_all(chest))
 	assert_eq(world.hero.copper, 12)
@@ -415,20 +415,20 @@ func test_loot_all_empties_corpses_and_chests_once_and_obeys_action_guards() -> 
 		source.chest = is_chest
 		source.loot_assigned = true
 		source.loot_copper = 7
-		source.loot = [ItemData.instance(7073, 2), ItemData.instance(159, 3), ItemData.instance(750)]
+		source.loot = [ItemData.instance(7073, 2), ItemData.instance(117, 3), ItemData.instance(750)]
 		world.loot_quests.append("wolves")
 		world.actors.append(source)
 		world.player_tile = Vector2i.ZERO
 		assert_false(world.loot_all(source))
 		world.player_tile = Vector2i(4, 4)
-		world.pending_skill = SkillRank.catalog(&"fireball_1")
+		world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
 		assert_false(world.loot_all(source))
 		assert_eq(source.loot_copper, 7)
 		assert_eq(source.loot.size(), 3)
 		world.pending_skill = null
 		assert_true(world.loot_all(source))
 		assert_eq(world.hero.inventory[0], ItemData.instance(7073, 2))
-		assert_eq(world.hero.inventory[1], ItemData.instance(159, 3))
+		assert_eq(world.hero.inventory[1], ItemData.instance(117, 3))
 		assert_eq(world.hero.inventory[2], ItemData.instance(750))
 		assert_true(source.loot.is_empty())
 		assert_false(source.corpse_visible)

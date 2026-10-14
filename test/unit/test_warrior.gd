@@ -29,7 +29,6 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	game.development_build = false
 	game.new_game(97)
 	assert_eq(game.world.hero.selected_class, &"Warrior")
-	assert_eq([game.world.hero.rage, game.world.hero.max_mana], [0, 0])
 	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"heroic_strike_1"])
 	assert_eq(game.world.hero.learned_skills.size(), 2)
 	assert_null(game.world.hero.find_skill(&"fireball_1"))
@@ -37,12 +36,13 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	assert_eq(game.world.actor_at(Vector2i(31, 34)).service, &"Warrior")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_false(game.select_class(&"Mage"))
+	assert_false(game.select_class(&"Shaman"))
 	assert_false(game.select_class(&"Shaman"), "Selection requires the marshal in range.")
 
 
 func test_two_turn_auto_attack_generates_fourteen_rage_and_hits_award_three() -> void:
 	var world := _world()
+	world.combat_random.seed = 1
 	var enemy := _enemy(world)
 	world.hero.melee.interval = 2.0
 	assert_true(world.request_melee(enemy))
@@ -59,7 +59,8 @@ func test_fractional_attack_speed_and_haste_retain_generation_credit() -> void:
 	var enemy := _enemy(world)
 	enemy.engaged = false
 	world.hero.melee.interval = 2.9
-	world.hero.haste = 2.0
+	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
+		"haste_percent": 100}
 	world._player_swing(enemy)
 	assert_eq(world.hero.rage, 20)
 	assert_almost_eq(world.hero.rage_credit, 0.3, 0.00001)
@@ -132,7 +133,8 @@ func test_mortal_strike_uses_one_turn_and_timer_continues_without_haste_cooldown
 	world.hero.swing.remaining = 1.5
 	world.hero.swing._active = true
 	world.hero.casting_credit = 0.9
-	world.hero.haste = 2.0
+	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
+		"haste_percent": 100}
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_eq(world.turn_count, 1)
 	assert_null(world.pending_skill)
@@ -172,20 +174,18 @@ func test_mortal_strike_rejects_cost_range_and_cooldown_without_spending_a_turn(
 	assert_eq(world.hero.warrior_progress, 1)
 
 
-func test_weapon_ability_bonus_precedes_armor_and_block() -> void:
+func test_weapon_ability_bonus_precedes_armor() -> void:
 	var attacker := MeleeProfile.new()
 	var defender := MeleeProfile.new()
 	attacker.damage_min = 20.0
 	attacker.damage_max = 20.0
 	attacker.attack_power = 0
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 0.0, 1.5, 5), 35)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 35)
 	attacker.damage_multiplier = 1.1
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 0.0), 22)
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 0.0, 1.5, 5), 38)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0), 22)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 38)
 	defender.armor = 485
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 0.0, 1.5, 5), 19)
-	defender.block_value = 4
-	assert_eq(MeleeRules.damage(attacker, defender, &"block", 0.0, 0.0, 1.5, 5), 15)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 19)
 
 
 func test_battle_shout_is_immediate_one_turn_free_and_has_thirty_turn_cooldown() -> void:
@@ -537,9 +537,9 @@ func test_development_points_award_current_class_and_cross_both_unlocks() -> voi
 	assert_true(world.cast_skill(&"class_points_1"))
 	assert_string_contains("\n".join(world.messages), "learn Charge")
 	assert_null(world.hero.find_skill(&"charge_1"))
-	world.hero.selected_class = &"Mage"
+	world.hero.selected_class = &"Shaman"
 	assert_true(world.cast_skill(&"class_points_1"))
-	assert_eq(world.hero.progression_points(&"Mage"), 30)
+	assert_eq(world.hero.progression_points(&"Shaman"), 30)
 	assert_eq(world.hero.warrior_progress, 120)
 	assert_eq(world.turn_count, 5)
 	assert_false(_world().cast_skill(&"class_points_1"), "Development rank is unavailable in release.")
@@ -549,20 +549,20 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 	var game := GameSession.new()
 	game.development_build = false
 	game.world = _charge_world()
-	game.world.add_class_progress(&"Mage", 30)
+	game.world.add_class_progress(&"Shaman", 30)
 	game.world.assign_hotbar(2, &"charge_1")
 	var saved := SaveCodec.capture(game)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(saved)), false)
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.progression_points(&"Mage"), 30)
+	assert_eq(restored.hero.progression_points(&"Shaman"), 30)
 	assert_eq(restored.hero.warrior_progress, 100)
 	assert_not_null(restored.hero.find_skill(&"charge_1"))
 	assert_eq(restored.hotbar[2], &"charge_1")
 	for invalid_value: Variant in [-1, 0.5, "30", [], {}]:
 		var invalid := saved.duplicate(true)
-		invalid.class_progress.Mage = invalid_value
+		invalid.class_progress.Shaman = invalid_value
 		assert_null(SaveCodec.restore(invalid, false))
 	var insufficient := saved.duplicate(true)
 	insufficient.hero.warrior_progress = 99
@@ -570,7 +570,7 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 	assert_null(SaveCodec.restore(insufficient, false), "Charge requires its progression checkpoint.")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.progression_points(&"Mage"), 30)
+	assert_eq(game.world.hero.progression_points(&"Shaman"), 30)
 	assert_eq(game.world.hero.warrior_progress, 100)
 	assert_not_null(game.world.hero.find_skill(&"charge_1"))
 	assert_eq(game.world.hotbar[2], &"charge_1")
@@ -596,7 +596,8 @@ func test_charge_winds_up_then_travels_four_tiles_per_turn_and_awards_on_arrival
 	enemy.stunned_until = 999
 	world.movement_speed = 7.0
 	world.movement_credit = 0.5
-	world.hero.haste = 3.0
+	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
+		"haste_percent": 200}
 	world.hero.casting_credit = 0.8
 	var route := world.charge_route(enemy)
 	assert_eq(route.size(), 7, "Route ends at a nearest empty melee tile.")
@@ -654,7 +655,6 @@ func test_charge_hold_allows_target_to_attack_adjacent_totem() -> void:
 	totem.max_health = 100
 	totem.health = 100
 	totem.melee.dodge = 0.0
-	totem.melee.parry = 0.0
 	world.actors.append(totem)
 	SummonRules.add_threat(world, enemy, totem, 100)
 	assert_true(world.cast_skill(&"charge_1", enemy))
@@ -968,7 +968,8 @@ func test_wait_movement_and_other_abilities_keep_attacking_selected_target() -> 
 	second.stunned_until = 999
 	world.hero.equipment["main_hand"] = ItemData.instance(2092)
 	world.hero.refresh_stats()
-	world.hero.haste = 1.6
+	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
+		"haste_percent": 60}
 	world.request_melee(first)
 	var attacks_after_bump := _ordinary_swing_count(world)
 	world.wait_turn()
@@ -1215,7 +1216,8 @@ func test_long_active_ability_advances_weapon_on_each_elapsed_turn() -> void:
 	enemy.stunned_until = 999
 	world.hero.equipment["main_hand"] = ItemData.instance(2092)
 	world.hero.refresh_stats()
-	world.hero.haste = 1.6
+	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
+		"haste_percent": 60}
 	world.request_melee(enemy)
 	var active := SkillRank.new(&"timed_practice", "Timed practice", &"Warrior", 1, 1,
 		"Controlled two-turn action.", SkillRank.Effect.PRACTICE)
@@ -1231,16 +1233,15 @@ func test_long_active_ability_advances_weapon_on_each_elapsed_turn() -> void:
 	assert_eq(world.turn_count, 3)
 
 
-func test_heroic_strike_uses_physical_absorption_and_critical_damage() -> void:
+func test_heroic_strike_uses_critical_damage() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
 	enemy.stunned_until = 999
-	enemy.aura_reduction = 4
 	world.hero.rage = 45
 	world.hero.melee.critical = 100.0
 	world.hero.melee.damage_min = 20.0
 	world.hero.melee.damage_max = 20.0
 	world.hero.melee.attack_power = 0
 	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	assert_eq(enemy.health, enemy.max_health - 66, "(150% of 20 + 5) * 2, then physical absorption.")
+	assert_eq(enemy.health, enemy.max_health - 70, "(150% of 20 + 5) * 2.")
 	assert_eq(world.hero.rage, 30)

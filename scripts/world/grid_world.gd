@@ -44,7 +44,6 @@ var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
 var holy_event_counted: bool = false
 var queued_rage_cost: int = 0
-var periodic_effects: Array[Dictionary] = []
 var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
@@ -166,8 +165,6 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		target = last_attacked_enemy
 	if skill.effect == SkillRank.Effect.PASSIVE:
 		return false
-	if skill.effect == SkillRank.Effect.PET_COMMAND:
-		return SummonRules.command(self, identifier, target)
 	if skill.available_resource(hero) < skill.cost(hero):
 		add_message("Not enough %s for %s: requires %d, have %d." % [
 			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)])
@@ -177,7 +174,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		add_message("Cannot Execute: target must be at or below %d%% health. No turn spent." %
 			skill.execute_health_percent)
 		return false
-	if ((not skill.free_instant and global_cooldown_until > turn_count)
+	if ((global_cooldown_until > turn_count)
 		or int(hero.cooldowns.get(String(cooldown_family(skill)), 0)) > turn_count
 		or not valid_spell_target(skill, target) or not SpellEffects.can_apply(self, skill, target)):
 		add_message("Cannot cast: invalid target, range, sight, or cooldown.")
@@ -196,29 +193,12 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		add_message("Heroic Strike queued on %s; %d rage reserved. Esc refunds it." % [
 			target.title, queued_rage_cost])
 		return request_melee(target)
-	if skill.free_instant:
-		skill.spend_resource(hero)
-		if skill.cost(hero) > 0:
-			hero.last_mana_turn = turn_count
-		hero.cooldowns[String(cooldown_family(skill))] = turn_count + skill.cooldown_seconds
-		if target != null:
-			target.relationship = GridActor.Relationship.HOSTILE
-			target.engaged = true
-			target.returning_home = false
-			hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
-		_resolve_skill(skill, target)
-		return true
 	hero.restoration.clear()
 	pending_skill = skill
 	pending_target = target
 	cast_elapsed = 0
-	cast_duration = maxf(1.0, skill.cast_seconds / hero.haste)
+	cast_duration = skill.cast_seconds
 	cast_turns = maxi(1, ceili(cast_duration - hero.casting_credit))
-	if ClassSkillData.is_playable_rank(skill.id):
-		cast_duration = skill.cast_seconds
-		cast_turns = int(skill.cast_seconds)
-	if skill.effect == SkillRank.Effect.CHANNEL:
-		cast_turns = skill.duration
 	global_cooldown_until = turn_count + 1
 	if skill.target == SkillRank.Target.ENEMY:
 		target.relationship = GridActor.Relationship.HOSTILE
@@ -241,22 +221,6 @@ func continue_cast() -> bool:
 	cast_elapsed += 1
 	if is_charging():
 		return _continue_charge()
-	if pending_skill.effect == SkillRank.Effect.CHANNEL:
-		var channel := pending_skill
-		var target := pending_target
-		if not valid_spell_target(channel, target) or (cast_elapsed == 1 and hero.mana < channel.cost(hero)):
-			cancel_cast()
-			add_message("Channel interrupted; delivered ticks and costs remain.")
-		else:
-			if cast_elapsed == 1:
-				hero.mana -= channel.cost(hero)
-				hero.last_mana_turn = turn_count + 1
-			if cast_elapsed % maxi(1, channel.tick_seconds) == 0:
-				SpellEffects.resolve(self, channel, target)
-			if cast_elapsed >= cast_turns or not target.alive:
-				cancel_cast()
-		_finish_turn()
-		return true
 	if cast_elapsed >= cast_turns:
 		var skill := pending_skill
 		var target := pending_target
@@ -267,8 +231,6 @@ func continue_cast() -> bool:
 			var resource_spent := skill.cost(hero)
 			skill.spend_resource(hero)
 			ClassToolkitRules.consume_cost_proc(hero, skill)
-			if resource_spent > 0:
-				hero.last_mana_turn = turn_count + 1
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
 			_resolve_skill(skill, target, resource_spent)
@@ -330,21 +292,12 @@ func cancel_cast(force: bool = false) -> void:
 
 
 func cooldown_family(skill: SkillRank) -> StringName:
-	return &"shock" if skill.family in [&"earth_shock", &"flame_shock"] else skill.family
+	return &"shock" if skill.family == &"earth_shock" else skill.family
 
 
 func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
 	if skill.effect == SkillRank.Effect.KILL_STALKER:
 		return target == null and _first_living_stalker() != null
-	if skill.effect == SkillRank.Effect.RESURRECT:
-		return (target != null and actors.has(target) and not target.alive
-			and not target.story_guard and not target.chest and target.summon_kind == ""
-			and target.relationship == GridActor.Relationship.FRIENDLY
-			and tile_distance(player_tile, target.tile) <= skill.range_tiles
-			and has_sight(player_tile, target.tile))
-	if skill.effect == SkillRank.Effect.POLYMORPH and target != null:
-		if target.creature_type not in ["beast", "humanoid", "critter"]:
-			return false
 	if skill.target in [SkillRank.Target.NONE, SkillRank.Target.SELF]:
 		return target == null
 	if target == null:
@@ -379,14 +332,7 @@ func spell_candidates(skill: SkillRank) -> Array[GridActor]:
 func in_combat() -> bool:
 	if pending_skill != null and pending_skill.target == SkillRank.Target.ENEMY:
 		return true
-	for effect in periodic_effects:
-		var skill := SkillRank.catalog(StringName(effect.get("skill", "fireball_1")))
-		if skill.effect != SkillRank.Effect.HEAL_OVER_TIME:
-			return true
 	for actor in actors:
-		if actor.alive and actor.summon_kind == "pet" and actor.summon_target >= 0:
-			if actors[actor.summon_target].alive:
-				return true
 		if actor.alive and actor.engaged:
 			return true
 	return false
@@ -412,10 +358,6 @@ func training_failure(category: StringName, skill: SkillRank) -> String:
 			skill.progress_required, String(category).to_lower()]
 	if hero.level < skill.training_level:
 		return "Requires level %d." % skill.training_level
-	if skill.prerequisite != &"" and hero.find_skill(skill.prerequisite) == null:
-		return "Learn the preceding rank first."
-	if hero.copper < skill.training_cost:
-		return "Not enough money."
 	return ""
 
 
@@ -427,7 +369,6 @@ func train(category: StringName, identifier: StringName) -> bool:
 		return false
 	if not hero.learn_skill(skill):
 		return false
-	hero.copper -= skill.training_cost
 	if skill.effect != SkillRank.Effect.PASSIVE and not hotbar.has(skill.id):
 		var empty_slot := hotbar.find(&"")
 		if empty_slot >= 0:
@@ -437,7 +378,7 @@ func train(category: StringName, identifier: StringName) -> bool:
 			skill.title, String(category).to_lower(), hero.progression_points(category)])
 	else:
 		add_message("Learned %s rank %d for %s." % [
-			skill.title, skill.rank, InventoryRules.money(skill.training_cost)])
+			skill.title, skill.rank, "free"])
 	return true
 
 
@@ -487,9 +428,6 @@ func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0
 			var stalker := _first_living_stalker()
 			if stalker != null:
 				var lethal_damage := stalker.health
-				# Guarantee the QA kill while still exercising normal damage/death processing.
-				for buff in stalker.buffs.values():
-					lethal_damage += int(buff.get("absorb", 0))
 				SpellEffects.damage(self, stalker, lethal_damage, "Kill stalker")
 		SkillRank.Effect.DEATH_NOTICE:
 			hero.health = 0
@@ -695,7 +633,6 @@ func _advance_player_weapon() -> void:
 func _valid_melee(target: GridActor) -> bool:
 	return (target != null and actors.has(target) and target.alive
 		and target.relationship != GridActor.Relationship.FRIENDLY
-		and not ClassSpellEffects.immune(hero.buffs)
 		and tile_distance(player_tile, target.tile) == 1
 		and has_sight(player_tile, target.tile))
 
@@ -771,29 +708,8 @@ func _act_npc(actor: GridActor) -> void:
 	if actor.stunned_until > turn_count:
 		actor.swing.advance(false, actor.melee.interval)
 		return
-	if actor.feared_until > turn_count:
-		actor.swing.advance(false, actor.melee.interval)
-		var best := actor.tile
-		for direction in DIRECTIONS:
-			var next := actor.tile + direction
-			if is_open(next) and (next - player_tile).length_squared() > (best - player_tile).length_squared():
-				best = next
-		if best != actor.tile and actor.rooted_until <= turn_count:
-			_move_actor(actor, best)
-		return
 	var target := SummonRules.enemy_target(self, actor)
 	var target_tile := player_tile if target == null else target.tile
-	if actor.polymorphed_until > turn_count:
-		actor.swing.advance(false, actor.melee.interval)
-		if turn_count > actor.polymorphed_on_turn:
-			actor.health = mini(actor.max_health, actor.health + maxi(1, actor.max_health / 10))
-		var steps: Array[Vector2i] = []
-		for direction in DIRECTIONS:
-			if is_open(actor.tile + direction):
-				steps.append(actor.tile + direction)
-		if not steps.is_empty() and actor.rooted_until <= turn_count:
-			_move_actor(actor, steps[random.randi_range(0, steps.size() - 1)])
-		return
 	if actor.returning_home:
 		if not _route(actor.tile, [actor.home_tile], false, actor.home_tile).is_empty():
 			_step_toward(actor, [actor.home_tile], actor.home_tile)
@@ -822,7 +738,7 @@ func _act_npc(actor: GridActor) -> void:
 		_wander(actor)
 	var in_melee := (actor.engaged and tile_distance(actor.tile, target_tile) == 1
 		and has_sight(actor.tile, target_tile))
-	var interval := actor.melee.interval * (1.25 if actor.chilled_until > turn_count else 1.0)
+	var interval := actor.melee.interval
 	var swings := actor.swing.advance(in_melee, interval)
 	for index in range(swings):
 		if is_terminal():
@@ -833,9 +749,7 @@ func _act_npc(actor: GridActor) -> void:
 				and not (target == null and hero.buffs.has(&"evasion_1")),
 			combat_random.randf() * 100.0)
 		var amount := MeleeRules.damage(actor.melee, hero.melee if target == null else target.melee, result,
-			combat_random.randf(), combat_random.randf())
-		if actor.debuffs.has("weakness"):
-			amount = maxi(0, amount - int(actor.debuffs.weakness.reduction))
+			combat_random.randf())
 		amount = ClassSpellEffects.absorb(self, target, amount, true)
 		if target == null:
 			hero.health = maxi(0, hero.health - amount)
@@ -845,19 +759,12 @@ func _act_npc(actor: GridActor) -> void:
 		else:
 			target.health = maxi(0, target.health - amount)
 			_check_npc_death(target, turn_count)
-		var buffs := hero.buffs if target == null else target.buffs
-		if amount > 0 and (buffs.has(&"frost_armor_1") or buffs.has(&"frost_armor_2")):
-			actor.chilled_until = turn_count + 5
 		add_message("%s -> %s: %s, %d damage." % [actor.title, "You" if target == null else target.title, result, amount])
 		# Retaliation is a subsequent effect, so a lethal incoming hit ends first.
 		if check_terminal():
 			add_message("You died.")
 			return
 		if target != null and not target.alive:
-			return
-		if amount > 0 and buffs.has(&"thorns_1"):
-			SpellEffects.damage(self, actor, int(buffs[&"thorns_1"].thorns), "Thorns", turn_count)
-		if check_terminal():
 			return
 		ClassSpellEffects.retaliate(self, actor, target, amount)
 		if target == null:
@@ -879,15 +786,13 @@ func _player_swing(target: GridActor) -> void:
 	var outcome := ClassToolkitRules.weapon_outcome(self, target, strike, hero.melee)
 	var result: StringName = outcome.result
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
-		combat_random.randf(), combat_random.randf(),
+		combat_random.randf(),
 		1.0 if strike == null else strike.weapon_multiplier,
 		0 if strike == null else strike.minimum)
-	if hero.buffs.has(&"seal_of_the_crusader_1"):
-		amount = int(amount / 1.4)
 	amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
 	SpellEffects.damage(self, target, amount, "%s (%s)" % [
-		"You" if strike == null else strike.title, result], turn_count, true, null, true)
-	var landed := result not in [&"miss", &"dodge", &"parry"]
+		"You" if strike == null else strike.title, result], turn_count, null, true)
+	var landed := result not in [&"miss", &"dodge"]
 	ClassSpellEffects.on_melee(self, target, amount, landed)
 	ClassToolkitRules.on_attack(self, target, strike, landed, outcome.critical, amount, true)
 
@@ -896,9 +801,9 @@ func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
 	ClassToolkitRules.consume_flurry(hero)
 	var outcome := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
 	var value := MeleeRules.damage(weapon, target.melee, outcome.result,
-		combat_random.randf(), combat_random.randf())
+		combat_random.randf())
 	value = floori(value * ClassToolkitRules.damage_multiplier(hero))
-	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result, turn_count, true, null, true)
+	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result, turn_count, null, true)
 	ClassToolkitRules.on_attack(self, target, null, outcome.landed, outcome.critical, value, true, true)
 
 
@@ -932,8 +837,6 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 
 
 func _wander(actor: GridActor) -> void:
-	if actor.rooted_until > turn_count:
-		return
 	if not actor.wander_area.has_area():
 		return
 	var candidates: Array[Vector2i] = []
@@ -953,7 +856,7 @@ func _step_toward(
 	actor: GridActor, goals: Array[Vector2i], toward: Vector2i,
 	terrain_route: Array[Vector2i] = []
 ) -> void:
-	if actor.rooted_until > turn_count or _held_by_charge(actor):
+	if _held_by_charge(actor):
 		return
 	var route := terrain_route
 	if route.is_empty():
@@ -964,12 +867,7 @@ func _step_toward(
 	if not is_open(route[1]):
 		route = _route(actor.tile, goals, true, toward)
 	if route.size() > 1:
-		var speed := 0.7 if actor.chilled_until > turn_count else 1.0
-		if actor.slowed_until > turn_count:
-			speed = minf(speed, 0.6)
-		if actor.debuffs.has("earthbind"):
-			speed = minf(speed, 0.5)
-		actor.movement_credit += speed
+		actor.movement_credit += 1.0
 		if actor.movement_credit >= 1.0:
 			actor.movement_credit -= 1.0
 			_move_actor(actor, route[1])
@@ -1041,21 +939,8 @@ func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
 
 
 func _tick_effects() -> void:
-	SpellEffects.tick(self)
-	if check_terminal():
-		return
 	ClassSpellEffects.tick(self)
 	_expire_hero_buffs()
-	for actor in actors:
-		for key in actor.buffs.keys():
-			if int(actor.buffs[key].until) <= turn_count:
-				if actor.summon_kind != "pet":
-					actor.melee.armor -= int(actor.buffs[key].get("armor", 0))
-					actor.melee.attack_power -= int(actor.buffs[key].get("attack_power", 0))
-					if actor.buffs[key].has("stamina"):
-						actor.max_health -= int(actor.buffs[key].stamina) * 10
-						actor.health = mini(actor.health, actor.max_health)
-				actor.buffs.erase(key)
 
 	SummonRules.refresh_auras(self)
 
@@ -1078,9 +963,7 @@ func _regenerate() -> void:
 	if turn_count % 2 != 0:
 		return
 	if not in_combat():
-		hero.health = mini(hero.max_health, hero.health + int((hero.spirit * 0.11 + 1) * 2))
-	if turn_count - hero.last_mana_turn >= 5:
-		hero.mana = mini(hero.max_mana, hero.mana + int(hero.spirit / 4.0 + 12.5))
+		hero.health = mini(hero.max_health, hero.health + 6)
 
 
 func _arrive_stalker() -> void:
@@ -1293,25 +1176,16 @@ func consume_item(index: int) -> bool:
 	if data.use == "" or hero.level < int(data.level):
 		add_message("Cannot use that item at this level.")
 		return false
-	if hero.selected_class == &"Warrior" and data.use in ["mana", "water"]:
-		add_message("Warriors use rage; that item cannot restore it.")
-		return false
-	var potion: bool = data.use in ["health", "mana", "healthstone"]
-	var ready := hero.healthstone_ready_turn if data.use == "healthstone" else hero.potion_ready_turn
+	var potion: bool = data.use == "health"
+	var ready := hero.potion_ready_turn
 	if (potion and turn_count < ready) or (not potion and in_combat()):
 		add_message("Cannot use: potion cooldown or food/drink during combat.")
 		return false
 	resolving_turn = true
 	if potion:
 		var amount := combat_random.randi_range(int(data.restore_min), int(data.restore_max))
-		if data.use in ["health", "healthstone"]:
-			hero.health = mini(hero.max_health, hero.health + amount)
-		else:
-			hero.mana = mini(hero.max_mana, hero.mana + amount)
-		if data.use == "healthstone":
-			hero.healthstone_ready_turn = turn_count + 1 + int(data.cooldown)
-		else:
-			hero.potion_ready_turn = turn_count + 1 + int(data.cooldown)
+		hero.health = mini(hero.max_health, hero.health + amount)
+		hero.potion_ready_turn = turn_count + 1 + int(data.cooldown)
 	else:
 		hero.restoration[data.use] = {"total": int(data.restore), "duration": int(data.duration),
 			"started": turn_count + 1, "delivered": 0}
@@ -1334,9 +1208,6 @@ func _tick_restoration() -> void:
 		var delivered := floori(float(effect.total) * elapsed / int(effect.duration))
 		var amount := delivered - int(effect.delivered)
 		effect.delivered = delivered
-		if kind == "food":
-			hero.health = mini(hero.max_health, hero.health + amount)
-		else:
-			hero.mana = mini(hero.max_mana, hero.mana + amount)
+		hero.health = mini(hero.max_health, hero.health + amount)
 		if elapsed >= int(effect.duration):
 			hero.restoration.erase(kind)

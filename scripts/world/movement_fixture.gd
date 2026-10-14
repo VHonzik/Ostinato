@@ -61,7 +61,7 @@ static func create_world(
 		world.bounds.size.x = 56
 		world.actors[0].title = "Marshal McBride"
 		world.actors[0].service = &"Marshal"
-		for entry in [[Vector2i(17, 14), &"Mage"], [Vector2i(17, 16), &"Druid"]]:
+		for entry in [[Vector2i(17, 14), &"Warrior"], [Vector2i(17, 16), &"Shaman"]]:
 			var trainer := GridActor.new(entry[0])
 			trainer.title = "%s trainer" % entry[1]
 			trainer.service = entry[1]

@@ -182,7 +182,25 @@ live in game data and the spell book. Human balance and readability review remai
 - [x] Cover trainer eligibility, retained effects, proc consumption, finishers, defenses,
   summons, timer ordering, save/death boundaries and keyboard inspection of passives.
 
-### Next playable task — Playtest the complete toolkit
+### Implemented slice — Shared stats and obsolete class cleanup
+
+- [x] Use Strength, Agility and Stamina as primary stats and Armor, Crit and Haste as
+  secondary stats, with shared class-independent effects and derived weapon power/dodge.
+  Keep existing weapon-based ability scaling; universal damage/healing scaling stays open.
+- [x] Make stat gear usable in the valley, expose percentage bonuses in item descriptions
+  and attack haste on the character screen, and keep the existing equipment slots.
+- [x] Remove obsolete class abilities, pets, mana/spell stats, caster outfits, conjured
+  supplies and class referrals. Replace Janos's mana potion with healing supplies;
+  remove unused Intellect equipment and repurpose the Red Linen Robe.
+- [x] Retire parry, block, glancing, crushing and spell resistance. Shields supply armor;
+  physical damage uses armor while Holy/Nature damage bypasses it. Keep explicit class defenses.
+- [x] Rebuild derived gear stats when loading revision 17; preserve older files as
+  incompatible. Retain inventory, save, input, timing and current-toolkit checks while
+  removing tests solely for retired behavior.
+- [ ] Owner playtest: compare stat gear, shields and both weapon hands across classes;
+  judge survivability, swing pacing, character/item feedback and retained mixed-class skills.
+
+### Next playable task — Playtest the toolkit and shared stats
 
 Try the complete learned toolkit over returning Loops before broader progression work.
 Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,
@@ -195,11 +213,9 @@ current deliberate spenders are Slice and Dice and Eviscerate.
 
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
   level ceiling and level-difference effects. Support main/off-hand or two-handed weapons,
-  armor, two accessories and the proposed physical/crit/dodge/health/haste stats without
-  selected-class stat bonuses. Make slow/fast and dual-wield/two-handed choices useful.
-  Finish any combat simplification left after class completion: armor, dodge, hit chance
-  and the new crit rules, with explicit class defenses. Retire remaining parry, block,
-  glancing/crushing and detailed spell resistance. Settle level differences and healing.
+  armor and two accessories. The shared stat model and combat simplification are implemented;
+  retain those while making slow/fast and dual-wield/two-handed choices useful.
+  Settle level differences, gear ranges and healing through playtesting.
 - [ ] **Repeatable route rewards:** fixed merchants/prices and quest rewards; enemy loot
   keyed by world seed plus stable enemy ID; seeded chest contents and placement from
   predefined points. Repeat the same seed across deaths and different action/loot orders.

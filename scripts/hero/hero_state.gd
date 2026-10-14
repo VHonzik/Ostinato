@@ -24,12 +24,8 @@ var experience: int = 0
 var strength: int
 var agility: int
 var stamina: int
-var intellect: int
-var spirit: int
 var max_health: int
-var max_mana: int
 var health: int
-var mana: int
 var swing := SwingTimer.new()
 var off_hand_swing := SwingTimer.new()
 var melee := MeleeProfile.new()
@@ -41,23 +37,11 @@ var inventory: Array[Dictionary] = []
 var copper: int = 0
 var buffs: Dictionary = {}
 var casting_credit: float = 0.0
-var last_mana_turn: int = -5
-var spell_power: int = 0
-var healing_power: int = 0
-var spell_hit: float = 0.0
-var spell_critical: float = 0.0
 var haste: float = 1.0
-var resistances: Dictionary = {}
 var cooldowns: Dictionary = {}
 var potion_ready_turn: int = 0
 var restoration: Dictionary = {}
-var weakened_until: int = 0
-var forbearance_until: int = 0
-var healthstone_ready_turn: int = 0
 var aura_strength: int = 0
-var aura_stamina: int = 0
-var aura_armor: int = 0
-var aura_reduction: int = 0
 var debuffs: Dictionary = {}
 var _passive_hit_bonus: float = 0.0
 
@@ -66,7 +50,6 @@ func _init(development_build: bool = OS.is_debug_build()) -> void:
 	_apply_level_stats()
 	StarterGear.equip_travel_clothes(self)
 	health = max_health
-	mana = max_mana
 	for skill in SkillRank.starting_skills():
 		learn_skill(skill)
 	if development_build:
@@ -100,10 +83,6 @@ func learn_skill(skill: SkillRank) -> bool:
 
 
 func find_skill(identifier: StringName) -> SkillRank:
-	if String(identifier).begins_with("pet_"):
-		for learned in learned_skills:
-			if learned.family in [&"summon_imp", &"summon_voidwalker"]:
-				return ClassSkillData.pet_command(identifier)
 	for skill in learned_skills:
 		if skill.id == identifier:
 			return skill
@@ -112,51 +91,48 @@ func find_skill(identifier: StringName) -> SkillRank:
 
 func _apply_level_stats() -> void:
 	refresh_stats()
-	# Level-up restores health and legacy mana; rage is unchanged.
+	# Level-up restores health; rage is unchanged.
 	health = max_health
-	mana = max_mana
 
 
 func refresh_stats() -> void:
 	var values := HeroData.stats_for_level(level)
-	var attributes := {"strength": values[0], "agility": values[1], "stamina": values[2],
-		"intellect": values[3], "spirit": values[4]}
+	var attributes := {"strength": values[0], "agility": values[1], "stamina": values[2]}
+	var haste_percent := 0.0
 	for item in equipment.values():
 		var data := ItemData.get_item(int(item.id))
-		for stat in data.stats:
-			attributes[stat] += int(data.stats[stat])
+		for stat in attributes:
+			attributes[stat] += int(data.stats.get(stat, 0))
+		haste_percent += float(data.stats.get("haste", 0))
 	for buff in buffs.values():
 		for stat in attributes:
 			attributes[stat] += int(buff.get(stat, 0))
 	attributes.strength += aura_strength
-	attributes.stamina += aura_stamina
-	strength = attributes.strength
-	agility = attributes.agility
-	stamina = attributes.stamina
-	intellect = attributes.intellect
-	spirit = attributes.spirit
-	max_health = values[5] + mini(20, stamina) + maxi(0, stamina - 20) * 10
-	max_mana = 0 if selected_class in ClassSkillData.PLAYABLE_CLASSES else (
-		values[6] + mini(20, intellect) + maxi(0, intellect - 20) * 15)
+	strength = int(attributes.strength)
+	agility = int(attributes.agility)
+	stamina = int(attributes.stamina)
+	haste = 1.0 + haste_percent / 100.0
+	max_health = values[3] + mini(20, stamina) + maxi(0, stamina - 20) * 10
 	health = mini(health, max_health)
-	mana = mini(mana, max_mana)
 	refresh_melee_stats()
 
 
 func refresh_melee_stats() -> void:
 	var armor := 0
+	var critical_bonus := 0.0
 	for item in equipment.values():
-		armor += int(ItemData.get_item(int(item.id)).armor)
+		var data := ItemData.get_item(int(item.id))
+		armor += int(data.armor)
+		critical_bonus += float(data.stats.get("crit", 0.0))
 	for buff in buffs.values():
 		armor += int(buff.get("armor", 0))
 	melee.damage_multiplier = 1.0
 	melee.player = true
 	melee.level = level
 	melee.attack_power = maxi(0, strength - 10)
-	melee.armor = agility * 2 + armor + aura_armor
-	melee.parry = 5.0 if find_skill(&"parry_1") != null else 0.0
+	melee.armor = armor
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
-	melee.critical = BASE_CRITICAL_CHANCE + agility / agility_per_percent
+	melee.critical = BASE_CRITICAL_CHANCE + agility / agility_per_percent + critical_bonus
 	melee.critical += ClassToolkitRules.magnitude(self, &"cruelty_1")
 	melee.critical += ClassToolkitRules.magnitude(self, &"conviction_1")
 	melee.hit -= _passive_hit_bonus
@@ -171,23 +147,9 @@ func refresh_melee_stats() -> void:
 		melee.damage_min = float(weapon.minimum)
 		melee.damage_max = float(weapon.maximum)
 		melee.interval = float(weapon.interval)
-	melee.block = 0.0
-	melee.block_value = 0
-	if equipment.has("off_hand"):
-		var shield := ItemData.get_item(int(equipment.off_hand.id))
-		if shield.shield:
-			melee.block = 5.0
-			melee.block_value = maxi(0, int(shield.block) + floori(strength / 20.0) - 1)
-
 	for key in buffs:
 		var buff: Dictionary = buffs[key]
 		melee.damage_multiplier *= 1.0 + int(buff.get("physical_percent", 0)) / 100.0
-		melee.attack_power += int(buff.get("attack_power", 0))
-		if buff.has("weapon_id") and int(buff.weapon_id) == int(equipment.get("main_hand", {}).get("id", 0)):
-			melee.damage_min += float(buff.get("weapon_dps", 0)) * melee.interval
-			melee.damage_max += float(buff.get("weapon_dps", 0)) * melee.interval
-		if buff.has("crusader"):
-			melee.interval /= 1.4
 	melee.armor = floori(melee.armor * (1.0 + ClassToolkitRules.magnitude(self, &"toughness_1") / 100.0))
 	if buffs.has(&"evasion_1"):
 		melee.dodge += SkillRank.catalog(&"evasion_1").minimum

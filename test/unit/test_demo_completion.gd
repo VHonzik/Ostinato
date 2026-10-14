@@ -3,8 +3,7 @@ extends GutTest
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 60, 30), Vector2i(10, 10), 97)
-	LegacyMageFixture.apply(world)
-	world.hero.spell_hit = 100
+	world.hero.rage = 100
 	world.hero.melee.hit = 100
 	return world
 
@@ -20,7 +19,6 @@ func _enemy(world: GridWorld, tile: Vector2i, stalker: bool = true) -> GridActor
 	actor.melee.damage_max = 1
 	actor.melee.attack_power = 0
 	actor.melee.dodge = 0
-	actor.melee.parry = 0
 	world.actors.append(actor)
 	return actor
 
@@ -45,7 +43,7 @@ func _assert_complete(world: GridWorld) -> void:
 	var tile := world.player_tile
 	world.wait_turn()
 	assert_false(world.move_player(Vector2i.LEFT))
-	assert_false(world.cast_skill(&"frost_armor_1"))
+	assert_false(world.cast_skill(&"practice_1"))
 	assert_false(world.continue_cast())
 	assert_false(world.continue_melee())
 	world._finish_turn()
@@ -68,10 +66,10 @@ func test_melee_victory_stops_following_actors_and_consumes_one_boundary() -> vo
 	_assert_complete(world)
 
 
-func test_direct_spell_and_channel_tick_complete_and_cancel_remaining_cast() -> void:
-	for identifier: StringName in [&"fireball_1", &"missiles_1", &"drain_soul_1"]:
+func test_direct_active_attacks_complete_and_cancel_remaining_cast() -> void:
+	for identifier: StringName in [&"mortal_strike_1", &"earth_shock_1"]:
 		var world := _world()
-		var stalker := _enemy(world, Vector2i(14, 10))
+		var stalker := _enemy(world, Vector2i(11, 10))
 		stalker.stunned_until = 100
 		_cast(world, identifier, stalker)
 		assert_false(stalker.alive, identifier)
@@ -83,62 +81,23 @@ func test_area_damage_stops_at_first_stalker_in_saved_actor_order() -> void:
 	var first := _enemy(world, Vector2i(9, 10), false)
 	var stalker := _enemy(world, Vector2i(11, 10))
 	var later := _enemy(world, Vector2i(10, 11), false)
-	_cast(world, &"nova_1")
+	_cast(world, &"whirlwind_1")
 	assert_false(first.alive, "Earlier ordinary target resolves normally.")
 	assert_false(stalker.alive)
-	assert_true(later.alive, "No later area target is damaged or rooted.")
-	assert_eq(later.rooted_until, 0)
+	assert_true(later.alive, "No later area target is damaged.")
 	assert_eq(later.health, 1)
 	_assert_complete(world)
 
 
-func test_periodic_victory_stops_later_ticks_regeneration_and_pending_arrival() -> void:
-	var world := _world()
-	var stalker := _enemy(world, Vector2i(20, 10))
-	var later := _enemy(world, Vector2i(21, 10), false)
-	world.turn_count = 15
-	world.stalker_schedule = true
-	world.hero.health = 20
-	world.hero.mana = 0
-	world.hero.buffs[&"demon_skin_1"] = {"armor": 0, "regen": 3, "next": 16, "until": 100}
-	world.periodic_effects.assign([
-		{"actor": 0, "skill": "fireball_1", "next": 16, "remaining": 1, "amount": 10},
-		{"actor": 1, "skill": "fireball_1", "next": 16, "remaining": 1, "amount": 10},
-		{"actor": -1, "skill": "rejuvenation_1", "next": 16, "remaining": 1, "amount": 20},
-	])
-	world.wait_turn()
-	assert_false(stalker.alive)
-	assert_true(later.alive)
-	assert_eq(world.hero.health, 20)
-	assert_eq(world.hero.mana, 0)
-	assert_false(world.stalkers_arrived > 0)
-	assert_eq(world.actors.size(), 2)
-	_assert_complete(world)
-
-
-func test_pet_melee_firebolt_and_searing_totem_can_each_win_in_actor_phase() -> void:
-	for identifier: StringName in [&"summon_voidwalker_1", &"summon_imp_1", &"searing_totem_1"]:
-		var world := _world()
-		SummonRules.summon(world, SkillRank.catalog(identifier))
-		var ally := world.actors[0]
-		var stalker := _enemy(world, Vector2i(11, 9))
-		ally.summon_target = 1
-		ally.ability_ready = 1
-		ally.melee.hit = 100
-		world.wait_turn()
-		assert_false(stalker.alive, identifier)
-		_assert_complete(world)
-
-
-func test_thorns_and_lightning_shield_win_before_next_attacker() -> void:
-	for identifier: StringName in [&"thorns_1", &"lightning_shield_1"]:
+func test_lightning_shield_wins_before_next_attacker() -> void:
+	for identifier: StringName in [&"lightning_shield_1"]:
 		var world := _world()
 		var stalker := _enemy(world, Vector2i(11, 10))
 		stalker.engaged = true
 		stalker.melee.hit = 100
 		# Rear attacks remove player avoidance even after aura refresh rebuilds stats.
 		world.hero.facing = Vector2i.LEFT
-		world.hero.buffs[identifier] = {"thorns": 3, "charges": 3, "ready": 0, "until": 100}
+		world.hero.buffs[identifier] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
 		var later := _enemy(world, Vector2i(10, 11), false)
 		later.engaged = true
 		later.melee.hit = 100
@@ -150,7 +109,7 @@ func test_thorns_and_lightning_shield_win_before_next_attacker() -> void:
 		_assert_complete(world)
 
 
-func test_first_lethal_player_effect_stops_retaliation_and_later_periodic_victory() -> void:
+func test_first_lethal_player_effect_stops_retaliation_and_later_victory() -> void:
 	var world := _world()
 	var stalker := _enemy(world, Vector2i(11, 10))
 	stalker.engaged = true
@@ -158,9 +117,7 @@ func test_first_lethal_player_effect_stops_retaliation_and_later_periodic_victor
 	stalker.melee.damage_min = 1000
 	stalker.melee.damage_max = 1000
 	world.hero.facing = Vector2i.LEFT
-	world.hero.buffs[&"thorns_1"] = {"thorns": 3, "until": 100}
-	world.periodic_effects.append(
-		{"actor": 0, "skill": "fireball_1", "next": 1, "remaining": 1, "amount": 10})
+	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
 	world.wait_turn()
 	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
 	assert_true(stalker.alive)
@@ -168,7 +125,6 @@ func test_first_lethal_player_effect_stops_retaliation_and_later_periodic_victor
 	SpellEffects.damage(world, stalker, 100, "Late callback")
 	assert_true(stalker.alive)
 	var session := GameSession.new()
-	LegacyMageFixture.session(session)
 	session.world = world
 	assert_true(session.restart_after_death())
 	assert_eq(session.loop_count, 2)
@@ -189,7 +145,6 @@ func test_one_effect_killing_player_and_any_stalker_wins_before_xp_can_revive() 
 	assert_eq(world.hero.level, 1)
 	_assert_complete(world)
 	var session := GameSession.new()
-	LegacyMageFixture.session(session)
 	session.world = world
 	assert_false(session.restart_after_death())
 	assert_eq(session.loop_count, 1)
@@ -224,12 +179,11 @@ func test_ordinary_death_keeps_xp_loot_and_later_turn_stages() -> void:
 
 func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
 	var session := GameSession.new()
-	LegacyMageFixture.session(session)
 	session.new_game(97)
 	var previous := session.world
 	session.new_game(98)
 	previous.wait_turn()
-	assert_false(previous.cast_skill(&"frost_armor_1"))
+	assert_false(previous.cast_skill(&"practice_1"))
 	assert_false(previous.move_player(Vector2i.LEFT))
 	assert_eq(previous.turn_count, 0)
 	assert_eq(session.world.turn_count, 0)
@@ -238,7 +192,6 @@ func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
 
 func test_development_kill_stalker_rejects_before_arrival_without_changing_simulation() -> void:
 	var session := GameSession.new()
-	LegacyMageFixture.session(session)
 	session.new_game(97)
 	var world := session.world
 	world.movement_credit = 0.75
@@ -271,14 +224,9 @@ func test_development_kill_stalker_is_guaranteed_and_stops_at_first_live_stalker
 	first.max_health = 494
 	first.health = 494
 	first.melee.level = 20
-	first.resistances = {"2": 1000}
-	first.buffs[&"shield_a"] = {"absorb": 1000, "until": 100}
-	first.buffs[&"shield_b"] = {"absorb": 2000, "until": 100}
 	var later := _enemy(world, Vector2i(12, 10))
 	world.sight_blockers[Vector2i(11, 10)] = true
 	assert_false(world.has_sight(world.player_tile, first.tile))
-	world.hero.spell_hit = -100
-	world.hero.mana = 0
 	world.hero.casting_credit = 0.4
 	world.movement_credit = 0.75
 	assert_true(world.cast_skill(&"kill_stalker_1"))
@@ -291,7 +239,6 @@ func test_development_kill_stalker_is_guaranteed_and_stops_at_first_live_stalker
 	assert_true(ordinary.alive)
 	assert_eq(ordinary.health, 1)
 	assert_eq(world.hero.health, world.hero.max_health, "No later NPC phase attacks.")
-	assert_eq(world.hero.mana, 0)
 	assert_eq(world.hero.experience, 0)
 	assert_eq(world.hero.casting_credit, 0.4)
 	assert_eq(world.movement_credit, 0.75)

@@ -21,14 +21,13 @@ func before_each() -> void:
 	_viewport.add_child(_main)
 	_game_viewport = _main.get_node("GameContainer/GameViewport") as SubViewport
 	_game = _game_viewport.get_node("Gameplay") as Gameplay
-	LegacyMageFixture.session(_game.session)
-	_game.session.world_changed.connect(func() -> void:
-		_game.hero_panel._last_class_tab = &"Mage"
-		_game.refresh_view())
 	# Gameplay preferences must not change this default-keyboard fixture or be overwritten by it.
 	InputMap.load_from_project_settings()
 	_game.menu.options = GlobalOptions.new(_options_path)
 	_game.start_new_game()
+	_game.world.hero.rage = 100
+	_game.world.hero.warrior_progress = 100
+	_game.world.hero.learn_skill(SkillRank.catalog(&"battle_shout_1"))
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -191,7 +190,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_K)
 	assert_true(_game.hero_panel.visible)
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Fireball")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Mortal Strike")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.turn_count, 0, "Target preselection does not cast.")
 	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.SPELL)
@@ -210,7 +209,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	assert_string_contains(chat.text, "level 2")
 	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
 	assert_string_contains(status.text, "Lv 2")
-	assert_string_contains(status.text, "Rage 0/100")
+	assert_string_contains(status.text, "Rage")
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.hero_panel.visible)
 	assert_null(_game_viewport.gui_get_focus_owner())
@@ -462,7 +461,7 @@ func test_death_restarts_loop_and_restores_gameplay_without_a_reset_prompt() -> 
 	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
 	assert_true(status.is_visible_in_tree())
 	assert_string_contains(status.text, "HP 51/51")
-	assert_string_contains(status.text, "Rage 0/100")
+	assert_string_contains(status.text, "Rage")
 	await _tap_key(KEY_PERIOD)
 	assert_eq(_game.world.turn_count, 1)
 
@@ -570,6 +569,7 @@ func test_main_menu_keyboard_starts_game_and_menu_actions_never_spend_time() -> 
 
 func test_targeted_spell_keyboard_confirmation_and_cast_cancellation() -> void:
 	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	_game.world.hero.find_skill(&"mortal_strike_1").cast_seconds = 2.0
 	_game.set_process(false)
 	await _tap_key(KEY_K)
 	await _tap_key(KEY_ENTER)
@@ -578,12 +578,12 @@ func test_targeted_spell_keyboard_confirmation_and_cast_cancellation() -> void:
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.turn_count, 1)
 	assert_not_null(_game.world.pending_skill)
-	assert_eq(_game.world.hero.mana, 165)
+	assert_eq(_game.world.hero.rage, 100)
 	await _tap_key(KEY_ESCAPE)
 	assert_null(_game.world.pending_skill)
 	_game._process(1.0)
 	assert_eq(_game.world.turn_count, 1)
-	assert_eq(_game.world.hero.mana, 165)
+	assert_eq(_game.world.hero.rage, 100)
 
 
 func test_enemy_spell_target_stays_selected_across_spells_until_it_dies() -> void:
@@ -597,97 +597,45 @@ func test_enemy_spell_target_stays_selected_across_spells_until_it_dies() -> voi
 	near.relationship = GridActor.Relationship.NEUTRAL
 	near.health = 1000
 	near.max_health = 1000
+	near.stunned_until = 1000
 	var far := GridActor.new(world.player_tile + Vector2i(3, 0))
 	far.relationship = GridActor.Relationship.NEUTRAL
 	far.health = 1000
 	far.max_health = 1000
-	far.rooted_until = 100
+	far.stunned_until = 1000
 	world.actors.append_array([near, far])
 	world.hero.add_experience(2700)
 	assert_eq(world.hero.level, 4)
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"frostbolt_1")))
-	var fireball := world.hero.find_skill(&"fireball_1")
-	var frostbolt := world.hero.find_skill(&"frostbolt_1")
+	assert_true(world.hero.learn_skill(SkillRank.catalog(&"charge_1")))
+	var attack := world.hero.find_skill(&"mortal_strike_1")
+	attack.range_tiles = 7
+	attack.cast_seconds = 2.0
+	var other_attack := world.hero.find_skill(&"charge_1")
 	var panel := _game.combat_panel
 
-	panel.open_spell(world, fireball)
+	panel.open_spell(world, attack)
 	assert_same(panel.selected, near, "The first cast starts with the nearest valid enemy.")
 	panel.select_tile(far.tile)
 	panel.confirm()
 	assert_same(world.pending_target, far)
 	world.cancel_cast()
-	panel.open_spell(world, fireball)
-	assert_same(panel.selected, far, "The second Fireball remembers the confirmed target.")
+	panel.open_spell(world, attack)
+	assert_same(panel.selected, far, "The second Mortal Strike remembers the confirmed target.")
 	panel.confirm()
 	assert_same(world.pending_target, far)
 	world.cancel_cast()
 
-	panel.open_spell(world, frostbolt)
+	panel.open_spell(world, other_attack)
 	assert_same(panel.selected, far, "Another enemy spell shares the target.")
 	panel.select_tile(near.tile)
 	panel.cancel()
-	panel.open_spell(world, frostbolt)
+	panel.open_spell(world, other_attack)
 	assert_same(panel.selected, far, "Canceling a new selection keeps the last confirmed target.")
 	panel.cancel()
 	far.alive = false
-	panel.open_spell(world, fireball)
+	panel.open_spell(world, attack)
 	assert_same(panel.selected, near, "A dead target falls back to the nearest living enemy.")
 	panel.cancel()
-
-
-func test_switching_spell_target_type_and_loop_reset_clear_target_memory() -> void:
-	_game.set_process(false)
-	var world := _game.world
-	world.actors.clear()
-	world.population.clear()
-	world.blocked_tiles.clear()
-	world.sight_blockers.clear()
-	var near := GridActor.new(world.player_tile + Vector2i.RIGHT)
-	near.relationship = GridActor.Relationship.NEUTRAL
-	var far := GridActor.new(world.player_tile + Vector2i(3, 0))
-	far.relationship = GridActor.Relationship.NEUTRAL
-	far.rooted_until = 100
-	var ally := GridActor.new(world.player_tile + Vector2i.UP)
-	ally.relationship = GridActor.Relationship.FRIENDLY
-	world.actors.append_array([near, far, ally])
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"intellect_1")))
-	var panel := _game.combat_panel
-	var fireball := world.hero.find_skill(&"fireball_1")
-	var intellect := world.hero.find_skill(&"intellect_1")
-
-	panel.open_spell(world, fireball)
-	panel.select_tile(far.tile)
-	panel.confirm()
-	world.cancel_cast()
-	panel.open_spell(world, intellect)
-	assert_eq(panel.selected.title, "You", "An ally spell leaves the enemy selection behind.")
-	panel.select_tile(ally.tile)
-	panel.confirm()
-	panel.open_spell(world, intellect)
-	assert_same(panel.selected, ally, "Ally spells also remember a confirmed living ally.")
-	panel.cancel()
-	panel.open_spell(world, fireball)
-	assert_same(panel.selected, near, "Switching back to enemies starts with the nearest.")
-	panel.cancel()
-
-	panel.open_spell(world, fireball)
-	panel.select_tile(far.tile)
-	panel.confirm()
-	world.cancel_cast()
-	_game._cast_skill(&"frost_armor_1")
-	panel.open_spell(world, fireball)
-	assert_same(panel.selected, near, "Choosing a self spell clears the enemy selection.")
-	panel.cancel()
-
-	panel.open_spell(world, fireball)
-	panel.select_tile(far.tile)
-	panel.confirm()
-	world.cancel_cast()
-	assert_true(world.cast_skill(&"death_1"))
-	_game.refresh_view()
-	assert_eq(_game.session.loop_count, 2)
-	assert_null(panel._last_spell_target, "Player death clears target memory.")
-	assert_eq(panel._last_target_type, SkillRank.Target.NONE)
 
 
 func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void:
@@ -743,7 +691,7 @@ func test_ingame_menus_wrap_keyboard_focus_without_advancing_time() -> void:
 	_game.menu.close()
 
 
-func test_fireball_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> void:
+func test_mortal_strike_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> void:
 	_game.set_process(false)
 	for direction in GridWorld.DIRECTIONS:
 		_game.session.new_game(11)
@@ -756,7 +704,7 @@ func test_fireball_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> v
 		target.max_health = 1000
 		target.swing.remaining = 100.0
 		_game.world.actors.append(target)
-		_game.world.hero.mana = 30
+		_game.world.hero.rage = 30
 		_game.world.combat_random.seed = 1
 		await _tap_key(KEY_K)
 		await _tap_key(KEY_ENTER)
@@ -768,23 +716,23 @@ func test_fireball_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> v
 		assert_eq(_game.world.turn_count, 1)
 		assert_true(target.engaged)
 		_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
-		assert_eq(_game.world.turn_count, 2)
-		assert_eq(_game.world.hero.mana, 0)
+		assert_eq(_game.world.turn_count, 1)
+		assert_eq(_game.world.hero.rage, 20)
 		assert_lt(target.health, target.max_health)
 		assert_null(_game.world.pending_skill)
 
 
-func test_fireball_with_insufficient_mana_reports_the_cost_instead_of_no_target() -> void:
+func test_mortal_strike_with_insufficient_rage_reports_the_cost_instead_of_no_target() -> void:
 	var target := _prepare_melee(GridActor.Relationship.NEUTRAL)
-	_game.world.hero.mana = 29
+	_game.world.hero.rage = 29
 	await _tap_key(KEY_K)
 	await _tap_key(KEY_ENTER)
 	assert_false(_game.combat_panel.visible)
 	var chat := _game.get_node("HUD/Bottom/Rows/Chat") as RichTextLabel
-	assert_string_contains(chat.text, "Not enough mana for Fireball: requires 30, have 29.")
+	assert_string_contains(chat.text, "Not enough rage for Mortal Strike: requires 30, have 29.")
 	assert_false(chat.text.contains("No valid target"))
 	assert_eq(_game.world.turn_count, 0)
-	assert_eq(_game.world.hero.mana, 29)
+	assert_eq(_game.world.hero.rage, 29)
 	assert_false(target.engaged)
 	assert_null(_game.world.pending_skill)
 
@@ -845,6 +793,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
+	await _tap_key(KEY_S)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
 	await _tap_key(KEY_ENTER)
@@ -861,34 +810,34 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 
 func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
 	var hero := _game.world.hero
-	assert_true(hero.learn_skill(SkillRank.catalog(&"wrath_1")))
-	assert_true(hero.learn_skill(SkillRank.catalog(&"healing_touch_1")))
+	assert_true(hero.learn_skill(SkillRank.catalog(&"lightning_shield_1")))
+	assert_true(hero.learn_skill(SkillRank.catalog(&"strength_of_earth_totem_1")))
 	await _tap_key(KEY_K)
-	var frost := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
-		return button.text.begins_with("Frost Armor"))[0] as Button
-	frost.grab_focus()
+	var shout :=  _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Battle Shout"))[0] as Button
+	shout.grab_focus()
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_K)
-	assert_same(_game_viewport.gui_get_focus_owner(), _game.hero_panel._skill_buttons[1])
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	assert_eq(_game_viewport.gui_get_focus_owner().get_meta("skill_id"), &"battle_shout_1")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.change_tab(2)
 	var healing := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
-		return button.text.begins_with("Healing Touch"))[0] as Button
+		return button.text.begins_with("Strength of Earth Totem"))[0] as Button
 	healing.grab_focus()
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_K)
-	assert_eq(_game.hero_panel._tabs.get_tab_title(_game.hero_panel._tabs.current_tab), "Druid")
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Healing Touch")
+	assert_eq(_game.hero_panel._tabs.get_tab_title(_game.hero_panel._tabs.current_tab), "Shaman")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Strength of Earth Totem")
 	_game.hero_panel.change_tab(-2)
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.close()
 	_game.world.cast_skill(&"death_1")
 	_game.refresh_view()
 	await _tap_key(KEY_K)
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Frost Armor")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.start_new_game()
 	await _tap_key(KEY_K)
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Fireball")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Mortal Strike")
 
 
 func test_player_menu_inventory_entry_shows_binding_and_opens_without_time() -> void:
@@ -967,37 +916,6 @@ func test_quest_pages_support_keyboard_and_mouse_navigation() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_six_class_spell_book_keyboard_reaches_commands() -> void:
-	var hero := _game.world.hero
-	hero.level = 10
-	for identifier in SkillRank.all_ranks():
-		hero.learn_skill(SkillRank.catalog(StringName(identifier)))
-	_game.hero_panel.open(hero, true)
-	await get_tree().process_frame
-	await get_tree().process_frame
-	var panel := _game.hero_panel
-	var seen: Array[String] = []
-	for index in range(panel._tabs.get_tab_count()):
-		panel._tabs.current_tab = index
-		seen.append(panel._tabs.get_tab_title(index))
-	for category in ClassSkillData.CLASSES:
-		assert_has(seen, String(category))
-	panel._tabs.current_tab = seen.find("Warlock")
-	for step in range(25):
-		panel.navigate(true)
-		await get_tree().process_frame
-	var dismiss: Button
-	for button in panel._skill_buttons:
-		if button.get_meta("skill_id") == &"pet_dismiss":
-			dismiss = button
-	assert_not_null(dismiss)
-	dismiss.grab_focus()
-	await get_tree().process_frame
-	await get_tree().process_frame
-	assert_same(_game_viewport.gui_get_focus_owner(), dismiss)
-	assert_eq(_game.world.turn_count, 0)
-
-
 func _complete_demo_fixture() -> GridWorld:
 	var world := _game.world
 	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
@@ -1033,7 +951,7 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.menu.page, "completion")
 	_game._process(1.0)
-	_game._cast_skill(&"frost_armor_1")
+	_game._cast_skill(&"battle_shout_1")
 	assert_eq(world.turn_count, 0)
 	assert_eq(_game.session.loop_count, 1)
 	await _tap_key(KEY_S)
@@ -1045,12 +963,17 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 
 func test_completion_from_item_turn_is_not_replaced_by_transaction_back_callback() -> void:
 	var world := _game.world
-	var stalker := GridActor.new(Vector2i(40, 30))
+	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
 	stalker.stalker = true
 	stalker.relationship = GridActor.Relationship.HOSTILE
 	world.actors.append(stalker)
-	world.periodic_effects.append({"actor": world.actors.size() - 1, "skill": "fireball_1",
-		"next": 1, "remaining": 1, "amount": 1000})
+	stalker.health = 1
+	stalker.engaged = true
+	stalker.melee.hit = 100
+	stalker.melee.critical = 0
+	world.hero.facing = Vector2i.LEFT
+	world.hero.learn_skill(SkillRank.catalog(&"lightning_shield_1"))
+	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
 	assert_true(InventoryRules.add(world.hero.inventory, ItemData.instance(118)))
 	_game.menu.open_inventory()
 	_game.menu._transaction(world.consume_item.bind(0), _game.menu.open_inventory)
@@ -1085,7 +1008,7 @@ func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act()
 	_game.menu.open_inventory()
 	var stale := _game.menu._buttons[-1]
 	var world := _game.world
-	var stalker := GridActor.new(Vector2i(40, 30))
+	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
 	stalker.stalker = true
 	stalker.health = 0
 	world.actors.append(stalker)
@@ -1133,14 +1056,15 @@ func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
 	var panel := _game.hero_panel
 	# W/S keeps skill navigation; Tab also reaches the assignment controls.
 	await _tap_key(KEY_S)
+	await _tap_key(KEY_S)
 	await _tap_key(KEY_TAB)
 	assert_same(_game_viewport.gui_get_focus_owner(), panel._assign)
 	await _tap_key(KEY_ENTER)
 	assert_true(panel.choosing_slot)
 	await _tap_key(KEY_KP_1)
-	assert_eq(_game.world.hotbar[0], &"fireball_1", "Numpad movement is not slot selection.")
+	assert_eq(_game.world.hotbar[0], &"mortal_strike_1", "Numpad movement is not slot selection.")
 	await _tap_key(KEY_1)
-	assert_eq(_game.world.hotbar[0], &"frost_armor_1")
+	assert_eq(_game.world.hotbar[0], &"battle_shout_1")
 	assert_false(panel.choosing_slot)
 	assert_eq(_game.world.turn_count, 0)
 	panel.begin_assignment()
@@ -1153,7 +1077,7 @@ func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_1)
 	assert_eq(_game.world.turn_count, 1, "Locking preserves activation.")
-	assert_lt(_game.world.hero.mana, _game.world.hero.max_mana)
+	assert_lt(_game.world.hero.rage, HeroState.MAX_RAGE)
 	assert_false(_game.hero_panel.visible)
 	_game.hotbar_panel.lock_button.pressed.emit()
 	await _tap_key(KEY_K)
@@ -1165,7 +1089,8 @@ func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
 
 func test_hotbar_uses_spell_book_targeting_and_rejects_activation_with_modal_owners() -> void:
 	_prepare_melee(GridActor.Relationship.NEUTRAL)
-	assert_true(_game.world.assign_hotbar(0, &"fireball_1"))
+	_game.world.hero.find_skill(&"mortal_strike_1").cast_seconds = 2.0
+	assert_true(_game.world.assign_hotbar(0, &"mortal_strike_1"))
 	assert_true(_game.world.assign_hotbar(4, &"practice_1"))
 	_game.refresh_view()
 	await _tap_key(KEY_1)
@@ -1208,40 +1133,41 @@ func test_hotbar_rebinding_changes_activation_and_labels_but_not_slot_assignment
 	await _tap_key(KEY_K)
 	_game.hero_panel.begin_assignment()
 	await _tap_key(KEY_1)
-	assert_eq(_game.world.hotbar[0], &"fireball_1")
+	assert_eq(_game.world.hotbar[0], &"mortal_strike_1")
 	assert_eq(_game.world.turn_count, 1)
 
 
 func test_hotbar_drop_validates_rank_lock_and_world() -> void:
 	await _tap_key(KEY_K)
 	var bar := _game.hotbar_panel
-	var rank := _game.world.hero.find_skill(&"fireball_1")
+	var rank := _game.world.hero.find_skill(&"mortal_strike_1")
 	var data := {"skill_id": rank.id, "hero": _game.world.hero}
 	assert_true(bar._can_drop(Vector2.ZERO, data, 0))
 	bar._drop(Vector2.ZERO, data, 0)
 	assert_eq(_game.world.hotbar[0], rank.id)
 	assert_string_contains(bar.slots[0].tooltip_text, "Rank 1")
-	assert_string_contains(bar.slots[0].tooltip_text, "30 mana")
+	assert_string_contains(bar.slots[0].tooltip_text, "30 rage")
 	assert_string_contains(bar.slots[0].tooltip_text, "damage")
 	assert_false(bar._can_drop(Vector2.ZERO, {"skill_id": &"fireball_2", "hero": _game.world.hero}, 0))
 	_game._toggle_hotbar_lock()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 1))
 	bar._drop(Vector2.ZERO, data, 1)
-	assert_eq(_game.world.hotbar[1], &"frost_armor_1")
+	assert_eq(_game.world.hotbar[1], &"heroic_strike_1")
 	assert_eq(_game.world.turn_count, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_game.start_new_game()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
 	assert_eq(_game.world.hotbar, [
-		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"mortal_strike_1", &"heroic_strike_1", &"", &"", &"", &"", &"", &"", &"", &"",
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 
 
 func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank() -> void:
 	await _tap_key(KEY_K)
-	var button := _game.hero_panel._skill_buttons[1] as SkillButton
+	var button := _game.hero_panel._skill_buttons.filter(func(skill: Button) -> bool:
+		return skill.get_meta("skill_id") == &"battle_shout_1")[0] as SkillButton
 	var destination := _game.hotbar_panel.slots[3].get_global_rect().get_center()
 	var origin := button.get_global_rect().get_center()
 	var motion := InputEventMouseMotion.new()
@@ -1274,12 +1200,12 @@ func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank()
 	_viewport.push_input(press, true)
 	await get_tree().process_frame
 	await get_tree().process_frame
-	assert_eq(_game.world.hotbar[3], &"frost_armor_1")
+	assert_eq(_game.world.hotbar[3], &"battle_shout_1")
 	assert_eq(_game.world.turn_count, 0, "Dragging does not activate the source spell.")
 	await _tap_key(KEY_ESCAPE)
 	await _click_button(_game.hotbar_panel.slots[3])
 	assert_eq(_game.world.turn_count, 1)
-	assert_lt(_game.world.hero.mana, _game.world.hero.max_mana)
+	assert_lt(_game.world.hero.rage, HeroState.MAX_RAGE)
 
 
 func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() -> void:
@@ -1291,7 +1217,7 @@ func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() 
 	assert_same(_game_viewport.gui_get_focus_owner(), _game.hero_panel._assign)
 	await _tap_key(KEY_ENTER)
 	await _tap_key(KEY_2)
-	assert_eq(_game.world.hotbar[1], &"fireball_1", "Tab to Assign must preserve the selected rank.")
+	assert_eq(_game.world.hotbar[1], &"mortal_strike_1", "Tab to Assign must preserve the selected rank.")
 	var details := _game.hero_panel._details
 	details.text = "Long rank effect details.\n".repeat(20)
 	details.grab_focus()
@@ -1355,7 +1281,7 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 
 func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> void:
 	for index in range(40):
-		_game.world.hero.inventory[index] = ItemData.instance(159, 20)
+		_game.world.hero.inventory[index] = ItemData.instance(117, 20)
 	for npc_id in [152, 190, 1213, 78, 900003]:
 		var merchant := _test_merchant(npc_id)
 		for direction in GridWorld.DIRECTIONS:
@@ -1363,6 +1289,8 @@ func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> vo
 				_game.world.player_tile = merchant.tile + direction
 				break
 		_game.menu.open_conversation(merchant)
+		if npc_id == 900003:
+			await _tap_key(KEY_S)
 		await _tap_key(KEY_ENTER)
 		assert_eq(_game.menu.page, "trade")
 		assert_eq(_game.menu._buttons.size(), 3, "A full bag does not clutter the trade entry page.")
@@ -1386,7 +1314,7 @@ func test_trade_stack_options_respect_money_and_stock() -> void:
 	_game.world.player_tile = _test_merchant(900003).tile + Vector2i.DOWN
 	_game.world.hero.copper = 200
 	_game.menu.open_trade(merchant)
-	_game.menu._buy_options(2455)
+	_game.menu._buy_options(118)
 	assert_eq(_game.menu._buttons.size(), 3, "Potions offer 1 and stack, without 10.")
 	assert_true(_game.menu._buttons[1].text.begins_with("Buy stack (5)"))
 	assert_true(_game.menu._buttons[1].disabled, "Stock of three cannot fill a stack of five.")
@@ -1414,7 +1342,7 @@ func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
 	_game.world.player_tile = chest.tile
 	chest.loot_assigned = true
 	chest.loot_copper = 8
-	chest.loot = [ItemData.instance(7073, 2), ItemData.instance(159, 3)]
+	chest.loot = [ItemData.instance(7073, 2), ItemData.instance(117, 3)]
 	_game.menu.open_loot(chest)
 	assert_eq(_game.menu._buttons[0].text, "Loot All")
 	for frame in range(4):
@@ -1432,20 +1360,9 @@ func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "sell")
 	assert_true(_game.world.hero.inventory[0].is_empty())
-	assert_eq(_game.world.hero.inventory[1], ItemData.instance(159, 3))
+	assert_eq(_game.world.hero.inventory[1], ItemData.instance(117, 3))
 	assert_eq(_game.world.hero.copper, 20)
 	assert_eq(_game.world.turn_count, 0)
-
-
-func test_starting_mage_hotbar_activates_without_manual_assignment() -> void:
-	assert_eq(_game.world.hotbar, [
-		&"fireball_1", &"frost_armor_1", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
-	])
-	assert_false(_game.world.hotbar_locked)
-	await _tap_key(KEY_2)
-	assert_true(_game.world.hero.buffs.has(&"frost_armor_1"))
-	assert_eq(_game.world.turn_count, 1)
 
 
 func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> void:
@@ -1453,10 +1370,10 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.world.hero.inventory[0] = ItemData.instance(35)
 	for index in range(1, 39):
-		_game.world.hero.inventory[index] = ItemData.instance(117, 20)
-	_game.world.hero.inventory[3] = ItemData.instance(159, 20)
-	_game.world.hero.inventory[25] = ItemData.instance(159, 7)
-	_game.world.hero.inventory[39] = ItemData.instance(159)
+		_game.world.hero.inventory[index] = ItemData.instance(4540, 20)
+	_game.world.hero.inventory[3] = ItemData.instance(117, 20)
+	_game.world.hero.inventory[25] = ItemData.instance(117, 7)
+	_game.world.hero.inventory[39] = ItemData.instance(117)
 	var stock := _game.world.vendor_stock.duplicate(true)
 	_game.menu.open_trade(merchant)
 	await _tap_key(KEY_S)
@@ -1468,7 +1385,7 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 	var proceeds := 0
 	for entry in [[3, 20], [25, 7], [39, 1]]:
 		var focused := _game_viewport.gui_get_focus_owner() as Button
-		assert_string_contains(focused.text, "Refreshing Spring Water x%d" % int(entry[1]))
+		assert_string_contains(focused.text, "Tough Jerky x%d" % int(entry[1]))
 		for frame in range(4):
 			await get_tree().process_frame
 		await _tap_key(KEY_ENTER)
@@ -1480,7 +1397,7 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
 	assert_eq(_game.world.hero.inventory[0], ItemData.instance(35))
-	assert_eq(_game.world.hero.inventory[1], ItemData.instance(117, 20))
+	assert_eq(_game.world.hero.inventory[1], ItemData.instance(4540, 20))
 	assert_eq(_game.world.vendor_stock, stock)
 	assert_eq(_game.world.hero.copper, 28)
 	assert_eq(_game.world.player_tile, merchant.tile + Vector2i.DOWN)
@@ -1491,7 +1408,7 @@ func test_sell_page_excludes_untradable_items_and_handles_empty_and_single_item_
 	var merchant := _test_merchant(152)
 	_game.world.player_tile = merchant.tile + Vector2i.DOWN
 	_game.world.hero.inventory[0] = ItemData.instance(750, 2)
-	_game.world.hero.inventory[1] = ItemData.instance(5349, 4)
+	_game.world.hero.inventory[1] = ItemData.instance(750, 4)
 	_game.menu.open_sell(merchant)
 	assert_eq(_game.menu._buttons.size(), 2)
 	assert_true(_game.menu._buttons[0].disabled, "No grey goods to sell.")
@@ -1506,19 +1423,19 @@ func test_sell_page_excludes_untradable_items_and_handles_empty_and_single_item_
 	assert_true(_game.world.hero.inventory[2].is_empty())
 	assert_eq(_game.world.hero.copper, 9)
 	assert_eq(_game.world.hero.inventory[0], ItemData.instance(750, 2))
-	assert_eq(_game.world.hero.inventory[1], ItemData.instance(5349, 4))
+	assert_eq(_game.world.hero.inventory[1], ItemData.instance(750, 4))
 	assert_eq(_game.world.turn_count, 0)
 
 
 func test_direct_sell_revalidates_merchant_range_and_rejects_buttons_from_replaced_world() -> void:
 	var merchant := _test_merchant(152)
 	_game.world.player_tile = merchant.tile + Vector2i.DOWN
-	_game.world.hero.inventory[0] = ItemData.instance(159, 7)
+	_game.world.hero.inventory[0] = ItemData.instance(117, 7)
 	_game.menu.open_sell(merchant)
 	_game.world.player_tile = ValleyRoute.SPAWN
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "notice")
-	assert_eq(_game.world.hero.inventory[0], ItemData.instance(159, 7))
+	assert_eq(_game.world.hero.inventory[0], ItemData.instance(117, 7))
 	assert_eq(_game.world.hero.copper, 0)
 	await _tap_key(KEY_ENTER)
 	assert_false(_game.menu.visible)
@@ -1528,7 +1445,7 @@ func test_direct_sell_revalidates_merchant_range_and_rejects_buttons_from_replac
 	var previous := _game.world
 	_game.start_new_game()
 	stale.pressed.emit()
-	assert_eq(previous.hero.inventory[0], ItemData.instance(159, 7))
+	assert_eq(previous.hero.inventory[0], ItemData.instance(117, 7))
 	assert_eq(previous.hero.copper, 0)
 	assert_eq(_game.world.hero.copper, 0)
 	assert_eq(_game.world.turn_count, 0)
@@ -1543,7 +1460,7 @@ func test_extended_hotbar_keys_assign_and_activate_without_numpad_conflicts() ->
 	await _tap_key(KEY_K)
 	_game.hero_panel.begin_assignment()
 	await _tap_key(KEY_V | KEY_MASK_SHIFT)
-	assert_eq(_game.world.hotbar[19], &"fireball_1")
+	assert_eq(_game.world.hotbar[19], &"mortal_strike_1")
 	assert_eq(_game.world.turn_count, 15, "Assignment is free.")
 
 

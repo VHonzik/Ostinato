@@ -43,12 +43,12 @@ func test_assignments_reject_unknown_ranks_and_locked_edits_without_time_or_reso
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 	assert_eq(world.turn_count, 0)
-	assert_eq(world.hero.mana, world.hero.max_mana)
+	assert_eq(world.hero.rage, 0)
 	world.hotbar_locked = false
 	assert_true(world.assign_hotbar(4, &""))
 	world.hero.level = 10
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"parry_1")))
-	assert_false(world.assign_hotbar(2, &"parry_1"), "Passives cannot be activated.")
+	assert_true(world.hero.learn_skill(SkillRank.catalog(&"anger_management_1")))
+	assert_false(world.assign_hotbar(2, &"anger_management_1"), "Passives cannot be activated.")
 
 
 func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_contracts() -> void:
@@ -81,20 +81,6 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 	assert_false(session.world.hotbar_locked)
-
-
-func test_legacy_pet_commands_require_a_learned_summon_and_round_trip() -> void:
-	var session := GameSession.new()
-	LegacyMageFixture.session(session)
-	session.new_game(123)
-	assert_false(session.world.assign_hotbar(0, &"pet_attack"))
-	assert_true(session.world.hero.learn_skill(SkillRank.catalog(&"summon_imp_1")))
-	assert_true(session.world.assign_hotbar(0, &"pet_attack"))
-	assert_true(session.world.assign_hotbar(1, &"pet_follow"))
-	assert_true(session.world.assign_hotbar(2, &"pet_dismiss"))
-	var restored := SaveCodec.restore(SaveCodec.capture(session), true)
-	assert_not_null(restored)
-	assert_eq(restored.hotbar, session.world.hotbar)
 
 
 func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death() -> void:

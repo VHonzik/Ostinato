@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-16 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-17 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -9,25 +9,22 @@ const WORLD_FIELDS: Array[String] = [
 ]
 const HERO_FIELDS: Array[String] = [
 	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",
-	"level", "experience", "health", "mana", "selected_class", "copper",
-	"casting_credit", "last_mana_turn", "facing", "potion_ready_turn",
-	"spell_power", "healing_power", "spell_hit", "spell_critical", "haste",
-	"weakened_until", "forbearance_until", "healthstone_ready_turn",
+	"level", "experience", "health", "selected_class", "copper",
+	"casting_credit", "facing", "potion_ready_turn",
 ]
 const ACTOR_FIELDS: Array[String] = [
 	"tile", "home_tile", "alive", "wander_area", "title", "relationship", "engaged",
 	"returning_home", "blocked_turns", "aggro_range", "max_health", "health", "facing",
-	"awards_experience", "corpse_visible", "died_on_turn", "service", "chilled_until",
+	"awards_experience", "corpse_visible", "died_on_turn", "service",
 	"movement_credit", "story_guard", "stalker", "spawn_id", "loot_table", "loot_assigned",
-	"loot_copper", "chest", "creature_type", "rooted_until", "root_skill",
-	"slowed_until", "polymorphed_until", "polymorphed_on_turn", "npc_id", "population_slot",
-	"summon_kind", "summon_skill", "expires_turn", "mana", "max_mana", "summon_target",
-	"aura_armor", "aura_strength", "aura_stamina", "aura_reduction",
-	"ability_ready", "secondary_ready", "last_mana_turn", "feared_until", "stunned_until", "weakened_until", "forbearance_until",
+	"loot_copper", "chest", "creature_type",
+	"npc_id", "population_slot",
+	"summon_kind", "summon_skill", "expires_turn",
+	"stunned_until",
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
-	"interval", "damage_multiplier", "critical", "dodge", "hit", "parry", "block", "block_value",
+	"interval", "damage_multiplier", "critical", "dodge", "hit",
 ]
 
 
@@ -44,14 +41,14 @@ static func capture(session: GameSession) -> Dictionary:
 		"inventory": world.hero.inventory.duplicate(true),
 		"buffs": world.hero.buffs.duplicate(true), "hotbar": [],
 		"class_progress": {},
-		"periodic": world.periodic_effects.duplicate(true), "messages": Array(world.messages),
+		"messages": Array(world.messages),
 		"hero_swing": [world.hero.swing.remaining, world.hero.swing._active],
 		"off_hand_swing": [world.hero.off_hand_swing.remaining, world.hero.off_hand_swing._active],
 		"quests": world.quests.duplicate(true), "population": world.population.duplicate(true),
 		"vendor_stock": world.vendor_stock.duplicate(true), "loot_quests": Array(world.loot_quests),
 		"cooldowns": world.hero.cooldowns.duplicate(true),
 		"restoration": world.hero.restoration.duplicate(true),
-		"resistances": world.hero.resistances.duplicate(true), "indoors": [],
+		"indoors": [],
 		"debuffs": world.hero.debuffs.duplicate(true),
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
@@ -74,7 +71,6 @@ static func capture(session: GameSession) -> Dictionary:
 			"state": _fields(actor, ACTOR_FIELDS), "melee": _fields(actor.melee, MELEE_FIELDS),
 			"swing": [actor.swing.remaining, actor.swing._active],
 			"buffs": actor.buffs.duplicate(true), "loot": actor.loot.duplicate(true),
-			"resistances": actor.resistances.duplicate(true),
 			"threat": actor.threat.duplicate(true), "debuffs": actor.debuffs.duplicate(true),
 		})
 	return data
@@ -85,8 +81,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		return null
 	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
 		"blocked", "sight", "actors", "learned", "equipment", "inventory",
-		"buffs", "hotbar", "periodic", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "resistances", "quests", "population", "debuffs", "off_hand_swing"]
+		"buffs", "hotbar", "messages", "hero_swing", "indoors",
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "quests", "population", "debuffs", "off_hand_swing"]
 	for key in keys:
 		if not data.has(key):
 			return null
@@ -127,9 +123,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		or world.hero.warrior_progress < 0
 		or world.hero.level < 1
 		or world.hero.experience < 0 or world.hero.copper < 0
-		or world.hero.haste <= 0 or world.hero.potion_ready_turn < 0
-		or world.hero.weakened_until < 0 or world.hero.forbearance_until < 0
-		or world.hero.healthstone_ready_turn < 0
+		or world.hero.potion_ready_turn < 0
 		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
 		or world.hero.selected_class not in ClassSkillData.CLASSES):
 		return null
@@ -162,7 +156,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if not data.actors is Array or data.actors.size() > 1000:
 		return null
 	for record in data.actors:
-		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "resistances", "threat", "debuffs"])):
+		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "threat", "debuffs"])):
 			return null
 		var actor := GridActor.new(Vector2i.ZERO)
 		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
@@ -188,9 +182,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			if not _item(item) or item.is_empty():
 				return null
 			actor.loot.append(_normalized_item(item))
-		if not _number_map(record.resistances, 0) or actor.loot_copper < 0:
+		if actor.loot_copper < 0:
 			return null
-		actor.resistances = _normalized_numbers(record.resistances)
 		if not _number_map(record.threat, 0) or not _debuffs(record.debuffs):
 			return null
 		for key in record.threat:
@@ -198,20 +191,14 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 				return null
 		actor.threat = _normalized_numbers(record.threat)
 		actor.debuffs = _normalized_buffs(record.debuffs)
-		if (actor.summon_kind not in ["", "pet", "earth", "fire", "wolf"] or actor.mana < 0
-			or actor.mana > actor.max_mana or actor.max_mana < 0 or actor.ability_ready < 0
-			or actor.secondary_ready < 0 or actor.expires_turn < 0
-			or actor.feared_until < 0 or actor.stunned_until < 0
-			or actor.weakened_until < 0 or actor.forbearance_until < 0
-			or actor.summon_target < -1 or actor.summon_target >= data.actors.size()):
+		if (actor.summon_kind not in ["", "earth", "wolf"]
+			or actor.expires_turn < 0 or actor.stunned_until < 0):
 			return null
 		if actor.summon_kind != "":
 			var summon := SkillRank.catalog(actor.summon_skill)
 			if (summon == null or (summon.effect != SkillRank.Effect.SUMMON and summon.family != &"feral_spirit")
 				or SummonRules.slot(summon) != actor.summon_kind
-				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience
-				or (actor.summon_kind == "pet" and actor.npc_id !=
-					(416 if summon.family == &"summon_imp" else 1860))):
+				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
 				return null
 			if actor.alive and actor.summon_kind != "wolf" and SummonRules.active(world, actor.summon_kind) != null:
 				return null
@@ -240,11 +227,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if development_build or not skill.development_only:
 			world.hero.learned_skills.append(skill)
 	# New classes may be saved before visiting their trainer, or after learning one starter.
-	var mandatory: Array = []
-	if world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES:
-		mandatory = ClassSkillData.STARTERS[&"Warrior"]
-	else:
-		mandatory = [&"fireball_1", &"frost_armor_1"]
+	var mandatory: Array = ClassSkillData.STARTERS[&"Warrior"]
 	for identifier: StringName in mandatory:
 		if not learned.has(String(identifier)):
 			return null
@@ -292,11 +275,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
 	SummonRules.refresh_auras(world)
 	world.hero.health = int(data.hero.health)
-	world.hero.mana = int(data.hero.mana)
-	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health
-		or world.hero.mana < 0 or world.hero.mana > world.hero.max_mana):
+	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health):
 		return null
-	if not _number_map(data.cooldowns, 0) or not _number_map(data.resistances, 0):
+	if not _number_map(data.cooldowns, 0):
 		return null
 	if not data.vendor_stock is Dictionary:
 		return null
@@ -328,7 +309,6 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		world.vendor_stock[merchant_id] = _normalized_numbers(stock)
 
 	world.hero.cooldowns = _normalized_numbers(data.cooldowns)
-	world.hero.resistances = _normalized_numbers(data.resistances)
 	if not data.loot_quests is Array:
 		return null
 	for quest in data.loot_quests:
@@ -339,7 +319,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		return null
 	for kind in data.restoration:
 		var effect: Variant = data.restoration[kind]
-		if kind not in ["food", "water"] or not _number_map(effect, 0):
+		if kind != "food" or not _number_map(effect, 0):
 			return null
 		if not effect.has_all(["total", "duration", "started", "delivered"]):
 			return null
@@ -356,28 +336,6 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			and world.hero.find_skill(StringName(identifier)) == null):
 			return null
 		world.hotbar.append(StringName(identifier))
-	if not data.periodic is Array:
-		return null
-	for effect in data.periodic:
-		if not effect is Dictionary or not effect.has_all(["actor", "next", "remaining"]):
-			return null
-		if (not _integer(effect.actor, -1) or effect.actor >= world.actors.size()
-			or not _integer(effect.next, world.turn_count + 1)
-			or not _integer(effect.remaining, 1) or effect.remaining > 100):
-			return null
-		var identifier: Variant = effect.get("skill", "fireball_1")
-		if not identifier is String:
-			return null
-		var skill := SkillRank.catalog(StringName(identifier))
-		if skill == null or skill.periodic_damage <= 0:
-			return null
-		if int(effect.actor) == -1 and skill.effect != SkillRank.Effect.HEAL_OVER_TIME:
-			return null
-		if not _integer(effect.get("amount", 1), 0):
-			return null
-		world.periodic_effects.append({"actor": int(effect.actor), "skill": identifier,
-			"next": int(effect.next), "remaining": int(effect.remaining),
-			"amount": int(effect.get("amount", 1))})
 	if not data.messages is Array or data.messages.size() > GridWorld.CHAT_LIMIT:
 		return null
 	for message in data.messages:
@@ -523,8 +481,9 @@ static func _buffs(data: Variant) -> bool:
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
 		for stat in buff:
-			if stat not in ["armor", "until", "intellect", "strength", "agility", "stamina", "spirit", "thorns", "regen", "next", "absorb", "physical_immunity",
-				"charges", "ready", "weapon_id", "off_weapon_id", "weapon_dps", "crusader", "attack_power", "physical_percent", "haste_percent", "immunity", "bonus_percent", "critical_ready"]:
+			if stat not in ["armor", "until", "strength", "agility", "stamina",
+				"charges", "ready", "weapon_id", "off_weapon_id", "physical_percent",
+				"haste_percent", "immunity", "bonus_percent", "critical_ready"]:
 				return false
 	return true
 
@@ -584,6 +543,6 @@ static func _debuffs(data: Variant) -> bool:
 		if not key is String or not _number_map(data[key], 0) or not data[key].has("until"):
 			return false
 		for field in data[key]:
-			if field not in ["until", "reduction", "slow", "holy_power", "dispel", "bonus"]:
+			if field not in ["until", "bonus"]:
 				return false
 	return true

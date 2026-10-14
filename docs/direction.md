@@ -26,8 +26,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 ## Classes, learning and combat
 
-- Start as warrior. The roster is warrior, shaman, paladin and rogue; remove obsolete
-  mage, druid, warlock and priest content in runnable gameplay changes.
+- Start as warrior. The roster is warrior, shaman, paladin and rogue.
 - Choose which class track to advance at the marshal before accepting any quest.
   Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
   from Loop two. Returning Loops begin in the previous class; confirming a class,
@@ -83,9 +82,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   the advanced world-turn boundary before due player swings and enemy actions, after
   the committed action's effect. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
-  Holy and Nature damage and the explicit class defenses. Retire legacy parry, block,
-  glancing/crushing and the detailed spell-resistance model. Revisit level differences
-  without retaining the old attack tables. Costs, durations, chances, damage formulas
+  Holy and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
+  hit or crit; shields contribute armor. Holy and Nature damage bypass armor.
+  Revisit level differences without adding the old attack tables. Costs, durations, chances, damage formulas
   and stat scaling belong in code/data; the snapshot's tuning remains provisional.
 - Keep the existing session/save structure and bump the save revision when compatibility
   changes. Preserve old files and failed-write/load protections; do not add experimental
@@ -98,8 +97,12 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   the current build has none within a Loop.
 - Keep temporary equipment, inventory, gold, quests and traders as tactical route
   resources. Equipment supports main/off-hand or a two-handed weapon, armor and two
-  accessories. Strength, agility, stamina, crit and haste affect damage/attack mechanics
-  rather than the selected class. Slow weapons favor weapon-damage abilities; fast
+  accessories. The primary stats are strength, agility and stamina; the secondary stats
+  are armor, crit and haste. Strength increases weapon damage, agility increases crit
+  and dodge, stamina increases health, armor reduces physical damage, crit adds critical
+  chance and haste speeds weapon swings. These effects are independent of the selected
+  class. Keep existing weapon-based Holy/Nature scaling; broader damage/healing scaling
+  remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.
 - Merchants have fixed inventory and prices; quest rewards are fixed. Enemy loot is
   determined by the world seed and stable enemy identity. Chest contents and positions

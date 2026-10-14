@@ -1,67 +1,9 @@
 extends GutTest
 
 
-func test_paid_training_enforces_class_level_money_and_previous_rank_without_spending_time() -> void:
-	var world := _world()
-	world.hero.copper = 1000
-	assert_false(world.train(&"Mage", &"fireball_2"))
-	world.hero.level = 6
-	world.hero._apply_level_stats()
-	assert_false(world.train(&"Druid", &"wrath_2"))
-	world.hero.copper = 99
-	assert_false(world.train(&"Mage", &"fireball_2"))
-	assert_eq(world.hero.copper, 99)
-	world.hero.copper = 100
-	assert_true(world.train(&"Mage", &"fireball_2"))
-	assert_eq(world.hero.copper, 0)
-	assert_false(world.train(&"Mage", &"fireball_2"))
-	assert_eq(world.hero.learned_skills.filter(func(s: SkillRank) -> bool: return s.id == &"fireball_2").size(), 1)
-	world.hero.level = 8
-	world.hero.copper = 200
-	assert_false(world.train(&"Mage", &"frostbolt_2"), "Rank 1 must be learned first.")
-	assert_eq(world.hero.copper, 200)
-	assert_eq(world.turn_count, 0)
-
-
-func test_higher_rank_retention_after_death_keeps_casting_but_resets_items_money_and_stock() -> void:
-	var game := GameSession.new()
-	LegacyMageFixture.session(game)
-	game.new_game(97)
-	game.world.hero.level = 6
-	game.world.hero._apply_level_stats()
-	game.world.hero.copper = 500
-	assert_true(game.world.train(&"Mage", &"fireball_2"))
-	game.world.hero.inventory[0] = ItemData.instance(118, 4)
-	game.world.vendor_stock["fixed/900003"]["2455"] = 0
-	game.world.hero.cooldowns["fire_blast"] = 500
-	game.world.hero.health = 0
-	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.level, 1)
-	assert_eq(game.world.hero.copper, 0)
-	assert_true(game.world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
-	assert_eq(game.world.vendor_stock["fixed/900003"]["2455"], 3)
-	assert_eq(game.world.hero.cooldowns, {})
-	assert_true(StarterGear.exchange(game.world.hero, &"Druid"))
-	var target: GridActor
-	for actor in game.world.actors:
-		if actor.relationship == GridActor.Relationship.HOSTILE:
-			target = actor
-			break
-	for direction in GridWorld.DIRECTIONS:
-		if game.world.is_open(target.tile + direction):
-			game.world.player_tile = target.tile + direction
-			break
-	assert_true(game.world.cast_skill(&"fireball_2", target), "Class and current level do not gate casting.")
-	while game.world.pending_skill != null:
-		game.world.continue_cast()
-	assert_eq(game.world.hero.mana, 120)
-
-
 func test_loot_is_seeded_by_identity_independent_of_kill_order_and_combat_rng() -> void:
 	var first := GameSession.new()
-	LegacyMageFixture.session(first)
 	var second := GameSession.new()
-	LegacyMageFixture.session(second)
 	first.new_game(619)
 	second.new_game(619)
 	for index in [2, 5, 6]:
@@ -141,27 +83,20 @@ func test_equipment_changes_stats_without_refilling_and_unrestricted_armor_is_us
 	var world := _world()
 	world.hero.inventory[0] = ItemData.instance(85)
 	world.hero.health = 10
-	world.hero.mana = 30
-	assert_true(world.equip_item(0), "A mage can wear leather without a proficiency grind.")
-	assert_eq(world.hero.melee.armor, 75, "40 agility armor +33 leather +2 pants.")
+	assert_true(world.equip_item(0), "Armor is usable in every class.")
+	assert_eq(world.hero.melee.armor, 35, "Leather and pants contribute armor.")
 	assert_eq(world.hero.health, 10)
-	assert_eq(world.hero.mana, 30)
 	assert_eq(world.turn_count, 1)
-	world.hero.inventory[1] = ItemData.instance(6527)
+	world.hero.inventory[1] = ItemData.instance(2572)
 	assert_false(world.equip_item(1), "Item level remains enforced.")
 	assert_eq(world.turn_count, 1)
 	world.hero.level = 8
 	world.hero._apply_level_stats()
-	var maximum := world.hero.max_mana
 	var health := world.hero.health
 	assert_true(world.equip_item(1))
-	assert_eq(world.hero.max_mana, maximum + 30)
 	assert_gte(world.hero.max_health, health + 10)
 	assert_lte(world.hero.health, health + 10, "Equipment itself never refills.")
-	world.hero.mana = world.hero.max_mana
 	assert_true(world.unequip_item("chest"))
-	assert_eq(world.hero.max_mana, maximum)
-	assert_lte(world.hero.mana, maximum)
 
 
 func test_two_handed_swap_requires_room_for_both_displaced_items_atomically() -> void:
@@ -171,7 +106,7 @@ func test_two_handed_swap_requires_room_for_both_displaced_items_atomically() ->
 	world.hero.inventory[1] = ItemData.instance(2129)
 	assert_true(world.equip_item(1))
 	assert_eq(world.hero.melee.interval, 1.6)
-	assert_eq(world.hero.melee.block, 5.0)
+	assert_eq(world.hero.melee.armor, 57)
 	_fill(world.hero)
 	world.hero.inventory[0] = ItemData.instance(35)
 	var before := world.hero.equipment.duplicate(true)
@@ -185,7 +120,7 @@ func test_two_handed_swap_requires_room_for_both_displaced_items_atomically() ->
 	assert_true(world.equip_item(0))
 	assert_false(world.hero.equipment.has("off_hand"))
 	assert_eq(world.hero.melee.interval, 2.9)
-	assert_eq(world.hero.melee.block, 0.0)
+	assert_eq(world.hero.melee.armor, 2)
 	assert_false(world.equip_item(0, "off_hand"), "No dual wield capability.")
 
 
@@ -217,23 +152,23 @@ func test_trade_quantity_is_atomic_and_finite_stock_does_not_replenish() -> void
 	trader.spawn_id = "fixed/900003"
 	world.actors.append(trader)
 	world.vendor_stock = MerchantData.initial_stock(world.actors)
-	world.hero.copper = 119
-	assert_false(world.buy_item(trader, 2455, 3))
-	assert_eq(world.hero.copper, 119)
-	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 3)
-	world.hero.copper = 120
-	assert_true(world.buy_item(trader, 2455, 3))
+	world.hero.copper = 59
+	assert_false(world.buy_item(trader, 118, 3))
+	assert_eq(world.hero.copper, 59)
+	assert_eq(world.vendor_stock["fixed/900003"]["118"], 3)
+	world.hero.copper = 60
+	assert_true(world.buy_item(trader, 118, 3))
 	assert_eq(world.hero.copper, 0)
 	assert_eq(world.hero.inventory[0].quantity, 3)
-	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 0)
+	assert_eq(world.vendor_stock["fixed/900003"]["118"], 0)
 	assert_false(world.sell_item(trader, 0, 4))
 	assert_true(world.sell_item(trader, 0, 2))
-	assert_eq(world.hero.copper, 20)
+	assert_eq(world.hero.copper, 10)
 	assert_eq(world.hero.inventory[0].quantity, 1)
 	assert_eq(world.turn_count, 0)
 	for turn in range(40):
 		world.wait_turn()
-	assert_eq(world.vendor_stock["fixed/900003"]["2455"], 0)
+	assert_eq(world.vendor_stock["fixed/900003"]["118"], 0)
 	_fill(world.hero)
 	var money := world.hero.copper
 	assert_false(world.buy_item(trader, 117, 1))
@@ -247,7 +182,7 @@ func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:
 	world.hero._apply_level_stats()
 	world.hero.health = 1
 	world.hero.inventory[0] = ItemData.instance(118, 2)
-	world.hero.inventory[1] = ItemData.instance(2455)
+	world.hero.inventory[1] = ItemData.instance(118)
 	assert_true(world.consume_item(0))
 	assert_between(world.hero.health, 71, 91)
 	assert_eq(world.hero.inventory[0].quantity, 1)
@@ -257,30 +192,6 @@ func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:
 	assert_eq(world.hero.potion_ready_turn, 121)
 	world.turn_count = 121
 	assert_true(world.consume_item(1))
-
-
-func test_food_and_water_restore_only_on_turns_and_movement_or_combat_interrupts() -> void:
-	var world := _world()
-	world.hero.inventory[0] = ItemData.instance(159, 2)
-	world.hero.mana = 0
-	world.hero.last_mana_turn = 1000
-	assert_true(world.consume_item(0))
-	assert_eq(world.hero.mana, 0)
-	for turn in range(18):
-		world.wait_turn()
-	assert_eq(world.hero.mana, 151)
-	assert_true(world.hero.restoration.is_empty())
-	assert_true(world.consume_item(0))
-	assert_true(world.move_player(Vector2i.RIGHT))
-	assert_true(world.hero.restoration.is_empty())
-	var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
-	enemy.engaged = true
-	world.actors.append(enemy)
-	world.hero.inventory[0] = ItemData.instance(117)
-	var turn := world.turn_count
-	assert_false(world.consume_item(0))
-	assert_eq(world.turn_count, turn)
-	assert_eq(world.hero.inventory[0].quantity, 1)
 
 
 func test_apple_heals_five_per_wait_for_ten_turns_and_save_preserves_remaining_meal() -> void:
@@ -382,42 +293,27 @@ func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() ->
 	assert_eq(world.turn_count, 0)
 
 
-func test_shield_blocks_front_only_and_damage_reduction_uses_block_value() -> void:
+func test_shield_armor_reduces_damage_from_front_and_rear() -> void:
 	var defender := HeroState.new().melee
 	defender.dodge = 0
-	defender.block = 5
-	defender.block_value = 2
+	defender.armor = 485
 	var attacker := MeleeProfile.new()
 	attacker.damage_min = 10
 	attacker.damage_max = 10
 	attacker.critical = 0
-	assert_eq(MeleeRules.outcome(attacker, defender, false, 7.0), &"block")
+	assert_eq(MeleeRules.outcome(attacker, defender, false, 7.0), &"hit")
 	assert_eq(MeleeRules.outcome(attacker, defender, true, 7.0), &"hit")
-	assert_eq(MeleeRules.damage(attacker, defender, &"block", 0.0, 0.0), 7)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0), 5)
 
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(4, 4), 97)
-	LegacyMageFixture.apply(world)
 	return world
 
 
 func _fill(hero: HeroState) -> void:
 	for index in range(40):
 		hero.inventory[index] = ItemData.instance(35)
-
-
-func test_class_exchange_preserves_acquired_shield_and_stows_two_handed_starter() -> void:
-	var hero := HeroState.new()
-	hero.inventory[0] = ItemData.instance(2129)
-	assert_true(InventoryRules.equip(hero, 0))
-	assert_true(hero.equipment.has("off_hand"))
-	assert_false(hero.equipment.has("main_hand"))
-	assert_true(StarterGear.exchange(hero, &"Druid"))
-	assert_eq(hero.equipment.off_hand.id, 2129)
-	assert_false(hero.equipment.has("main_hand"))
-	assert_eq(hero.inventory.filter(func(item: Dictionary) -> bool:
-		return not item.is_empty() and item.id == 35 and item.starter).size(), 1)
 
 
 func test_empty_death_removes_corpse_without_losing_kill_identity_or_xp() -> void:

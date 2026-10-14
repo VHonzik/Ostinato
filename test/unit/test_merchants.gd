@@ -18,7 +18,6 @@ func _beside(world: GridWorld, merchant: GridActor) -> void:
 
 func test_source_catalogs_and_explicit_exclusions() -> void:
 	var game := GameSession.new()
-	LegacyMageFixture.session(game)
 	game.world = _world()
 	var expected := {
 		152: [4540],
@@ -99,7 +98,6 @@ func test_quantities_reject_partial_money_and_capacity_without_changing_stock() 
 
 func test_finite_stock_is_per_instance_and_never_refilled_by_waiting_or_selling() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 89, false)
-	LegacyMageFixture.apply(world)
 	var first := GridActor.new(Vector2i(4, 5))
 	var second := GridActor.new(Vector2i(6, 5))
 	for actor in [first, second]:
@@ -109,55 +107,53 @@ func test_finite_stock_is_per_instance_and_never_refilled_by_waiting_or_selling(
 		world.actors.append(actor)
 	world.vendor_stock = MerchantData.initial_stock(world.actors)
 	world.hero.copper = 1000
-	assert_true(world.buy_item(first, 2455, 3))
-	assert_false(world.buy_item(first, 2455, 1))
-	assert_eq(world.vendor_stock[second.spawn_id]["2455"], 3)
+	assert_true(world.buy_item(first, 118, 3))
+	assert_false(world.buy_item(first, 118, 1))
+	assert_eq(world.vendor_stock[second.spawn_id]["118"], 3)
 	assert_true(world.sell_item(first, 0, 3))
 	for turn in range(40):
 		world.wait_turn()
-	assert_eq(world.vendor_stock[first.spawn_id]["2455"], 0)
-	assert_true(world.buy_item(second, 2455, 2))
-	assert_eq(world.vendor_stock[second.spawn_id]["2455"], 1)
+	assert_eq(world.vendor_stock[first.spawn_id]["118"], 0)
+	assert_true(world.buy_item(second, 118, 2))
+	assert_eq(world.vendor_stock[second.spawn_id]["118"], 1)
 	assert_eq(world.turn_count, 40)
 
 
 func test_stock_save_round_trip_continuation_reset_and_stale_merchant_rejection() -> void:
 	var game := GameSession.new()
-	LegacyMageFixture.session(game)
 	game.new_game(819)
 	var old := _merchant(game.world, 900003)
 	_beside(game.world, old)
 	game.world.hero.copper = 1000
-	assert_true(game.world.buy_item(old, 2455, 2))
+	assert_true(game.world.buy_item(old, 118, 2))
 	var captured := SaveCodec.capture(game)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(captured)), false)
 	assert_not_null(restored)
 	if restored == null:
 		return
 	assert_eq(restored.vendor_stock, game.world.vendor_stock)
-	assert_false(restored.buy_item(old, 2455, 1))
+	assert_false(restored.buy_item(old, 118, 1))
 	assert_false(restored.sell_item(old, 0, 1))
-	assert_true(restored.buy_item(_merchant(restored, 900003), 2455, 1))
-	assert_true(game.world.buy_item(old, 2455, 1))
+	assert_true(restored.buy_item(_merchant(restored, 900003), 118, 1))
+	assert_true(game.world.buy_item(old, 118, 1))
 	assert_eq(restored.hero.inventory, game.world.hero.inventory)
 	assert_eq(restored.hero.copper, game.world.hero.copper)
 	assert_eq(restored.vendor_stock, game.world.vendor_stock)
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.vendor_stock["fixed/900003"]["2455"], 3)
-	assert_false(game.world.buy_item(old, 2455, 1))
+	assert_eq(game.world.vendor_stock["fixed/900003"]["118"], 3)
+	assert_false(game.world.buy_item(old, 118, 1))
 	game.new_game(820)
-	assert_eq(game.world.vendor_stock["fixed/900003"]["2455"], 3)
+	assert_eq(game.world.vendor_stock["fixed/900003"]["118"], 3)
 
 
 func test_invalid_saved_stock_cannot_change_catalog_or_finite_unlimited_semantics() -> void:
 	var game := GameSession.new()
-	LegacyMageFixture.session(game)
 	game.world = _world()
 	var original := SaveCodec.capture(game)
 	for value in [-2, -1, 4, 1.5, "2"]:
 		var bad := original.duplicate(true)
-		bad.vendor_stock["fixed/900003"]["2455"] = value
+		bad.vendor_stock["fixed/900003"]["118"] = value
 		assert_null(SaveCodec.restore(bad, false), str(value))
 	var bad := original.duplicate(true)
 	bad.vendor_stock["fixed/152"]["4540"] = 0
@@ -188,7 +184,7 @@ func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
 	assert_true(world.buy_item(merchant, 4540, 5))
 	assert_true(world.sell_item(merchant, 0, 1))
 	assert_eq(world.turn_count, 0)
-	world.pending_skill = SkillRank.catalog(&"fireball_1")
+	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
 	assert_false(world.buy_item(merchant, 4540, 1))
 	assert_false(world.sell_item(merchant, 0, 1))
 	assert_eq(world.hero.inventory[0].quantity, 4)
@@ -201,10 +197,8 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 	_beside(world, merchant)
 	world.hero.copper = 1000
 	assert_true(world.buy_item(merchant, 2121, 1))
-	var armor := world.hero.melee.armor
-	var previous := int(ItemData.get_item(int(world.hero.equipment.chest.id)).armor)
-	assert_true(world.equip_item(0))
-	assert_eq(world.hero.melee.armor, armor - previous + 10)
+	assert_eq(world.hero.equipment.chest.id, 2121)
+	assert_eq(world.hero.melee.armor, 12, "New armor fills the empty chest slot.")
 	merchant = _merchant(world, 78)
 	_beside(world, merchant)
 	assert_true(world.buy_item(merchant, 2132, 1))
@@ -254,11 +248,11 @@ func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat
 	_beside(world, merchant)
 	world.hero.inventory[0] = ItemData.instance(7073, 5)
 	world.hero.inventory[1] = ItemData.instance(7073, 2)
-	world.hero.inventory[2] = ItemData.instance(56) # Grey carried robe.
+	world.hero.inventory[2] = ItemData.instance(1378) # Grey carried robe.
 	world.hero.inventory[3] = ItemData.instance(4540, 20) # Common food.
 	world.hero.inventory[4] = ItemData.instance(2572) # Green equipment.
 	world.hero.inventory[5] = ItemData.instance(750, 2) # Quest item.
-	world.hero.inventory[6] = ItemData.instance(5349, 4) # Conjured food.
+	world.hero.inventory[6] = ItemData.instance(750, 4) # Conjured food.
 	world.hero.inventory[7] = ItemData.instance(35) # Common equipment.
 	var retained := world.hero.inventory.slice(3).duplicate(true)
 	var equipment := world.hero.equipment.duplicate(true)
@@ -285,7 +279,7 @@ func test_bulk_sale_rejects_distant_dead_stale_and_busy_merchants_without_transf
 	merchant.alive = false
 	assert_false(world.sell_all_grey(merchant))
 	merchant.alive = true
-	world.pending_skill = SkillRank.catalog(&"fireball_1")
+	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
 	assert_false(world.sell_all_grey(merchant))
 	world.pending_skill = null
 	var other := _world()
@@ -304,7 +298,7 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 			assert_true(item.has("quality"), item.title)
 			assert_between(int(item.quality), 0, 4)
 	assert_eq(ItemData.get_item(7073).quality, 0)
-	assert_eq(ItemData.get_item(56).quality, 0)
+	assert_eq(ItemData.get_item(1378).quality, 0)
 	assert_eq(ItemData.get_item(35).quality, 1)
 	assert_eq(ItemData.get_item(4540).quality, 1)
 	assert_eq(ItemData.get_item(2572).quality, 2)
@@ -312,7 +306,6 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 40, 24), Vector2i(20, 14), 819, false)
-	LegacyMageFixture.apply(world)
 	var identities := [152, 190, 1213, 78, 900003, 11940, 38]
 	for index in range(identities.size()):
 		var actor := GridActor.new(Vector2i(4 + index * 4, 8))

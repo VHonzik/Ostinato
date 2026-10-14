@@ -110,7 +110,6 @@ func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_trai
 		assert_true(game.select_class(category, _marshal(game)))
 		assert_eq(game.world.hero.selected_class, category)
 		assert_eq(game.world.hero.equipment, equipment, "Choice does not exchange gear.")
-		assert_eq([game.world.hero.mana, game.world.hero.max_mana], [0, 0])
 		assert_eq(game.world.hero.learned_skills.size(), 2, "The marshal teaches no skills.")
 		assert_eq(game.world.turn_count, 0)
 		for skill in SkillRank.starting_skills(category):
@@ -545,15 +544,13 @@ func test_save_rejects_first_loop_other_class_and_legacy_kit_in_runnable_game() 
 	assert_null(SaveCodec.restore(legacy, false))
 
 
-func test_seal_bonus_on_landed_blocked_swings_grants_no_extra_rage_xp_or_combo_points() -> void:
+func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() -> void:
 	var world := _world(&"Paladin")
 	_learn_starters(world, &"Paladin")
 	_learn_starters(world, &"Rogue")
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"seal_of_command_1"))
 	var enemy := _enemy(world)
-	enemy.melee.block = 100.0
-	enemy.melee.block_value = 10000
 	enemy.facing = Vector2i.LEFT
 	world.hero.melee.hit = 100.0
 	world.hero.melee.interval = 2.0
@@ -562,7 +559,7 @@ func test_seal_bonus_on_landed_blocked_swings_grants_no_extra_rage_xp_or_combo_p
 	world.hero.melee.critical = 0.0
 	world.hero.rage = 0
 	assert_true(world.request_melee(enemy))
-	assert_lt(enemy.health, enemy.max_health, "Holy bonus still lands when the physical hit is blocked.")
+	assert_lt(enemy.health, enemy.max_health, "Landed swings trigger the Holy bonus.")
 	assert_eq(world.hero.rage, 14, "Only the ordinary swing supplies rage.")
 	assert_eq(world.hero.combo_points, 0)
 	assert_eq(world.hero.progression_points(&"Paladin"), 1, "Only casting the seal supplied class XP.")

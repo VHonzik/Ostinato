@@ -132,14 +132,15 @@ func refresh() -> void:
 		"%s  /  Level %d     XP %d / %d\n"
 		+ "Health %d / %d     Rage %d / %d\n"
 		+ "Strength %d     Agility %d     Stamina %d\n"
-		+ "Intellect %d     Spirit %d\n"
-		+ "Melee AP %d   Armor %d   Crit %.2f%%   Dodge %.2f%%\n"
+		+ "Armor %d     Crit %.2f%%     Attack haste +%.2f%%\n"
+		+ "Weapon power %d     Dodge %.2f%%\n"
 		+ "Class XP %d (cumulative)     Combo points %d / %d"
 	) % [
 		_hero.selected_class, _hero.level, _hero.experience, _hero.experience_to_next_level(),
 		_hero.health, _hero.max_health, _hero.rage, HeroState.MAX_RAGE,
-		_hero.strength, _hero.agility, _hero.stamina, _hero.intellect, _hero.spirit,
-		_hero.melee.attack_power, _hero.melee.armor, _hero.melee.critical, _hero.melee.dodge,
+		_hero.strength, _hero.agility, _hero.stamina,
+		_hero.melee.armor, _hero.melee.critical, (_hero.attack_haste() - 1.0) * 100.0,
+		_hero.melee.attack_power, _hero.melee.dodge,
 		_hero.progression_points(_hero.selected_class), _hero.combo_points, HeroState.MAX_COMBO_POINTS,
 	]
 
@@ -179,9 +180,6 @@ func _rebuild_skills() -> void:
 		child.queue_free()
 	var categories: Dictionary[StringName, VBoxContainer] = {}
 	var skills := _hero.learned_skills.duplicate()
-	if _hero.find_skill(&"pet_attack") != null:
-		for identifier: StringName in [&"pet_attack", &"pet_follow", &"pet_dismiss"]:
-			skills.append(ClassSkillData.pet_command(identifier))
 	for skill in skills:
 		if not categories.has(skill.class_tab):
 			var scroll := ScrollContainer.new()
@@ -195,7 +193,7 @@ func _rebuild_skills() -> void:
 			categories[skill.class_tab] = rows
 		var button := SkillButton.new()
 		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
-		button.text += "  ·  %s / %d %s" % ["Free" if skill.free_instant or skill.effect == SkillRank.Effect.PET_COMMAND else "%.1f turns" % skill.cast_seconds, skill.cost(_hero), skill.resource_name()]
+		button.text += "  ·  %s / %d %s" % ["%.1f turns" % skill.cast_seconds, skill.cost(_hero), skill.resource_name()]
 		if skill.effect == SkillRank.Effect.PASSIVE:
 			button.text = skill.title + " · Passive (learned)"
 		button.describe(skill, _hero)

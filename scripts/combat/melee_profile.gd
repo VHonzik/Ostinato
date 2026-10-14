@@ -14,6 +14,3 @@ var critical: float = 5.0
 var dodge: float = 5.0
 
 var hit: float = 0.0
-var parry: float = 0.0
-var block: float = 0.0
-var block_value: int = 0

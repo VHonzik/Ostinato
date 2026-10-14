@@ -67,7 +67,7 @@ func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -
 		assert_eq(world.hero.equipment[pair[0]].id, pair[1])
 		assert_true(world.hero.equipment[pair[0]].starter)
 	assert_false(ItemData.get_item(2361).two_handed, "The granted hammer fits beside a shield.")
-	assert_eq(world.hero.melee.block, 5.0, "Equipped shield enables blocking.")
+	assert_gte(world.hero.melee.armor, 55, "Equipped shield contributes armor.")
 	assert_eq([world.hero.health, world.hero.rage, world.hero.copper], [7, 23, 19])
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.vendor_stock, stock)

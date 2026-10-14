@@ -202,10 +202,10 @@ func open_trainer(category: StringName) -> void:
 		_label("%s class XP: %d (cumulative; learning does not spend XP)" % [
 			category, session.world.hero.progression_points(category)])
 		if category != &"Warrior":
-			_label("Learn these starter skills for free, with no class XP requirement. Further training comes in a later slice.")
+			_label("Learn these starter skills for free, with no class XP requirement. Further abilities unlock with class XP.")
 		for skill in SkillRank.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
-			var price := "Free" if skill.training_cost == 0 else InventoryRules.money(skill.training_cost)
+			var price := "Free"
 			var status := "Learned" if known else ("Unlock at %d class XP" % skill.progress_required
 				if skill.progress_required > 0 else price)
 			var button := _button("%s rank %d / %s" % [skill.title, skill.rank, status],

@@ -3,30 +3,22 @@ extends RefCounted
 
 ## Physical attack outcomes and weapon damage.
 static func outcome(
-	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float, special: bool = false
+	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float
 ) -> StringName:
 	var difference := 5 * (defender.level - attacker.level)
 	var miss := 5.0 + difference * 0.04
 	if not defender.player and difference > 0:
 		miss = 5.0 + mini(difference, 10) * 0.1 + maxi(0, difference - 10) * 0.6
 	miss -= attacker.hit
-	var parry := 0.0 if behind or defender.parry <= 0 else defender.parry + difference * 0.04
-	var block := 0.0 if behind or defender.block <= 0 else defender.block + difference * 0.04
 	var dodge := defender.dodge + difference * (
 		0.1 if not defender.player and difference > 0 else 0.04
 	)
 	if defender.player and behind:
 		dodge = 0.0
-	var glance := 0.0
-	if not special and attacker.player and not defender.player and defender.level > 10:
-		glance = mini(attacker.level, 30) + difference * 2.0
 	var critical := attacker.critical - difference * (0.04 if defender.player else 0.2)
-	var crush := 0.0
-	if not attacker.player and difference <= -15:
-		crush = -2.0 * difference - 15.0
 	var threshold := 0.0
-	var chances: Array[float] = [miss, dodge, parry, block, glance, critical, crush]
-	var outcomes: Array[StringName] = [&"miss", &"dodge", &"parry", &"block", &"glancing", &"critical", &"crushing"]
+	var chances: Array[float] = [miss, dodge, critical]
+	var outcomes: Array[StringName] = [&"miss", &"dodge", &"critical"]
 	for index in range(chances.size()):
 		threshold += clampf(chances[index], 0.0, 100.0)
 		if roll < threshold:
@@ -36,9 +28,9 @@ static func outcome(
 
 static func damage(
 	attacker: MeleeProfile, defender: MeleeProfile, result: StringName,
-	weapon_roll: float, glance_roll: float, weapon_multiplier: float = 1.0, flat_bonus: int = 0
+	weapon_roll: float, weapon_multiplier: float = 1.0, flat_bonus: int = 0
 ) -> int:
-	if result in [&"miss", &"dodge", &"parry"]:
+	if result in [&"miss", &"dodge"]:
 		return 0
 	var bonus := attacker.attack_power / 14.0 * attacker.interval
 	var minimum := floori(attacker.damage_min + bonus)
@@ -48,18 +40,8 @@ static func damage(
 	var reduction := minf(0.75, armor / (armor + 400.0 + 85.0 * attacker.level))
 	var amount := maxi(1, floori((raw * weapon_multiplier + flat_bonus)
 		* attacker.damage_multiplier * (1.0 - reduction)))
-	match result:
-		&"critical":
-			amount *= 2
-		&"crushing":
-			amount = floori(amount * 1.5)
-		&"glancing":
-			var difference := 5 * (defender.level - attacker.level)
-			var high := clampf(0.9 - 0.03 * difference, 0.2, 0.99)
-			var low := clampf(0.6 - 0.05 * difference, 0.01, minf(0.6, high))
-			amount = floori(amount * lerpf(low, high, glance_roll))
-	if result == &"block":
-		amount = maxi(0, amount - defender.block_value)
+	if result == &"critical":
+		amount *= 2
 	return amount
 
 

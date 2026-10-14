@@ -178,16 +178,21 @@ const CATALOGS: Dictionary = {
 			"price": 5,
 			"stock": -1
 		},
-		"2455": {
+		"118": {
 			"quantity": 1,
-			"price": 40,
+			"price": 20,
 			"stock": 3
 		},
 		"2132": {
 			"quantity": 1,
 			"price": 102,
 			"stock": -1
-		}
+		},
+		"2572": {
+			"quantity": 1,
+			"price": 496,
+			"stock": 1
+		},
 	}
 }
 

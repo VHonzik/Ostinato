@@ -5,9 +5,11 @@ extends RefCounted
 
 
 static func outfit(category: StringName) -> Array[int]:
-	var outfits := {"Warrior": [2362, 2361, 2379, 2381, 2383], "Mage": [56, 1395, 55, 6096, 35], "Druid": [6123, 6124, 35], "Warlock": [57, 1396, 59, 6097, 2092], "Priest": [6144, 52, 51, 53, 36], "Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361]}
+	var outfits := {"Warrior": [2362, 2361, 2379, 2381, 2383],
+		"Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361],
+		"Rogue": [43, 44, 45, 2092]}
 	var result: Array[int] = []
-	result.assign(outfits[String(category)])
+	result.assign(outfits.get(String(category), []))
 	return result
 
 
@@ -25,6 +27,8 @@ static func equip_outfit(hero: HeroState) -> void:
 
 
 static func exchange(hero: HeroState, category: StringName) -> bool:
+	if category not in ClassSkillData.PLAYABLE_CLASSES:
+		return false
 	var equipment := hero.equipment.duplicate(true)
 	var inventory := hero.inventory.duplicate(true)
 	for slot in equipment.keys():
@@ -51,7 +55,6 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 	hero.selected_class = category
 	hero.refresh_stats()
 	hero.health = mini(hero.health, hero.max_health)
-	hero.mana = mini(hero.mana, hero.max_mana)
 	return true
 
 
