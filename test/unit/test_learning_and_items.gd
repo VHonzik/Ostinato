@@ -39,6 +39,9 @@ func test_full_inventory_preserves_loot_and_repeated_collection_cannot_duplicate
 	world.actors.append(chest)
 	assert_true(world.open_loot(chest))
 	var original := chest.loot.duplicate(true)
+	world.hero.equipment.neck = ItemData.instance(70001)
+	world.hero.equipment.ring_1 = ItemData.instance(70002)
+	world.hero.equipment.ring_2 = ItemData.instance(70003)
 	_fill(world.hero)
 	assert_false(world.loot_item(chest, 0))
 	assert_eq(chest.loot, original)
@@ -84,44 +87,34 @@ func test_equipment_changes_stats_without_refilling_and_unrestricted_armor_is_us
 	world.hero.inventory[0] = ItemData.instance(85)
 	world.hero.health = 10
 	assert_true(world.equip_item(0), "Armor is usable in every class.")
-	assert_eq(world.hero.melee.armor, 35, "Leather and pants contribute armor.")
+	assert_eq(world.hero.melee.armor, 90, "One armor outfit replaces travel clothes.")
 	assert_eq(world.hero.health, 10)
 	assert_eq(world.turn_count, 1)
 	world.hero.inventory[1] = ItemData.instance(2572)
-	assert_false(world.equip_item(1), "Item level remains enforced.")
+	var max_health := world.hero.max_health
+	# Inspect the gear transaction without the world's periodic health regeneration.
+	assert_true(InventoryRules.equip(world.hero, 1), "Uncommon armor is usable at level one.")
 	assert_eq(world.turn_count, 1)
-	world.hero.level = 8
-	world.hero._apply_level_stats()
-	var health := world.hero.health
-	assert_true(world.equip_item(1))
-	assert_gte(world.hero.max_health, health + 10)
-	assert_lte(world.hero.health, health + 10, "Equipment itself never refills.")
-	assert_true(world.unequip_item("chest"))
+	assert_eq(world.hero.max_health, max_health + 10)
+	assert_eq(world.hero.health, 10, "Equipment itself never refills.")
+	assert_true(world.unequip_item("armor"))
 
 
-func test_two_handed_swap_requires_room_for_both_displaced_items_atomically() -> void:
+func test_weapon_setups_swap_as_one_item_with_a_full_bag() -> void:
 	var world := _world()
-	world.hero.inventory[0] = ItemData.instance(2139)
+	world.hero.inventory[0] = ItemData.instance(2129)
 	assert_true(world.equip_item(0))
-	world.hero.inventory[1] = ItemData.instance(2129)
-	assert_true(world.equip_item(1))
-	assert_eq(world.hero.melee.interval, 1.6)
-	assert_eq(world.hero.melee.armor, 57)
+	assert_eq(world.hero.equipment.weapons.id, 2129)
+	assert_eq(world.hero.melee.armor, 78)
 	_fill(world.hero)
 	world.hero.inventory[0] = ItemData.instance(35)
+	assert_true(world.equip_item(0), "The source slot fits the entire displaced pair.")
+	assert_eq(world.hero.inventory[0].id, 2129)
+	assert_eq(world.hero.equipment.weapons.id, 35)
+	assert_eq(world.hero.melee.armor, 8)
 	var before := world.hero.equipment.duplicate(true)
-	var inventory := world.hero.inventory.duplicate(true)
-	var turn := world.turn_count
-	assert_false(world.equip_item(0))
-	assert_eq(world.hero.inventory, inventory)
+	assert_false(world.unequip_item("weapons"), "A full bag cannot hold the removed setup.")
 	assert_eq(world.hero.equipment, before)
-	assert_eq(world.turn_count, turn)
-	world.hero.inventory[1] = {}
-	assert_true(world.equip_item(0))
-	assert_false(world.hero.equipment.has("off_hand"))
-	assert_eq(world.hero.melee.interval, 2.9)
-	assert_eq(world.hero.melee.armor, 2)
-	assert_false(world.equip_item(0, "off_hand"), "No dual wield capability.")
 
 
 func test_stack_merge_split_swap_and_overflow_are_free_and_preserve_starter_provenance() -> void:
@@ -250,19 +243,20 @@ func test_apple_ends_on_successful_movement_and_caps_health() -> void:
 
 func test_acquired_gear_fills_empty_slots_with_full_bag_and_never_displaces_hands() -> void:
 	var hero := HeroState.new(false)
+	hero.equipment.erase("armor")
 	_fill(hero)
 	assert_true(InventoryRules.receive(hero, ItemData.instance(2649)))
-	assert_eq(hero.equipment.waist.id, 2649)
+	assert_eq(hero.equipment.armor.id, 2649)
 	var before := hero.inventory.duplicate(true)
 	assert_false(InventoryRules.receive(hero, ItemData.instance(2649)))
 	assert_eq(hero.inventory, before)
 	assert_false(InventoryRules.receive(hero, ItemData.instance(2129)),
 		"The starting two-handed staff prevents a shield from auto-equipping.")
-	assert_eq(hero.equipment.main_hand.id, 35)
+	assert_eq(hero.equipment.weapons.id, 35)
 	assert_false(hero.equipment.has("off_hand"))
 	assert_false(InventoryRules.receive(hero, ItemData.instance(2653, 2)),
 		"An extra copy must fit before either copy is transferred.")
-	assert_false(hero.equipment.has("hands"))
+	assert_eq(hero.equipment.armor.id, 2649)
 	hero.inventory[0] = {}
 	assert_true(InventoryRules.receive(hero, ItemData.instance(2129)))
 	assert_eq(hero.inventory[0].id, 2129)
@@ -271,13 +265,14 @@ func test_acquired_gear_fills_empty_slots_with_full_bag_and_never_displaces_hand
 
 func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	world.hero.equipment.erase("armor")
 	var corpse := GridActor.new(Vector2i(4, 5))
 	corpse.alive = false
 	corpse.loot_assigned = true
 	corpse.loot = [ItemData.instance(2649)]
 	world.actors.append(corpse)
 	assert_true(world.loot_item(corpse, 0))
-	assert_eq(world.hero.equipment.waist.id, 2649)
+	assert_eq(world.hero.equipment.armor.id, 2649)
 	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	var trader := GridActor.new(Vector2i(6, 5))
 	trader.npc_id = 900003
@@ -285,10 +280,10 @@ func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() ->
 	trader.service = &"Trader"
 	world.actors.append(trader)
 	world.vendor_stock = MerchantData.initial_stock(world.actors)
-	world.hero.equipment.erase("main_hand")
-	world.hero.copper = 102
+	world.hero.equipment.erase("weapons")
+	world.hero.copper = 200
 	assert_true(world.buy_item(trader, 2132, 1))
-	assert_eq(world.hero.equipment.main_hand.id, 2132)
+	assert_eq(world.hero.equipment.weapons.id, 2132)
 	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	assert_eq(world.turn_count, 0)
 

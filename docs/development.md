@@ -89,7 +89,8 @@ describes their provisional mechanics; passives can be focused and inspected but
 be cast or assigned. New catalogue data lives in
 [class_toolkit_data.gd](../scripts/hero/class_toolkit_data.gd), alongside the existing
 [starter and Warrior data](../scripts/hero/class_skill_data.gd).
-Ambidexterity enables the inventory's off-hand equip action for one-handed weapons.
+Every class can equip any gear without level or learning requirements.
+Ambidexterity improves off-hand damage when learned.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
 Finishers spend all held points before refunds; Execute and Judgement do not spend points.
@@ -97,12 +98,21 @@ Hero buffs expire at the advanced turn boundary before player swings and enemy a
 
 The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
 with weapon power and dodge as derived values. Gear works equally in all four classes.
-Janos offers a Red Linen Robe with stamina, crit and haste, plus finite healing-potion
-stock. Shields contribute armor. Mana, caster stats and the obsolete class catalogues
+Equipment has five slots: armor, neck, two rings and one weapon setup. Two-hand,
+weapon-and-shield and dual-wield pairs each occupy one inventory/equipment slot.
+Janos sells common gear, finite healing potions and unlimited food. Quest rewards cover
+the common loadout; the mine and vineyard award final weapons. Mobs can drop poor gear
+or rare uncommon upgrades; each chest guarantees common or uncommon equipment.
+Poor/common/uncommon names appear gray/white/green. Shields contribute armor.
+Common and uncommon accessories have primary and secondary bonuses. Crit and haste
+use direct percentage bonuses. Strength increases weapon power; Agility adds crit and
+dodge. Weapon-based physical, Holy and Nature damage keeps fractional power until the
+final integer result, using the existing weapon roll for unbiased rounding.
+Mana, caster stats and the obsolete class catalogues
 are removed, along with parry, block, glancing, crushing and spell resistance.
 
-Current saves are `demo` revision 17, with gear stats rebuilt from equipment on load.
-Revision 16 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 18, with gear stats rebuilt from equipment on load.
+Revision 17 and older saves are incompatible and left unchanged; start a fresh game.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

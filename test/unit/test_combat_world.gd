@@ -171,7 +171,9 @@ func test_pursuit_takes_shortest_terrain_route_even_when_it_initially_moves_away
 
 
 func test_crowded_pursuers_fill_available_melee_tiles_without_overlap_or_leash() -> void:
-	_world.hero.health = 10000
+	# Keep movement checks independent of damage tuning and the health cap on refresh.
+	_world.hero.level = 20
+	_world.hero._apply_level_stats()
 	for tile in [Vector2i(6, 6), Vector2i(10, 6), Vector2i(14, 6), Vector2i(14, 10),
 		Vector2i(14, 14), Vector2i(10, 14), Vector2i(6, 14), Vector2i(6, 10), Vector2i(5, 10)]:
 		_actor(tile).engaged = true

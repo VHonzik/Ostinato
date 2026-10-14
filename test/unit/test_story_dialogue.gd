@@ -51,23 +51,21 @@ func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -
 	var janos := _contact(world, 900003)
 	assert_eq(janos.title, "Janos Hammerknuckle")
 	assert_eq(_contact(world, 900002).title, "Farseer Lopaa")
-	assert_eq(world.hero.equipment.size(), 3)
-	assert_eq(world.hero.equipment.main_hand.id, 35)
-	assert_eq(world.hero.equipment.legs.id, 44)
-	assert_eq(world.hero.equipment.shirt.id, 45)
+	assert_eq(world.hero.equipment.size(), 2)
+	assert_eq(world.hero.equipment.weapons.id, 35)
+	assert_eq(world.hero.equipment.armor.id, 44)
 	_beside(world, janos)
 	world.hero.health = 7
 	world.hero.rage = 23
 	world.hero.copper = 19
 	var stock := world.vendor_stock.duplicate(true)
 	assert_true(world.receive_starter_gear(janos))
-	assert_eq(world.hero.equipment.size(), 5)
-	for pair in [["off_hand", 2362], ["main_hand", 2361], ["chest", 2379],
-		["legs", 2381], ["feet", 2383]]:
+	assert_eq(world.hero.equipment.size(), 2)
+	for pair in [["weapons", 2361], ["armor", 2379]]:
 		assert_eq(world.hero.equipment[pair[0]].id, pair[1])
 		assert_true(world.hero.equipment[pair[0]].starter)
 	assert_false(ItemData.get_item(2361).two_handed, "The granted hammer fits beside a shield.")
-	assert_gte(world.hero.melee.armor, 55, "Equipped shield contributes armor.")
+	assert_gte(world.hero.melee.armor, 35, "Equipped shield contributes armor.")
 	assert_eq([world.hero.health, world.hero.rage, world.hero.copper], [7, 23, 19])
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.vendor_stock, stock)
@@ -80,7 +78,7 @@ func test_janos_exchange_is_atomic_and_keeps_acquired_two_handed_weapon() -> voi
 	var janos := _contact(world, 900003)
 	_beside(world, janos)
 	# The same item ID acquired normally must survive removal of granted travel clothes.
-	world.hero.equipment.main_hand = ItemData.instance(35)
+	world.hero.equipment.weapons = ItemData.instance(35)
 	world.hero.refresh_stats()
 	for index in range(40):
 		world.hero.inventory[index] = ItemData.instance(35)
@@ -93,10 +91,9 @@ func test_janos_exchange_is_atomic_and_keeps_acquired_two_handed_weapon() -> voi
 	world.hero.inventory[0] = {}
 	world.hero.inventory[1] = {}
 	assert_true(world.receive_starter_gear(janos))
-	assert_eq(world.hero.equipment.main_hand, ItemData.instance(35))
+	assert_eq(world.hero.equipment.weapons, ItemData.instance(35))
 	assert_false(world.hero.equipment.has("off_hand"), "An acquired staff still uses both hands.")
-	assert_eq(world.hero.inventory[0].id, 2362)
-	assert_eq(world.hero.inventory[1].id, 2361)
+	assert_eq(world.hero.inventory[0].id, 2361)
 
 
 func test_janos_requires_living_nearby_trader_matching_class_and_no_pending_action() -> void:
@@ -133,14 +130,12 @@ func test_gear_grant_survives_save_load_and_resets_after_death() -> void:
 	session.restore(restored, session.seed_value, session.loop_count)
 	assert_true(restored.starter_gear_received)
 	assert_false(restored.receive_starter_gear(_contact(restored, 900003)))
-	assert_eq(restored.hero.equipment.off_hand.id, 2362)
-	assert_eq(restored.hero.equipment.main_hand.id, 2361)
+	assert_eq(restored.hero.equipment.weapons.id, 2361)
 	restored.hero.health = 0
 	assert_true(session.restart_after_death())
 	assert_false(session.world.starter_gear_received)
-	assert_eq(session.world.hero.equipment.main_hand.id, 35)
-	assert_eq(session.world.hero.equipment.legs.id, 44)
-	assert_eq(session.world.hero.equipment.shirt.id, 45)
+	assert_eq(session.world.hero.equipment.weapons.id, 35)
+	assert_eq(session.world.hero.equipment.armor.id, 44)
 	janos = _contact(session.world, 900003)
 	_beside(session.world, janos)
 	assert_true(session.world.receive_starter_gear(janos))

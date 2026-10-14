@@ -1021,7 +1021,7 @@ func item_action_ready() -> bool:
 
 func equip_item(index: int, slot: String = "") -> bool:
 	if not item_action_ready() or not InventoryRules.equip(hero, index, slot):
-		add_message("Cannot equip: check level, slot, hands, or inventory space.")
+		add_message("Cannot equip: check the slot or inventory space.")
 		return false
 	hero.restoration.clear()
 	_finish_turn()

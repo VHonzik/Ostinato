@@ -108,7 +108,7 @@ func test_reward_choice_and_capacity_are_atomic_and_surplus_quest_items_are_remo
 	for index in range(40):
 		world.hero.inventory[index] = ItemData.instance(118, 5)
 	# Occupy the reward slot so it must fit in the full inventory.
-	world.hero.equipment["waist"] = ItemData.instance(2649)
+	world.hero.equipment["armor"] = ItemData.instance(2649)
 	# A non-loot quest with an item reward exercises full capacity directly.
 	world.quests["21"] = {"handed_in": false, "counts": [12]}
 	world.loot_quests.append("21")

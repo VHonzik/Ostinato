@@ -12,8 +12,8 @@ const CREATURES: Dictionary = {
 		"maximum": 1,
 		"power": 0,
 		"interval": 2.0,
-		"copper_min": 1,
-		"copper_max": 4
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"38": {
 		"title": "Defias Thug",
@@ -24,8 +24,8 @@ const CREATURES: Dictionary = {
 		"maximum": 5,
 		"power": 2,
 		"interval": 2.0,
-		"copper_min": 2,
-		"copper_max": 7
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"69": {
 		"title": "Timber Wolf",
@@ -48,7 +48,7 @@ const CREATURES: Dictionary = {
 		"maximum": 5,
 		"power": 2,
 		"interval": 2.0,
-		"copper_min": 2,
+		"copper_min": 4,
 		"copper_max": 8
 	},
 	"103": {
@@ -60,8 +60,8 @@ const CREATURES: Dictionary = {
 		"maximum": 7,
 		"power": 3,
 		"interval": 2.0,
-		"copper_min": 3,
-		"copper_max": 9
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"257": {
 		"title": "Kobold Worker",
@@ -72,8 +72,8 @@ const CREATURES: Dictionary = {
 		"maximum": 4,
 		"power": 2,
 		"interval": 2.0,
-		"copper_min": 1,
-		"copper_max": 7
+		"copper_min": 4,
+		"copper_max": 8
 	},
 	"299": {
 		"title": "Young Wolf",

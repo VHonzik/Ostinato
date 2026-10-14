@@ -96,12 +96,27 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   a complete Northshire database replica. Ordinary enemy respawning remains open;
   the current build has none within a Loop.
 - Keep temporary equipment, inventory, gold, quests and traders as tactical route
-  resources. Equipment supports main/off-hand or a two-handed weapon, armor and two
-  accessories. The primary stats are strength, agility and stamina; the secondary stats
+  resources. Use armor, neck, two ring slots and one weapon setup: two-hand,
+  main-hand plus shield pair, or dual-wield pair. Weapon names are flavor;
+  Gear has no class, level or learning requirements. Ambidexterity improves
+  off-hand damage in any class once learned.
+  Poor gear is gray with no stat bonuses and low damage/armor. Common gear is white
+  with modest damage/armor and small crit/haste bonuses; common necklaces and rings
+  also have primary stats. Uncommon gear is green with
+  primary and secondary bonuses and better damage/armor. Start poor; quests and
+  merchants supply a complete common loadout, including guaranteed final weapons.
+  Uncommon gear comes from rare world drops and less frequent chest rolls; each chest
+  guarantees common or uncommon gear. Necklaces and rings are common or uncommon.
+  Merchants stock limited healing potions and abundant food. Keep bonuses small but
+  meaningful, and prices attainable through ordinary encounters and sold loot.
+  The primary stats are strength, agility and stamina; the secondary stats
   are armor, crit and haste. Strength increases weapon damage, agility increases crit
   and dodge, stamina increases health, armor reduces physical damage, crit adds critical
   chance and haste speeds weapon swings. These effects are independent of the selected
-  class. Keep existing weapon-based Holy/Nature scaling; broader damage/healing scaling
+  class. Small primary bonuses must matter; preserve fractional weapon power through
+  damage resolution so rounding cannot erase them. Crit and haste bonuses remain direct
+  percentages, with small numbers on gear. Keep existing weapon-based Holy/Nature scaling;
+  broader damage/healing scaling
   remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.
 - Merchants have fixed inventory and prices; quest rewards are fixed. Enemy loot is

@@ -74,7 +74,7 @@ func test_accepting_any_quest_closes_selection_but_leveling_keeps_it_available()
 func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> void:
 	var hero := HeroState.new()
 	StarterGear.equip_outfit(hero)
-	hero.equipment.feet.starter = false
+	hero.equipment.armor.starter = false
 	for index in range(40):
 		hero.inventory[index] = ItemData.instance(35)
 	var before := hero.equipment.duplicate(true)
@@ -83,9 +83,9 @@ func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> v
 	assert_eq(hero.selected_class, &"Warrior")
 	hero.inventory[7] = {}
 	assert_true(StarterGear.exchange(hero, &"Paladin"))
-	assert_eq(hero.equipment.feet.id, 2383)
-	assert_false(hero.equipment.feet.starter)
-	assert_eq(hero.inventory[7].id, 43)
+	assert_eq(hero.equipment.armor.id, 2379)
+	assert_false(hero.equipment.armor.starter)
+	assert_eq(hero.inventory[7].id, 44)
 
 
 func test_obsolete_classes_and_abilities_are_unavailable() -> void:

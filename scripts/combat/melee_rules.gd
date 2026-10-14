@@ -2,20 +2,39 @@ class_name MeleeRules
 extends RefCounted
 
 ## Physical attack outcomes and weapon damage.
+const LEVEL_MISS_PERCENT: float = 2.0
+const LEVEL_DODGE_PERCENT: float = 1.0
+const LEVEL_CRITICAL_PERCENT: float = 1.0
+const LEVEL_DAMAGE_STEP: float = 0.12
+const MAX_LEVEL_DAMAGE_ADJUSTMENT: float = 0.9
+
+
+static func miss_chance(attacker: MeleeProfile, defender: MeleeProfile) -> float:
+	var base := minf(95.0, 5.0 + maxi(0, defender.level - attacker.level) * LEVEL_MISS_PERCENT)
+	return clampf(base - attacker.hit, 0.0, 100.0)
+
+
+static func critical_chance(attacker: MeleeProfile, defender: MeleeProfile) -> float:
+	return clampf(attacker.critical + (attacker.level - defender.level)
+		* LEVEL_CRITICAL_PERCENT, 0.0, 100.0)
+
+
+static func level_damage_multiplier(attacker_level: int, defender_level: int) -> float:
+	var gap := attacker_level - defender_level
+	# Equal percentage increases and reductions; bound both before damage can turn negative.
+	var adjustment := clampf(gap * LEVEL_DAMAGE_STEP,
+		-MAX_LEVEL_DAMAGE_ADJUSTMENT, MAX_LEVEL_DAMAGE_ADJUSTMENT)
+	return 1.0 + adjustment
+
+
 static func outcome(
 	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float
 ) -> StringName:
-	var difference := 5 * (defender.level - attacker.level)
-	var miss := 5.0 + difference * 0.04
-	if not defender.player and difference > 0:
-		miss = 5.0 + mini(difference, 10) * 0.1 + maxi(0, difference - 10) * 0.6
-	miss -= attacker.hit
-	var dodge := defender.dodge + difference * (
-		0.1 if not defender.player and difference > 0 else 0.04
-	)
+	var miss := miss_chance(attacker, defender)
+	var dodge := defender.dodge + (defender.level - attacker.level) * LEVEL_DODGE_PERCENT
 	if defender.player and behind:
 		dodge = 0.0
-	var critical := attacker.critical - difference * (0.04 if defender.player else 0.2)
+	var critical := critical_chance(attacker, defender)
 	var threshold := 0.0
 	var chances: Array[float] = [miss, dodge, critical]
 	var outcomes: Array[StringName] = [&"miss", &"dodge", &"critical"]
@@ -32,17 +51,33 @@ static func damage(
 ) -> int:
 	if result in [&"miss", &"dodge"]:
 		return 0
-	var bonus := attacker.attack_power / 14.0 * attacker.interval
-	var minimum := floori(attacker.damage_min + bonus)
-	var maximum := floori(attacker.damage_max + bonus)
-	var raw := minimum + mini(maximum - minimum, floori(weapon_roll * (maximum - minimum + 1)))
+	var raw := weapon_damage(attacker, weapon_roll)
 	var armor := maxf(0.0, defender.armor)
 	var reduction := minf(0.75, armor / (armor + 400.0 + 85.0 * attacker.level))
-	var amount := maxi(1, floori((raw * weapon_multiplier + flat_bonus)
-		* attacker.damage_multiplier * (1.0 - reduction)))
+	var adjusted := maxf(1.0, (raw * weapon_multiplier + flat_bonus)
+		* attacker.damage_multiplier * (1.0 - reduction)
+		* level_damage_multiplier(attacker.level, defender.level))
+	var amount := round_weapon_damage(adjusted, attacker, weapon_roll)
 	if result == &"critical":
 		amount *= 2
 	return amount
+
+
+static func weapon_damage(attacker: MeleeProfile, roll: float) -> float:
+	var bands := floori(attacker.damage_max - attacker.damage_min) + 1
+	var band := mini(bands - 1, floori(clampf(roll, 0.0, 1.0) * bands))
+	return attacker.damage_min + band + attacker.attack_power / 14.0 * attacker.interval
+
+
+static func round_weapon_damage(amount: float, attacker: MeleeProfile, roll: float) -> int:
+	# Within-band position is uniform and independent of the chosen weapon damage.
+	# Reuse it for unbiased rounding without consuming extra combat randomness.
+	var bands := floori(attacker.damage_max - attacker.damage_min) + 1
+	var rounding_roll := fposmod(clampf(roll, 0.0, 0.999999999) * bands, 1.0)
+	var result := floori(amount)
+	if rounding_roll < amount - result:
+		result += 1
+	return result
 
 
 static func kill_experience(player_level: int, npc_level: int) -> int:

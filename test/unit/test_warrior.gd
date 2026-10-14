@@ -183,9 +183,9 @@ func test_weapon_ability_bonus_precedes_armor() -> void:
 	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 35)
 	attacker.damage_multiplier = 1.1
 	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0), 22)
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 38)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 39)
 	defender.armor = 485
-	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 19)
+	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0, 1.5, 5), 20)
 
 
 func test_battle_shout_is_immediate_one_turn_free_and_has_thirty_turn_cooldown() -> void:
@@ -966,7 +966,7 @@ func test_wait_movement_and_other_abilities_keep_attacking_selected_target() -> 
 	var second := _enemy(world, Vector2i(4, 5))
 	first.stunned_until = 999
 	second.stunned_until = 999
-	world.hero.equipment["main_hand"] = ItemData.instance(2092)
+	world.hero.equipment["weapons"] = ItemData.instance(2092)
 	world.hero.refresh_stats()
 	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
 		"haste_percent": 60}
@@ -1214,7 +1214,7 @@ func test_long_active_ability_advances_weapon_on_each_elapsed_turn() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
 	enemy.stunned_until = 999
-	world.hero.equipment["main_hand"] = ItemData.instance(2092)
+	world.hero.equipment["weapons"] = ItemData.instance(2092)
 	world.hero.refresh_stats()
 	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
 		"haste_percent": 60}

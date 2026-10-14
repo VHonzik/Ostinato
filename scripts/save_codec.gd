@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-17 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-18 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -244,7 +244,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		if not _item(item) or item.is_empty():
 			return null
 		if (not InventoryRules.fits_slot(ItemData.get_item(int(item.id)), slot)
-			or int(item.quantity) != 1 or world.hero.level < int(ItemData.get_item(int(item.id)).level)):
+			or int(item.quantity) != 1):
 			return null
 	world.hero.inventory.clear()
 	for item in data.inventory:
@@ -262,13 +262,6 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			return null
 	for actor in world.actors:
 		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
-			return null
-	if world.hero.equipment.has("main_hand") and world.hero.equipment.has("off_hand"):
-		if ItemData.get_item(int(world.hero.equipment.main_hand.id)).two_handed:
-			return null
-	if world.hero.equipment.has("off_hand"):
-		if (ItemData.get_item(int(world.hero.equipment.off_hand.id)).weapon
-			and not ClassToolkitRules.has(world.hero, &"ambidexterity_1")):
 			return null
 	if not _debuffs(data.debuffs):
 		return null

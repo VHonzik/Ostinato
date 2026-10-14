@@ -117,17 +117,26 @@ static func hand_in(
 	var inventory := world.hero.inventory.duplicate(true)
 	_remove_items(inventory, identifier)
 	var previous_inventory := world.hero.inventory.duplicate(true)
+	var previous_equipment := world.hero.equipment.duplicate(true)
 	world.hero.inventory.assign(inventory)
-	if choice > 0 and not InventoryRules.receive(world.hero, ItemData.instance(choice)):
-		world.hero.inventory.assign(previous_inventory)
-		world.add_message("Inventory full. Make room before collecting your reward.")
-		return false
+	var rewards: Array = quest.get("rewards", []).duplicate()
+	if choice > 0:
+		rewards.append(choice)
+	for reward in rewards:
+		if not InventoryRules.receive(world.hero, ItemData.instance(int(reward))):
+			world.hero.inventory.assign(previous_inventory)
+			world.hero.equipment = previous_equipment
+			world.hero.refresh_stats()
+			world.add_message("Inventory full. Make room before collecting your reward.")
+			return false
 	world.quests[identifier].handed_in = true
 	_clear_loot(world, identifier)
 	world.hero.copper += int(quest.copper)
 	var xp := experience(int(quest.xp), int(quest.level), world.hero.level)
 	world.add_message("Handed in %s: %d XP, %s." % [
 		quest.title, xp, InventoryRules.money(int(quest.copper))])
+	for reward in rewards:
+		world.add_message("Received " + String(ItemData.get_item(int(reward)).title) + ".")
 	for level in world.hero.add_experience(xp):
 		world.add_message("Level up! You are now level %d." % level)
 	return true

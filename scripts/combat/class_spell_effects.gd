@@ -10,11 +10,11 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 	if skill.effect == SkillRank.Effect.SUMMON:
 		return SummonRules.placement(world, skill) != Vector2i(-1, -1)
 	if skill.family == &"seal_of_command":
-		return world.hero.equipment.has("main_hand")
+		return world.hero.equipment.has("weapons")
 	if skill.family == &"slice_and_dice":
 		return world.hero.combo_points > 0
 	if skill.family == &"judgement":
-		return world.hero.buffs.has(&"seal_of_command_1") and world.hero.equipment.has("main_hand")
+		return world.hero.buffs.has(&"seal_of_command_1") and world.hero.equipment.has("weapons")
 	return true
 
 
@@ -43,11 +43,11 @@ static func buff(world: GridWorld, skill: SkillRank) -> void:
 			if ClassToolkitRules.has(world.hero, &"guardians_favor_1"):
 				effect.until += world.hero.find_skill(&"guardians_favor_1").duration
 		&"windfury_weapon":
-			effect["weapon_id"] = int(world.hero.equipment.main_hand.id)
+			effect["weapon_id"] = world.hero.weapon_id()
 			effect["ready"] = 0
 		&"instant_poison":
-			effect["weapon_id"] = int(world.hero.equipment.main_hand.id)
-			effect["off_weapon_id"] = int(world.hero.equipment.get("off_hand", {}).get("id", 0))
+			effect["weapon_id"] = world.hero.weapon_id()
+			effect["off_weapon_id"] = world.hero.weapon_id(true)
 		&"slice_and_dice":
 			effect["haste_percent"] = skill.haste_percent
 			effect.until += skill.duration_per_combo * world.hero.combo_points
@@ -60,15 +60,6 @@ static func buff(world: GridWorld, skill: SkillRank) -> void:
 	buffs[skill.id] = effect
 	world.hero.refresh_stats()
 	world.add_message("%s rank %d applied." % [skill.title, skill.rank])
-
-
-static func _holy_weapon_damage(world: GridWorld, skill: SkillRank) -> int:
-	var weapon := world.hero.melee
-	var bonus := weapon.attack_power / 14.0 * weapon.interval
-	var minimum := floori(weapon.damage_min + bonus)
-	var maximum := floori(weapon.damage_max + bonus)
-	return maxi(1, floori(world.combat_random.randi_range(minimum, maximum)
-		* skill.weapon_multiplier))
 
 
 static func absorb(world: GridWorld, target: GridActor, amount: int, physical: bool) -> int:
@@ -92,7 +83,12 @@ static func on_melee(world: GridWorld, target: GridActor, _amount: int, landed: 
 		return
 	if landed and world.hero.buffs.has(&"seal_of_command_1"):
 		var skill := SkillRank.catalog(&"seal_of_command_1")
-		var value := floori(_holy_weapon_damage(world, skill) * ClassToolkitRules.damage_multiplier(world.hero))
+		var weapon_roll := world.combat_random.randf()
+		var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
+		var value := MeleeRules.round_weapon_damage(raw * skill.weapon_multiplier
+			* ClassToolkitRules.damage_multiplier(world.hero)
+			* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level),
+			world.hero.melee, weapon_roll)
 		SpellEffects.damage(world, target, value, "Seal of Command", world.turn_count)
 		if not world.is_terminal():
 			ClassToolkitRules.holy_event(world)

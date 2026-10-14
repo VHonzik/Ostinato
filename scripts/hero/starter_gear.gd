@@ -5,9 +5,8 @@ extends RefCounted
 
 
 static func outfit(category: StringName) -> Array[int]:
-	var outfits := {"Warrior": [2362, 2361, 2379, 2381, 2383],
-		"Shaman": [6134, 6135, 36, 2362], "Paladin": [43, 44, 45, 2361],
-		"Rogue": [43, 44, 45, 2092]}
+	var outfits := {"Warrior": [2361, 2379], "Shaman": [36, 44],
+		"Paladin": [2361, 44], "Rogue": [35, 44]}
 	var result: Array[int] = []
 	result.assign(outfits.get(String(category), []))
 	return result
@@ -18,7 +17,7 @@ static func item(identifier: int) -> Dictionary:
 
 
 static func equip_travel_clothes(hero: HeroState) -> void:
-	var identifiers: Array[int] = [35, 44, 45]
+	var identifiers: Array[int] = [35, 44]
 	_equip(hero, identifiers)
 
 
@@ -39,11 +38,7 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 			inventory[index] = {}
 	for identifier in outfit(category):
 		var slot: String = ItemData.get_item(identifier).slot
-		var hands_blocked: bool = (slot == "main_hand"
-			and ItemData.get_item(identifier).two_handed and equipment.has("off_hand"))
-		hands_blocked = hands_blocked or (slot == "off_hand" and equipment.has("main_hand")
-			and ItemData.get_item(int(equipment.main_hand.id)).two_handed)
-		if not equipment.has(slot) and not hands_blocked:
+		if not equipment.has(slot):
 			equipment[slot] = item(identifier)
 		else:
 			var empty := inventory.find({})

@@ -82,7 +82,7 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 	match skill.family:
 		&"eviscerate": return world.hero.combo_points > 0
 		&"feral_spirit": return wolf_tiles(world).size() >= 2
-		&"windfury_weapon", &"instant_poison": return world.hero.equipment.has("main_hand")
+		&"windfury_weapon", &"instant_poison": return world.hero.equipment.has("weapons")
 		&"whirlwind":
 			return world.actors.any(func(actor: GridActor) -> bool:
 				return eligible(world, actor, 1))
@@ -172,19 +172,25 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 	extra: float = 1.0) -> Dictionary:
 	world.last_attacked_enemy = target
 	world.auto_attack_target = target
-	if world.combat_random.randf() * 100.0 >= clampf(95.0 + world.hero.melee.hit, 0, 100):
+	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
+	if world.combat_random.randf() * 100.0 >= hit_chance:
 		world.add_message("%s misses %s." % [skill.title, target.title])
 		return {"landed": false, "critical": false}
 	var critical := false
-	var chance := world.hero.melee.critical + int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
+	var chance := MeleeRules.critical_chance(world.hero.melee, target.melee)
+	chance += int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
 	critical = world.combat_random.randf() * 100.0 < chance
 	if skill.family == &"judgement":
 		for key: StringName in [&"art_of_war_1", &"sacred_duty_1"]:
 			if int(effect(world.hero, key).get("critical_ready", 0)) > 0:
 				critical = true
 				world.hero.buffs.erase(key)
-	var value := floori((weapon_damage(world, world.hero.melee) * skill.weapon_multiplier
-		+ skill.minimum) * extra * damage_multiplier(world.hero))
+	var weapon_roll := world.combat_random.randf()
+	var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
+	var value := MeleeRules.round_weapon_damage((raw * skill.weapon_multiplier
+		+ skill.minimum) * extra * damage_multiplier(world.hero)
+		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level),
+		world.hero.melee, weapon_roll)
 	if critical:
 		value *= 2
 	SpellEffects.damage(world, target, value, skill.title, -1)
@@ -192,11 +198,6 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 	if not world.is_terminal() and skill.school == 1:
 		holy_event(world)
 	return {"landed": true, "critical": critical}
-
-
-static func weapon_damage(world: GridWorld, weapon: MeleeProfile) -> int:
-	var bonus := weapon.attack_power / 14.0 * weapon.interval
-	return world.combat_random.randi_range(floori(weapon.damage_min + bonus), floori(weapon.damage_max + bonus))
 
 
 static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
@@ -278,7 +279,7 @@ static func holy_event(world: GridWorld) -> void:
 static func weapon_procs(world: GridWorld, target: GridActor, off_hand: bool,
 	allow_main_gauche: bool = true) -> void:
 	var enchant := effect(world.hero, &"windfury_weapon_1")
-	var weapon_id := int(world.hero.equipment.get("main_hand", {}).get("id", 0))
+	var weapon_id := world.hero.weapon_id()
 	if (not off_hand and not enchant.is_empty() and int(enchant.weapon_id) == weapon_id
 		and world.turn_count >= int(enchant.ready)
 		and world.combat_random.randf() < SkillRank.catalog(&"windfury_weapon_1").coefficient):
@@ -288,12 +289,14 @@ static func weapon_procs(world: GridWorld, target: GridActor, off_hand: bool,
 	if world.is_terminal() or not target.alive:
 		return
 	var poison := effect(world.hero, &"instant_poison_1")
-	var hand := "off_hand" if off_hand else "main_hand"
 	var coated := "off_weapon_id" if off_hand else "weapon_id"
 	if (not poison.is_empty() and int(poison.get(coated, 0)) > 0
-		and int(poison[coated]) == int(world.hero.equipment.get(hand, {}).get("id", 0))
+		and int(poison[coated]) == world.hero.weapon_id(off_hand)
 		and world.combat_random.randf() < world.hero.find_skill(&"instant_poison_1").coefficient):
-		SpellEffects.damage(world, target, floori(SkillRank.catalog(&"instant_poison_1").minimum * damage_multiplier(world.hero)), "Instant Poison")
+		var value := floori(SkillRank.catalog(&"instant_poison_1").minimum
+			* damage_multiplier(world.hero)
+			* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
+		SpellEffects.damage(world, target, value, "Instant Poison")
 	if world.is_terminal() or not target.alive:
 		return
 	if proc(world, &"static_shock_1"):
@@ -326,7 +329,9 @@ static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> vo
 	if reactive:
 		shield.ready = world.turn_count + 3
 	var value := SkillRank.catalog(&"lightning_shield_1").minimum
-	value = floori(value * (1.0 + magnitude(world.hero, &"improved_shields_1") / 100.0) * damage_multiplier(world.hero))
+	value = floori(value * (1.0 + magnitude(world.hero, &"improved_shields_1") / 100.0)
+		* damage_multiplier(world.hero)
+		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
 	SpellEffects.damage(world, target, value, "Lightning Shield", world.turn_count)
 	if int(shield.charges) <= 0:
 		world.hero.buffs.erase(&"lightning_shield_1")

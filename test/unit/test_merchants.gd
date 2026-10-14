@@ -21,9 +21,9 @@ func test_source_catalogs_and_explicit_exclusions() -> void:
 	game.world = _world()
 	var expected := {
 		152: [4540],
-		190: [2121, 3599, 2120, 2117, 3600, 2119, 2127, 2122, 2126, 2123, 2124, 2125],
-		1213: [2379, 2381, 2380, 2383, 2384, 2385, 17184, 2129],
-		78: [2131, 1194, 2134, 2479, 2130, 2480, 2139, 2132],
+		190: [2121, 70001, 70002, 70003],
+		1213: [85, 2129],
+		78: [2131, 1194, 2139, 2132],
 	}
 	for npc_id in expected:
 		var merchant := _merchant(game.world, npc_id)
@@ -34,7 +34,7 @@ func test_source_catalogs_and_explicit_exclusions() -> void:
 			assert_eq(game.world.vendor_stock[merchant.spawn_id][key], -1)
 	assert_eq(_merchant(game.world, 11940).service, &"")
 	assert_true(MerchantData.catalog(11940).is_empty(), "Merissa has no Vanilla vendor catalog.")
-	assert_eq(ItemData.get_item(2121).armor, 10)
+	assert_eq(ItemData.get_item(2121).armor, 90)
 	assert_eq(ItemData.get_item(2132).interval, 3.2)
 	assert_eq(ItemData.get_item(4540).restore, 61)
 
@@ -197,8 +197,9 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 	_beside(world, merchant)
 	world.hero.copper = 1000
 	assert_true(world.buy_item(merchant, 2121, 1))
-	assert_eq(world.hero.equipment.chest.id, 2121)
-	assert_eq(world.hero.melee.armor, 12, "New armor fills the empty chest slot.")
+	assert_true(world.equip_item(0))
+	assert_eq(world.hero.equipment.armor.id, 2121)
+	assert_eq(world.hero.melee.armor, 90, "An outfit replaces the starting armor.")
 	merchant = _merchant(world, 78)
 	_beside(world, merchant)
 	assert_true(world.buy_item(merchant, 2132, 1))
@@ -253,7 +254,7 @@ func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat
 	world.hero.inventory[4] = ItemData.instance(2572) # Green equipment.
 	world.hero.inventory[5] = ItemData.instance(750, 2) # Quest item.
 	world.hero.inventory[6] = ItemData.instance(750, 4) # Conjured food.
-	world.hero.inventory[7] = ItemData.instance(35) # Common equipment.
+	world.hero.inventory[7] = ItemData.instance(2132) # Common equipment.
 	var retained := world.hero.inventory.slice(3).duplicate(true)
 	var equipment := world.hero.equipment.duplicate(true)
 	var stock := world.vendor_stock.duplicate(true)
@@ -296,10 +297,10 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 		MerchantItems.ITEMS, LootItems.ITEMS]:
 		for item in catalog.values():
 			assert_true(item.has("quality"), item.title)
-			assert_between(int(item.quality), 0, 4)
+			assert_between(int(item.quality), 0, 2)
 	assert_eq(ItemData.get_item(7073).quality, 0)
 	assert_eq(ItemData.get_item(1378).quality, 0)
-	assert_eq(ItemData.get_item(35).quality, 1)
+	assert_eq(ItemData.get_item(35).quality, 0)
 	assert_eq(ItemData.get_item(4540).quality, 1)
 	assert_eq(ItemData.get_item(2572).quality, 2)
 

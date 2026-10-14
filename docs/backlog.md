@@ -69,8 +69,8 @@ The owner playtested the current Warrior state; that feedback led to the time-lo
 
 Plan an end-to-end playable prototype of [the current direction](direction.md), including
 **every active and passive in the owner's consolidated v0.1 snapshot**. The owner's
-current priority is to complete all four class toolkits next, before broader gear,
-route-reward and exit-boss work. Keep intermediate changes runnable; deferred playtests
+current priority is itemization following completion of all four class toolkits.
+Keep intermediate changes runnable; deferred playtests
 do not gate completion of the catalogue. Tuning still needs human playtesting.
 
 The milestone should let a weak first-Loop warrior die, retain mastery and learning,
@@ -200,25 +200,43 @@ live in game data and the spell book. Human balance and readability review remai
 - [ ] Owner playtest: compare stat gear, shields and both weapon hands across classes;
   judge survivability, swing pacing, character/item feedback and retained mixed-class skills.
 
-### Next playable task — Playtest the toolkit and shared stats
+### Implemented slice — Toolkit and shared-stat playtest
 
-Try the complete learned toolkit over returning Loops before broader progression work.
+Try the complete learned toolkit over returning Loops alongside the new itemization.
 Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,
 defensive windows and mixed-class combinations. Adjust code/data from that feedback;
 do not treat catalogue completion or automated tests as balance/readability acceptance.
 Optional combo empowerment of Execute/Judgement remains a later design choice; the
 current deliberate spenders are Slice and Dice and Eviscerate.
 
-### Remaining slices — after class completion
+### Current playable task — Simplified itemization
+
+- [x] Replace individual armor pieces and hands with armor, neck, two rings and a
+  bundled weapon setup. Keep two-hand, weapon-and-shield and dual-wield choices;
+  allow all gear without level or learning requirements. Retained Ambidexterity
+  improves off-hand damage.
+- [x] Add gray poor, white common and green uncommon progression. Start poor,
+  provide a complete common loadout through quests and merchants, and reserve
+  uncommon for rare world drops and occasional chest upgrades. Guarantee gear in chests.
+- [x] Keep vendor gear attainable from ordinary kills and sold loot; offer limited
+  healing potions and abundant food. Preserve seeded loot, atomic rewards and Loop resets.
+  Revision 18 explicitly breaks the old equipment save layout while preserving old files.
+- [x] Adopt the owner-selected world/chest uncommon rates. Give both qualities of
+  accessories primary and secondary stats, keep item bonuses small, and make primary
+  stat math impactful without losing fractional weapon damage to early rounding.
+- [ ] Owner playtest: rebuild gear through quests, compare all three weapon setups,
+  try selling mob loot for a vendor upgrade, and judge the impact of small stat bonuses.
+
+### Remaining slices — after itemization
 
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
-  level ceiling and level-difference effects. Support main/off-hand or two-handed weapons,
-  armor and two accessories. The shared stat model and combat simplification are implemented;
-  retain those while making slow/fast and dual-wield/two-handed choices useful.
+  level ceiling and revisit the implemented level-difference effects. The simplified gear,
+  shared stat model and combat simplification are implemented; retain those while tuning
+  slow/fast and dual-wield/two-handed choices.
   Settle level differences, gear ranges and healing through playtesting.
-- [ ] **Repeatable route rewards:** fixed merchants/prices and quest rewards; enemy loot
-  keyed by world seed plus stable enemy ID; seeded chest contents and placement from
-  predefined points. Repeat the same seed across deaths and different action/loot orders.
+- [ ] **Repeatable route rewards:** seeded enemy/chest loot, fixed merchants/prices and
+  quest gear are implemented. Playtest the same seed across deaths and different
+  action/loot orders; revisit chest placement if the deliberate landmarks change.
   Decide ordinary respawning rather than silently adopting the current absence of it.
   Preserve temporary gear/gold/quest resets and avoid unbounded XP farming by accident.
 - [ ] **Exit boss and timed clones:** place the boss at the guarded exit early in every

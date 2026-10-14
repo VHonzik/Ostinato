@@ -7,6 +7,12 @@ const MAX_COMBO_POINTS: int = 5
 const SWING_RAGE_PER_BASE_TURN: float = 7.0
 const INCOMING_RAGE_PER_TURN: float = 3.0
 const BASE_CRITICAL_CHANCE: float = 5.0
+const BASE_OFF_HAND_DAMAGE_PERCENT: float = 50.0
+const PRIMARY_STAT_BASE: int = 20
+const BASE_WEAPON_POWER: int = 10
+const WEAPON_POWER_PER_STRENGTH: int = 2
+const AGILITY_CRIT_PERCENT: float = 1.0
+const AGILITY_DODGE_PERCENT: float = 1.0
 
 var rage: int = 0
 var combo_points: int = 0
@@ -129,21 +135,25 @@ func refresh_melee_stats() -> void:
 	melee.damage_multiplier = 1.0
 	melee.player = true
 	melee.level = level
-	melee.attack_power = maxi(0, strength - 10)
+	melee.attack_power = maxi(0, BASE_WEAPON_POWER
+		+ (strength - PRIMARY_STAT_BASE) * WEAPON_POWER_PER_STRENGTH)
 	melee.armor = armor
 	var agility_per_percent := lerpf(12.9, 20.0, (clampi(level, 1, 60) - 1) / 59.0)
-	melee.critical = BASE_CRITICAL_CHANCE + agility / agility_per_percent + critical_bonus
+	var base_agility_percent := PRIMARY_STAT_BASE / agility_per_percent
+	var bonus_agility := agility - PRIMARY_STAT_BASE
+	melee.critical = BASE_CRITICAL_CHANCE + base_agility_percent
+	melee.critical += bonus_agility * AGILITY_CRIT_PERCENT + critical_bonus
 	melee.critical += ClassToolkitRules.magnitude(self, &"cruelty_1")
 	melee.critical += ClassToolkitRules.magnitude(self, &"conviction_1")
 	melee.hit -= _passive_hit_bonus
 	_passive_hit_bonus = ClassToolkitRules.magnitude(self, &"precision_1")
 	melee.hit += _passive_hit_bonus
-	melee.dodge = 3.25 + agility / agility_per_percent
+	melee.dodge = 3.25 + base_agility_percent + bonus_agility * AGILITY_DODGE_PERCENT
 	melee.damage_min = 1.0
 	melee.damage_max = 2.0
 	melee.interval = 2.0
-	if equipment.has("main_hand"):
-		var weapon := ItemData.get_item(int(equipment.main_hand.id))
+	if equipment.has("weapons"):
+		var weapon := ItemData.get_item(int(equipment.weapons.id))
 		melee.damage_min = float(weapon.minimum)
 		melee.damage_max = float(weapon.maximum)
 		melee.interval = float(weapon.interval)
@@ -156,9 +166,8 @@ func refresh_melee_stats() -> void:
 
 
 func has_off_hand_weapon() -> bool:
-	return (equipment.has("off_hand")
-		and ItemData.get_item(int(equipment.off_hand.id)).weapon
-		and ClassToolkitRules.has(self, &"ambidexterity_1"))
+	return (equipment.has("weapons")
+		and ItemData.get_item(int(equipment.weapons.id)).weapon_style == "dual_wield")
 
 
 func off_hand_melee() -> MeleeProfile:
@@ -168,13 +177,21 @@ func off_hand_melee() -> MeleeProfile:
 	weapon.attack_power = melee.attack_power
 	weapon.critical = melee.critical
 	weapon.hit = melee.hit
-	weapon.damage_multiplier = melee.damage_multiplier * ClassToolkitRules.magnitude(self, &"ambidexterity_1") / 100.0
+	var off_hand_percent := BASE_OFF_HAND_DAMAGE_PERCENT
+	off_hand_percent += ClassToolkitRules.magnitude(self, &"ambidexterity_1")
+	weapon.damage_multiplier = melee.damage_multiplier * off_hand_percent / 100.0
 	if has_off_hand_weapon():
-		var data := ItemData.get_item(int(equipment.off_hand.id))
-		weapon.damage_min = float(data.minimum)
-		weapon.damage_max = float(data.maximum)
-		weapon.interval = float(data.interval)
+		var data := ItemData.get_item(int(equipment.weapons.id))
+		weapon.damage_min = float(data.off_minimum)
+		weapon.damage_max = float(data.off_maximum)
+		weapon.interval = float(data.off_interval)
 	return weapon
+
+
+func weapon_id(off_hand: bool = false) -> int:
+	if off_hand and not has_off_hand_weapon():
+		return 0
+	return int(equipment.get("weapons", {}).get("id", 0))
 
 
 func attack_haste() -> float:

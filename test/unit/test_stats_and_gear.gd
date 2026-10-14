@@ -27,7 +27,7 @@ func test_stat_gear_works_identically_across_classes_without_refilling_health() 
 		assert_eq([hero.strength, hero.agility, hero.stamina, hero.max_health,
 			hero.melee.armor, hero.melee.attack_power, hero.melee.critical, hero.attack_haste()], stats)
 		assert_eq(hero.health, 10)
-	assert_true(InventoryRules.unequip(hero, "chest"))
+	assert_true(InventoryRules.unequip(hero, "armor"))
 	assert_eq(hero.max_health, health)
 	assert_almost_eq(hero.melee.critical, critical, 0.00001)
 	assert_almost_eq(hero.attack_haste(), 1.0, 0.00001)
@@ -81,16 +81,14 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.level, 1)
-	assert_false(game.world.hero.equipment.has("chest"))
+	assert_eq(game.world.hero.equipment.armor.id, 44)
 	assert_almost_eq(game.world.hero.attack_haste(), 1.0, 0.00001)
 	assert_not_null(game.world.hero.find_skill(&"cruelty_1"))
 	assert_eq(game.world.hero.warrior_progress, 100)
 
 
-func test_janos_sells_usable_stat_gear_and_health_supplies_with_finite_stock() -> void:
-	var game := GameSession.new()
-	game.new_game(79)
-	var world := game.world
+func test_janos_sells_common_gear_and_finite_health_supplies() -> void:
+	var world := ValleyRoute.create_world(79, false)
 	var janos: GridActor
 	for actor in world.actors:
 		if actor.npc_id == 900003:
@@ -99,18 +97,18 @@ func test_janos_sells_usable_stat_gear_and_health_supplies_with_finite_stock() -
 		if world.is_open(janos.tile + direction):
 			world.player_tile = janos.tile + direction
 			break
-	world.hero.level = 5
-	world.hero._apply_level_stats()
 	world.hero.copper = 1000
-	assert_true(world.buy_item(janos, 2572, 1))
-	assert_false(world.buy_item(janos, 2572, 1))
-	assert_eq(world.hero.equipment.chest.id, 2572)
-	assert_almost_eq(world.hero.attack_haste(), 1.05, 0.00001)
+	assert_false(MerchantData.catalog(900003).has("2572"), "Uncommon is reserved for drops.")
+	assert_true(world.buy_item(janos, 85, 1))
+	assert_true(world.equip_item(0))
+	assert_eq(world.hero.equipment.armor.id, 85)
+	assert_almost_eq(world.hero.attack_haste(), 1.03, 0.00001)
 	assert_true(world.buy_item(janos, 118, 3))
 	assert_eq(world.vendor_stock[janos.spawn_id]["118"], 0)
-	assert_false(MerchantData.catalog(900003).has("2455"))
-	for identifier in [2455, 6527, 2950]:
-		assert_true(ItemData.get_item(identifier).is_empty())
+	assert_false(world.buy_item(janos, 118, 1))
+	assert_true(world.buy_item(janos, 117, 20))
+	assert_eq(world.vendor_stock[janos.spawn_id]["117"], -1)
+	world.discard()
 
 
 func test_all_current_equipment_definitions_use_only_supported_item_stats() -> void:
@@ -149,3 +147,54 @@ func test_gear_haste_adds_swings_without_accelerating_active_actions_or_cooldown
 		assert_eq(world.turn_count, 60)
 		world.discard()
 	assert_eq(counts, [21, 22])
+
+
+func test_small_strength_bonuses_increase_average_damage_with_every_weapon_setup() -> void:
+	for identifier in [5579, 5580, 2139]:
+		var hero := HeroState.new(false)
+		hero.level = 5
+		hero.inventory[0] = ItemData.instance(identifier)
+		assert_true(InventoryRules.equip(hero, 0))
+		var defender := MeleeProfile.new()
+		defender.level = 5
+		defender.armor = 105
+		var previous_power := hero.melee.attack_power
+		var before := _average_damage(hero.melee, defender)
+		hero.strength += 2
+		hero.refresh_melee_stats()
+		assert_eq(hero.melee.attack_power, previous_power + 4)
+		var after := _average_damage(hero.melee, defender)
+		var expected_gain := 4.0 / 14.0 * hero.melee.interval * 825.0 / 930.0
+		assert_almost_eq(after - before, expected_gain, 0.002, str(identifier))
+		assert_gt(after / before, 1.05, "+2 Strength remains impactful after armor and rounding.")
+
+
+func test_small_agility_and_stamina_accessories_help_in_every_class_without_refilling() -> void:
+	for category in ClassSkillData.PLAYABLE_CLASSES:
+		var hero := HeroState.new(false)
+		hero.selected_class = category
+		var critical := hero.melee.critical
+		var dodge := hero.melee.dodge
+		var health := hero.max_health
+		hero.health = 10
+		hero.inventory[0] = ItemData.instance(70013)
+		hero.inventory[1] = ItemData.instance(70011)
+		assert_true(InventoryRules.equip(hero, 0))
+		assert_true(InventoryRules.equip(hero, 1))
+		assert_almost_eq(hero.melee.critical, critical + 2.0, 0.00001)
+		assert_almost_eq(hero.melee.dodge, dodge + 2.0, 0.00001)
+		assert_almost_eq(hero.attack_haste(), 1.06, 0.00001)
+		assert_eq(hero.max_health, health + 20)
+		assert_eq(hero.health, 10)
+		for repeat in range(3):
+			hero.refresh_stats()
+		assert_almost_eq(hero.melee.critical, critical + 2.0, 0.00001)
+		assert_almost_eq(hero.melee.dodge, dodge + 2.0, 0.00001)
+		assert_eq(hero.health, 10)
+
+
+func _average_damage(attacker: MeleeProfile, defender: MeleeProfile) -> float:
+	var total := 0
+	for index in range(12000):
+		total += MeleeRules.damage(attacker, defender, &"hit", (index + 0.5) / 12000.0)
+	return total / 12000.0

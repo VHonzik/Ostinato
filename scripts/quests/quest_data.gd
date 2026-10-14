@@ -1,39 +1,39 @@
 class_name QuestData
 extends RefCounted
 
-## Pre-pivot Northshire quest definitions and rewards.
+## Valley objectives and fixed common gear rewards; historical fixture quests below.
 const QUESTS: Dictionary = {
 	"valley_patrol": {
 		"title": "The Western Path", "level": 1, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
 		"objectives": [{"kind": "kill", "target": "299", "count": 8}],
-		"xp": 300, "copper": 0, "choices": [], "source_item": 0,
+		"xp": 300, "copper": 0, "rewards": [85], "choices": [], "source_item": 0,
 	},
 	"valley_timber_wolves": {
 		"title": "Timber Wolves of the Western Woods", "level": 2, "minimum": 1,
 		"previous": ["valley_patrol"], "giver": 197, "receiver": 197, "category": "",
 		"objectives": [{"kind": "kill", "target": "69", "count": 5}],
-		"xp": 500, "copper": 0, "choices": [], "source_item": 0,
+		"xp": 500, "copper": 0, "rewards": [70001], "choices": [], "source_item": 0,
 	},
 	"valley_camp": {
 		"title": "The Northern Camp", "level": 2, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
 		"objectives": [{"kind": "kill", "target": "6", "count": 4}],
-		"xp": 750, "copper": 50, "choices": [], "source_item": 0,
+		"xp": 750, "copper": 50, "rewards": [70002, 2224], "choices": [], "source_item": 0,
 	},
 	"valley_mine": {
 		"title": "Into Echo Ridge", "level": 3, "minimum": 2, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
 		"objectives": [{"kind": "kill", "target": "257", "count": 2},
 			{"kind": "kill", "target": "80", "count": 1}],
-		"xp": 1200, "copper": 100, "choices": [], "source_item": 0,
+		"xp": 1200, "copper": 100, "rewards": [5579], "choices": [], "source_item": 0,
 	},
 	"valley_vineyard": {
 		"title": "Milly's Vineyard", "level": 4, "minimum": 2, "previous": [],
 		"giver": 9296, "receiver": 9296, "category": "",
 		"objectives": [{"kind": "kill", "target": "38", "count": 4},
 			{"kind": "kill", "target": "103", "count": 1}],
-		"xp": 800, "copper": 100, "choices": [], "source_item": 0,
+		"xp": 800, "copper": 100, "rewards": [5580], "choices": [], "source_item": 0,
 	},
 	"valley_explore": {
 		"title": "Around the Valley", "level": 3, "minimum": 1, "previous": [],
@@ -41,7 +41,7 @@ const QUESTS: Dictionary = {
 		"objectives": [{"kind": "location", "target": "mine_chest", "count": 1},
 			{"kind": "location", "target": "ridge_chest", "count": 1},
 			{"kind": "location", "target": "vineyard_chest", "count": 1}],
-		"xp": 1100, "copper": 0, "choices": [], "source_item": 0,
+		"xp": 1100, "copper": 0, "rewards": [70003], "choices": [], "source_item": 0,
 	},
 	"6": {
 		"title": "Bounty on Garrick Padfoot",

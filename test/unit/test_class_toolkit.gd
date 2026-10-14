@@ -72,6 +72,60 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 	assert_almost_eq(world.hero.melee.critical, base_crit + 8, 0.001)
 
 
+func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() -> void:
+	for identifier: StringName in [&"judgement_1", &"earth_shock_1"]:
+		var world := _world()
+		_learn(world, [&"judgement_1", &"earth_shock_1"])
+		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+		var enemy := _enemy(world)
+		enemy.melee.level = 3
+		enemy.melee.armor = 100000
+		var expected := 23 if identifier == &"judgement_1" else 24
+		assert_true(world.cast_skill(identifier, enemy))
+		assert_eq(enemy.max_health - enemy.health, expected,
+			"A +2 target reduces spell damage once, without physical armor mitigation.")
+
+
+func test_level_penalties_apply_once_to_seal_and_lightning_shield_damage() -> void:
+	var world := _world()
+	_learn(world, [&"seal_of_command_1", &"lightning_shield_1"])
+	var enemy := _enemy(world)
+	enemy.melee.level = 3
+	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+	ClassSpellEffects.on_melee(world, enemy, 20, true)
+	assert_eq(enemy.max_health - enemy.health, 8,
+		"Seal averages 7.6 damage: half of 20, then the level penalty, with unbiased rounding.")
+	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "until": 100,
+		"charges": 3, "ready": 0}
+	var before := enemy.health
+	ClassToolkitRules.discharge(world, enemy, true)
+	assert_eq(before - enemy.health, 9, "Reactive Nature damage also respects the level gap.")
+	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 2)
+
+
+func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws() -> void:
+	var world := _world()
+	_learn(world, [&"seal_of_command_1"])
+	world.hero.melee.attack_power = 4
+	var enemy := _enemy(world)
+	enemy.max_health = 1000000
+	enemy.health = enemy.max_health
+	enemy.melee.level = 3
+	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+	var generator := RandomNumberGenerator.new()
+	generator.state = world.combat_random.state
+	for index in range(10000):
+		generator.randf()
+		ClassSpellEffects.on_melee(world, enemy, 20, true)
+	var average := (enemy.max_health - enemy.health) / 10000.0
+	var raw := 20.0 + 4.0 / 14.0 * world.hero.melee.interval
+	assert_almost_eq(average, raw * 0.5 * 0.76, 0.02)
+	assert_eq(world.combat_random.state, generator.state,
+		"Damage selection and fractional rounding share the one weapon roll.")
+	assert_true(enemy.alive)
+	world.discard()
+
+
 func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itself() -> void:
 	var world := _world()
 	_learn(world, [&"incite_1"])
@@ -399,13 +453,13 @@ func test_evasion_can_dodge_attacks_from_behind_and_expires() -> void:
 	assert_false(world.hero.buffs.has(&"evasion_1"))
 
 
-func test_ambidexterity_equips_offhand_and_ordinary_offhand_has_independent_timer_without_rage() -> void:
+func test_untrained_dual_wield_has_independent_offhand_timer_without_ordinary_rage() -> void:
 	var world := _world()
 	world.hero.inventory[0] = ItemData.instance(2139)
-	assert_false(world.equip_item(0, "off_hand"))
-	_learn(world, [&"ambidexterity_1"])
-	assert_true(world.equip_item(0, "off_hand"))
+	assert_true(world.equip_item(0))
 	assert_true(world.hero.has_off_hand_weapon())
+	world.hero.swing.remaining = 2.0
+	world.hero.swing._active = true
 	var enemy := _enemy(world)
 	world.auto_attack_target = enemy
 	world.hero.rage = 0
@@ -420,8 +474,8 @@ func test_ambidexterity_equips_offhand_and_ordinary_offhand_has_independent_time
 func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand_hits() -> void:
 	var world := _world()
 	_learn(world, [&"ambidexterity_1", &"combat_potency_1", &"main_gauche_1", &"relentless_assault_1"])
-	world.hero.equipment.off_hand = ItemData.instance(2139)
-	world.hero.equipment.main_hand = ItemData.instance(2361)
+	world.hero.equipment.weapons = ItemData.instance(2139)
+	world.hero.refresh_stats()
 	world.hero.find_skill(&"combat_potency_1").coefficient = 1
 	world.hero.find_skill(&"main_gauche_1").coefficient = 1
 	var enemy := _enemy(world)
@@ -492,8 +546,8 @@ func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -
 func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stops_remaining_hits() -> void:
 	var world := _world()
 	_learn(world, [&"ambidexterity_1", &"relentless_assault_1"])
-	world.hero.equipment.main_hand = ItemData.instance(2361)
-	world.hero.equipment.off_hand = ItemData.instance(2139)
+	world.hero.equipment.weapons = ItemData.instance(2139)
+	world.hero.refresh_stats()
 	world.hero.swing.remaining = 0.9
 	world.hero.swing._active = true
 	world.hero.off_hand_swing.remaining = 0.1
@@ -512,8 +566,8 @@ func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stop
 func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage() -> void:
 	var world := _world()
 	_learn(world, [&"instant_poison_1", &"ambidexterity_1", &"relentless_assault_1"])
-	world.hero.equipment.main_hand = ItemData.instance(2361)
-	world.hero.equipment.off_hand = ItemData.instance(2139)
+	world.hero.equipment.weapons = ItemData.instance(2139)
+	world.hero.refresh_stats()
 	world.hero.find_skill(&"instant_poison_1").coefficient = 1
 	assert_true(world.cast_skill(&"instant_poison_1"))
 	var enemy := _enemy(world)
@@ -523,9 +577,10 @@ func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage
 	assert_eq(enemy.health, 9984)
 	assert_eq(world.hero.rage, rage)
 	assert_eq(world.hero.combo_points, 0)
-	world.hero.equipment.off_hand = ItemData.instance(2361)
+	world.hero.equipment.weapons = ItemData.instance(70023)
+	world.hero.refresh_stats()
 	ClassToolkitRules.weapon_procs(world, enemy, true)
-	assert_eq(enemy.health, 9984, "Changing the off-hand weapon loses its coating.")
+	assert_eq(enemy.health, 9984, "Changing the pair loses both coatings.")
 
 
 func test_divine_shield_expires_before_enemy_hits_on_the_expiry_boundary() -> void:
@@ -573,8 +628,8 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 				assert_true(world.hero.learn_skill(skill))
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"feral_spirit_1"))
-	world.hero.equipment.off_hand = ItemData.instance(2139)
-	world.hero.equipment.main_hand = ItemData.instance(2361)
+	world.hero.equipment.weapons = ItemData.instance(2139)
+	world.hero.refresh_stats()
 	world.hero.off_hand_swing.remaining = 1.25
 	world.hero.off_hand_swing._active = true
 	ClassToolkitRules.apply(world, &"battle_trance_1", {"charges": 1})

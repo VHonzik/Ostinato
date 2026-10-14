@@ -740,6 +740,10 @@ func test_mortal_strike_with_insufficient_rage_reports_the_cost_instead_of_no_ta
 func test_supply_chest_keyboard_looting_is_free_and_empty_chest_cannot_duplicate_rewards() -> void:
 	var chest := _game.world.actors[-1]
 	assert_true(chest.chest)
+	# Loot a fixed consumable; random gear may auto-equip instead of filling inventory.
+	chest.loot_assigned = true
+	chest.loot_copper = 12
+	chest.loot = [ItemData.instance(118, 2)]
 	_game.world.player_tile = chest.tile + Vector2i.LEFT
 	_game.refresh_view()
 	await _tap_key(KEY_F)
@@ -766,7 +770,7 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 	_game.menu.open_inventory()
 	_game.menu._item_detail(0)
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.world.hero.equipment.chest.id, 85)
+	assert_eq(_game.world.hero.equipment.armor.id, 85)
 	assert_eq(_game.world.turn_count, 1)
 	assert_eq(_game.menu.page, "inventory")
 	_game.menu.close()
@@ -779,12 +783,12 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 	attacker.melee.damage_min = 1000
 	attacker.melee.damage_max = 1000
 	_game.world.actors.append(attacker)
-	_game.world.hero.inventory[1] = ItemData.instance(2139)
+	_game.world.hero.inventory[1] = ItemData.instance(2129)
 	_game.menu._item_detail(1)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.session.loop_count, 2)
 	assert_false(_game.menu.visible)
-	assert_eq(_game.world.hero.equipment.main_hand.id, 35)
+	assert_eq(_game.world.hero.equipment.weapons.id, 35)
 
 
 func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
@@ -802,8 +806,8 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	assert_eq(_game.menu.page, "buy")
 	assert_true(_game.menu._buttons[0].text.begins_with("Buy 1 /"))
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.world.hero.inventory[0].id, 2139)
-	assert_eq(_game.world.hero.copper, 143)
+	assert_eq(_game.world.hero.inventory[0].id, 85)
+	assert_eq(_game.world.hero.copper, 0)
 	assert_eq(_game.world.player_tile, _test_merchant(900003).tile + Vector2i.DOWN)
 	assert_eq(_game.world.turn_count, 0)
 
@@ -1421,7 +1425,7 @@ func test_sell_page_excludes_untradable_items_and_handles_empty_and_single_item_
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "sell")
 	assert_true(_game.world.hero.inventory[2].is_empty())
-	assert_eq(_game.world.hero.copper, 9)
+	assert_eq(_game.world.hero.copper, 2)
 	assert_eq(_game.world.hero.inventory[0], ItemData.instance(750, 2))
 	assert_eq(_game.world.hero.inventory[1], ItemData.instance(750, 4))
 	assert_eq(_game.world.turn_count, 0)

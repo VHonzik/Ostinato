@@ -231,12 +231,16 @@ func open_inventory() -> void:
 		var button := _button("%s: %s" % [slot.replace("_", " "), title],
 			_equipped_detail.bind(slot))
 		button.disabled = item.is_empty()
+		if not item.is_empty():
+			_item_color(button, int(item.id))
 	for index in range(40):
 		var item := hero.inventory[index]
 		var title := "Empty" if item.is_empty() else "%s x%d" % [
 			ItemData.get_item(int(item.id)).title, item.quantity]
 		var button := _button("Slot %d: %s" % [index + 1, title], _item_detail.bind(index))
 		button.disabled = item.is_empty()
+		if not item.is_empty():
+			_item_color(button, int(item.id))
 	_button("Close (Esc)", close)
 	_finish()
 
@@ -244,7 +248,7 @@ func open_inventory() -> void:
 func _equipped_detail(slot: String) -> void:
 	var item: Dictionary = session.world.hero.equipment[slot]
 	_begin("equipment", slot.replace("_", " "), open_inventory)
-	_label(ItemData.describe(int(item.id)))
+	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
 	_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot), open_inventory))
 	_button("Back (Esc)", open_inventory)
 	_finish()
@@ -254,16 +258,15 @@ func _item_detail(index: int) -> void:
 	var item := session.world.hero.inventory[index]
 	var data := ItemData.get_item(int(item.id))
 	_begin("item", "%s x%d" % [data.title, item.quantity], open_inventory)
-	_label(ItemData.describe(int(item.id)))
+	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
 	if data.slot != "":
-		if data.slot in ["ring", "trinket"]:
+		if data.slot == "ring":
 			for suffix in ["_1", "_2"]:
 				_button("Equip in %s%s (1 turn)" % [data.slot, suffix],
 					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_inventory))
 		else:
-			_button("Equip (1 turn)", _transaction.bind(session.world.equip_item.bind(index), open_inventory))
-			if data.weapon and not data.two_handed and ClassToolkitRules.has(session.world.hero, &"ambidexterity_1"):
-				_button("Equip off-hand (1 turn)", _transaction.bind(session.world.equip_item.bind(index, "off_hand"), open_inventory))
+			_button("Equip (1 turn)",
+				_transaction.bind(session.world.equip_item.bind(index), open_inventory))
 	if data.use != "":
 		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_inventory))
 	_button("Move / split stack", func() -> void:
@@ -304,6 +307,7 @@ func open_loot(source: GridActor) -> void:
 		var button := _button("Take %s x%d" % [ItemData.get_item(int(item.id)).title, item.quantity],
 			_transaction.bind(session.world.loot_item.bind(source, index), _refresh_loot))
 		button.tooltip_text = ItemData.describe(int(item.id))
+		_item_color(button, int(item.id))
 	_button("Leave (Esc)", close)
 	_finish()
 
@@ -343,6 +347,7 @@ func open_buy(merchant: GridActor) -> void:
 			_buy_options.bind(int(key)))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(key))
+		_item_color(button, int(key))
 		button.disabled = stock == 0
 	_button("Back (Esc)", open_trade.bind(merchant))
 	_finish()
@@ -373,6 +378,7 @@ func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
 				open_sell.bind(merchant, int(item.id))))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.tooltip_text = ItemData.describe(int(item.id))
+		_item_color(button, int(item.id))
 		if int(data.quality) == 0:
 			grey.disabled = false
 		if selected == null and (selected_item == 0 or int(item.id) == selected_item):
@@ -386,7 +392,7 @@ func _buy_options(identifier: int) -> void:
 	var merchant := _merchant
 	var data := ItemData.get_item(identifier)
 	_begin("buy", "Buy " + String(data.title), open_buy.bind(merchant))
-	_label(ItemData.describe(identifier))
+	_item_color(_label(ItemData.describe(identifier)), identifier)
 	var unit_price := MerchantData.unit_price(merchant.npc_id, identifier)
 	var amounts: Array[int] = [1]
 	if int(data.stack) > 10:
@@ -527,12 +533,13 @@ func _begin(next_page: String, title: String, back: Callable) -> void:
 	show()
 
 
-func _label(text: String) -> void:
+func _label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.x = 680
 	_rows.add_child(label)
+	return label
 
 
 func _button(text: String, action: Callable, parent: Node = null) -> Button:
@@ -759,6 +766,17 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 				_quest_detail.bind(identifier, actor)))
 	if not quest.choices.is_empty():
 		for item in quest.choices:
-			_label(ItemData.describe(int(item)))
+			_item_color(_label(ItemData.describe(int(item))), int(item))
+	for item in quest.get("rewards", []):
+		_item_color(_label(ItemData.describe(int(item))), int(item))
 	_button("Back (Esc)", back)
 	_finish()
+
+
+func _item_color(control: Control, identifier: int) -> void:
+	var color := ItemData.quality_color(int(ItemData.get_item(identifier).quality))
+	if control is Label:
+		control.add_theme_color_override("font_color", color)
+	else:
+		for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+			control.add_theme_color_override(state, color)

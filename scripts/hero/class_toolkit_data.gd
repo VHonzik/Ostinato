@@ -33,7 +33,7 @@ const PASSIVES: Dictionary = {
 	"sacred_duty_1": ["Sacred Duty", "Paladin", 240, 0, 0.25, 8, "Landed Judgement has a 25% chance to guarantee the next Judgement crit within 8 turns."],
 	"sanctity_of_battle_1": ["Sanctity of Battle", "Paladin", 260, 0, 0.0, 0, "Judgement cooldown is divided by current attack haste, rounded up to at least 1 turn."],
 	"opportunity_1": ["Opportunity", "Rogue", 20, 20, 0.0, 0, "Direct physical actives deal 20% more damage from behind."],
-	"ambidexterity_1": ["Ambidexterity", "Rogue", 40, 75, 0.0, 0, "Allows a one-handed off-hand weapon in any class. Independent off-hand swings deal 75% damage and grant no ordinary rage."],
+	"ambidexterity_1": ["Ambidexterity", "Rogue", 40, 25, 0.0, 0, "Raises off-hand weapon damage from 50% to 75% in any class. Dual-wield pairs are always usable; off-hand swings grant no ordinary rage."],
 	"combat_potency_1": ["Combat Potency", "Rogue", 100, 5, 0.2, 0, "Landed ordinary off-hand swings have a 20% chance to grant 5 rage."],
 	"seal_fate_1": ["Seal Fate", "Rogue", 120, 1, 0.0, 0, "Direct active crits grant one additional combo point after Relentless Assault. Finishers and bonus strikes do not qualify."],
 	"main_gauche_1": ["Main Gauche", "Rogue", 140, 100, 0.15, 0, "Landed main-hand swings have a 15% chance for an off-hand bonus strike. Requires an off-hand weapon; no recursive procs or rage."],

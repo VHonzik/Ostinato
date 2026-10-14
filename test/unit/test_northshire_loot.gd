@@ -17,84 +17,58 @@ func test_starting_supplies_merchants_and_loot_tables_exclude_water() -> void:
 				if int(row[3]) >= 0:
 					assert_ne(ItemData.get_item(int(row[0])).use, "water")
 	assert_true(ItemData.get_item(2132).two_handed)
-	assert_true(NorthshireLoot.TABLES["6"].any(func(row: Array) -> bool: return row[0] == 2132))
+	assert_true(NorthshireLoot.REFERENCES["60001"].any(func(row: Array) -> bool: return row[0] == 2132))
 	assert_true(MerchantData.catalog(900003).has("2132"))
 
 
-func test_source_inventory_has_every_bounded_row_and_resolves_every_reference_and_item() -> void:
-	var count := 0
-	for key in NorthshireLoot.TABLES:
-		count += NorthshireLoot.TABLES[key].size()
-		for row in NorthshireLoot.TABLES[key]:
-			if int(row[3]) < 0:
-				assert_true(NorthshireLoot.REFERENCES.has(str(-int(row[3]))))
-			else:
-				var item := ItemData.get_item(int(row[0]))
-				assert_false(item.is_empty(), str(row[0]))
-				assert_lte(int(row[4]), int(item.stack))
-	assert_eq(count, 66, "Seven complete creature tables and two object tables.")
-	assert_eq(NorthshireLoot.REFERENCES["60000"].size(), 23)
-	assert_eq(NorthshireLoot.REFERENCES["60441"].size(), 5)
-	for rows in NorthshireLoot.REFERENCES.values():
-		for row in rows:
-			assert_false(ItemData.get_item(int(row[0])).is_empty())
-	assert_eq(ItemData.get_item(2057).minimum, 2)
-	assert_eq(ItemData.get_item(2057).maximum, 4)
-	assert_eq(ItemData.get_item(2057).interval, 2.0)
-	assert_eq(ItemData.get_item(7280).stats, {"stamina": 1})
-	assert_eq(ItemData.get_item(3471).stats, {"strength": 1})
-	assert_eq(ItemData.get_item(4766).stats, {"agility": 1})
+func test_every_loot_row_resolves_and_fits_its_stack() -> void:
+	for tables in [NorthshireLoot.TABLES, NorthshireLoot.REFERENCES]:
+		for rows in tables.values():
+			for row in rows:
+				if int(row[3]) < 0:
+					assert_has(NorthshireLoot.REFERENCES, str(-int(row[3])))
+				else:
+					var item := ItemData.get_item(int(row[0]))
+					assert_false(item.is_empty(), str(row[0]))
+					assert_lte(int(row[4]), int(item.stack))
 
 
-func test_chest_food_group_has_exclusive_weighted_intervals_and_no_drop_remainder() -> void:
+func test_chest_gear_group_has_guaranteed_common_or_less_likely_uncommon() -> void:
 	var group: Array = NorthshireLoot.TABLES["2843"].filter(
 		func(row: Array) -> bool: return row[2] == 1)
-	for fixture in [[0.0, 117], [18.999, 117], [19.0, 2070], [36.999, 2070],
-		[37.0, 4536], [55.999, 4536], [56.0, 4540], [74.999, 4540]]:
-		assert_eq(LootData.select_group(group, fixture[0])[0], fixture[1])
-	assert_eq(LootData.select_group(group, 75.0), [])
-	assert_eq(LootData.select_group(group, 99.999), [])
-	var bags: Array = NorthshireLoot.REFERENCES["60441"]
-	for fixture in [[0.0, 805], [19.999, 805], [20.0, 828], [40.0, 4496],
-		[60.0, 5571], [80.0, 5572], [99.999, 5572]]:
-		assert_eq(LootData.select_group(bags, fixture[0])[0], fixture[1])
+	assert_eq(LootData.select_group(group, 0.0)[0], 60001)
+	assert_eq(LootData.select_group(group, 59.999)[0], 60001)
+	assert_eq(LootData.select_group(group, 60.0)[0], 60002)
+	assert_eq(LootData.select_group(group, 99.999)[0], 60002)
 
 
-func test_reference_rolls_select_equipment_and_bags_once_and_keep_source_quantities() -> void:
+func test_reference_rolls_select_one_item_and_keep_quantity_endpoints() -> void:
 	var generator := RandomNumberGenerator.new()
 	generator.seed = 3841
 	var quantities: Array[int] = []
 	for repeat in range(100):
-		var grey := LootData.roll_table([[60000, 100, 0, -60000, 1]], generator)
-		assert_eq(grey.size(), 1)
-		assert_ne(ItemData.get_item(int(grey[0].id)).slot, "")
-		assert_eq(int(grey[0].quantity), 1)
-		var bags := LootData.roll_table([[60441, 100, 0, -60441, 1]], generator)
-		assert_eq(bags.size(), 1)
-		assert_true(int(bags[0].id) in [805, 828, 4496, 5571, 5572])
+		var gear := LootData.roll_table([[60000, 100, 0, -60000, 1]], generator)
+		assert_eq(gear.size(), 1)
+		assert_eq(ItemData.get_item(int(gear[0].id)).quality, 0)
+		assert_eq(int(gear[0].quantity), 1)
 		var loot := LootData.roll_table([[7073, 100, 0, 1, 2]], generator)
-		assert_eq(loot.size(), 1)
-		assert_true(int(loot[0].quantity) in [1, 2])
 		if not quantities.has(int(loot[0].quantity)):
 			quantities.append(int(loot[0].quantity))
-	assert_eq(quantities.size(), 2, "Controlled sequence exercises both quantity endpoints.")
+	assert_eq(quantities.size(), 2)
 
 
-func test_known_seed_619_treasure_and_ordinary_drops() -> void:
-	var world := ValleyRoute.create_world(619, false)
-	var fixtures := [
-		["valley/wolf/0", 0, [ItemData.instance(4865), ItemData.instance(7074)]],
-		["valley/camp/0", 2, [ItemData.instance(2210)]],
-		["valley/vineyard/8", 7, [ItemData.instance(2057), ItemData.instance(3365)]],
-		["valley/treasure/mine_chest", 17, [ItemData.instance(1380)]],
-		["valley/treasure/vineyard_chest", 15, [ItemData.instance(1372), ItemData.instance(4536, 2)]],
-		["valley/treasure/ridge_chest", 12, [ItemData.instance(1367), ItemData.instance(4540)]],
-	]
-	for fixture in fixtures:
-		var actor := _source(world, fixture[0])
-		LootData.assign(world, actor)
-		assert_eq(actor.loot_copper, fixture[1], fixture[0])
-		assert_eq(actor.loot, fixture[2], fixture[0])
+func test_seeded_chests_always_contain_usable_common_or_uncommon_gear() -> void:
+	for seed_value in range(100):
+		var world := ValleyRoute.create_world(seed_value, false)
+		for actor in world.actors:
+			if not actor.chest:
+				continue
+			LootData.assign(world, actor)
+			var gear := actor.loot.filter(func(item: Dictionary) -> bool:
+				return ItemData.get_item(int(item.id)).slot != "")
+			assert_eq(gear.size(), 1)
+			assert_between(int(ItemData.get_item(int(gear[0].id)).quality), 1, 2)
+		world.discard()
 
 
 func test_loot_order_and_quest_filter_never_consume_or_shift_world_randomness() -> void:
@@ -164,7 +138,7 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	chest.loot = [ItemData.instance(1367), ItemData.instance(4540, 2)]
 	var original := chest.loot.duplicate(true)
 	# Filled feet force this equipment into inventory, preserving the capacity check.
-	world.hero.equipment["feet"] = ItemData.instance(1374)
+	world.hero.equipment["armor"] = ItemData.instance(1374)
 	world.hero.refresh_stats()
 	for index in range(40):
 		world.hero.inventory[index] = ItemData.instance(118, 5)
