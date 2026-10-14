@@ -72,7 +72,7 @@ func test_execute_spends_available_rage_between_minimum_and_cap_and_scales_damag
 		var spent := mini(rage, 30)
 		assert_true(world.cast_skill(&"execute_1", enemy))
 		assert_eq(world.hero.rage, rage - spent)
-		assert_eq(enemy.health, 2000 - (40 + (spent - 15) * 2))
+		assert_eq(enemy.health, 2000 - (55 + (spent - 15) * 2))
 		assert_true("\n".join(world.messages).contains("Execute: spent %d rage." % spent))
 		assert_eq(world.turn_count, 1)
 
@@ -141,10 +141,12 @@ func test_execute_uses_physical_buffs_armor_and_crit_for_whole_damage() -> void:
 	world.hero.rage = 30
 	world.hero.melee.damage_multiplier = 1.1
 	world.hero.melee.critical = 100.0
+	world.hero.melee.damage_min = 30.0
+	world.hero.melee.damage_max = 30.0
 	enemy.melee.armor = 485
 	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 2000 - 76,
-		"(20 * 2 + 30) * 1.1 * 0.5 = 38, then crit * 2.")
+	assert_eq(enemy.health, 2000 - 110,
+		"(30 * 1.5 + 25 + 30) * 1.1 * 0.5 = 55, then crit * 2.")
 	assert_eq(world.hero.rage, 0)
 
 
@@ -209,10 +211,10 @@ func test_execute_spends_before_due_swing_and_resolves_before_enemy_without_extr
 	world.hero.swing.remaining = 0.5
 	var health_before := world.hero.health
 	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 2000 - 62 - 20)
+	assert_eq(enemy.health, 2000 - 77 - 20)
 	assert_eq(world.hero.health, health_before - 1)
 	assert_eq(world.hero.rage, 17, "Only the later swing's 14 and incoming hit's 3 remain.")
-	assert_eq(world.hero.combo_points, 1, "The ordinary swing grants no extra point.")
+	assert_eq(world.hero.combo_points, 1, "The active and ordinary swing share one base point this turn.")
 	assert_eq(world.hero.warrior_progress, 151)
 	var log := "\n".join(world.messages)
 	assert_gt(log.find("You ->"), log.find("Execute (hit)"))

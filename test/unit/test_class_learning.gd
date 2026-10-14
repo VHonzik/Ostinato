@@ -207,7 +207,7 @@ func test_totem_replacement_range_expiry_and_failed_placement_keep_resources_and
 	var strength := world.hero.strength
 	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
 	var first := SummonRules.active(world, "earth")
-	assert_eq(world.hero.strength, strength + 10)
+	assert_eq(world.hero.strength, strength + 5)
 	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
 	assert_false(first.alive)
 	var second := SummonRules.active(world, "earth")
@@ -228,7 +228,7 @@ func test_totem_replacement_range_expiry_and_failed_placement_keep_resources_and
 	assert_null(SummonRules.active(world, "earth"))
 
 
-func test_combo_points_require_passive_persist_between_targets_and_cap_without_auto_or_proc_credit() -> void:
+func test_combo_points_require_passive_persist_between_targets_and_cap_without_proc_credit() -> void:
 	var world := _world(&"Rogue")
 	_learn_starters(world, &"Rogue")
 	_learn_starters(world, &"Paladin")
@@ -237,21 +237,21 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_a
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
 	assert_true(world.request_melee(first))
-	assert_eq(world.hero.combo_points, 0, "Auto-attacks do not build points.")
+	assert_eq(world.hero.combo_points, 1, "Ordinary main-hand hits build points.")
 	assert_true(world.cast_skill(&"seal_of_command_1"))
-	assert_eq(world.hero.combo_points, 0, "Buff and its swing proc do not build points.")
+	assert_eq(world.hero.combo_points, 1, "Buff and its swing proc do not build points.")
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", first))
-	assert_eq(world.hero.combo_points, 1)
+	assert_eq(world.hero.combo_points, 2)
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.0
 	assert_true(world.cast_skill(&"heroic_strike_1", second))
-	assert_eq(world.hero.combo_points, 2, "Queued active counts once, across targets.")
+	assert_eq(world.hero.combo_points, 3, "Queued active counts once, across targets.")
 	world.cancel_melee()
 	first.engaged = false
 	second.engaged = false
 	world.wait_turn()
-	assert_eq(world.hero.combo_points, 2, "Points persist outside combat.")
+	assert_eq(world.hero.combo_points, 3, "Points persist outside combat.")
 	for use in range(5):
 		world.hero.rage = 100
 		world.hero.swing.remaining = 0.0
@@ -561,7 +561,7 @@ func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() 
 	assert_true(world.request_melee(enemy))
 	assert_lt(enemy.health, enemy.max_health, "Landed swings trigger the Holy bonus.")
 	assert_eq(world.hero.rage, 14, "Only the ordinary swing supplies rage.")
-	assert_eq(world.hero.combo_points, 0)
+	assert_eq(world.hero.combo_points, 1, "Only the ordinary main-hand hit supplies a point.")
 	assert_eq(world.hero.progression_points(&"Paladin"), 1, "Only casting the seal supplied class XP.")
 	world.hero.melee.hit = -1000.0
 	var health := enemy.health

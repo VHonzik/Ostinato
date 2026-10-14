@@ -63,7 +63,7 @@ const ITEMS: Dictionary = {
 		"level": 1, "stack": 1, "buy": 200,
 		"sell": 20, "armor": 70, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
-		"minimum": 3, "maximum": 5, "interval": 2.4,
+		"minimum": 5, "maximum": 7, "interval": 2.4,
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",
 		"tradable": true, "weapon_style": "shield_pair",
 	},

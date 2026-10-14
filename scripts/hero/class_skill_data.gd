@@ -17,23 +17,23 @@ const WARRIOR_RANKS: Array[StringName] = [
 const LOOP_RANKS: Dictionary = {
 	"lightning_shield_1": {
 		"title": "Lightning Shield", "class_tab": "Shaman", "rank": 1, "training_level": 1,
-		"rage_cost": 10, "cast_seconds": 1.0, "duration": 30, "minimum": 13,
+		"rage_cost": 10, "cast_seconds": 1.0, "duration": 30, "minimum": 10,
 		"family": "lightning_shield", "effect": "ARMOR", "target": "SELF", "school": 3,
 		"detail": "Three Nature-damage charges for 30 turns. At most one discharge per 3 turns. Refreshing counts as a use."
 	},
 	"strength_of_earth_totem_1": {
 		"title": "Strength of Earth Totem", "class_tab": "Shaman", "rank": 1,
 		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
-		"minimum": 10, "range_tiles": 4,
+		"minimum": 5, "range_tiles": 4,
 		"family": "strength_of_earth_totem", "effect": "SUMMON", "target": "NONE",
-		"detail": "Place a 5-health totem for 30 turns: +10 Strength within 4 tiles. Replaces your previous earth totem."
+		"detail": "Place a 5-health totem for 30 turns: +5 Strength within 4 tiles. Replaces your previous earth totem."
 	},
 	"seal_of_command_1": {
 		"title": "Seal of Command", "class_tab": "Paladin", "rank": 1,
 		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
-		"weapon_multiplier": 0.5, "family": "seal_of_command", "school": 1,
+		"weapon_multiplier": 0.25, "family": "seal_of_command", "school": 1,
 		"effect": "ARMOR", "target": "SELF",
-		"detail": "Landed main-hand swings add 50% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Judgement leaves the seal active."
+		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Judgement leaves the seal active."
 	},
 	"judgement_1": {
 		"title": "Judgement", "class_tab": "Paladin", "rank": 1, "training_level": 1,
@@ -52,7 +52,7 @@ const LOOP_RANKS: Dictionary = {
 	"relentless_assault_1": {
 		"title": "Relentless Assault", "class_tab": "Rogue", "rank": 1, "training_level": 1,
 		"family": "relentless_assault", "effect": "PASSIVE", "target": "NONE",
-		"detail": "Passive: landed direct active attacks grant 1 player-held combo point, up to 5, across classes and targets. Auto-attacks, procs, buffs and misses grant none. Points reset on death."
+		"detail": "Passive: landed direct active attacks and ordinary main-hand hits grant 1 player-held combo point, up to 5, across classes and targets. At most 1 Relentless Assault point per turn. Off-hand hits, procs, buffs and misses grant none. Points reset on death."
 	},
 }
 const CLASSES: Array[StringName] = PLAYABLE_CLASSES
@@ -97,9 +97,9 @@ const RANKS: Dictionary = {
 		"title": "Execute", "class_tab": "Warrior", "rank": 1, "training_level": 1,
 		"progress_required": 150, "rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
 		"family": "execute", "effect": "EXECUTE", "target": "ENEMY",
-		"weapon_multiplier": 2.0, "execute_health_percent": 20,
+		"weapon_multiplier": 1.5, "minimum": 25, "execute_health_percent": 20,
 		"execute_rage_cap": 30, "execute_damage_per_rage": 2,
-		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 200% weapon damage + 2 damage per rage above 15. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
+		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 150% weapon damage + 25 + 2 damage per rage above 15. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
 	},
 }
 

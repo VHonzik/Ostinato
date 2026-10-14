@@ -11,7 +11,7 @@ static func magnitude(hero: HeroState, identifier: StringName) -> int:
 	return 0 if skill == null else skill.minimum
 
 
-static func proc(world: GridWorld, identifier: StringName, multiplier: int = 1) -> bool:
+static func proc(world: GridWorld, identifier: StringName, multiplier: float = 1.0) -> bool:
 	var skill := world.hero.find_skill(identifier)
 	return skill != null and world.combat_random.randf() < skill.coefficient * multiplier
 
@@ -74,7 +74,7 @@ static func damage_multiplier(hero: HeroState) -> float:
 	percent += int(effect(hero, &"bandits_guile_1").get("bonus_percent", 0))
 	var multiplier := 1.0 + percent / 100.0
 	if hero.buffs.has(&"divine_shield_1"):
-		multiplier *= 0.5
+		multiplier *= 1.0 - magnitude(hero, &"divine_shield_1") / 100.0
 	return multiplier
 
 
@@ -187,8 +187,11 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 				world.hero.buffs.erase(key)
 	var weapon_roll := world.combat_random.randf()
 	var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
+	var flat_bonus := skill.minimum
+	if skill.family == &"judgement":
+		flat_bonus += magnitude(world.hero, &"sanctity_of_battle_1")
 	var value := MeleeRules.round_weapon_damage((raw * skill.weapon_multiplier
-		+ skill.minimum) * extra * damage_multiplier(world.hero)
+		+ flat_bonus) * extra * damage_multiplier(world.hero)
 		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level),
 		world.hero.melee, weapon_roll)
 	if critical:
@@ -207,8 +210,11 @@ static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 		return
 	var direct := skill != null
 	var finisher := direct and skill.family == &"eviscerate"
+	if landed and build_points and not finisher and (direct or (physical and not off_hand)):
+		if has(world.hero, &"relentless_assault_1") and not world.combo_event_counted:
+			world.hero.gain_combo_point()
+			world.combo_event_counted = true
 	if landed and direct and build_points and not finisher:
-		world.hero.gain_combo_point()
 		if critical and has(world.hero, &"relentless_assault_1") and has(world.hero, &"seal_fate_1"):
 			world.hero.combo_points = mini(5, world.hero.combo_points + 1)
 		if has(world.hero, &"bandits_guile_1"):
@@ -216,7 +222,8 @@ static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 			var hits := int(previous.get("charges", 0)) + 1
 			var percent := int(previous.get("bonus_percent", 0))
 			if hits >= 4:
-				percent = mini(30, percent + magnitude(world.hero, &"bandits_guile_1"))
+				var step := magnitude(world.hero, &"bandits_guile_1")
+				percent = mini(3 * step, percent + step)
 				hits = 0
 			apply(world, &"bandits_guile_1", {"charges": hits, "bonus_percent": percent})
 	if critical:
@@ -227,15 +234,22 @@ static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 			apply(world, flurry, {"charges": 3, "haste_percent": magnitude(world.hero, flurry)})
 			apply(world, &"wrecking_crew_1", {"physical_percent": magnitude(world.hero, &"wrecking_crew_1")})
 			apply(world, &"elemental_assault_1", {"charges": 1})
-			if direct and skill.family != &"heroic_strike" and not finisher:
-				apply(world, &"battle_trance_1", {"charges": 1})
+		if direct and skill.family != &"heroic_strike" and not finisher:
+			apply(world, &"battle_trance_1", {"charges": 1})
 		var stacks := mini(3, int(effect(world.hero, &"vengeance_1").get("charges", 0)) + 1)
 		apply(world, &"vengeance_1", {"charges": stacks,
 			"bonus_percent": stacks * magnitude(world.hero, &"vengeance_1")})
 	if not landed:
 		return
 	if physical:
-		if proc(world, &"sudden_death_1"):
+		var sudden_death_chance := 1.0
+		if not direct:
+			# Ordinary hands share a base-speed proc budget; actives keep their listed chance.
+			var weapon := world.hero.off_hand_melee() if off_hand else world.hero.melee
+			sudden_death_chance = weapon.interval / 2.4
+			if world.hero.has_off_hand_weapon():
+				sudden_death_chance *= 0.5
+		if proc(world, &"sudden_death_1", sudden_death_chance):
 			apply(world, &"sudden_death_1", {"charges": 1})
 		if off_hand:
 			if proc(world, &"combat_potency_1"):
@@ -341,8 +355,9 @@ static func finish(world: GridWorld, points: int) -> void:
 	if world.is_terminal():
 		return
 	if has(world.hero, &"restless_blades_1"):
+		var reduction := ceili(points * magnitude(world.hero, &"restless_blades_1") / 2.0)
 		for key in world.hero.cooldowns:
-			world.hero.cooldowns[key] = maxi(world.turn_count, int(world.hero.cooldowns[key]) - points)
+			world.hero.cooldowns[key] = maxi(world.turn_count, int(world.hero.cooldowns[key]) - reduction)
 	if has(world.hero, &"relentless_assault_1") and proc(world, &"ruthlessness_1"):
 		world.hero.combo_points = mini(5, world.hero.combo_points + magnitude(world.hero, &"ruthlessness_1"))
 	if proc(world, &"relentless_strikes_1", points):

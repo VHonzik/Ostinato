@@ -65,7 +65,7 @@ const ITEMS: Dictionary = {
 		"unique": false, "weapon": false, "shield": false,
 		"minimum": 0, "maximum": 0, "interval": 0.0,
 		"stats": {}, "use": "health", "quest": "",
-		"tradable": true, "restore_min": 70, "restore_max": 90,
+		"tradable": true, "restore_min": 30, "restore_max": 40,
 		"cooldown": 120,
 	},
 	"7073": {
@@ -181,7 +181,7 @@ const ITEMS: Dictionary = {
 		"level": 1, "stack": 1, "buy": 200,
 		"sell": 30, "armor": 100, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
-		"minimum": 4, "maximum": 7, "interval": 2.4,
+		"minimum": 6, "maximum": 9, "interval": 2.4,
 		"stats": {"strength": 2, "crit": 1.0, "haste": 4.0}, "use": "", "quest": "",
 		"tradable": true, "weapon_style": "shield_pair",
 	},

@@ -177,7 +177,7 @@ func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:
 	world.hero.inventory[0] = ItemData.instance(118, 2)
 	world.hero.inventory[1] = ItemData.instance(118)
 	assert_true(world.consume_item(0))
-	assert_between(world.hero.health, 71, 91)
+	assert_between(world.hero.health, 31, 41)
 	assert_eq(world.hero.inventory[0].quantity, 1)
 	assert_false(world.consume_item(1))
 	assert_eq(world.turn_count, 1)

@@ -65,11 +65,11 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 	world.hero.melee.hit = 5.0
 	world.hero.refresh_stats()
 	assert_eq(world.hero.melee.hit, 5.0)
-	assert_almost_eq(world.hero.melee.critical, base_crit + 8, 0.001)
+	assert_almost_eq(world.hero.melee.critical, base_crit + 13, 0.001)
 	assert_eq(world.hero.melee.armor, floori(base_armor * 1.2))
 	world.hero.refresh_stats()
 	assert_eq(world.hero.melee.hit, 5.0)
-	assert_almost_eq(world.hero.melee.critical, base_crit + 8, 0.001)
+	assert_almost_eq(world.hero.melee.critical, base_crit + 13, 0.001)
 
 
 func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() -> void:
@@ -80,7 +80,7 @@ func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() 
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
-		var expected := 23 if identifier == &"judgement_1" else 24
+		var expected := 23 if identifier == &"judgement_1" else 33
 		assert_true(world.cast_skill(identifier, enemy))
 		assert_eq(enemy.max_health - enemy.health, expected,
 			"A +2 target reduces spell damage once, without physical armor mitigation.")
@@ -93,13 +93,13 @@ func test_level_penalties_apply_once_to_seal_and_lightning_shield_damage() -> vo
 	enemy.melee.level = 3
 	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 	ClassSpellEffects.on_melee(world, enemy, 20, true)
-	assert_eq(enemy.max_health - enemy.health, 8,
-		"Seal averages 7.6 damage: half of 20, then the level penalty, with unbiased rounding.")
+	assert_eq(enemy.max_health - enemy.health, 4,
+		"Seal averages 3.8 damage: a quarter of 20, then the level penalty, with unbiased rounding.")
 	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "until": 100,
 		"charges": 3, "ready": 0}
 	var before := enemy.health
 	ClassToolkitRules.discharge(world, enemy, true)
-	assert_eq(before - enemy.health, 9, "Reactive Nature damage also respects the level gap.")
+	assert_eq(before - enemy.health, 7, "Reactive Nature damage also respects the level gap.")
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 2)
 
 
@@ -119,11 +119,85 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 		ClassSpellEffects.on_melee(world, enemy, 20, true)
 	var average := (enemy.max_health - enemy.health) / 10000.0
 	var raw := 20.0 + 4.0 / 14.0 * world.hero.melee.interval
-	assert_almost_eq(average, raw * 0.5 * 0.76, 0.02)
+	assert_almost_eq(average, raw * 0.25 * 0.76, 0.02)
 	assert_eq(world.combat_random.state, generator.state,
 		"Damage selection and fractional rounding share the one weapon roll.")
 	assert_true(enemy.alive)
 	world.discard()
+
+
+func test_sanctity_adds_holy_damage_without_changing_the_base_judgement() -> void:
+	for developed in [false, true]:
+		var world := _world()
+		var learned: Array[StringName] = [&"judgement_1"]
+		if developed:
+			learned.append(&"sanctity_of_battle_1")
+		_learn(world, learned)
+		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+		var enemy := _enemy(world)
+		enemy.melee.armor = 100000
+		assert_true(world.cast_skill(&"judgement_1", enemy))
+		assert_eq(enemy.max_health - enemy.health, 65 if developed else 30)
+
+
+func test_main_hand_and_active_points_share_one_turn_even_with_many_due_swings() -> void:
+	var world := _world(&"Rogue")
+	_learn(world, [&"relentless_assault_1"])
+	world.hero.equipment.weapons = ItemData.instance(2139)
+	world.hero.refresh_stats()
+	world.hero.melee.hit = 100
+	world.hero.melee.critical = 0
+	world.hero.haste = 10.0
+	world.hero.swing.remaining = 0.0
+	world.hero.off_hand_swing.remaining = 0.0
+	var enemy := _enemy(world)
+	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
+	assert_eq(world.hero.combo_points, 1, "The active and all due swings share one base point.")
+	world.wait_turn()
+	assert_eq(world.hero.combo_points, 2, "The next turn can gain another main-hand point.")
+	world.hero.swing.remaining = 100.0
+	world.hero.off_hand_swing.remaining = 0.0
+	world.wait_turn()
+	assert_eq(world.hero.combo_points, 2, "An off-hand-only turn grants no point.")
+	assert_eq(world.hero.progression_points(&"Rogue"), 1000, "Automatic points grant no class XP.")
+
+
+func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
+	for id: StringName in [&"judgement_1", &"earth_shock_1"]:
+		var world := _world()
+		_learn(world, [&"battle_trance_1", &"seal_of_command_1", id])
+		var enemy := _enemy(world)
+		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+		world.hero.melee.critical = 100
+		assert_true(world.cast_skill(id, enemy))
+		assert_true(world.hero.buffs.has(&"battle_trance_1"))
+		var rage := world.hero.rage
+		assert_true(world.cast_skill(&"seal_of_command_1"))
+		assert_eq(world.hero.rage, rage, "The following active is free.")
+		assert_false(world.hero.buffs.has(&"battle_trance_1"))
+
+
+func test_sudden_death_splits_ordinary_hand_chances_but_keeps_active_chance() -> void:
+	var generator := RandomNumberGenerator.new()
+	var chosen_seed := -1
+	for seed_value in range(1000):
+		generator.seed = seed_value
+		var roll := generator.randf()
+		if roll > 0.10 and roll < 0.12:
+			chosen_seed = seed_value
+			break
+	assert_ne(chosen_seed, -1)
+	for setup: Array in [[2129, false, false, true], [2139, false, false, false],
+		[2139, true, false, false], [2139, false, true, true]]:
+		var world := _world()
+		_learn(world, [&"sudden_death_1"])
+		world.hero.equipment.weapons = ItemData.instance(setup[0])
+		world.hero.refresh_stats()
+		world.combat_random.seed = chosen_seed
+		var enemy := _enemy(world)
+		var skill: SkillRank = world.hero.find_skill(&"mortal_strike_1") if setup[2] else null
+		ClassToolkitRules.on_attack(world, enemy, skill, true, false, 20, true, setup[1])
+		assert_eq(world.hero.buffs.has(&"sudden_death_1"), setup[3])
 
 
 func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itself() -> void:
@@ -185,7 +259,7 @@ func test_sudden_death_allows_one_free_execute_at_full_health_and_does_not_spend
 	world.hero.melee.attack_power = 0
 	world.hero.find_skill(&"sudden_death_1").coefficient = 0
 	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 9960)
+	assert_eq(enemy.health, 9945)
 	assert_eq(world.hero.rage, 100)
 	assert_false(world.hero.buffs.has(&"sudden_death_1"))
 	assert_false(world.cast_skill(&"execute_1", enemy))
@@ -233,7 +307,7 @@ func test_juggernaut_changes_charge_cooldown_and_guarantees_only_one_mortal_stri
 	assert_false(world.hero.buffs.has(&"juggernaut_1"))
 
 
-func test_improved_shield_and_static_shock_consume_charges_without_rage_points_or_xp() -> void:
+func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_points_or_xp() -> void:
 	var world := _world(&"Shaman")
 	_learn(world, [&"lightning_shield_1", &"improved_shields_1", &"static_shock_1", &"relentless_assault_1"])
 	var enemy := _enemy(world)
@@ -242,14 +316,14 @@ func test_improved_shield_and_static_shock_consume_charges_without_rage_points_o
 	world.hero.find_skill(&"static_shock_1").coefficient = 1.0
 	var rage := world.hero.rage
 	ClassToolkitRules.on_attack(world, enemy, null, true, false, 20, true)
-	assert_eq(enemy.health, 9981, "50% improvement rounds shield damage down to 19.")
+	assert_eq(enemy.health, 9985, "50% improvement increases shield damage from 10 to 15.")
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 5)
 	ClassToolkitRules.discharge(world, enemy, true)
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 4)
 	ClassToolkitRules.discharge(world, enemy, true)
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 4, "Reactive cooldown still applies.")
 	assert_eq(world.hero.rage, rage)
-	assert_eq(world.hero.combo_points, 0)
+	assert_eq(world.hero.combo_points, 1, "Only the primary main-hand hit builds a point.")
 	assert_eq(world.hero.progression_points(&"Shaman"), 1001)
 
 
@@ -261,14 +335,14 @@ func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_up
 	enemy.stunned_until = 0
 	enemy.swing.remaining = 5
 	ClassToolkitRules.apply(world, &"elemental_assault_1", {"charges": 1})
-	world.hero.melee.damage_min = 20
-	world.hero.melee.damage_max = 20
+	world.hero.melee.damage_min = 26
+	world.hero.melee.damage_max = 26
 	world.hero.melee.attack_power = 0
 	assert_true(world.cast_skill(&"earth_shock_1", enemy))
-	assert_eq(enemy.health, 10000 - 54)
-	assert_eq(enemy.stunned_until, 3)
+	assert_eq(enemy.health, 10000 - 85)
+	assert_eq(enemy.stunned_until, 2)
 	assert_almost_eq(enemy.swing.remaining, 5.0, 0.001)
-	assert_eq(world.hero.cooldowns.shock, 5)
+	assert_eq(world.hero.cooldowns.shock, 7)
 	assert_eq(world.hero.combo_points, 1)
 	assert_false(world.hero.buffs.has(&"elemental_assault_1"))
 
@@ -277,9 +351,9 @@ func test_elemental_weapons_upgrades_totem_and_replacement_keeps_only_one_aura()
 	var world := _world()
 	_learn(world, [&"elemental_weapons_1", &"strength_of_earth_totem_1"])
 	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_eq(world.hero.aura_strength, 15)
+	assert_eq(world.hero.aura_strength, 7)
 	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_eq(world.hero.aura_strength, 15)
+	assert_eq(world.hero.aura_strength, 7)
 	assert_eq(world.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "earth").size(), 1)
 
 
@@ -341,7 +415,7 @@ func test_blessing_strength_and_benediction_work_when_retained_as_warrior() -> v
 	world.hero.refresh_stats()
 	var strength := world.hero.strength
 	assert_true(world.cast_skill(&"blessing_of_might_1"))
-	assert_eq(world.hero.strength, strength + 10)
+	assert_eq(world.hero.strength, strength + 6)
 	assert_eq(world.hero.rage, 90, "8 spent plus 2 out-of-combat decay.")
 	assert_eq(world.hero.progression_points(&"Paladin"), 1000)
 
@@ -355,9 +429,9 @@ func test_shield_protects_both_schools_penalizes_damage_and_guardians_favor_exte
 	assert_eq(world.hero.cooldowns.divine_shield, 21)
 	assert_eq(ClassSpellEffects.absorb(world, null, 100, false), 0)
 	assert_eq(ClassSpellEffects.absorb(world, null, 100, true), 0)
-	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 0.5, 0.001)
-	assert_eq(int(world.hero.buffs[&"divine_shield_1"].until), 7)
-	for index in range(6):
+	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 0.7, 0.001)
+	assert_eq(int(world.hero.buffs[&"divine_shield_1"].until), 5)
+	for index in range(4):
 		world.wait_turn()
 	assert_false(world.hero.buffs.has(&"divine_shield_1"))
 
@@ -409,10 +483,10 @@ func test_vengeance_caps_three_stacks_and_eye_reflection_does_not_build_combo_po
 	var enemy := _enemy(world)
 	for index in range(4):
 		ClassToolkitRules.on_attack(world, enemy, null, true, true, 20, true)
-	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.15, 0.001)
+	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.09, 0.001)
 	ClassToolkitRules.incoming(world, enemy, 100, true)
 	assert_eq(enemy.health, 9970)
-	assert_eq(world.hero.combo_points, 0)
+	assert_eq(world.hero.combo_points, 1, "Only the primary main-hand hits build a base point.")
 	world.hero.health = 0
 	ClassToolkitRules.incoming(world, enemy, 100, true)
 	assert_eq(enemy.health, 9970, "A lethal hit cannot retaliate.")
@@ -485,7 +559,7 @@ func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand
 	assert_eq(world.hero.rage, 0, "Main Gauche bonus cannot trigger Combat Potency.")
 	ClassToolkitRules.on_attack(world, enemy, null, true, false, 20, true, true)
 	assert_eq(world.hero.rage, 5)
-	assert_eq(world.hero.combo_points, 0)
+	assert_eq(world.hero.combo_points, 1, "Off-hand and Main Gauche add no points.")
 
 
 func test_eviscerate_requires_points_spends_on_miss_then_refunds_and_reduces_cooldowns() -> void:
@@ -502,8 +576,8 @@ func test_eviscerate_requires_points_spends_on_miss_then_refunds_and_reduces_coo
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(enemy.health, 10000)
 	assert_eq(world.hero.combo_points, 1)
-	assert_eq(world.hero.rage, 15)
-	assert_eq(world.hero.cooldowns.charge, 5)
+	assert_eq(world.hero.rage, 20)
+	assert_eq(world.hero.cooldowns.charge, 7)
 	assert_eq(world.hero.progression_points(&"Rogue"), 1001)
 
 
@@ -518,7 +592,7 @@ func test_opportunity_seal_fate_and_bandits_guile_reward_direct_crits_without_fi
 	assert_eq(world.hero.combo_points, 2)
 	for index in range(3):
 		ClassToolkitRules.on_attack(world, enemy, world.hero.find_skill(&"mortal_strike_1"), true, false, 20, true)
-	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.1, 0.001)
+	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.05, 0.001)
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.combo_points, 0, "Finishers cannot rebuild points through Seal Fate.")
@@ -537,7 +611,7 @@ func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -
 	assert_eq(first.health, 9980)
 	assert_eq(second.health, 9980)
 	assert_eq(distant.health, 10000)
-	assert_eq(world.hero.combo_points, 2)
+	assert_eq(world.hero.combo_points, 1, "All cleave targets share the base point limit.")
 	assert_eq(world.hero.warrior_progress, 1001)
 	assert_same(world.last_attacked_enemy, first)
 	assert_same(world.auto_attack_target, first)

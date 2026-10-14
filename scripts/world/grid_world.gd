@@ -43,6 +43,7 @@ var cast_elapsed: int = 0
 var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
 var holy_event_counted: bool = false
+var combo_event_counted: bool = false
 var queued_rage_cost: int = 0
 var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
@@ -680,6 +681,7 @@ func _finish_turn() -> void:
 	_arrive_stalker()
 	_acquire_hostiles()
 	resolving_turn = false
+	combo_event_counted = false
 	for actor in actors:
 		_hide_empty_corpse(actor)
 		if not actor.alive and not actor.chest and not actor.story_guard and actor.died_on_turn >= 0:

@@ -780,6 +780,7 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 	attacker.relationship = GridActor.Relationship.HOSTILE
 	attacker.engaged = true
 	attacker.melee.level = 60
+	attacker.melee.hit = 100.0
 	attacker.melee.damage_min = 1000
 	attacker.melee.damage_max = 1000
 	_game.world.actors.append(attacker)

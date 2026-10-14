@@ -20,8 +20,11 @@ Loop and reset on death. There is no permanent equipment.
 A powerful boss guards the exit from early in each Loop; additional copies arrive on
 a fixed global world-turn schedule. Victory means defeating the obstacle and escaping.
 The intended route to victory combines roughly three developed classes with near-maximum
-character level for the finite area. Exceptional earlier victories should remain possible
-through skill and route optimization. Simulation results are exploratory, not final
+character level for the finite area. Two developed kits should usually struggle against
+the boss, three should offer a viable attempt, and the complete set should give a strong
+chance of victory. Aim for comparable class contributions while allowing modest weapon
+preferences. Exceptional earlier victories should remain possible through skill and
+route optimization. Simulation results are exploratory, not final
 balance measurements; do not impose the old ten-minute first-Loop target.
 
 ## Classes, learning and combat
@@ -37,7 +40,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   selection does not lock out the retained toolkit.
 - All classes use rage, with no mana or energy. Learned Relentless Assault builds
   player-held combo points from landed direct active attacks, including retained
-  attacks across classes. Auto-attacks, procs, buffs and misses grant no points.
+  attacks across classes, and ordinary main-hand hits. Relentless Assault grants at most
+  one base point per world turn; Seal Fate can add its extra active-critical point.
+  Off-hand hits, procs, buffs and misses grant no points.
   Points persist across targets and encounters and reset on death. Slice and Dice
   requires points and deliberately spends all held points to extend its attack haste.
   Eviscerate also deliberately spends all held points; finisher refunds follow spending.

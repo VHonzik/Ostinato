@@ -126,9 +126,10 @@ deferred. The Execute slice is implemented below.
   choice. Only uses belonging to the selected class grant XP; retained abilities grant
   none to either track. Count misses and repeated buff uses without anti-spam filters.
   Keep matching trainers, cumulative unlock thresholds and immediate availability.
-- [x] Build player-held combo points from landed direct active attacks after learning
-  Relentless Assault, across classes and targets. Exclude auto-attacks, procs, buffs and
-  misses. Slice and Dice requires points and spends all held points; Judgement leaves
+- [x] Build player-held combo points from landed direct active attacks and ordinary
+  main-hand hits after learning Relentless Assault, across classes and targets, with
+  one base point per turn. Exclude off-hand hits, procs, buffs and misses.
+  Slice and Dice requires points and spends all held points; Judgement leaves
   Seal of Command active. Clear combat resources and effects on death.
 - [x] Save class choice, learning, class XP, combo points, buffs and totems in revision 14;
   leave older files incompatible and unchanged. Cover selection confirmation, quest and
@@ -208,8 +209,15 @@ live in game data and the spell book. Human balance and readability review remai
 - [x] Explore starter, partial Warrior and retained mixed-class matchups with temporary
   seeded simulations under ignored `reports/`; keep experiments out of game code.
 - [x] Adopt the simulated stalker combat profile for every arrival and reinforcement;
-  preserve the final [balance comparisons](../balance/2026-10-14/results.md) for later
+  preserve the earlier [balance comparisons](../balance/2026-10-14/results.md) for later
   class tuning. Arrival scheduling and the demo ending remain for the exit-boss slice.
+- [x] Implement the potion, stalker, class-kit and weapon-and-shield tuning pass.
+  Give Rogue independent main-hand combo building through Relentless Assault, temper
+  stacked damage and cooldown effects, and strengthen developed Warrior and Paladin
+  payoffs. Numerical tuning lives in data and the spell book.
+- [ ] Further balance examination is paused at the owner's request. Resume comparisons
+  of retained kits and weapon preferences later; investigate partial unlocks, uncommon
+  gear, ordinary fights and reinforcement pressure before another tuning pass.
 - [ ] Owner playtest: compare single enemies and multiple pulls before and after learning
   skills, including enemies above character level. Adjust difficulty and route pacing
   from play; simulations do not establish feel or balance acceptance.

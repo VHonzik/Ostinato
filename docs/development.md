@@ -82,8 +82,10 @@ Shaman starts with Lightning Shield and Strength of Earth Totem; Paladin with Se
 Command and Judgement; Rogue with Slice and Dice and the Relentless Assault passive.
 All use rage. Retained abilities/passives work in every class, but only selected-class
 uses grant class XP; learning does not spend it. Relentless Assault builds player-held
-combo points from landed direct active attacks, across classes and targets. Slice and
-Dice needs points and spends them all for attack haste. Judgement leaves the seal active.
+combo points from landed direct active attacks and ordinary main-hand hits, across
+classes and targets, with one base point per world turn. Seal Fate can add an extra point
+on an active crit; off-hand hits and bonus damage grant none. Slice and Dice needs points
+and spends them all for attack haste. Judgement leaves the seal active.
 All four class kits are available, including their actives and passives. The spell book
 describes their provisional mechanics; passives can be focused and inspected but cannot
 be cast or assigned. New catalogue data lives in
