@@ -80,22 +80,23 @@ func test_last_kill_stops_same_turn_reinforcement_and_later_enemy_response() -> 
 
 
 func test_area_attack_stops_after_last_present_stalker_dies() -> void:
-	var world := GridWorld.new(Rect2i(0, 0, 15, 15), Vector2i(7, 7), 97, false)
-	world.hero.learned_skills.append(SkillRank.catalog(&"whirlwind_1"))
-	world.hero.rage = 100
-	world.hero.melee.hit = 1000
-	for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]:
-		var actor := GridActor.new(world.player_tile + offset)
-		actor.relationship = GridActor.Relationship.HOSTILE
-		actor.health = 1
-		actor.stalker = offset != Vector2i.DOWN
-		actor.melee.dodge = 0
-		world.actors.append(actor)
-	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_false(world.actors[0].alive)
-	assert_false(world.actors[1].alive)
-	assert_true(world.actors[2].alive, "The last stalker ends the action before later targets.")
-	_assert_complete(world)
+	for identifier: StringName in [&"whirlwind_1", &"booming_shout_1"]:
+		var world := GridWorld.new(Rect2i(0, 0, 15, 15), Vector2i(7, 7), 97, false)
+		world.hero.learned_skills.append(SkillDefinition.catalog(identifier))
+		world.hero.rage = 100
+		world.hero.melee.hit = 1000
+		for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]:
+			var actor := GridActor.new(world.player_tile + offset)
+			actor.relationship = GridActor.Relationship.HOSTILE
+			actor.health = 1
+			actor.stalker = offset != Vector2i.DOWN
+			actor.melee.dodge = 0
+			world.actors.append(actor)
+		assert_true(world.cast_skill(identifier))
+		assert_false(world.actors[0].alive)
+		assert_false(world.actors[1].alive)
+		assert_true(world.actors[2].alive, "The last stalker ends the action before later targets.")
+		_assert_complete(world)
 
 
 func test_gate_has_no_lock_or_crossing_win_condition() -> void:
@@ -140,7 +141,7 @@ func test_beeline_witnesses_guard_death_before_passing_the_gate() -> void:
 	for paladin in [false, true]:
 		var world := ValleyRoute.create_world(97, false)
 		if paladin:
-			world.hero.learned_skills.append(SkillRank.catalog(&"pursuit_of_justice_1"))
+			world.hero.learned_skills.append(SkillDefinition.catalog(&"pursuit_of_justice_1"))
 		var guard: GridActor
 		for actor in world.actors:
 			if actor.story_guard:

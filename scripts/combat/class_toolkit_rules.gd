@@ -33,8 +33,8 @@ static func apply(world: GridWorld, identifier: StringName, fields: Dictionary) 
 	world.add_message("%s activated." % skill.title)
 
 
-static func cost(hero: HeroState, skill: SkillRank) -> int:
-	if skill.effect == SkillRank.Effect.PASSIVE:
+static func cost(hero: HeroState, skill: SkillDefinition) -> int:
+	if skill.effect == SkillDefinition.Effect.PASSIVE:
 		return 0
 	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
 		return 0
@@ -43,14 +43,14 @@ static func cost(hero: HeroState, skill: SkillRank) -> int:
 	if skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1"):
 		return 0
 	var amount := skill.rage_cost
-	if skill.effect == SkillRank.Effect.EXECUTE:
+	if skill.effect == SkillDefinition.Effect.EXECUTE:
 		amount = clampi(hero.rage, skill.rage_cost, skill.execute_rage_cap)
 	if skill.class_tab == &"Paladin":
 		amount = ceili(amount * (1.0 - magnitude(hero, &"benediction_1") / 100.0))
 	return amount
 
 
-static func consume_cost_proc(hero: HeroState, skill: SkillRank) -> void:
+static func consume_cost_proc(hero: HeroState, skill: SkillDefinition) -> void:
 	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
 		hero.buffs.erase(&"sudden_death_1")
 	elif skill.family == &"judgement" and hero.buffs.has(&"divine_purpose_1"):
@@ -59,7 +59,7 @@ static func consume_cost_proc(hero: HeroState, skill: SkillRank) -> void:
 		hero.buffs.erase(&"battle_trance_1")
 
 
-static func cooldown(hero: HeroState, skill: SkillRank) -> int:
+static func cooldown(hero: HeroState, skill: SkillDefinition) -> int:
 	var turns := skill.cooldown_seconds
 	match skill.family:
 		&"charge": turns -= magnitude(hero, &"juggernaut_1")
@@ -80,14 +80,13 @@ static func damage_multiplier(hero: HeroState) -> float:
 	return multiplier
 
 
-static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
+static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
 	match skill.family:
-		&"eviscerate": return world.hero.combo_points > 0
 		&"feral_spirit": return wolf_tiles(world).size() >= 2
 		&"windfury_weapon", &"instant_poison", &"deadly_poison": return world.hero.equipment.has("weapons")
 		&"whirlwind":
 			return world.actors.any(func(actor: GridActor) -> bool:
-				return eligible(world, actor, 1))
+				return eligible(world, actor, skill.range_tiles))
 		&"execute":
 			return skill.execute_eligible(target) or world.hero.buffs.has(&"sudden_death_1")
 	return true
@@ -99,21 +98,31 @@ static func eligible(world: GridWorld, target: GridActor, radius: int) -> bool:
 		and world.has_sight(world.player_tile, target.tile))
 
 
-static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
+static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor) -> void:
 	match skill.family:
 		&"whirlwind":
 			for enemy in world.actors.duplicate():
 				if world.is_terminal():
 					break
-				if eligible(world, enemy, 1):
+				if eligible(world, enemy, skill.range_tiles):
 					enemy.relationship = GridActor.Relationship.HOSTILE
 					enemy.engaged = true
 					physical_attack(world, enemy, skill, skill.minimum, true, false)
+		&"booming_shout":
+			for enemy in world.actors.duplicate():
+				if world.is_terminal():
+					break
+				if not enemy.chest and eligible(world, enemy, skill.range_tiles):
+					enemy.relationship = GridActor.Relationship.HOSTILE
+					enemy.engaged = true
+					enemy.returning_home = false
+					SpellEffects.damage(world, enemy, skill.minimum, skill.title, -1, null, true)
 		&"earth_shock":
 			var extra := 1.0 + magnitude(world.hero, &"elemental_assault_1") / 100.0
 			if world.hero.buffs.has(&"elemental_assault_1"):
 				extra += 0.5
 				world.hero.buffs.erase(&"elemental_assault_1")
+			extra *= ClassToolkitData.EARTH_SHOCK_DAMAGE_MULTIPLIER
 			var result := magic_attack(world, target, skill, extra)
 			if result.landed and target.alive and not world.is_terminal():
 				target.swing.remaining += 1.0
@@ -121,15 +130,23 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 				if has(world.hero, &"improved_earth_shock_1"):
 					target.stunned_until = world.turn_count + 1 + magnitude(world.hero, &"improved_earth_shock_1")
 				world.add_message("Earth Shock interrupts %s and delays its next swing." % target.title)
-		&"eviscerate":
-			var points := world.hero.combo_points
-			world.hero.combo_points = 0
-			physical_attack(world, target, skill, skill.minimum * points, false)
-			finish(world, points)
 		&"feral_spirit": summon_wolves(world, skill)
 
 
-static func physical_attack(world: GridWorld, target: GridActor, skill: SkillRank,
+static func eviscerate(world: GridWorld, points: int) -> void:
+	var skill := world.hero.find_skill(&"eviscerate_1")
+	var target := world.last_attacked_enemy
+	if (skill == null or target == null or not world.actors.has(target)
+		or not eligible(world, target, skill.range_tiles)):
+		return
+	target.relationship = GridActor.Relationship.HOSTILE
+	target.engaged = true
+	target.returning_home = false
+	world.auto_attack_target = target
+	physical_attack(world, target, skill, skill.minimum * points, false)
+
+
+static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	flat_bonus: int, build_points: bool = true, commit_target: bool = true) -> void:
 	if commit_target:
 		world.last_attacked_enemy = target
@@ -146,7 +163,7 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillRan
 	on_attack(world, target, skill, outcome.landed, outcome.critical, value, true, false, build_points)
 
 
-static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillRank,
+static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	weapon: MeleeProfile) -> Dictionary:
 	var extra := int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
 	if skill != null and skill.family == &"heroic_strike":
@@ -171,7 +188,7 @@ static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillRank
 	return {"result": result, "landed": landed, "critical": result == &"critical"}
 
 
-static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
+static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	extra: float = 1.0) -> Dictionary:
 	world.last_attacked_enemy = target
 	world.auto_attack_target = target
@@ -208,7 +225,7 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 	return {"landed": true, "critical": critical}
 
 
-static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
+static func on_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	landed: bool, critical: bool, value: int, physical: bool, off_hand: bool = false,
 	build_points: bool = true) -> void:
 	if world.is_terminal():
@@ -294,7 +311,7 @@ static func weapon_procs(world: GridWorld, target: GridActor, off_hand: bool,
 	var weapon_id := world.hero.weapon_id()
 	if (not off_hand and not enchant.is_empty() and int(enchant.weapon_id) == weapon_id
 		and world.turn_count >= int(enchant.ready)
-		and world.combat_random.randf() < SkillRank.catalog(&"windfury_weapon_1").coefficient):
+		and world.combat_random.randf() < SkillDefinition.catalog(&"windfury_weapon_1").coefficient):
 		enchant.ready = world.turn_count + 3
 		for index in range(2):
 			bonus_strike(world, target, false, 1.0 + magnitude(world.hero, &"elemental_weapons_1") / 100.0, "Windfury")
@@ -333,7 +350,7 @@ static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> vo
 	shield.charges -= 1
 	if reactive:
 		shield.ready = world.turn_count + 3
-	var value := SkillRank.catalog(&"lightning_shield_1").minimum
+	var value := SkillDefinition.catalog(&"lightning_shield_1").minimum
 	value = floori(value * (1.0 + magnitude(world.hero, &"improved_shields_1") / 100.0)
 		* damage_multiplier(world.hero)
 		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
@@ -373,7 +390,7 @@ static func wolf_tiles(world: GridWorld) -> Array[Vector2i]:
 	return tiles
 
 
-static func summon_wolves(world: GridWorld, skill: SkillRank) -> void:
+static func summon_wolves(world: GridWorld, skill: SkillDefinition) -> void:
 	var tiles := wolf_tiles(world)
 	for actor in world.actors:
 		if actor.alive and actor.summon_kind == "wolf":

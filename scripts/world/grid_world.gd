@@ -13,7 +13,8 @@ const DIRECTIONS: Array[Vector2i] = [
 	Vector2i(0, 1), Vector2i(-1, 1), Vector2i(-1, 0), Vector2i(-1, -1),
 ]
 
-const HOTBAR_SIZE: int = 20
+const HOTBAR_ROW_SIZE: int = 10
+const HOTBAR_SIZE: int = HOTBAR_ROW_SIZE * 2
 const CHAT_LIMIT: int = 100
 const STALKER_DEADLINES: Array[int] = [15, 215, 395, 555, 695]
 const STALKER_ENTRIES: Array[Vector2i] = [
@@ -29,7 +30,7 @@ var sight_blockers: Dictionary[Vector2i, bool] = {}
 var pending_melee: GridActor
 var last_attacked_enemy: GridActor
 var auto_attack_target: GridActor
-var queued_strike: SkillRank
+var queued_strike: SkillDefinition
 var combat_random := RandomNumberGenerator.new()
 var actors: Array[GridActor] = []
 var player_tile: Vector2i
@@ -37,7 +38,7 @@ var movement_speed: float = 1.0
 var movement_credit: float = 0.0
 var turn_count: int = 0
 var random := RandomNumberGenerator.new()
-var pending_skill: SkillRank
+var pending_skill: SkillDefinition
 var pending_target: GridActor
 var pending_poison_hands: int = PoisonRules.Hands.BOTH
 var cast_turns: int = 0
@@ -88,12 +89,12 @@ func _init(
 
 
 func assign_hotbar(slot: int, identifier: StringName) -> bool:
-	# Store an explicit learned rank; layout editing never spends time.
+	# Store an explicit learned skill; layout editing never spends time.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
 	if identifier != &"":
 		var skill := hero.find_skill(identifier)
-		if skill == null or skill.effect == SkillRank.Effect.PASSIVE:
+		if skill == null or skill.effect == SkillDefinition.Effect.PASSIVE:
 			return false
 	hotbar[slot] = identifier
 	return true
@@ -158,16 +159,16 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		return false
 	var skill := hero.find_skill(identifier)
 	if skill == null:
-		add_message("Cannot cast: that rank is not learned.")
+		add_message("Cannot cast: that skill is not learned.")
 		return false
-	if skill.effect == SkillRank.Effect.KILL_STALKER and _first_living_stalker() == null:
+	if skill.effect == SkillDefinition.Effect.KILL_STALKER and _first_living_stalker() == null:
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
-	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
-		SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]
-		and skill.target == SkillRank.Target.ENEMY and target == null and in_combat()):
+	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.HEROIC_STRIKE,
+		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
+		and skill.target == SkillDefinition.Target.ENEMY and target == null and in_combat()):
 		target = last_attacked_enemy
-	if skill.effect == SkillRank.Effect.PASSIVE:
+	if skill.effect == SkillDefinition.Effect.PASSIVE:
 		return false
 	if PoisonRules.is_poison(skill) and (poison_hands not in [1, 2, 3]
 		or hero.weapon_id() == 0
@@ -178,7 +179,7 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		add_message("Not enough %s for %s: requires %d, have %d." % [
 			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)])
 		return false
-	if (skill.effect == SkillRank.Effect.EXECUTE and target != null and target.alive
+	if (skill.effect == SkillDefinition.Effect.EXECUTE and target != null and target.alive
 		and not skill.execute_eligible(target) and not hero.buffs.has(&"sudden_death_1")):
 		add_message("Cannot Execute: target must be at or below %d%% health. No turn spent." %
 			skill.execute_health_percent)
@@ -188,10 +189,10 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		or not valid_spell_target(skill, target) or not SpellEffects.can_apply(self, skill, target)):
 		add_message("Cannot cast: invalid target, range, sight, or cooldown.")
 		return false
-	if skill.effect == SkillRank.Effect.CHARGE and charge_route(target).is_empty():
+	if skill.effect == SkillDefinition.Effect.CHARGE and charge_route(target).is_empty():
 		add_message("Cannot Charge: no reachable empty melee tile.")
 		return false
-	if skill.effect == SkillRank.Effect.HEROIC_STRIKE:
+	if skill.effect == SkillDefinition.Effect.HEROIC_STRIKE:
 		if not _valid_melee(target):
 			add_message("Cannot queue Heroic Strike: no valid melee target.")
 			return false
@@ -210,11 +211,11 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 	cast_duration = skill.cast_seconds
 	cast_turns = maxi(1, ceili(cast_duration - hero.casting_credit))
 	global_cooldown_until = turn_count + 1
-	if skill.target == SkillRank.Target.ENEMY:
+	if skill.target == SkillDefinition.Target.ENEMY:
 		target.relationship = GridActor.Relationship.HOSTILE
 		target.engaged = true
 		target.returning_home = false
-		if skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]:
+		if skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]:
 			auto_attack_target = target
 	if target != null:
 		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
@@ -252,7 +253,7 @@ func continue_cast() -> bool:
 
 
 func is_charging() -> bool:
-	return pending_skill != null and pending_skill.effect == SkillRank.Effect.CHARGE
+	return pending_skill != null and pending_skill.effect == SkillDefinition.Effect.CHARGE
 
 
 func charge_route(target: GridActor) -> Array[Vector2i]:
@@ -302,33 +303,33 @@ func cancel_cast(force: bool = false) -> void:
 	pending_target = null
 
 
-func cooldown_family(skill: SkillRank) -> StringName:
+func cooldown_family(skill: SkillDefinition) -> StringName:
 	return &"shock" if skill.family == &"earth_shock" else skill.family
 
 
-func valid_spell_target(skill: SkillRank, target: GridActor) -> bool:
-	if skill.effect == SkillRank.Effect.KILL_STALKER:
+func valid_spell_target(skill: SkillDefinition, target: GridActor) -> bool:
+	if skill.effect == SkillDefinition.Effect.KILL_STALKER:
 		return target == null and _first_living_stalker() != null
-	if skill.target in [SkillRank.Target.NONE, SkillRank.Target.SELF]:
+	if skill.target in [SkillDefinition.Target.NONE, SkillDefinition.Target.SELF]:
 		return target == null
 	if target == null:
-		return skill.target == SkillRank.Target.ALLY
+		return skill.target == SkillDefinition.Target.ALLY
 	if not actors.has(target) or not target.alive:
 		return false
-	if (skill.effect == SkillRank.Effect.EXECUTE and not skill.execute_eligible(target)
+	if (skill.effect == SkillDefinition.Effect.EXECUTE and not skill.execute_eligible(target)
 		and not hero.buffs.has(&"sudden_death_1")):
 		return false
 	var distance := tile_distance(player_tile, target.tile)
 	if (distance < skill.minimum_range_tiles or distance > skill.range_tiles
 		or not has_sight(player_tile, target.tile)):
 		return false
-	if skill.target == SkillRank.Target.ALLY and target.summon_kind in ["earth", "fire"]:
+	if skill.target == SkillDefinition.Target.ALLY and target.summon_kind in ["earth", "fire"]:
 		return false
 	var friendly := target.relationship == GridActor.Relationship.FRIENDLY
-	return friendly if skill.target == SkillRank.Target.ALLY else not friendly
+	return friendly if skill.target == SkillDefinition.Target.ALLY else not friendly
 
 
-func spell_candidates(skill: SkillRank) -> Array[GridActor]:
+func spell_candidates(skill: SkillDefinition) -> Array[GridActor]:
 	var candidates: Array[GridActor] = []
 	for actor in actors:
 		if valid_spell_target(skill, actor):
@@ -341,7 +342,7 @@ func spell_candidates(skill: SkillRank) -> Array[GridActor]:
 
 
 func in_combat() -> bool:
-	if pending_skill != null and pending_skill.target == SkillRank.Target.ENEMY:
+	if pending_skill != null and pending_skill.target == SkillDefinition.Target.ENEMY:
 		return true
 	for actor in actors:
 		if actor.alive and actor.engaged:
@@ -354,13 +355,13 @@ func can_save() -> bool:
 		and pending_melee == null and pending_skill == null)
 
 
-func training_failure(category: StringName, skill: SkillRank) -> String:
+func training_failure(category: StringName, skill: SkillDefinition) -> String:
 	if is_terminal():
 		return "This attempt has ended."
 	if skill == null or skill.class_tab != category or hero.selected_class != category:
 		return "Requires the matching selected class."
 	if (category in ClassSkillData.PLAYABLE_CLASSES
-		and not ClassSkillData.is_playable_rank(skill.id)):
+		and not ClassSkillData.is_playable_skill(skill.id)):
 		return "This ability is not available in the current class slice."
 	if hero.find_skill(skill.id) != null:
 		return "Already learned."
@@ -373,23 +374,29 @@ func training_failure(category: StringName, skill: SkillRank) -> String:
 
 
 func train(category: StringName, identifier: StringName) -> bool:
-	var skill := SkillRank.catalog(identifier)
+	var skill := SkillDefinition.catalog(identifier)
 	var failure := training_failure(category, skill)
 	if failure != "":
 		add_message(failure)
 		return false
 	if not hero.learn_skill(skill):
 		return false
-	if skill.effect != SkillRank.Effect.PASSIVE and not hotbar.has(skill.id):
-		var empty_slot := hotbar.find(&"")
+	if skill.effect != SkillDefinition.Effect.PASSIVE and not hotbar.has(skill.id):
+		var first_slot := HOTBAR_ROW_SIZE if skill.family in ClassSkillData.MAINTENANCE_FAMILIES else 0
+		var empty_slot := -1
+		for slot in range(first_slot, first_slot + HOTBAR_ROW_SIZE):
+			if hotbar[slot] == &"":
+				empty_slot = slot
+				break
+		if empty_slot < 0:
+			empty_slot = hotbar.find(&"")
 		if empty_slot >= 0:
 			hotbar[empty_slot] = skill.id
 	if skill.progress_required > 0:
 		add_message("Learned %s. Your %s progression points remain at %d." % [
 			skill.title, String(category).to_lower(), hero.progression_points(category)])
 	else:
-		add_message("Learned %s rank %d for %s." % [
-			skill.title, skill.rank, "free"])
+		add_message("Learned %s for free." % skill.title)
 	return true
 
 
@@ -400,51 +407,51 @@ func _first_living_stalker() -> GridActor:
 	return null
 
 
-func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0,
+func _resolve_skill(skill: SkillDefinition, target: GridActor, resource_spent: int = 0,
 	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
 	_award_ability_use(skill)
 	if PoisonRules.is_poison(skill):
 		PoisonRules.coat(self, skill, poison_hands)
 		return
 	match skill.effect:
-		SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE:
+		SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.EXECUTE:
 			var flat_bonus := skill.minimum
-			if skill.effect == SkillRank.Effect.EXECUTE:
+			if skill.effect == SkillDefinition.Effect.EXECUTE:
 				flat_bonus += maxi(0, resource_spent - skill.rage_cost) * skill.execute_damage_per_rage
 				add_message("Execute: spent %d rage." % resource_spent)
 			ClassToolkitRules.physical_attack(self, target, skill, flat_bonus)
-		SkillRank.Effect.TOOLKIT:
+		SkillDefinition.Effect.TOOLKIT:
 			ClassToolkitRules.resolve(self, skill, target)
-		SkillRank.Effect.BATTLE_SHOUT:
+		SkillDefinition.Effect.BATTLE_SHOUT:
 			hero.gain_rage(skill.rage_generated)
 			hero.buffs[skill.id] = {"armor": 0, "physical_percent": skill.physical_percent,
 				"until": turn_count + 1 + skill.duration}
 			hero.refresh_stats()
 			add_message("Battle Shout: physical damage increased; gained %d rage." % skill.rage_generated)
-		SkillRank.Effect.CHARGE:
+		SkillDefinition.Effect.CHARGE:
 			last_attacked_enemy = target
 			auto_attack_target = target
 			hero.gain_rage(skill.rage_generated)
 			add_message("Charge: reached %s; gained %d rage." % [target.title, skill.rage_generated])
 			ClassToolkitRules.apply(self, &"juggernaut_1", {"charges": 1})
-		SkillRank.Effect.CLASS_POINTS:
+		SkillDefinition.Effect.CLASS_POINTS:
 			add_class_progress(hero.selected_class, 30)
 			add_message("Gained 30 %s progression points." % String(hero.selected_class).to_lower())
-		SkillRank.Effect.PRACTICE:
-			add_message("Practice rank %d: cast complete (1 turn, 0 rage)." % skill.rank)
-		SkillRank.Effect.EXPERIENCE:
-			add_message("Gain 450 XP rank %d: gained 450 XP." % skill.rank)
+		SkillDefinition.Effect.PRACTICE:
+			add_message("%s: cast complete (1 turn, 0 rage)." % skill.title)
+		SkillDefinition.Effect.EXPERIENCE:
+			add_message("%s: gained 450 XP." % skill.title)
 			for gained_level in hero.add_experience(450):
 				add_message("Level up! You are now level %d. Health restored." % gained_level)
-		SkillRank.Effect.GOLD:
+		SkillDefinition.Effect.GOLD:
 			hero.copper += 10000
 			add_message("Gain 1 gold: gained %s." % InventoryRules.money(10000))
-		SkillRank.Effect.KILL_STALKER:
+		SkillDefinition.Effect.KILL_STALKER:
 			var stalker := _first_living_stalker()
 			if stalker != null:
 				var lethal_damage := stalker.health
 				SpellEffects.damage(self, stalker, lethal_damage, "Kill stalker")
-		SkillRank.Effect.DEATH_NOTICE:
+		SkillDefinition.Effect.DEATH_NOTICE:
 			hero.health = 0
 			add_message("Death trigger invoked. You died.")
 		_:
@@ -452,7 +459,7 @@ func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0
 	check_terminal()
 
 
-func _award_ability_use(skill: SkillRank) -> void:
+func _award_ability_use(skill: SkillDefinition) -> void:
 	if not skill.development_only and skill.class_tab == hero.selected_class:
 		add_class_progress(skill.class_tab, 1)
 
@@ -460,7 +467,7 @@ func _award_ability_use(skill: SkillRank) -> void:
 func add_class_progress(category: StringName, amount: int) -> void:
 	var previous := hero.progression_points(category)
 	hero.class_progress[category] = previous + amount
-	for skill in SkillRank.trainer_skills(category):
+	for skill in SkillDefinition.trainer_skills(category):
 		if previous < skill.progress_required and hero.progression_points(category) >= skill.progress_required:
 			var trainer := "Llane Beshere, the warrior trainer," if category == &"Warrior" else (
 				"the %s trainer" % String(category).to_lower())

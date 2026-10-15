@@ -36,7 +36,7 @@ var swing := SwingTimer.new()
 var off_hand_swing := SwingTimer.new()
 var melee := MeleeProfile.new()
 var facing := Vector2i.DOWN
-var learned_skills: Array[SkillRank] = []
+var learned_skills: Array[SkillDefinition] = []
 var selected_class: StringName = &"Warrior"
 var equipment: Dictionary = {}
 var inventory: Array[Dictionary] = []
@@ -56,10 +56,10 @@ func _init(development_build: bool = OS.is_debug_build()) -> void:
 	_apply_level_stats()
 	StarterGear.equip_travel_clothes(self)
 	health = max_health
-	for skill in SkillRank.starting_skills():
+	for skill in SkillDefinition.starting_skills():
 		learn_skill(skill)
 	if development_build:
-		for skill in SkillRank.development_skills():
+		for skill in SkillDefinition.development_skills():
 			learn_skill(skill)
 
 
@@ -80,7 +80,7 @@ func add_experience(amount: int) -> PackedInt32Array:
 	return gained_levels
 
 
-func learn_skill(skill: SkillRank) -> bool:
+func learn_skill(skill: SkillDefinition) -> bool:
 	if skill == null or level < skill.training_level or find_skill(skill.id) != null:
 		return false
 	learned_skills.append(skill)
@@ -88,7 +88,7 @@ func learn_skill(skill: SkillRank) -> bool:
 	return true
 
 
-func find_skill(identifier: StringName) -> SkillRank:
+func find_skill(identifier: StringName) -> SkillDefinition:
 	for skill in learned_skills:
 		if skill.id == identifier:
 			return skill
@@ -162,7 +162,7 @@ func refresh_melee_stats() -> void:
 		melee.damage_multiplier *= 1.0 + int(buff.get("physical_percent", 0)) / 100.0
 	melee.armor = floori(melee.armor * (1.0 + ClassToolkitRules.magnitude(self, &"toughness_1") / 100.0))
 	if buffs.has(&"evasion_1"):
-		melee.dodge += SkillRank.catalog(&"evasion_1").minimum
+		melee.dodge += SkillDefinition.catalog(&"evasion_1").minimum
 
 
 func has_off_hand_weapon() -> bool:

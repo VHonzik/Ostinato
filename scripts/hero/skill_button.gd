@@ -1,33 +1,36 @@
 class_name SkillButton
 extends Button
 
-## Shared readable rank tooltip and Godot drag source for the spell book.
-var skill: SkillRank
+## Shared readable skill tooltip and Godot drag source for the spell book.
+var skill: SkillDefinition
 var hero: HeroState
 var drag_enabled: bool = false
 
 
-func describe(rank_data: SkillRank, owner_hero: HeroState) -> void:
-	skill = rank_data
+func describe(skill_data: SkillDefinition, owner_hero: HeroState) -> void:
+	skill = skill_data
 	hero = owner_hero
-	tooltip_text = "" if skill == null else "%s · Rank %d · %d %s\n%s" % [
-		skill.title, skill.rank, skill.cost(hero), skill.resource_name(), skill.description]
+	tooltip_text = "" if skill == null else "%s · %d %s\n%s" % [
+		skill.title, skill.cost(hero), skill.resource_name(), skill.description]
 
 
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	if not drag_enabled or disabled or skill == null:
 		return null
 	var preview := Label.new()
-	preview.text = "%s · Rank %d" % [skill.title, skill.rank]
+	preview.text = skill.title
 	preview.add_theme_font_size_override("font_size", 18)
 	set_drag_preview(preview)
 	return {"skill_id": skill.id, "hero": hero}
 
 
 func _make_custom_tooltip(for_text: String) -> Object:
-	var label := Label.new()
+	var label := RichTextLabel.new()
 	label.text = for_text
 	label.custom_minimum_size.x = 420
+	label.size.x = 420
+	label.fit_content = true
+	label.scroll_active = false
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 18)
 	return label

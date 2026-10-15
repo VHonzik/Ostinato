@@ -8,8 +8,8 @@ const MOVE_ACTIONS: Array[StringName] = [
 
 ## Brief presentation gap makes cancellation possible without another confirmation.
 const MELEE_BOUNDARY_SECONDS: float = 0.18
-const MOVE_REPEAT_DELAY_SECONDS: float = 2.0
-const MOVE_REPEAT_INTERVAL_SECONDS: float = 1.0
+const MOVE_REPEAT_DELAY_SECONDS: float = 1.0
+const MOVE_REPEAT_INTERVAL_SECONDS: float = 0.5
 
 var world: GridWorld
 var session := GameSession.new()
@@ -34,6 +34,7 @@ var _repeat_arrow: bool = false
 @onready var _hero_status: Label = $HUD/Top/Rows/HeroStatus
 @onready var _chat: RichTextLabel = $HUD/Bottom/Rows/Chat
 @onready var _feedback: Label = $HUD/Bottom/Rows/Feedback
+@onready var _quest_tracker: Label = $HUD/QuestTracker/Text
 
 
 func _ready() -> void:
@@ -41,7 +42,7 @@ func _ready() -> void:
 	hotbar_panel.theme = hero_panel.theme
 	$HUD.add_child(hotbar_panel)
 	hotbar_panel.slot_pressed.connect(_hotbar_slot_pressed)
-	hotbar_panel.rank_dropped.connect(_assign_hotbar)
+	hotbar_panel.skill_dropped.connect(_assign_hotbar)
 	hotbar_panel.lock_requested.connect(_toggle_hotbar_lock)
 	hero_panel.slot_chosen.connect(_hotbar_slot_pressed)
 	hero_panel.assignment_changed.connect(_refresh_hotbar)
@@ -372,6 +373,7 @@ func _return_to_menu() -> void:
 	$HUD/RageBar.hide()
 	$HUD/HealthBar.hide()
 	$HUD/ComboPointBar.hide()
+	$HUD/QuestTracker.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 	session.world = null
@@ -432,6 +434,7 @@ func refresh_view() -> void:
 		$HUD/RageBar.hide()
 		$HUD/HealthBar.hide()
 		$HUD/ComboPointBar.hide()
+		$HUD/QuestTracker.hide()
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
@@ -501,9 +504,30 @@ func refresh_view() -> void:
 	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, session.loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
 
 
+func _refresh_quest_tracker() -> void:
+	var quests: PackedStringArray = []
+	for identifier in world.quests:
+		if world.quests[identifier].handed_in:
+			continue
+		var quest: Dictionary = QuestData.QUESTS[identifier]
+		var lines: PackedStringArray = [String(quest.title)]
+		if QuestRules.ready(world, identifier):
+			lines[0] += " — Completed"
+		for index in range(quest.objectives.size()):
+			var objective: Dictionary = quest.objectives[index]
+			var amount := QuestRules.progress(world, identifier, index)
+			var required := int(objective.count)
+			var status := "Completed" if amount >= required else "%d/%d" % [amount, required]
+			lines.append("  %s: %s" % [QuestRules.objective_label(objective), status])
+		quests.append("\n".join(lines))
+	_quest_tracker.text = "\n\n".join(quests)
+	$HUD/QuestTracker.reset_size()
+	$HUD/QuestTracker.visible = $HUD/Auras.visible and not quests.is_empty()
+
+
 func _add_aura(title: String, effect: Dictionary, harmful: bool, abbreviation: String = "") -> void:
 	var square := Panel.new()
-	square.custom_minimum_size = Vector2(20, 20)
+	square.custom_minimum_size = Vector2(32, 32)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("243b35")
 	style.set_border_width_all(1)
@@ -517,7 +541,7 @@ func _add_aura(title: String, effect: Dictionary, harmful: bool, abbreviation: S
 		shortcut = abbreviation
 	var label := Label.new()
 	label.text = shortcut
-	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_font_size_override("font_size", 14)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -527,11 +551,23 @@ func _add_aura(title: String, effect: Dictionary, harmful: bool, abbreviation: S
 	square.tooltip_text = title
 	if int(effect.get("charges", 0)) > 0:
 		square.tooltip_text += " / %d charges" % effect.charges
+		var charges := Label.new()
+		charges.name = "Charges"
+		charges.text = str(int(effect.charges))
+		charges.add_theme_font_size_override("font_size", 10)
+		charges.add_theme_color_override("font_color", Color.WHITE)
+		charges.add_theme_color_override("font_outline_color", Color.BLACK)
+		charges.add_theme_constant_override("outline_size", 2)
+		charges.position = Vector2(2, 1)
+		charges.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		square.add_child(charges)
 	if until > 0:
+		var remaining := maxi(0, until - world.turn_count)
 		var duration := Label.new()
-		duration.text = str(maxi(0, until - world.turn_count))
-		duration.add_theme_font_size_override("font_size", 8)
-		duration.add_theme_color_override("font_color", Color("ffe29a"))
+		duration.text = str(remaining)
+		duration.add_theme_font_size_override("font_size", 10)
+		duration.add_theme_color_override("font_color",
+			Color("ff6464") if remaining <= 3 else Color.WHITE)
 		duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		duration.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 		duration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -585,15 +621,15 @@ func _cast_skill(identifier: StringName) -> void:
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)
-	elif (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
-		SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]
-		and skill.target == SkillRank.Target.ENEMY
+	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.HEROIC_STRIKE,
+		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
+		and skill.target == SkillDefinition.Target.ENEMY
 		and world.in_combat()
 		and world.last_attacked_enemy != null):
 		hero_panel.close()
 		combat_panel.close()
 		world.cast_skill(identifier)
-	elif skill.target in [SkillRank.Target.ENEMY, SkillRank.Target.ALLY]:
+	elif skill.target in [SkillDefinition.Target.ENEMY, SkillDefinition.Target.ALLY]:
 		hero_panel.close()
 		combat_panel.open_spell(world, skill)
 	else:
@@ -691,6 +727,7 @@ func _refresh_hotbar() -> void:
 	$HUD/ComboPointBar.visible = ($HUD/Auras.visible
 		and world.hero.find_skill(&"relentless_assault_1") != null)
 	$HUD/ComboPointBar.refresh(world.hero)
+	_refresh_quest_tracker()
 	var can_edit := _hotbar_can_edit()
 	hotbar_panel.refresh(world, menu.options, can_edit and not hero_panel.visible,
 		can_edit, hero_panel.choosing_slot)

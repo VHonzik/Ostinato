@@ -213,11 +213,11 @@ func test_battle_shout_is_immediate_one_turn_free_and_has_thirty_turn_cooldown()
 	assert_almost_eq(world.hero.melee.damage_multiplier, 1.1, 0.00001, "Refresh does not stack.")
 
 
-func test_shout_lasts_thirty_turns_and_expires_without_damage_bonus() -> void:
+func test_shout_lasts_sixty_turns_and_expires_without_damage_bonus() -> void:
 	var world := _world()
 	_learn_shout(world)
 	world.cast_skill(&"battle_shout_1")
-	for index in range(29):
+	for index in range(59):
 		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"battle_shout_1"))
 	world.wait_turn()
@@ -511,18 +511,18 @@ func _charge_world() -> GridWorld:
 
 func test_charge_unlock_and_passive_training_keep_all_progression_points() -> void:
 	var world := _world()
-	world.hero.warrior_progress = 99
+	world.hero.warrior_progress = 79
 	assert_false(world.train(&"Warrior", &"charge_1"))
 	assert_null(world.hero.find_skill(&"charge_1"))
 	world.add_class_progress(&"Warrior", 1)
-	assert_string_contains(world.messages[-1], "100 warrior progression points!")
+	assert_string_contains(world.messages[-1], "80 warrior progression points!")
 	assert_string_contains(world.messages[-1], "learn Charge")
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
-	assert_eq(world.hero.warrior_progress, 100)
+	assert_eq(world.hero.warrior_progress, 80)
 	assert_true(world.train(&"Warrior", &"charge_1"))
-	assert_eq(world.hero.warrior_progress, 100)
+	assert_eq(world.hero.warrior_progress, 80)
 	assert_false(world.train(&"Warrior", &"charge_1"))
-	assert_eq(world.hero.warrior_progress, 100)
+	assert_eq(world.hero.warrior_progress, 80)
 	assert_true(world.assign_hotbar(2, &"charge_1"))
 
 
@@ -544,7 +544,7 @@ func test_development_points_award_current_class_and_cross_both_unlocks() -> voi
 	assert_eq(world.hero.progression_points(&"Shaman"), 30)
 	assert_eq(world.hero.warrior_progress, 120)
 	assert_eq(world.turn_count, 5)
-	assert_false(_world().cast_skill(&"class_points_1"), "Development rank is unavailable in release.")
+	assert_false(_world().cast_skill(&"class_points_1"), "Development skill is unavailable in release.")
 
 
 func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_saves() -> void:
@@ -567,8 +567,8 @@ func test_class_points_and_charge_survive_save_and_death_and_reject_invalid_save
 		invalid.class_progress.Shaman = invalid_value
 		assert_null(SaveCodec.restore(invalid, false))
 	var insufficient := saved.duplicate(true)
-	insufficient.hero.warrior_progress = 99
-	insufficient.class_progress.Warrior = 99
+	insufficient.hero.warrior_progress = 79
+	insufficient.class_progress.Warrior = 79
 	assert_null(SaveCodec.restore(insufficient, false), "Charge requires its progression checkpoint.")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
@@ -1221,8 +1221,8 @@ func test_long_active_ability_advances_weapon_on_each_elapsed_turn() -> void:
 	world.hero.buffs[&"slice_and_dice_1"] = {"armor": 0, "until": 10000,
 		"haste_percent": 60}
 	world.request_melee(enemy)
-	var active := SkillRank.new(&"timed_practice", "Timed practice", &"Warrior", 1, 1,
-		"Controlled two-turn action.", SkillRank.Effect.PRACTICE)
+	var active := SkillDefinition.new(&"timed_practice", "Timed practice", &"Warrior", 1,
+		"Controlled two-turn action.", SkillDefinition.Effect.PRACTICE)
 	active.family = &"timed_practice"
 	active.cast_seconds = 2.0
 	world.hero.learn_skill(active)

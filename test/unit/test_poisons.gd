@@ -4,7 +4,7 @@ extends GutTest
 func _world(weapon: int = 2224) -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(8, 8), 97, false)
 	for identifier in PoisonRules.COATINGS + [&"catalytic_venom_1", &"sudden_death_1", &"relentless_assault_1"]:
-		var skill := SkillRank.catalog(identifier)
+		var skill := SkillDefinition.catalog(identifier)
 		world.hero.class_progress[skill.class_tab] = 1000
 		world.hero.learn_skill(skill)
 	world.hero.equipment.weapons = ItemData.instance(weapon)
@@ -31,14 +31,14 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(9, 8)) -> GridActor:
 func test_poison_unlocks_share_checkpoint_and_catalyst_is_later() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Rogue"
-	world.hero.class_progress[&"Rogue"] = 79
+	world.hero.class_progress[&"Rogue"] = 114
 	for identifier in PoisonRules.COATINGS:
 		assert_false(world.train(&"Rogue", identifier))
-	world.hero.class_progress[&"Rogue"] = 80
+	world.hero.class_progress[&"Rogue"] = 115
 	for identifier in PoisonRules.COATINGS:
 		assert_true(world.train(&"Rogue", identifier))
 	assert_false(world.train(&"Rogue", &"catalytic_venom_1"))
-	world.hero.class_progress[&"Rogue"] = 180
+	world.hero.class_progress[&"Rogue"] = 155
 	assert_true(world.train(&"Rogue", &"catalytic_venom_1"))
 	assert_false(world.assign_hotbar(0, &"catalytic_venom_1"))
 
@@ -240,7 +240,7 @@ func test_save_round_trip_preserves_fractional_dot_hand_timers_and_death_retains
 	var world := game.world
 	for identifier in PoisonRules.COATINGS + [&"catalytic_venom_1"]:
 		world.hero.class_progress[&"Rogue"] = 1000
-		world.hero.learn_skill(SkillRank.catalog(identifier))
+		world.hero.learn_skill(SkillDefinition.catalog(identifier))
 	world.hero.equipment.weapons = ItemData.instance(2224)
 	world.hero.refresh_stats()
 	PoisonRules.coat(world, world.hero.find_skill(&"instant_poison_1"), PoisonRules.Hands.OFF)
@@ -260,7 +260,7 @@ func test_save_round_trip_preserves_fractional_dot_hand_timers_and_death_retains
 	legacy.buffs.instant_poison_1.erase("main_until")
 	legacy.buffs.instant_poison_1.erase("off_until")
 	var restored_legacy := SaveCodec.restore(legacy, false)
-	assert_not_null(restored_legacy, "Existing revision-18 Instant coatings still load.")
+	assert_not_null(restored_legacy, "The legacy single-expiry Instant coating shape still decodes.")
 	if restored_legacy != null:
 		assert_eq(PoisonRules.coating(restored_legacy.hero, restored_legacy.turn_count, true),
 			&"instant_poison_1")

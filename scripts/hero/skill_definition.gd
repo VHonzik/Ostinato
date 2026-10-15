@@ -1,14 +1,13 @@
-class_name SkillRank
+class_name SkillDefinition
 extends RefCounted
 
-## Learned class ranks. Current character level never gates retained-rank use.
+## Learned class skills. Current character level never gates retained-skill use.
 enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, JUDGEMENT, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
 var title: String
 var class_tab: StringName
-var rank: int
 var training_level: int
 var description: String
 var effect: Effect
@@ -43,41 +42,44 @@ var detail: String = ""
 
 func _init(
 	identifier: StringName, display_name: String, category: StringName,
-	rank_number: int, learn_level: int, detail: String, action: Effect,
+	learn_level: int, detail: String, action: Effect,
 	is_development: bool = false
 ) -> void:
 	id = identifier
 	title = display_name
 	class_tab = category
-	rank = rank_number
 	training_level = learn_level
 	description = detail
 	effect = action
 	development_only = is_development
 
 
-static func starting_skills(category: StringName = &"Warrior") -> Array[SkillRank]:
-	var result: Array[SkillRank] = []
+static func starting_skills(category: StringName = &"Warrior") -> Array[SkillDefinition]:
+	var result: Array[SkillDefinition] = []
 	for identifier: StringName in ClassSkillData.STARTERS.get(category, []):
 		result.append(catalog(identifier))
 	return result
 
 
-static func trainer_skills(category: StringName) -> Array[SkillRank]:
-	var result: Array[SkillRank] = []
-	for identifier in all_ranks():
-		if (all_ranks()[identifier].class_tab == String(category)
+static func trainer_skills(category: StringName) -> Array[SkillDefinition]:
+	var result: Array[SkillDefinition] = []
+	for identifier in all_skills():
+		if (all_skills()[identifier].class_tab == String(category)
 			and (category not in ClassSkillData.PLAYABLE_CLASSES
-				or ClassSkillData.is_playable_rank(StringName(identifier)))):
+				or ClassSkillData.is_playable_skill(StringName(identifier)))):
 			result.append(catalog(StringName(identifier)))
+	result.sort_custom(func(a: SkillDefinition, b: SkillDefinition) -> bool:
+		if a.progress_required == b.progress_required:
+			return a.title < b.title
+		return a.progress_required < b.progress_required)
 	return result
 
 
-static func all_ranks() -> Dictionary:
-	var ranks := ClassSkillData.RANKS.duplicate()
-	ranks.merge(ClassSkillData.LOOP_RANKS, true)
-	ranks.merge(ClassToolkitData.ranks(), true)
-	return ranks
+static func all_skills() -> Dictionary:
+	var skills := ClassSkillData.SKILLS.duplicate()
+	skills.merge(ClassSkillData.STARTER_SKILLS, true)
+	skills.merge(ClassToolkitData.skills(), true)
+	return skills
 
 
 func cost(hero: HeroState) -> int:
@@ -102,16 +104,16 @@ func spend_resource(hero: HeroState) -> void:
 	hero.rage -= cost(hero)
 
 
-static func catalog(identifier: StringName) -> SkillRank:
-	var ranks := all_ranks()
-	if not ranks.has(String(identifier)):
+static func catalog(identifier: StringName) -> SkillDefinition:
+	var skills := all_skills()
+	if not skills.has(String(identifier)):
 		for skill in development_skills():
 			if skill.id == identifier:
 				return skill
 		return null
-	var row: Dictionary = ranks[String(identifier)]
-	var skill := SkillRank.new(identifier, row.title, StringName(row.class_tab),
-		row.rank, row.training_level, "", Effect[row.effect])
+	var row: Dictionary = skills[String(identifier)]
+	var skill := SkillDefinition.new(identifier, row.title, StringName(row.class_tab),
+		row.training_level, "", Effect[row.effect])
 	for field in row:
 		if field == "effect":
 			continue
@@ -124,31 +126,31 @@ static func catalog(identifier: StringName) -> SkillRank:
 	if skill.effect == Effect.PASSIVE:
 		skill.description = skill.title + ": " + skill.detail
 		return skill
-	skill.description = "%s rank %d: %d rage, %.1f turns, range %d tiles. " % [
-		skill.title, skill.rank, skill.rage_cost, skill.cast_seconds, skill.range_tiles]
+	skill.description = "%s: %d rage, %.1f turns, range %d tiles. " % [
+		skill.title, skill.rage_cost, skill.cast_seconds, skill.range_tiles]
 	if skill.effect == Effect.HEROIC_STRIKE:
-		skill.description = "%s rank %d: %d rage, next main-hand swing, range %d tiles. " % [
-			skill.title, skill.rank, skill.rage_cost, skill.range_tiles]
+		skill.description = "%s: %d rage, next main-hand swing, range %d tiles. " % [
+			skill.title, skill.rage_cost, skill.range_tiles]
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
 	skill.description += skill.detail
 	return skill
 
 
-static func development_skills() -> Array[SkillRank]:
+static func development_skills() -> Array[SkillDefinition]:
 	return [
-		SkillRank.new(&"practice_1", "Practice", &"Development", 1, 1,
+		SkillDefinition.new(&"practice_1", "Practice", &"Development", 1,
 			"One turn; 0 rage. Reports a harmless practice cast.", Effect.PRACTICE, true),
-		SkillRank.new(&"experience_1", "Gain 450 XP", &"Development", 1, 1,
+		SkillDefinition.new(&"experience_1", "Gain 450 XP", &"Development", 1,
 			"One turn; 0 rage. Awards 450 XP through ordinary leveling.", Effect.EXPERIENCE, true),
-		SkillRank.new(&"gold_1", "Gain 1 gold", &"Development", 1, 1,
+		SkillDefinition.new(&"gold_1", "Gain 1 gold", &"Development", 1,
 			"One turn; 0 rage. Adds 1 gold (10,000 copper).", Effect.GOLD, true),
-		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
+		SkillDefinition.new(&"death_1", "Death trigger", &"Development", 1,
 			"One turn; 0 rage. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
-		SkillRank.new(&"kill_stalker_1", "Kill stalker", &"Development", 1, 1,
+		SkillDefinition.new(&"kill_stalker_1", "Kill stalker", &"Development", 1,
 			"One turn; 0 rage. Kill the first living stalker anywhere. Defeat all present stalkers to win. "
 			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
-		SkillRank.new(&"class_points_1", "Gain 30 class XP", &"Development", 1, 1,
+		SkillDefinition.new(&"class_points_1", "Gain 30 class XP", &"Development", 1,
 			"One turn; 0 rage. Awards 30 cumulative class XP to the selected class.",
 			Effect.CLASS_POINTS, true),
 	]

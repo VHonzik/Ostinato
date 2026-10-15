@@ -2,12 +2,12 @@ class_name ClassSpellEffects
 extends RefCounted
 
 ## Buffs, Holy weapon effects and explicit class defenses.
-static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
+static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
 	if not ClassToolkitRules.can_apply(world, skill, target):
 		return false
-	if skill.effect == SkillRank.Effect.PASSIVE:
+	if skill.effect == SkillDefinition.Effect.PASSIVE:
 		return false
-	if skill.effect == SkillRank.Effect.SUMMON:
+	if skill.effect == SkillDefinition.Effect.SUMMON:
 		return SummonRules.placement(world, skill) != Vector2i(-1, -1)
 	if skill.family == &"seal_of_command":
 		return world.hero.equipment.has("weapons")
@@ -18,23 +18,23 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 	return true
 
 
-static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
+static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor) -> void:
 	match skill.effect:
-		SkillRank.Effect.SUMMON:
+		SkillDefinition.Effect.SUMMON:
 			SummonRules.summon(world, skill)
-		SkillRank.Effect.ARMOR:
+		SkillDefinition.Effect.ARMOR:
 			buff(world, skill)
-		SkillRank.Effect.JUDGEMENT:
+		SkillDefinition.Effect.JUDGEMENT:
 			ClassToolkitRules.magic_attack(world, target, skill)
 
 
-static func buff(world: GridWorld, skill: SkillRank) -> void:
+static func buff(world: GridWorld, skill: SkillDefinition) -> void:
 	if PoisonRules.is_poison(skill):
 		PoisonRules.coat(world, skill)
 		return
 	var buffs := world.hero.buffs
 	for key in buffs.keys():
-		var previous := SkillRank.catalog(StringName(key))
+		var previous := SkillDefinition.catalog(StringName(key))
 		if previous != null and previous.family == skill.family:
 			buffs.erase(key)
 	var effect := {"armor": 0, "until": world.turn_count + 1 + skill.duration}
@@ -53,13 +53,14 @@ static func buff(world: GridWorld, skill: SkillRank) -> void:
 			effect.until += skill.duration_per_combo * world.hero.combo_points
 			var points := world.hero.combo_points
 			world.hero.combo_points = 0
+			ClassToolkitRules.eviscerate(world, points)
 			ClassToolkitRules.finish(world, points)
 		&"lightning_shield":
 			effect["charges"] = 6 if ClassToolkitRules.has(world.hero, &"improved_shields_1") else 3
 			effect["ready"] = 0
 	buffs[skill.id] = effect
 	world.hero.refresh_stats()
-	world.add_message("%s rank %d applied." % [skill.title, skill.rank])
+	world.add_message("%s applied." % skill.title)
 
 
 static func absorb(world: GridWorld, target: GridActor, amount: int, physical: bool) -> int:
@@ -82,7 +83,7 @@ static func on_melee(world: GridWorld, target: GridActor, _amount: int, landed: 
 	if world.is_terminal() or not target.alive:
 		return
 	if landed and world.hero.buffs.has(&"seal_of_command_1"):
-		var skill := SkillRank.catalog(&"seal_of_command_1")
+		var skill := SkillDefinition.catalog(&"seal_of_command_1")
 		var weapon_roll := world.combat_random.randf()
 		var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
 		var value := MeleeRules.round_weapon_damage(raw * skill.weapon_multiplier

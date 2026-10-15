@@ -184,7 +184,7 @@ func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
 	assert_true(world.buy_item(merchant, 4540, 5))
 	assert_true(world.sell_item(merchant, 0, 1))
 	assert_eq(world.turn_count, 0)
-	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
+	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
 	assert_false(world.buy_item(merchant, 4540, 1))
 	assert_false(world.sell_item(merchant, 0, 1))
 	assert_eq(world.hero.inventory[0].quantity, 4)
@@ -280,7 +280,7 @@ func test_bulk_sale_rejects_distant_dead_stale_and_busy_merchants_without_transf
 	merchant.alive = false
 	assert_false(world.sell_all_grey(merchant))
 	merchant.alive = true
-	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
+	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
 	assert_false(world.sell_all_grey(merchant))
 	world.pending_skill = null
 	var other := _world()

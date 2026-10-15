@@ -62,7 +62,7 @@ func test_selected_class_counts_repeated_buffs_and_learning_keeps_cumulative_xp(
 	assert_true(world.cast_skill(&"battle_shout_1"), "Unlock is usable immediately.")
 	for turn in range(30):
 		world.wait_turn()
-	assert_false(world.hero.buffs.has(&"battle_shout_1"))
+	assert_true(world.hero.buffs.has(&"battle_shout_1"), "Shout outlasts its cooldown.")
 	assert_true(world.cast_skill(&"battle_shout_1"), "Repeated buff uses count.")
 	assert_eq(world.hero.warrior_progress, 42)
 	world.hero.selected_class = &"Shaman"
@@ -91,7 +91,7 @@ func _returning_game() -> GameSession:
 
 
 func _learn_starters(world: GridWorld, category: StringName) -> void:
-	for skill in SkillRank.starting_skills(category):
+	for skill in SkillDefinition.starting_skills(category):
 		world.hero.learn_skill(skill)
 
 
@@ -112,7 +112,7 @@ func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_trai
 		assert_eq(game.world.hero.equipment, equipment, "Choice does not exchange gear.")
 		assert_eq(game.world.hero.learned_skills.size(), 2, "The marshal teaches no skills.")
 		assert_eq(game.world.turn_count, 0)
-		for skill in SkillRank.starting_skills(category):
+		for skill in SkillDefinition.starting_skills(category):
 			assert_null(game.world.hero.find_skill(skill.id))
 			assert_eq(skill.resource_name(), "rage")
 			assert_true(game.world.train(category, skill.id))
@@ -165,12 +165,12 @@ func test_same_class_confirmation_locks_choice_and_full_hotbar_keeps_new_skills_
 	assert_true(game.world.hotbar_locked)
 
 
-func test_trainer_exposes_only_runnable_ranks_and_cannot_teach_legacy_mana_kit() -> void:
+func test_trainer_exposes_only_runnable_skills_and_cannot_teach_legacy_mana_kit() -> void:
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
-		var ranks := SkillRank.trainer_skills(category)
-		assert_gt(ranks.size(), 2, "The complete class kits extend the starters.")
-		for skill in ranks:
-			assert_true(ClassSkillData.is_playable_rank(skill.id))
+		var skills := SkillDefinition.trainer_skills(category)
+		assert_gt(skills.size(), 2, "The complete class kits extend the starters.")
+		for skill in skills:
+			assert_true(ClassSkillData.is_playable_skill(skill.id))
 	var world := _world(&"Paladin")
 	world.hero.level = 10
 	world.hero.copper = 100000
@@ -321,7 +321,7 @@ func test_learning_class_xp_and_previous_class_survive_death_while_combat_state_
 	assert_true(game.world.train(&"Warrior", &"anger_management_1"))
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		assert_true(game.select_class(category, _marshal(game)))
-		for skill in SkillRank.starting_skills(category):
+		for skill in SkillDefinition.starting_skills(category):
 			assert_true(game.world.train(category, skill.id))
 		game.world.add_class_progress(category, 7)
 		game.world.hero.rage = 100
@@ -351,7 +351,7 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 	var game := _returning_game()
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		assert_true(game.select_class(category, _marshal(game)))
-		for skill in SkillRank.starting_skills(category):
+		for skill in SkillDefinition.starting_skills(category):
 			assert_true(game.world.train(category, skill.id))
 		if category != &"Rogue":
 			game.world.hero.health = 0
@@ -622,7 +622,7 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
 	assert_false(game.world.train(&"Shaman", &"lightning_shield_1"))
 	assert_true(game.world.train(&"Paladin", &"seal_of_command_1"))
-	assert_eq(game.world.hotbar[2], &"seal_of_command_1")
+	assert_eq(game.world.hotbar[10], &"seal_of_command_1")
 	assert_false(game.world.train(&"Paladin", &"seal_of_command_1"), "Already learned.")
 	assert_eq(game.world.hotbar.count(&"seal_of_command_1"), 1)
 	var partial := SaveCodec.restore(SaveCodec.capture(game), false)
@@ -633,7 +633,7 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	assert_not_null(game.world.hero.find_skill(&"seal_of_command_1"))
 	assert_null(game.world.hero.find_skill(&"judgement_1"))
 	assert_true(game.world.train(&"Paladin", &"judgement_1"))
-	assert_eq(game.world.hotbar[3], &"judgement_1")
+	assert_eq(game.world.hotbar[2], &"judgement_1")
 	game.world.hero.rage = 100
 	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Learning is usable immediately.")
 	assert_eq(game.world.hero.progression_points(&"Paladin"), 1)
@@ -669,10 +669,10 @@ func test_matching_trainer_menu_teaches_both_starters_free_and_assigns_only_acti
 		return
 	train.pressed.emit()
 	assert_eq(menu.page, "trainer")
-	for skill in SkillRank.starting_skills(&"Rogue"):
+	for skill in SkillDefinition.starting_skills(&"Rogue"):
 		var learn: Button
 		for button in menu._buttons:
-			if button.text.begins_with(skill.title + " rank 1 / Free"):
+			if button.text.begins_with(skill.title + " / Free"):
 				learn = button
 		assert_not_null(learn)
 		if learn != null:

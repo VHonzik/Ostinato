@@ -81,7 +81,7 @@ func test_invalid_execute_preserves_resources_points_time_and_attack_target() ->
 	for reason in ["rage", "range", "sight", "dead", "friendly", "absent", "cooldown"]:
 		var world := _world()
 		var enemy := _enemy(world)
-		world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+		world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 		world.hero.combo_points = 2
 		world.hero.rage = 30
 		var prior := _enemy(world, Vector2i(4, 5))
@@ -154,7 +154,7 @@ func test_execute_misses_and_dodges_spend_rage_and_award_selected_class_xp_witho
 	for dodged in [false, true]:
 		var world := _world()
 		var enemy := _enemy(world)
-		world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+		world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 		world.hero.combo_points = 2
 		world.hero.rage = 23
 		if dodged:
@@ -173,7 +173,7 @@ func test_retained_execute_builds_points_across_targets_but_grants_neither_class
 	var first := _enemy(world)
 	var second := _enemy(world, Vector2i(4, 5))
 	world.hero.selected_class = &"Shaman"
-	world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 	world.hero.rage = 100
 	world.hero.combo_points = 3
 	assert_true(world.cast_skill(&"execute_1", first))
@@ -199,7 +199,7 @@ func test_execute_spends_before_due_swing_and_resolves_before_enemy_without_extr
 	responder.melee.critical = 0.0
 	responder.melee.damage_min = 1.0
 	responder.melee.damage_max = 1.0
-	world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 	# Learning refreshes stats; control the player's attack rolls and base interval.
 	world.hero.melee.hit = 100.0
 	world.hero.melee.critical = 0.0
@@ -228,7 +228,7 @@ func test_execute_kill_prevents_due_swings_and_target_response_without_retargeti
 	other.engaged = true
 	enemy.health = 1
 	enemy.stunned_until = 0
-	world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.1
 	var health_before := world.hero.health
@@ -344,7 +344,7 @@ func test_execute_hotbar_uses_committed_enemy_and_never_opens_picker_for_another
 
 func test_execute_checkpoint_notifies_once_teaches_free_without_prior_unlocks_and_remains_learned() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 16, 16), Vector2i(5, 5), 97, false)
-	world.hero.warrior_progress = 149
+	world.hero.warrior_progress = 139
 	assert_false(world.train(&"Warrior", &"execute_1"))
 	assert_null(world.hero.find_skill(&"execute_1"))
 	world.add_class_progress(&"Warrior", 1)
@@ -358,7 +358,7 @@ func test_execute_checkpoint_notifies_once_teaches_free_without_prior_unlocks_an
 	world.hero.selected_class = &"Warrior"
 	assert_null(world.hero.find_skill(&"charge_1"))
 	assert_true(world.train(&"Warrior", &"execute_1"))
-	assert_eq(world.hero.warrior_progress, 151)
+	assert_eq(world.hero.warrior_progress, 141)
 	assert_eq(world.hero.copper, 0)
 	assert_eq(world.turn_count, 0)
 	assert_false(world.train(&"Warrior", &"execute_1"))
@@ -379,13 +379,13 @@ func test_warrior_trainer_menu_enables_execute_at_checkpoint_and_spell_book_can_
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
-	game.world.hero.warrior_progress = 149
+	game.world.hero.warrior_progress = 139
 	var menu := MenuPanel.new()
 	menu.session = game
 	menu.active_game = true
 	add_child_autofree(menu)
 	menu.open_trainer(&"Warrior")
-	var learn := _trainer_button(menu, "Execute rank 1")
+	var learn := _trainer_button(menu, "Execute")
 	assert_not_null(learn)
 	if learn == null:
 		return
@@ -394,26 +394,29 @@ func test_warrior_trainer_menu_enables_execute_at_checkpoint_and_spell_book_can_
 	assert_null(game.world.hero.find_skill(&"execute_1"))
 	game.world.add_class_progress(&"Warrior", 1)
 	menu.open_trainer(&"Warrior")
-	learn = _trainer_button(menu, "Execute rank 1")
+	learn = _trainer_button(menu, "Execute")
 	assert_false(learn.disabled)
 	learn.grab_focus()
 	assert_string_contains(menu._preview.text, "at or below 20%")
 	learn.pressed.emit()
 	assert_not_null(game.world.hero.find_skill(&"execute_1"))
-	assert_false(_trainer_button(menu, "Execute rank 1 / Learned").disabled)
-	assert_eq(game.world.hero.warrior_progress, 150)
+	assert_false(_trainer_button(menu, "Execute / Learned").disabled)
+	assert_same(menu.get_viewport().gui_get_focus_owner(),
+		_trainer_button(menu, "Execute / Learned"))
+	assert_string_contains(menu._preview.text, "at or below 20%")
+	assert_eq(game.world.hero.warrior_progress, 140)
 	assert_eq(game.world.turn_count, 0)
 	assert_true(game.world.hotbar.has(&"execute_1"), "Learned actives fill an empty slot.")
 	var gameplay := _live_gameplay(game.world)
 	gameplay.hero_panel.open(game.world.hero, true)
-	var rank_button: SkillButton
+	var skill_button: SkillButton
 	for button: SkillButton in gameplay.hero_panel._skill_buttons:
 		if button.skill.id == &"execute_1":
-			rank_button = button
-	assert_not_null(rank_button)
-	if rank_button == null:
+			skill_button = button
+	assert_not_null(skill_button)
+	if skill_button == null:
 		return
-	rank_button.grab_focus()
+	skill_button.grab_focus()
 	gameplay.hero_panel._assign.pressed.emit()
 	gameplay._hotbar_slot_pressed(2)
 	assert_eq(game.world.hotbar[2], &"execute_1")
@@ -421,7 +424,59 @@ func test_warrior_trainer_menu_enables_execute_at_checkpoint_and_spell_book_can_
 	await get_tree().process_frame
 
 
-func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death() -> void:
+func test_execute_hotbar_tracks_health_proc_and_rage_eligibility_without_spending_turns() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	assert_true(world.assign_hotbar(0, &"execute_1"))
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	var options := GlobalOptions.new()
+	# Health, rage, Sudden Death, unavailable.
+	for state: Array in [
+		[2001, 100, false, true],
+		[2000, 15, false, false],
+		[2000, 14, false, true],
+		[10000, 0, true, false],
+		[10000, 100, false, true],
+	]:
+		enemy.health = state[0]
+		world.hero.rage = state[1]
+		if state[2]:
+			world.hero.buffs[&"sudden_death_1"] = {"armor": 0, "until": 0, "charges": 1}
+		else:
+			world.hero.buffs.erase(&"sudden_death_1")
+		panel.refresh(world, options, true, true, false)
+		for color_state in HotbarPanel.LABEL_COLOR_STATES:
+			assert_eq(panel.slots[0].has_theme_color_override(color_state), state[3])
+		assert_false(panel.slots[0].disabled, "Unavailable labels still allow inspection and input.")
+	assert_eq(world.turn_count, 0)
+	assert_eq(enemy.health, 10000)
+
+
+func test_execute_hotbar_uses_the_committed_target_in_combat() -> void:
+	var world := _world()
+	world.hero.rage = 100
+	var committed := _enemy(world)
+	committed.health = 9000
+	committed.relationship = GridActor.Relationship.HOSTILE
+	committed.engaged = true
+	var other := _enemy(world, Vector2i(5, 6))
+	world.last_attacked_enemy = committed
+	assert_true(world.assign_hotbar(0, &"execute_1"))
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	var options := GlobalOptions.new()
+	panel.refresh(world, options, true, true, false)
+	assert_true(panel.slots[0].has_theme_color_override("font_color"),
+		"A different low-health enemy cannot make the committed Execute eligible.")
+	assert_same(world.last_attacked_enemy, committed)
+	world.last_attacked_enemy = other
+	panel.refresh(world, options, true, true, false)
+	assert_false(panel.slots[0].has_theme_color_override("font_color"))
+	assert_eq(world.turn_count, 0)
+
+
+func test_execute_learning_and_hotbar_roundtrip_and_survive_death() -> void:
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
@@ -433,7 +488,7 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	assert_null(before.hero.find_skill(&"execute_1"))
 	game.restore(before, 97, 1)
 	assert_true(game.world.train(&"Warrior", &"execute_1"))
-	game.world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	game.world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 	assert_true(game.world.assign_hotbar(19, &"execute_1"))
 	game.world.hero.rage = 29
 	game.world.hero.combo_points = 2
@@ -450,8 +505,8 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	assert_eq(restored.hero.combo_points, 2)
 	assert_almost_eq(restored.hero.swing.remaining, 1.75, 0.00001)
 	var invalid := payload.duplicate(true)
-	invalid.hero.warrior_progress = 149
-	invalid.class_progress.Warrior = 149
+	invalid.hero.warrior_progress = 139
+	invalid.class_progress.Warrior = 139
 	assert_null(SaveCodec.restore(invalid, false), "Learning cannot precede its XP checkpoint.")
 	assert_not_null(restored.hero.find_skill(&"execute_1"), "Failed restore preserves live state.")
 	game.restore(restored, 97, 1)

@@ -9,7 +9,7 @@ func _world(category: StringName = &"Warrior") -> GridWorld:
 
 func _learn(world: GridWorld, identifiers: Array[StringName]) -> void:
 	for identifier in identifiers:
-		var skill := SkillRank.catalog(identifier)
+		var skill := SkillDefinition.catalog(identifier)
 		world.hero.class_progress[skill.class_tab] = 1000
 		assert_true(world.hero.learn_skill(skill))
 	world.hero.melee.hit = 100.0
@@ -37,13 +37,13 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(9, 8)) -> GridActor:
 
 
 func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing_hotbar() -> void:
-	var counts := {&"Warrior": 16, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
+	var counts := {&"Warrior": 17, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
 	for category: StringName in counts:
 		var world := _world(category)
-		var ranks := SkillRank.trainer_skills(category)
-		assert_eq(ranks.size(), counts[category])
+		var skills := SkillDefinition.trainer_skills(category)
+		assert_eq(skills.size(), counts[category])
 		world.hotbar.fill(&"mortal_strike_1")
-		for skill in ranks:
+		for skill in skills:
 			if world.hero.find_skill(skill.id) != null:
 				continue
 			world.hero.class_progress[category] = maxi(0, skill.progress_required - 1)
@@ -55,6 +55,60 @@ func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing
 			assert_not_null(world.hero.find_skill(skill.id))
 		assert_eq(world.hero.copper, 0)
 		assert_eq(world.hotbar.count(&"mortal_strike_1"), GridWorld.HOTBAR_SIZE)
+
+
+func test_trainers_list_unlocks_in_class_xp_order() -> void:
+	for category in ClassSkillData.PLAYABLE_CLASSES:
+		var previous := -1
+		for skill in SkillDefinition.trainer_skills(category):
+			assert_gte(skill.progress_required, previous, String(category) + ": " + skill.title)
+			previous = skill.progress_required
+
+
+func test_early_core_skills_unlock_from_starter_use_and_advance_class_xp() -> void:
+	for category: StringName in [&"Shaman", &"Rogue"]:
+		var world := _world(category)
+		for starter in ClassSkillData.STARTERS[category]:
+			assert_true(world.train(category, starter))
+		var attack: StringName = &"earth_shock_1" if category == &"Shaman" else &"eviscerate_1"
+		var checkpoint := 10 if category == &"Shaman" else 5
+		world.hero.class_progress[category] = checkpoint - 1
+		assert_false(world.train(category, attack))
+		world.hero.rage = 100
+		world.hero.combo_points = 1
+		var starter: StringName = &"lightning_shield_1" if category == &"Shaman" else &"slice_and_dice_1"
+		assert_true(world.cast_skill(starter))
+		assert_eq(world.hero.progression_points(category), checkpoint)
+		assert_string_contains("\n".join(world.messages), "learn " + SkillDefinition.catalog(attack).title)
+		assert_true(world.train(category, attack), "No earlier passive is required.")
+		assert_eq(world.hero.progression_points(category), checkpoint, "Learning does not spend XP.")
+		world.hero.combo_points = 2
+		if category == &"Rogue":
+			assert_false(world.cast_skill(attack), "Eviscerate is passive.")
+			assert_false(world.assign_hotbar(0, attack))
+			assert_true(world.cast_skill(starter))
+		else:
+			assert_true(world.cast_skill(attack, _enemy(world)))
+		assert_eq(world.hero.progression_points(category), checkpoint + 1)
+		world.discard()
+
+
+func test_rogue_unlocks_reach_the_early_and_final_skills_five_points_sooner() -> void:
+	var world := _world(&"Rogue")
+	for identifier: StringName in ClassSkillData.STARTERS[&"Rogue"]:
+		assert_eq(SkillDefinition.catalog(identifier).progress_required, 0)
+		assert_true(world.train(&"Rogue", identifier))
+	world.hero.class_progress[&"Rogue"] = 4
+	assert_false(world.train(&"Rogue", &"eviscerate_1"))
+	world.add_class_progress(&"Rogue", 1)
+	assert_string_contains("\n".join(world.messages), "5 rogue progression points!")
+	assert_true(world.train(&"Rogue", &"eviscerate_1"))
+	assert_eq(world.hero.progression_points(&"Rogue"), 5)
+	world.hero.class_progress[&"Rogue"] = 214
+	assert_false(world.train(&"Rogue", &"precision_1"))
+	world.add_class_progress(&"Rogue", 1)
+	assert_true(world.train(&"Rogue", &"precision_1"))
+	assert_eq(world.hero.progression_points(&"Rogue"), 215)
 
 
 func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() -> void:
@@ -80,7 +134,7 @@ func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() 
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
-		var expected := 23 if identifier == &"judgement_1" else 33
+		var expected := 23
 		assert_true(world.cast_skill(identifier, enemy))
 		assert_eq(enemy.max_health - enemy.health, expected,
 			"A +2 target reduces spell damage once, without physical armor mitigation.")
@@ -372,6 +426,19 @@ func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_po
 	assert_eq(world.hero.progression_points(&"Shaman"), 1001)
 
 
+func test_earth_shock_reduces_full_damage_by_thirty_percent_before_crit() -> void:
+	for critical in [false, true]:
+		var world := _world(&"Shaman")
+		_learn(world, [&"earth_shock_1"])
+		var enemy := _enemy(world, Vector2i(10, 8))
+		world.hero.melee.damage_min = 16
+		world.hero.melee.damage_max = 16
+		world.hero.melee.critical = 100.0 if critical else 0.0
+		assert_true(world.cast_skill(&"earth_shock_1", enemy))
+		assert_eq(enemy.max_health - enemy.health, 56 if critical else 28,
+			"The full weapon + flat damage is reduced, including critical hits.")
+
+
 func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_upgrade() -> void:
 	var world := _world(&"Shaman")
 	_learn(world, [&"earth_shock_1", &"improved_earth_shock_1", &"elemental_assault_1", &"relentless_assault_1"])
@@ -380,11 +447,11 @@ func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_up
 	enemy.stunned_until = 0
 	enemy.swing.remaining = 5
 	ClassToolkitRules.apply(world, &"elemental_assault_1", {"charges": 1})
-	world.hero.melee.damage_min = 26
-	world.hero.melee.damage_max = 26
+	world.hero.melee.damage_min = 76
+	world.hero.melee.damage_max = 76
 	world.hero.melee.attack_power = 0
 	assert_true(world.cast_skill(&"earth_shock_1", enemy))
-	assert_eq(enemy.health, 10000 - 85)
+	assert_eq(enemy.health, 10000 - 119, "100 * 1.7 Elemental Assault * 0.7 damage tuning.")
 	assert_eq(enemy.stunned_until, 2)
 	assert_almost_eq(enemy.swing.remaining, 5.0, 0.001)
 	assert_eq(world.hero.cooldowns.shock, 7)
@@ -609,18 +676,20 @@ func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand
 	assert_eq(world.hero.combo_points, 1, "Off-hand and Main Gauche add no points.")
 
 
-func test_eviscerate_requires_points_spends_on_miss_then_refunds_and_reduces_cooldowns() -> void:
+func test_slice_and_dice_eviscerate_spends_on_miss_then_refunds_once_and_reduces_cooldowns() -> void:
 	var world := _world(&"Rogue")
-	_learn(world, [&"eviscerate_1", &"relentless_assault_1", &"ruthlessness_1", &"relentless_strikes_1", &"restless_blades_1"])
+	_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1", &"ruthlessness_1", &"relentless_strikes_1", &"restless_blades_1"])
 	var enemy := _enemy(world)
 	assert_false(world.cast_skill(&"eviscerate_1", enemy))
+	assert_false(world.cast_skill(&"slice_and_dice_1"))
+	world.last_attacked_enemy = enemy
 	world.hero.combo_points = 5
 	world.hero.rage = 20
 	world.hero.melee.hit = -1000
 	world.hero.find_skill(&"ruthlessness_1").coefficient = 1
 	world.hero.find_skill(&"relentless_strikes_1").coefficient = 1
 	world.hero.cooldowns.charge = 10
-	assert_true(world.cast_skill(&"eviscerate_1", enemy))
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
 	assert_eq(enemy.health, 10000)
 	assert_eq(world.hero.combo_points, 1)
 	assert_eq(world.hero.rage, 20)
@@ -630,7 +699,7 @@ func test_eviscerate_requires_points_spends_on_miss_then_refunds_and_reduces_coo
 
 func test_opportunity_seal_fate_and_bandits_guile_reward_direct_crits_without_finisher_building() -> void:
 	var world := _world()
-	_learn(world, [&"opportunity_1", &"seal_fate_1", &"bandits_guile_1", &"relentless_assault_1", &"eviscerate_1"])
+	_learn(world, [&"opportunity_1", &"seal_fate_1", &"bandits_guile_1", &"relentless_assault_1", &"eviscerate_1", &"slice_and_dice_1"])
 	var enemy := _enemy(world)
 	enemy.facing = Vector2i.RIGHT
 	world.hero.melee.critical = 100
@@ -641,27 +710,226 @@ func test_opportunity_seal_fate_and_bandits_guile_reward_direct_crits_without_fi
 		ClassToolkitRules.on_attack(world, enemy, world.hero.find_skill(&"mortal_strike_1"), true, false, 20, true)
 	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.05, 0.001)
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"eviscerate_1", enemy))
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
 	assert_eq(world.hero.combo_points, 0, "Finishers cannot rebuild points through Seal Fate.")
 	assert_eq(int(world.hero.buffs[&"bandits_guile_1"].charges), 0)
 
 
-func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -> void:
+func test_slice_and_dice_eviscerate_scales_damage_and_duration_with_the_same_spent_points() -> void:
+	for points in [1, 5]:
+		var world := _world(&"Rogue")
+		_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1"])
+		var enemy := _enemy(world)
+		world.last_attacked_enemy = enemy
+		world.hero.combo_points = points
+		assert_true(world.cast_skill(&"slice_and_dice_1"))
+		assert_eq(enemy.health, 10000 - 15 - 12 * points)
+		assert_eq(world.hero.combo_points, 0)
+		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].until) - world.turn_count,
+			5 + 3 * points)
+		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].haste_percent), 30)
+		assert_eq(world.hero.rage, 85, "Only Slice and Dice costs rage.")
+		assert_eq(world.turn_count, 1)
+		assert_eq(world.hero.progression_points(&"Rogue"), 1001, "One active use.")
+
+
+func test_slice_and_dice_eviscerate_allows_no_valid_target_without_retargeting() -> void:
+	for invalid_target in ["none", "distant", "dead", "friendly", "removed", "blocked"]:
+		var world := _world(&"Rogue")
+		_learn(world, [&"slice_and_dice_1", &"eviscerate_1"])
+		var other := _enemy(world, Vector2i(8, 9))
+		var target := _enemy(world, Vector2i(9, 9))
+		world.last_attacked_enemy = target
+		match invalid_target:
+			"none": world.last_attacked_enemy = null
+			"distant": target.tile = Vector2i(12, 8)
+			"dead": target.alive = false
+			"friendly": target.relationship = GridActor.Relationship.FRIENDLY
+			"removed": world.actors.erase(target)
+			"blocked":
+				world.sight_blockers[target.tile] = true
+		world.hero.combo_points = 3
+		assert_true(world.cast_skill(&"slice_and_dice_1"), invalid_target)
+		assert_eq(target.health, 10000, invalid_target)
+		assert_eq(other.health, 10000, "Never silently chooses another enemy.")
+		assert_eq(world.hero.combo_points, 0)
+		assert_true(world.hero.buffs.has(&"slice_and_dice_1"))
+
+
+func test_slice_and_dice_without_eviscerate_only_grants_haste() -> void:
+	var world := _world(&"Rogue")
+	_learn(world, [&"slice_and_dice_1"])
+	var enemy := _enemy(world)
+	world.last_attacked_enemy = enemy
+	world.hero.combo_points = 5
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	assert_eq(enemy.health, 10000)
+	assert_eq(world.hero.combo_points, 0)
+
+
+func test_slice_and_dice_eviscerate_kill_prevents_a_due_swing_on_the_dead_target() -> void:
+	var world := _world(&"Rogue")
+	_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1"])
+	var enemy := _enemy(world)
+	world.last_attacked_enemy = enemy
+	world.auto_attack_target = enemy
+	world.hero.swing.remaining = 0.0
+	world.hero.combo_points = 5
+	world.hero.rage = 50
+	enemy.health = 1
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	assert_false(enemy.alive)
+	assert_eq(world.hero.combo_points, 0, "No ordinary swing builds points after the kill.")
+	assert_eq(world.hero.rage, 33, "One cast cost and out-of-combat decay; no swing rage.")
+	assert_true(world.hero.buffs.has(&"slice_and_dice_1"))
+	assert_eq(world.turn_count, 1)
+
+
+func test_windfury_lasts_sixty_turns_and_expires() -> void:
+	var world := _world(&"Shaman")
+	_learn(world, [&"windfury_weapon_1"])
+	assert_true(world.cast_skill(&"windfury_weapon_1"))
+	for index in range(59):
+		world.wait_turn()
+	assert_true(world.hero.buffs.has(&"windfury_weapon_1"))
+	world.wait_turn()
+	assert_false(world.hero.buffs.has(&"windfury_weapon_1"))
+
+
+func test_whirlwind_hits_the_five_by_five_area_once_and_counts_only_one_class_use() -> void:
 	var world := _world()
 	_learn(world, [&"whirlwind_1", &"relentless_assault_1"])
 	var first := _enemy(world)
-	var second := _enemy(world, Vector2i(7, 8))
+	var second := _enemy(world, Vector2i(10, 10))
+	second.relationship = GridActor.Relationship.NEUTRAL
+	var friendly := _enemy(world, Vector2i(6, 6))
+	friendly.relationship = GridActor.Relationship.FRIENDLY
+	var dead := _enemy(world, Vector2i(8, 10))
+	dead.alive = false
+	var blocked := _enemy(world, Vector2i(8, 6))
+	world.sight_blockers[Vector2i(8, 7)] = true
 	var distant := _enemy(world, Vector2i(11, 8))
 	world.last_attacked_enemy = first
 	world.auto_attack_target = first
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(first.health, 9980)
-	assert_eq(second.health, 9980)
+	assert_eq(first.health, 9970)
+	assert_eq(second.health, 9970)
 	assert_eq(distant.health, 10000)
+	assert_eq(friendly.health, 10000)
+	assert_eq(dead.health, 10000)
+	assert_eq(blocked.health, 10000)
+	assert_eq(second.relationship, GridActor.Relationship.HOSTILE)
+	assert_true(second.engaged)
 	assert_eq(world.hero.combo_points, 1, "All cleave targets share the base point limit.")
 	assert_eq(world.hero.warrior_progress, 1001)
 	assert_same(world.last_attacked_enemy, first)
 	assert_same(world.auto_attack_target, first)
+
+
+func test_whirlwind_can_cast_at_two_tiles_without_adjacent_targets_but_not_beyond() -> void:
+	for distance in [2, 3]:
+		var world := _world()
+		_learn(world, [&"whirlwind_1"])
+		var enemy := _enemy(world, world.player_tile + Vector2i(distance, distance))
+		assert_eq(world.cast_skill(&"whirlwind_1"), distance == 2)
+		assert_eq(world.turn_count, 1 if distance == 2 else 0)
+		assert_eq(enemy.health, 9970 if distance == 2 else 10000)
+		assert_eq(world.hero.rage, 75 if distance == 2 else 100)
+
+
+func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_attack_procs() -> void:
+	var world := _world()
+	_learn(world, [&"booming_shout_1", &"relentless_assault_1", &"sudden_death_1",
+		&"battle_trance_1", &"seal_fate_1", &"sweeping_strikes_1"])
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1.0
+	world.hero.melee.hit = -1000
+	world.hero.melee.critical = 100
+	world.hero.combo_points = 3
+	world.hero.rage = 42
+	var selected := _enemy(world)
+	world.last_attacked_enemy = selected
+	world.auto_attack_target = selected
+	var neutral := _enemy(world, Vector2i(12, 12))
+	neutral.relationship = GridActor.Relationship.NEUTRAL
+	neutral.returning_home = true
+	var armored := _enemy(world, Vector2i(4, 8))
+	armored.melee.armor = 100000
+	armored.melee.level = 50
+	armored.melee.dodge = 100
+	var friendly := _enemy(world, Vector2i(10, 8))
+	friendly.relationship = GridActor.Relationship.FRIENDLY
+	var dead := _enemy(world, Vector2i(10, 9))
+	dead.alive = false
+	var chest := _enemy(world, Vector2i(7, 8))
+	chest.relationship = GridActor.Relationship.NEUTRAL
+	chest.chest = true
+	var distant := _enemy(world, Vector2i(13, 8))
+	var blocked := _enemy(world, Vector2i(8, 4))
+	world.sight_blockers[Vector2i(8, 6)] = true
+	assert_true(world.cast_skill(&"booming_shout_1"))
+	for enemy in [selected, neutral, armored]:
+		assert_eq(enemy.health, 9999)
+		assert_true(enemy.engaged)
+		assert_eq(enemy.relationship, GridActor.Relationship.HOSTILE)
+		assert_eq(int(enemy.threat.get("-1", 0)), 1)
+	for untouched in [friendly, dead, chest, distant, blocked]:
+		assert_eq(untouched.health, 10000)
+	assert_false(neutral.returning_home)
+	assert_eq(chest.relationship, GridActor.Relationship.NEUTRAL)
+	assert_same(world.last_attacked_enemy, selected)
+	assert_same(world.auto_attack_target, selected)
+	assert_eq(world.hero.combo_points, 3)
+	assert_eq(world.hero.rage, 42)
+	assert_false(world.hero.buffs.has(&"sudden_death_1"))
+	assert_false(world.hero.buffs.has(&"battle_trance_1"))
+	assert_eq(world.hero.warrior_progress, 1001, "One class XP use for the whole shout.")
+	assert_eq(world.turn_count, 1)
+
+
+func test_booming_shout_costs_no_rage_takes_one_turn_and_has_thirty_turn_cooldown() -> void:
+	var world := _world()
+	_learn(world, [&"booming_shout_1"])
+	world.hero.rage = 0
+	assert_true(world.cast_skill(&"booming_shout_1"), "Can shout without a target.")
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hero.rage, 0)
+	for index in range(29):
+		world.wait_turn()
+	assert_false(world.cast_skill(&"booming_shout_1"))
+	assert_eq(world.turn_count, 30)
+	world.wait_turn()
+	assert_true(world.cast_skill(&"booming_shout_1"))
+	assert_eq(world.turn_count, 32)
+	assert_eq(world.hero.warrior_progress, 1002)
+
+
+func test_booming_shout_unlocks_late_and_preserves_learning_and_cooldown_through_saves() -> void:
+	var game := GameSession.new()
+	game.loop_count = 2
+	game.world = _world()
+	var world := game.world
+	world.hero.warrior_progress = 314
+	assert_false(world.train(&"Warrior", &"booming_shout_1"))
+	world.add_class_progress(&"Warrior", 1)
+	assert_true(world.train(&"Warrior", &"booming_shout_1"))
+	assert_eq(world.hotbar[0], &"booming_shout_1")
+	world.hero.selected_class = &"Shaman"
+	assert_true(world.cast_skill(&"booming_shout_1"))
+	assert_eq(world.hero.warrior_progress, 315)
+	assert_eq(world.hero.progression_points(&"Shaman"), 0, "Retained use grants no class XP.")
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_not_null(restored.hero.find_skill(&"booming_shout_1"))
+	assert_eq(int(restored.hero.cooldowns.booming_shout) - restored.turn_count, 30)
+	assert_eq(restored.hotbar[0], &"booming_shout_1")
+	game.restore(restored, game.seed_value, game.loop_count)
+	restored.hero.health = 0
+	assert_true(game.restart_after_death())
+	assert_not_null(game.world.hero.find_skill(&"booming_shout_1"))
+	assert_eq(game.world.hotbar[0], &"booming_shout_1")
+	assert_true(game.world.hero.cooldowns.is_empty())
 
 
 func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stops_remaining_hits() -> void:
@@ -747,7 +1015,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	var world := game.world
 	for category in ClassSkillData.PLAYABLE_CLASSES:
 		world.hero.class_progress[category] = 1000
-		for skill in SkillRank.trainer_skills(category):
+		for skill in SkillDefinition.trainer_skills(category):
 			if world.hero.find_skill(skill.id) == null:
 				assert_true(world.hero.learn_skill(skill))
 	world.hero.rage = 100
@@ -764,7 +1032,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 62)
+	assert_eq(restored.hero.learned_skills.size(), 63)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -780,7 +1048,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 62)
+	assert_eq(game.world.hero.learned_skills.size(), 63)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

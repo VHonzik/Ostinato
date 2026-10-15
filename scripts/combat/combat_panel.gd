@@ -12,12 +12,12 @@ enum Mode { SELECT, CONFIRM_ATTACK, SPELL, POISON }
 
 var mode: Mode = Mode.SELECT
 var selected: GridActor
-var _skill: SkillRank
+var _skill: SkillDefinition
 var _self_target: GridActor
 var _world: GridWorld
 var _candidates: Array[GridActor] = []
 var _last_spell_target: GridActor
-var _last_target_type: SkillRank.Target = SkillRank.Target.NONE
+var _last_target_type: SkillDefinition.Target = SkillDefinition.Target.NONE
 var _panel: PanelContainer
 var _heading: Label
 var _detail: Label
@@ -127,7 +127,7 @@ func cancel() -> void:
 
 func clear_spell_target() -> void:
 	_last_spell_target = null
-	_last_target_type = SkillRank.Target.NONE
+	_last_target_type = SkillDefinition.Target.NONE
 
 
 func navigate(direction: Vector2i) -> void:
@@ -214,7 +214,7 @@ func _update_selection() -> void:
 	_detail.text = "Level %d   Health %d/%d. Directions select; Enter chooses; Esc cancels." % [
 		selected.melee.level, selected.health if selected.alive else 0, selected.max_health,
 	]
-	if mode == Mode.SPELL and _skill.effect == SkillRank.Effect.EXECUTE:
+	if mode == Mode.SPELL and _skill.effect == SkillDefinition.Effect.EXECUTE:
 		_detail.text += "\nExecute spends %d rage; %s." % [
 			_skill.cost(_world.hero), "Sudden Death allows any health" if _world.hero.buffs.has(&"sudden_death_1")
 			else "requires at or below %d%% health" % _skill.execute_health_percent]
@@ -246,7 +246,7 @@ func _button(parent: Node, title: String, callback: Callable) -> Button:
 	return button
 
 
-func open_spell(world: GridWorld, skill: SkillRank) -> void:
+func open_spell(world: GridWorld, skill: SkillDefinition) -> void:
 	if (_world != world or _last_target_type != skill.target
 		or (_last_spell_target != null and not _last_spell_target.alive)):
 		clear_spell_target()
@@ -259,7 +259,7 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 		return
 	_candidates = world.spell_candidates(skill)
 	_self_target = null
-	if skill.target == SkillRank.Target.ALLY and world.valid_spell_target(skill, null):
+	if skill.target == SkillDefinition.Target.ALLY and world.valid_spell_target(skill, null):
 		_self_target = GridActor.new(world.player_tile)
 		_self_target.title = "You"
 		_self_target.health = world.hero.health
@@ -270,7 +270,7 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 		world.add_message("No valid target for " + skill.title + ".")
 		return
 	selected = _last_spell_target if _candidates.has(_last_spell_target) else _candidates[0]
-	if (skill.target == SkillRank.Target.ENEMY and _candidates.size() == 1
+	if (skill.target == SkillDefinition.Target.ENEMY and _candidates.size() == 1
 		and selected.relationship == GridActor.Relationship.NEUTRAL
 		and world.tile_distance(world.player_tile, selected.tile) <= 1):
 		var nearby := world.actors.filter(func(actor: GridActor) -> bool:
@@ -288,7 +288,7 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	_update_selection()
 
 
-func open_poison(world: GridWorld, skill: SkillRank) -> void:
+func open_poison(world: GridWorld, skill: SkillDefinition) -> void:
 	close()
 	clear_spell_target()
 	_world = world
@@ -305,7 +305,7 @@ func _update_poison() -> void:
 	var descriptions: Array[String] = []
 	for off_hand in [false, true]:
 		var identifier := PoisonRules.coating(_world.hero, _world.turn_count, off_hand)
-		var title := "Uncoated" if identifier == &"" else SkillRank.catalog(identifier).title
+		var title := "Uncoated" if identifier == &"" else SkillDefinition.catalog(identifier).title
 		descriptions.append("%s: %s" % ["Off hand" if off_hand else "Main hand", title])
 	_detail.text = "%s.\nDirections choose hand(s); Enter coats for %d rage and one turn. Esc cancels." % [
 		"; ".join(descriptions), _skill.cost(_world.hero)]

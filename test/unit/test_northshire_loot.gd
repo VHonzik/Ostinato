@@ -395,7 +395,7 @@ func test_loot_all_empties_corpses_and_chests_once_and_obeys_action_guards() -> 
 		world.player_tile = Vector2i.ZERO
 		assert_false(world.loot_all(source))
 		world.player_tile = Vector2i(4, 4)
-		world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
+		world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
 		assert_false(world.loot_all(source))
 		assert_eq(source.loot_copper, 7)
 		assert_eq(source.loot.size(), 3)

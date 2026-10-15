@@ -67,16 +67,16 @@ func test_unlearned_and_invalid_target_casts_reject_without_simulation_changes()
 	assert_string_contains(world.messages[-1], "Not enough rage")
 
 
-func test_learned_rank_remains_usable_below_training_level() -> void:
+func test_learned_skill_remains_usable_below_training_level() -> void:
 	var world := MovementFixture.create_world()
 	world.hero.add_experience(400)
-	var skill := SkillRank.new(&"retained_2", "Retained practice", &"Druid", 2, 2,
-		"Test retained rank.", SkillRank.Effect.PRACTICE)
+	var skill := SkillDefinition.new(&"retained_2", "Retained practice", &"Druid", 2,
+		"Test retained skill.", SkillDefinition.Effect.PRACTICE)
 	assert_true(world.hero.learn_skill(skill))
 	world.hero.level = 1
 	assert_true(world.cast_skill(skill.id))
 	assert_eq(world.turn_count, 1)
-	assert_string_contains(world.messages[-1], "rank 2")
+	assert_string_contains(world.messages[-1], "Retained practice: cast complete")
 
 
 func test_release_world_cannot_activate_development_skills() -> void:

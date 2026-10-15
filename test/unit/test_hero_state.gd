@@ -6,9 +6,9 @@ func test_starting_warrior_has_attributes_rage_and_known_abilities() -> void:
 	assert_eq(_attributes(hero), [20, 20, 20])
 	assert_eq([hero.level, hero.experience], [1, 0])
 	assert_eq([hero.health, hero.max_health, hero.rage], [51, 51, 0])
-	assert_eq(hero.find_skill(&"mortal_strike_1").rank, 1)
-	assert_eq(hero.find_skill(&"heroic_strike_1").rank, 1)
-	assert_null(hero.find_skill(&"fireball_2"), "Leveling does not grant unlearned ranks.")
+	assert_not_null(hero.find_skill(&"mortal_strike_1"))
+	assert_not_null(hero.find_skill(&"heroic_strike_1"))
+	assert_null(hero.find_skill(&"fireball_2"), "Leveling does not grant unlearned skills.")
 
 
 func test_exact_first_threshold_and_noop_awards() -> void:
@@ -67,23 +67,23 @@ func test_split_and_single_rewards_produce_identical_progression() -> void:
 	assert_eq(_attributes(split), _attributes(single))
 
 
-func test_learning_rejects_insufficient_level_and_duplicate_rank() -> void:
+func test_learning_rejects_insufficient_level_and_duplicate_skill() -> void:
 	var hero := HeroState.new()
-	var skill := SkillRank.new(&"test_rank_2", "Test", &"Shaman", 2, 2,
-		"Test fixture.", SkillRank.Effect.PRACTICE)
+	var skill := SkillDefinition.new(&"test_rank_2", "Test", &"Shaman", 2,
+		"Test fixture.", SkillDefinition.Effect.PRACTICE)
 	assert_false(hero.learn_skill(skill))
 	assert_null(hero.find_skill(skill.id))
 	hero.add_experience(400)
 	assert_true(hero.learn_skill(skill))
 	assert_false(hero.learn_skill(skill))
-	var duplicate := SkillRank.new(skill.id, "Duplicate", &"Shaman", 2, 1,
-		"Test fixture.", SkillRank.Effect.PRACTICE)
+	var duplicate := SkillDefinition.new(skill.id, "Duplicate", &"Shaman", 1,
+		"Test fixture.", SkillDefinition.Effect.PRACTICE)
 	assert_false(hero.learn_skill(duplicate))
 	assert_false(hero.learn_skill(null))
 	assert_same(hero.find_skill(skill.id), skill)
 
 
-func test_release_baseline_contains_no_development_ranks() -> void:
+func test_release_baseline_contains_no_development_skills() -> void:
 	var hero := HeroState.new(false)
 	assert_eq(hero.learned_skills.size(), 2)
 	for skill in hero.learned_skills:

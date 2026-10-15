@@ -5,8 +5,8 @@ func test_death_rebuilds_world_and_preserves_only_game_progression() -> void:
 	var game := GameSession.new()
 	game.new_game(17)
 	game.world.hero.add_experience(400)
-	var learned := SkillRank.new(&"retained_test", "Retained", &"Shaman", 2, 2,
-		"Test rank", SkillRank.Effect.PRACTICE)
+	var learned := SkillDefinition.new(&"retained_test", "Retained", &"Shaman", 2,
+		"Test skill", SkillDefinition.Effect.PRACTICE)
 	assert_true(game.world.hero.learn_skill(learned))
 	game.world.hotbar[0] = learned.id
 	game.world.hotbar_locked = true
@@ -91,10 +91,10 @@ func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> v
 func test_obsolete_classes_and_abilities_are_unavailable() -> void:
 	var hero := HeroState.new()
 	for category: StringName in [&"Mage", &"Druid", &"Warlock", &"Priest"]:
-		assert_true(SkillRank.starting_skills(category).is_empty())
-		assert_true(SkillRank.trainer_skills(category).is_empty())
+		assert_true(SkillDefinition.starting_skills(category).is_empty())
+		assert_true(SkillDefinition.trainer_skills(category).is_empty())
 		assert_false(StarterGear.exchange(hero, category))
 	for identifier: StringName in [&"fireball_1", &"wrath_1", &"summon_imp_1",
 		&"smite_1", &"water_1", &"pet_attack", &"parry_1"]:
-		assert_null(SkillRank.catalog(identifier))
+		assert_null(SkillDefinition.catalog(identifier))
 	assert_eq(hero.selected_class, &"Warrior")

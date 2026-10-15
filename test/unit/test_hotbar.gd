@@ -1,7 +1,7 @@
 extends GutTest
 
 
-func test_training_fills_first_empty_slot_even_when_locked_and_preserves_full_hotbar() -> void:
+func test_training_prefers_its_row_even_when_locked_and_preserves_full_hotbar() -> void:
 	var session := GameSession.new()
 	session.development_build = false
 	session.new_game(97)
@@ -10,11 +10,11 @@ func test_training_fills_first_empty_slot_even_when_locked_and_preserves_full_ho
 	world.hotbar_locked = true
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	assert_eq(world.hotbar.slice(0, 3),
-		[&"mortal_strike_1", &"heroic_strike_1", &"battle_shout_1"])
+		[&"mortal_strike_1", &"heroic_strike_1", &""])
+	assert_eq(world.hotbar[10], &"battle_shout_1")
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_false(world.hotbar.has(&"anger_management_1"))
-	for index in range(3, world.hotbar.size()):
-		world.hotbar[index] = &"mortal_strike_1"
+	world.hotbar.fill(&"mortal_strike_1")
 	var assignments := world.hotbar.duplicate()
 	assert_true(world.train(&"Warrior", &"charge_1"))
 	assert_eq(world.hotbar, assignments, "A full bar never loses an assignment.")
@@ -28,7 +28,45 @@ func test_training_fills_first_empty_slot_even_when_locked_and_preserves_full_ho
 		assert_eq(restored.hotbar, assignments)
 
 
-func test_assignments_reject_unknown_ranks_and_locked_edits_without_time_or_resources() -> void:
+func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignments() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	assert_true(world.assign_hotbar(0, &"heroic_strike_1"))
+	assert_true(world.assign_hotbar(11, &"mortal_strike_1"))
+	for identifier: StringName in [
+		&"battle_shout_1", &"windfury_weapon_1", &"lightning_shield_1", &"seal_of_command_1",
+		&"instant_poison_1", &"deadly_poison_1", &"strength_of_earth_totem_1", &"blessing_of_might_1",
+		&"charge_1", &"execute_1", &"whirlwind_1", &"earth_shock_1", &"feral_spirit_1",
+		&"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1", &"relentless_assault_1",
+	]:
+		var skill := SkillDefinition.catalog(identifier)
+		world.hero.selected_class = skill.class_tab
+		world.hero.class_progress[skill.class_tab] = 1000
+		assert_true(world.train(skill.class_tab, identifier))
+	assert_eq(world.hotbar.slice(0, 10), [
+		&"heroic_strike_1", &"charge_1", &"execute_1", &"whirlwind_1", &"earth_shock_1",
+		&"feral_spirit_1", &"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1",
+	])
+	assert_eq(world.hotbar.slice(10), [
+		&"battle_shout_1", &"mortal_strike_1", &"windfury_weapon_1", &"lightning_shield_1",
+		&"seal_of_command_1", &"instant_poison_1", &"deadly_poison_1",
+		&"strength_of_earth_totem_1", &"blessing_of_might_1", &"",
+	])
+	assert_eq(world.turn_count, 0)
+
+
+func test_training_uses_other_row_when_preferred_row_is_full() -> void:
+	for setup: Array in [[&"battle_shout_1", 10, 0], [&"charge_1", 0, 10]]:
+		var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+		world.hero.warrior_progress = 1000
+		var first_slot: int = setup[1]
+		for slot in range(first_slot, first_slot + 10):
+			assert_true(world.assign_hotbar(slot, &"mortal_strike_1"))
+		assert_true(world.train(&"Warrior", setup[0]))
+		assert_eq(world.hotbar[setup[2]], setup[0])
+		assert_eq(world.hotbar.count(&"mortal_strike_1"), 10, "Existing assignments survive.")
+
+
+func test_assignments_reject_unknown_skills_and_locked_edits_without_time_or_resources() -> void:
 	var world := MovementFixture.create_world()
 	assert_false(world.assign_hotbar(0, &"fireball_2"))
 	assert_false(world.assign_hotbar(-1, &"mortal_strike_1"))
@@ -47,11 +85,11 @@ func test_assignments_reject_unknown_ranks_and_locked_edits_without_time_or_reso
 	world.hotbar_locked = false
 	assert_true(world.assign_hotbar(4, &""))
 	world.hero.level = 10
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"anger_management_1")))
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"anger_management_1")))
 	assert_false(world.assign_hotbar(2, &"anger_management_1"), "Passives cannot be activated.")
 
 
-func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_contracts() -> void:
+func test_training_does_not_replace_skill_and_reset_load_new_game_keep_their_contracts() -> void:
 	var session := GameSession.new()
 	session.new_game(317)
 	var world := session.world
@@ -72,7 +110,7 @@ func test_training_does_not_replace_rank_and_reset_load_new_game_keep_their_cont
 	assert_not_null(restored)
 	assert_eq(restored.hotbar, session.world.hotbar)
 	assert_true(restored.hotbar_locked)
-	assert_eq(restored.hero.find_skill(restored.hotbar[1]).rank, 1)
+	assert_eq(restored.hero.find_skill(restored.hotbar[1]).id, &"heroic_strike_1")
 	snapshot.hotbar[4] = "wrath_1"
 	assert_null(SaveCodec.restore(snapshot, true), "Unlearned saved assignments are invalid.")
 	session.new_game(318)

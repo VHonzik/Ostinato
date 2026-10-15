@@ -1,12 +1,38 @@
 extends GutTest
 
 
+func test_passive_eviscerate_and_slice_and_dice_roundtrip_and_loop_reset() -> void:
+	var game := GameSession.new()
+	game.new_game(79)
+	var world := game.world
+	world.hero.class_progress[&"Rogue"] = 1000
+	for identifier: StringName in [&"slice_and_dice_1", &"eviscerate_1"]:
+		assert_true(world.hero.learn_skill(SkillDefinition.catalog(identifier)))
+	assert_false(world.assign_hotbar(0, &"eviscerate_1"))
+	world.hero.rage = 100
+	world.hero.combo_points = 3
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), true)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	game.restore(restored, game.seed_value, game.loop_count)
+	assert_eq(restored.hero.find_skill(&"eviscerate_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(restored.hero.combo_points, 0)
+	assert_eq(int(restored.hero.buffs[&"slice_and_dice_1"].until) - restored.turn_count, 14)
+	restored.hero.health = 0
+	assert_true(game.restart_after_death())
+	assert_eq(game.world.hero.find_skill(&"eviscerate_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(game.world.hero.combo_points, 0)
+	assert_false(game.world.hero.buffs.has(&"slice_and_dice_1"))
+
+
 func test_waiting_proc_roundtrip_preserves_consumption_and_loop_reset() -> void:
 	var game := GameSession.new()
 	game.new_game(79)
 	var world := game.world
-	world.hero.warrior_progress = 80
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"incite_1")))
+	world.hero.warrior_progress = 100
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"incite_1")))
 	ClassToolkitRules.apply(world, &"incite_1", {"charges": 1})
 	for turn in range(25):
 		world.wait_turn()

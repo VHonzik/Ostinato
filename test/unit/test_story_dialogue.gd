@@ -107,7 +107,7 @@ func test_janos_requires_living_nearby_trader_matching_class_and_no_pending_acti
 	world.hero.selected_class = &"Paladin"
 	assert_false(world.receive_starter_gear(janos), "Paladin has only a story referral in this slice.")
 	world.hero.selected_class = &"Warrior"
-	world.pending_skill = SkillRank.catalog(&"mortal_strike_1")
+	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
 	assert_false(world.receive_starter_gear(janos))
 	world.pending_skill = null
 	var impostor := GridActor.new(janos.tile)
@@ -200,9 +200,9 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	menu.open_conversation(trainer)
 	_button(menu, "Train").pressed.emit()
 	for identifier: StringName in ClassSkillData.STARTERS[&"Paladin"]:
-		var skill := SkillRank.catalog(identifier)
+		var skill := SkillDefinition.catalog(identifier)
 		for button in menu._buttons:
-			if button.text.begins_with(skill.title + " rank 1 / Free"):
+			if button.text.begins_with(skill.title + " / Free"):
 				assert_false(button.disabled)
 				button.pressed.emit()
 				break

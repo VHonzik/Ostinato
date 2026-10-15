@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-19 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo save fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -195,8 +195,8 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 			or actor.expires_turn < 0 or actor.stunned_until < 0):
 			return null
 		if actor.summon_kind != "":
-			var summon := SkillRank.catalog(actor.summon_skill)
-			if (summon == null or (summon.effect != SkillRank.Effect.SUMMON and summon.family != &"feral_spirit")
+			var summon := SkillDefinition.catalog(actor.summon_skill)
+			if (summon == null or (summon.effect != SkillDefinition.Effect.SUMMON and summon.family != &"feral_spirit")
 				or SummonRules.slot(summon) != actor.summon_kind
 				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
 				return null
@@ -217,11 +217,11 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	for identifier in data.learned:
 		if not identifier is String or learned.has(identifier):
 			return null
-		var skill := SkillRank.catalog(StringName(identifier))
+		var skill := SkillDefinition.catalog(StringName(identifier))
 		if skill == null:
 			return null
 		if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
-			and not skill.development_only and not ClassSkillData.is_playable_rank(skill.id)):
+			and not skill.development_only and not ClassSkillData.is_playable_skill(skill.id)):
 			return null
 		learned.append(identifier)
 		if development_build or not skill.development_only:
@@ -234,7 +234,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	if world.hero.combo_points > 0 and not learned.has("relentless_assault_1"):
 		return null
 	for identifier in learned:
-		var skill := SkillRank.catalog(StringName(identifier))
+		var skill := SkillDefinition.catalog(StringName(identifier))
 		if world.hero.progression_points(skill.class_tab) < skill.progress_required:
 			return null
 	if not _inventory(data.inventory) or not data.equipment is Dictionary:
@@ -349,7 +349,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	world.combat_random.state = int(data.combat_random)
 	# Development helpers belong to the running build, including saves predating a helper.
 	if development_build:
-		for skill in SkillRank.development_skills():
+		for skill in SkillDefinition.development_skills():
 			if world.hero.find_skill(skill.id) == null:
 				world.hero.learned_skills.append(skill)
 	# Rebuild terminal state; a defeated group of stalkers must never resume play.
@@ -471,13 +471,13 @@ static func _buffs(data: Variant) -> bool:
 	if not data is Dictionary:
 		return false
 	for key in data:
-		var skill := SkillRank.catalog(StringName(key))
-		if skill == null or skill.effect not in [SkillRank.Effect.ARMOR, SkillRank.Effect.BATTLE_SHOUT, SkillRank.Effect.PASSIVE]:
+		var skill := SkillDefinition.catalog(StringName(key))
+		if skill == null or skill.effect not in [SkillDefinition.Effect.ARMOR, SkillDefinition.Effect.BATTLE_SHOUT, SkillDefinition.Effect.PASSIVE]:
 			return false
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
-		if int(buff.until) == 0 and (skill.effect != SkillRank.Effect.PASSIVE or skill.duration != 0):
+		if int(buff.until) == 0 and (skill.effect != SkillDefinition.Effect.PASSIVE or skill.duration != 0):
 			return false
 		for stat in buff:
 			if stat not in ["armor", "until", "strength", "agility", "stamina",
@@ -549,7 +549,7 @@ static func _debuffs(data: Variant) -> bool:
 			var credit: Variant = effect.damage_credit
 			if (not (credit is int or credit is float) or not is_finite(float(credit))
 				or credit < 0 or credit >= 1 or not _integer(effect.stacks, 1)
-				or effect.stacks > SkillRank.catalog(&"deadly_poison_1").maximum
+				or effect.stacks > SkillDefinition.catalog(&"deadly_poison_1").maximum
 				or not _integer(effect.next_tick, 1) or not _integer(effect.until, 1)
 				or effect.next_tick > effect.until):
 				return false

@@ -60,7 +60,7 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	game.world.hero.inventory[0] = ItemData.instance(2572)
 	assert_true(InventoryRules.equip(game.world.hero, 0))
 	game.world.hero.warrior_progress = 100
-	assert_true(game.world.hero.learn_skill(SkillRank.catalog(&"cruelty_1")))
+	assert_true(game.world.hero.learn_skill(SkillDefinition.catalog(&"cruelty_1")))
 	game.world.hero.health = 10
 	game.world.hero.swing.remaining = 1.25
 	game.world.hero.off_hand_swing.remaining = 0.75

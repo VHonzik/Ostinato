@@ -1,7 +1,7 @@
 class_name HeroPanel
 extends Control
 
-## Keyboard/mouse character and learned-rank view; no simulation runs in this panel.
+## Keyboard/mouse character and learned-skill view; no simulation runs in this panel.
 signal cast_requested(identifier: StringName)
 signal assignment_changed
 signal slot_chosen(slot: int)
@@ -119,15 +119,15 @@ func refresh() -> void:
 		var identifier: StringName = _last_spell_by_class.get(_last_class_tab, &"")
 		var skill := _hero.find_skill(identifier)
 		if skill != null:
-			_assign.disabled = layout_locked or skill.effect == SkillRank.Effect.PASSIVE
-			_details.text = "%s · Rank %d · %d %s\n%s" % [
-				skill.title, skill.rank, skill.cost(_hero), skill.resource_name(), skill.description]
+			_assign.disabled = layout_locked or skill.effect == SkillDefinition.Effect.PASSIVE
+			_details.text = "%s · %d %s\n%s" % [
+				skill.title, skill.cost(_hero), skill.resource_name(), skill.description]
 	else:
 		_details.text = "A/D: tabs · W/S: skills · Tab: controls · Enter: activate · Esc: close"
 	for button in _skill_buttons:
 		(button as SkillButton).describe(_hero.find_skill(button.get_meta("skill_id")), _hero)
-		var rank_data: SkillRank = (button as SkillButton).skill
-		(button as SkillButton).drag_enabled = not layout_locked and rank_data.effect != SkillRank.Effect.PASSIVE
+		var skill_data: SkillDefinition = (button as SkillButton).skill
+		(button as SkillButton).drag_enabled = not layout_locked and skill_data.effect != SkillDefinition.Effect.PASSIVE
 	_stats.text = (
 		"%s  /  Level %d     XP %d / %d\n"
 		+ "Health %d / %d     Rage %d / %d\n"
@@ -146,7 +146,7 @@ func refresh() -> void:
 
 
 func navigate(forward: bool, include_actions: bool = false) -> void:
-	# W/S selects ranks; Tab leaves the selected rank for Assign without changing it.
+	# W/S selects skills; Tab leaves the selected skill for Assign without changing it.
 	var focused := get_viewport().gui_get_focus_owner()
 	if not include_actions and focused == _details:
 		_details.get_v_scroll_bar().value += 24 if forward else -24
@@ -192,9 +192,9 @@ func _rebuild_skills() -> void:
 			scroll.add_child(rows)
 			categories[skill.class_tab] = rows
 		var button := SkillButton.new()
-		button.text = "%s  ·  Rank %d" % [skill.title, skill.rank]
+		button.text = skill.title
 		button.text += "  ·  %s / %d %s" % ["%.1f turns" % skill.cast_seconds, skill.cost(_hero), skill.resource_name()]
-		if skill.effect == SkillRank.Effect.PASSIVE:
+		if skill.effect == SkillDefinition.Effect.PASSIVE:
 			button.text = skill.title + " · Passive (learned)"
 		button.describe(skill, _hero)
 		button.drag_enabled = not layout_locked
@@ -213,7 +213,7 @@ func _request_cast(identifier: StringName) -> void:
 	var skill := _hero.find_skill(identifier)
 	if skill != null:
 		_remember_spell(skill.class_tab, identifier)
-		if skill.effect == SkillRank.Effect.PASSIVE:
+		if skill.effect == SkillDefinition.Effect.PASSIVE:
 			return
 	cast_requested.emit(identifier)
 	refresh()
@@ -253,7 +253,7 @@ func begin_assignment(clear_slot: bool = false) -> void:
 	assignment_id = &"" if clear_slot else _last_spell_by_class.get(_last_class_tab, &"")
 	if not clear_slot:
 		var skill := _hero.find_skill(assignment_id)
-		if skill == null or skill.effect == SkillRank.Effect.PASSIVE:
+		if skill == null or skill.effect == SkillDefinition.Effect.PASSIVE:
 			return
 	choosing_slot = true
 	refresh()

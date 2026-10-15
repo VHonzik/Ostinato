@@ -2,11 +2,11 @@ class_name SpellEffects
 extends RefCounted
 
 ## Shared damage, healing and class effects; all playable abilities use rage.
-static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> bool:
+static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
 	return ClassSpellEffects.can_apply(world, skill, target)
 
 
-static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> void:
+static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor) -> void:
 	if world.is_terminal():
 		return
 	ClassSpellEffects.resolve(world, skill, target)

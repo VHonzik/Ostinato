@@ -121,7 +121,7 @@ deferred. The Execute slice is implemented below.
   no class XP requirement. Learning is permanent and fills empty hotbar slots for actives
   without replacing assignments. Implement Lightning Shield and Strength of Earth Totem,
   Seal of Command and Judgement, Slice and Dice and Relentless Assault. Use rage;
-  trainers expose only implemented ranks, leaving legacy mana kits unavailable.
+  trainers expose only implemented skills, leaving legacy mana kits unavailable.
 - [x] Retain learned abilities/passives and cumulative class XP across death and class
   choice. Only uses belonging to the selected class grant XP; retained abilities grant
   none to either track. Count misses and repeated buff uses without anti-spam filters.
@@ -157,7 +157,7 @@ in code/data; optional combo empowerment remains unresolved for the later finish
   Relentless Assault points across targets and never spend them.
 - [x] Cover health boundaries, capped rage/damage, physical mitigation/crit, misses,
   target commitment, ordering, trainer/UI behavior, retained use, death and save loading.
-  Keep revision 14: the existing learned-rank format supports Execute without new state.
+  Keep revision 14: the existing learned-skill format supports Execute without new state.
 - [ ] Owner playtest: learn Execute at Llane, find it on the hotbar and compare it with
   Mortal Strike and Heroic Strike near an enemy's health threshold. Try different rage
   reserves, then use retained Execute with Relentless Assault in another class.
@@ -171,6 +171,8 @@ live in game data and the spell book. Human balance and readability review remai
 
 - [x] Complete every v0.1 active and passive, with cumulative trainer checkpoints,
   free learning, immediate use, and retained cross-class effects.
+- [x] Retune class unlock paths toward roughly five completed Loops, with early core
+  attacks and active/passive milestones spread through each trainer's XP-ordered list.
 - [x] Add shared Flurry, nonrecursive procs, guaranteed crit consumption, defenses,
   deliberate finisher spending/refunds, and the Holy-event counting limit.
 - [x] Add independent off-hand attacks and equipment selection, spirit wolves with
@@ -242,7 +244,7 @@ Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wiel
 defensive windows and mixed-class combinations. Adjust code/data from that feedback;
 do not treat catalogue completion or automated tests as balance/readability acceptance.
 Optional combo empowerment of Execute/Judgement remains a later design choice; the
-current deliberate spenders are Slice and Dice and Eviscerate.
+current deliberate spender is Slice and Dice, with a passive Eviscerate attack when learned.
 
 ### Current playable task — Simplified itemization
 

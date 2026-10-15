@@ -6,11 +6,11 @@ enum Hands { MAIN = 1, OFF = 2, BOTH = 3 }
 const COATINGS: Array[StringName] = [&"instant_poison_1", &"deadly_poison_1"]
 
 
-static func is_poison(skill: SkillRank) -> bool:
+static func is_poison(skill: SkillDefinition) -> bool:
 	return skill.id in COATINGS
 
 
-static func coat(world: GridWorld, skill: SkillRank, hands: int = Hands.BOTH) -> void:
+static func coat(world: GridWorld, skill: SkillDefinition, hands: int = Hands.BOTH) -> void:
 	for off_hand in [false, true]:
 		if (hands & (Hands.OFF if off_hand else Hands.MAIN)) == 0:
 			continue

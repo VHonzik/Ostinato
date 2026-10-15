@@ -2,7 +2,7 @@ class_name HotbarPanel
 extends Control
 
 signal slot_pressed(slot: int)
-signal rank_dropped(slot: int, identifier: StringName, source_hero: HeroState)
+signal skill_dropped(slot: int, identifier: StringName, source_hero: HeroState)
 signal lock_requested
 
 const INSUFFICIENT_RAGE_COLOR := Color("ff6464")
@@ -41,7 +41,7 @@ func _ready() -> void:
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(func() -> void: slot_pressed.emit(index))
 		button.set_drag_forwarding(Callable(), _can_drop.bind(index), _drop.bind(index))
-		rows[index / 10].add_child(button)
+		rows[index / GridWorld.HOTBAR_ROW_SIZE].add_child(button)
 		slots.append(button)
 		var cooldown := Label.new()
 		cooldown.name = "Cooldown"
@@ -85,8 +85,12 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		var queued := skill != null and world.queued_strike != null and skill.id == world.queued_strike.id
 		var insufficient_rage := (skill != null and not queued
 			and skill.available_resource(world.hero) < skill.cost(world.hero))
+		var execute_unavailable := (skill != null and skill.effect == SkillDefinition.Effect.EXECUTE
+			and not world.hero.buffs.has(&"sudden_death_1")
+			and (not world.valid_spell_target(skill, world.last_attacked_enemy) if world.in_combat()
+				else world.spell_candidates(skill).is_empty()))
 		for color_state in LABEL_COLOR_STATES:
-			if insufficient_rage:
+			if insufficient_rage or execute_unavailable:
 				button.add_theme_color_override(color_state, INSUFFICIENT_RAGE_COLOR)
 			else:
 				button.remove_theme_color_override(color_state)
@@ -95,7 +99,7 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		if queued:
 			button.tooltip_text += "\nQueued: rage reserved. Esc cancels and refunds it."
 		if skill == null:
-			button.tooltip_text = "Slot %d (%s): empty. Assign a rank from the spell book." % [index + 1, key]
+			button.tooltip_text = "Slot %d (%s): empty. Assign a skill from the spell book." % [index + 1, key]
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"
 	lock_button.tooltip_text = "Lock layout edits; assigned skills can still be activated."
 	lock_button.disabled = not can_edit
@@ -107,9 +111,9 @@ func _can_drop(_position: Vector2, data: Variant, _slot: int) -> bool:
 	if data.get("hero") != _world.hero or not data.get("skill_id") is StringName:
 		return false
 	var skill := _world.hero.find_skill(data.skill_id)
-	return skill != null and skill.effect != SkillRank.Effect.PASSIVE
+	return skill != null and skill.effect != SkillDefinition.Effect.PASSIVE
 
 
 func _drop(position: Vector2, data: Variant, slot: int) -> void:
 	if _can_drop(position, data, slot):
-		rank_dropped.emit(slot, data.skill_id, data.hero)
+		skill_dropped.emit(slot, data.skill_id, data.hero)

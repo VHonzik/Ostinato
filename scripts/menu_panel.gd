@@ -59,7 +59,8 @@ func _ready() -> void:
 	_preview_panel.add_theme_stylebox_override("panel", preview_style)
 	content.add_child(_preview_panel)
 	_preview = Label.new()
-	_preview.custom_minimum_size.y = 46
+	_preview.custom_minimum_size = Vector2(668, 46)
+	_preview.size.x = 668
 	_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_preview.max_lines_visible = 2
 	_preview.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -214,9 +215,13 @@ func _request_spare_gear(actor: GridActor) -> void:
 	refreshed.emit()
 
 
-func open_trainer(category: StringName) -> void:
+func open_trainer(category: StringName, selected_skill: StringName = &"") -> void:
 	_trainer = category
 	_begin("trainer", "%s training" % category, close)
+	_preview.max_lines_visible = -1
+	_preview.clip_text = false
+	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	var selected_button: Button
 	if category not in ClassSkillData.PLAYABLE_CLASSES:
 		_label("Training for this class is not available yet.")
 	elif session.world.hero.selected_class != category:
@@ -226,13 +231,16 @@ func open_trainer(category: StringName) -> void:
 			category, session.world.hero.progression_points(category)])
 		if category != &"Warrior":
 			_label("Learn these starter skills for free, with no class XP requirement. Further abilities unlock with class XP.")
-		for skill in SkillRank.trainer_skills(category):
+		for skill in SkillDefinition.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
 			var price := "Free"
 			var status := "Learned" if known else ("Unlock at %d class XP" % skill.progress_required
 				if skill.progress_required > 0 else price)
-			var button := _button("%s rank %d / %s" % [skill.title, skill.rank, status],
+			var button := _button("%s / %s" % [skill.title, status],
 				_train.bind(skill.id))
+			button.set_meta("skill_id", skill.id)
+			if skill.id == selected_skill:
+				selected_button = button
 			var failure := session.world.training_failure(category, skill)
 			button.text += " / Lv %d" % skill.training_level
 			button.set_meta("preview", skill.description + " " + failure)
@@ -241,7 +249,10 @@ func open_trainer(category: StringName) -> void:
 				for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
 					button.add_theme_color_override(state, Color("ff7777"))
 	_button("Leave (Esc)", close)
-	_finish()
+	if selected_button != null:
+		selected_button.grab_focus()
+	else:
+		_finish()
 
 
 func open_inventory() -> void:
@@ -580,6 +591,9 @@ func _begin(next_page: String, title: String, back: Callable) -> void:
 	_preview.text = ""
 	_preview_panel.hide()
 	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
+	_preview.max_lines_visible = 2
+	_preview.clip_text = true
+	_preview.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
 	_buttons.clear()
@@ -694,11 +708,11 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 
 
 func _train(identifier: StringName) -> void:
-	if session.world.training_failure(_trainer, SkillRank.catalog(identifier)) != "":
+	if session.world.training_failure(_trainer, SkillDefinition.catalog(identifier)) != "":
 		return
 	session.world.train(_trainer, identifier)
 	refreshed.emit()
-	open_trainer(_trainer)
+	open_trainer(_trainer, identifier)
 
 
 func _toggle_palette() -> void:
@@ -745,7 +759,7 @@ func open_conversation(actor: GridActor) -> void:
 				var button := _button("Uhm... I seek %s teaching" % String(category).to_lower(),
 					_confirm_class.bind(category, actor))
 				var titles: PackedStringArray = []
-				for skill in SkillRank.starting_skills(category):
+				for skill in SkillDefinition.starting_skills(category):
 					titles.append(skill.title)
 				button.tooltip_text = "%d class XP. Learn %s for free at the trainer. Gear and learned skills remain." % [
 					session.world.hero.progression_points(category), " + ".join(titles)]

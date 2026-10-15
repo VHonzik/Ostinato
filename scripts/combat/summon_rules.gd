@@ -2,7 +2,7 @@ class_name SummonRules
 extends RefCounted
 
 ## Totems and spirit wolves share actor occupancy and stable saved ordering.
-static func slot(skill: SkillRank) -> String:
+static func slot(skill: SkillDefinition) -> String:
 	return "wolf" if skill.family == &"feral_spirit" else "earth"
 
 
@@ -13,7 +13,7 @@ static func active(world: GridWorld, kind: String) -> GridActor:
 	return null
 
 
-static func placement(world: GridWorld, skill: SkillRank) -> Vector2i:
+static func placement(world: GridWorld, skill: SkillDefinition) -> Vector2i:
 	var previous := active(world, slot(skill))
 	for direction in GridWorld.DIRECTIONS:
 		var tile := world.player_tile + direction
@@ -22,7 +22,7 @@ static func placement(world: GridWorld, skill: SkillRank) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-static func summon(world: GridWorld, skill: SkillRank) -> void:
+static func summon(world: GridWorld, skill: SkillDefinition) -> void:
 	var tile := placement(world, skill)
 	if tile == Vector2i(-1, -1):
 		return
@@ -98,7 +98,7 @@ static func refresh_auras(world: GridWorld) -> void:
 		if (not actor.alive or actor.summon_skill != &"strength_of_earth_totem_1"
 			or world.turn_count >= actor.expires_turn):
 			continue
-		var skill := SkillRank.catalog(actor.summon_skill)
+		var skill := SkillDefinition.catalog(actor.summon_skill)
 		if GridWorld.tile_distance(actor.tile, world.player_tile) <= skill.range_tiles:
 			world.hero.aura_strength = floori(skill.minimum * (
 				1.5 if ClassToolkitRules.has(world.hero, &"elemental_weapons_1") else 1.0))

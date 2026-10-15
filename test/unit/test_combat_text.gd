@@ -61,7 +61,7 @@ func test_weapon_miss_dodge_critical_and_off_hand_emit_separate_results() -> voi
 
 func test_magic_and_bonus_strike_misses_show_text_without_damage() -> void:
 	_world.hero.melee.hit = -100.0
-	ClassToolkitRules.magic_attack(_world, _enemy, SkillRank.catalog(&"earth_shock_1"))
+	ClassToolkitRules.magic_attack(_world, _enemy, SkillDefinition.catalog(&"earth_shock_1"))
 	ClassToolkitRules.bonus_strike(_world, _enemy, false, 1.0, "Windfury")
 	assert_eq(_view.combat_text._entries.size(), 2)
 	for entry in _view.combat_text._entries:

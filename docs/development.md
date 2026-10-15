@@ -33,6 +33,8 @@ There are no within-Loop NPC respawns. Faction layers show friendly contacts in 
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
 A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
 its current class artwork with an empty faction layer.
+The upper-right quest tracker lists accepted quests and objective progress, marking
+finished objectives and ready quests completed. Handed-in or abandoned quests disappear.
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting; the story guard's corpse remains.
 Death rebuilds the
@@ -49,7 +51,9 @@ to the marshal before accepting any quest to choose the class whose ability uses
 class XP. Each returning Loop starts in the previous class; confirmation locks one choice
 until death, including keeping that same class. Class choice keeps gear and names the
 matching trainer. Visit that trainer to learn the class's starter skills for free, with
-no class XP requirement; actives fill empty hotbar slots. Learning is permanent and needs
+no class XP requirement; new actives prefer empty slots in the upper row for maintenance
+buffs and the lower row for rotation and situational abilities, using the other row
+when needed. Existing assignments are preserved. Learning is permanent and needs
 no relearning in later Loops. The initial Warrior pair remains known at New Game.
 Farseer Lopaa is the shaman contact.
 Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
@@ -73,13 +77,16 @@ escape beyond the valley is the story outcome, with no gate lock or crossing act
 Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
 progression log notification to unlock Battle Shout, Anger Management, Charge or Execute;
-unlocking keeps your points. Newly learned actives fill empty hotbar slots; use the spell book to rearrange them.
+unlocking keeps your points. Use the spell book to rearrange learned actives.
 Execute uses the committed melee target, requires low target health, and shows current rage spending
 in its tooltip and target picker. Its one-turn attack keeps weapon timing running; optional combo
 empowerment remains for a later slice. Charge's wind-up and automatic
 travel keep the player casting until arrival, blocking other actions and cancellation.
 Charge arrival also allows the ready weapon to attack its target. These are current
 mechanics; tuning and remaining v0.1 mechanics still need playtesting.
+Late Warrior training adds Booming Shout, a guaranteed area hit for pulling neutral
+and hostile NPCs in sight. It grants no combo points or attack procs and keeps the
+selected attack target.
 
 Shaman starts with Lightning Shield and Strength of Earth Totem; Paladin with Seal of
 Command and Judgement; Rogue with Slice and Dice and the Relentless Assault passive.
@@ -88,7 +95,9 @@ uses grant class XP; learning does not spend it. Relentless Assault builds playe
 combo points from landed direct active attacks and ordinary main-hand hits, across
 classes and targets, with one base point per world turn. Seal Fate can add an extra point
 on an active crit; off-hand hits and bonus damage grant none. Slice and Dice needs points
-and spends them all for attack haste. Judgement leaves the seal active.
+and spends them all for attack haste. Learned Eviscerate passively adds its attack
+against the current melee target, using those same spent points. Slice and Dice can
+still be used without a target. Judgement leaves the seal active.
 All four class kits are available, including their actives and passives. The spell book
 describes their provisional mechanics; passives can be focused and inspected but cannot
 be cast or assigned. New catalogue data lives in
@@ -132,9 +141,11 @@ profiles; saved actors keep their recorded stats. The saved
 [October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
 simulation setup and two-handed/dual-wield comparisons for future class tuning.
 
-Current saves are `demo` revision 19, with gear stats rebuilt from equipment on load.
-Revision 18 and older saves are incompatible and left unchanged; start a fresh game.
-The revision changes the stalker schedule. Victory requires defeating all present stalkers.
+Current saves are `demo` revision 21, with gear stats rebuilt from equipment on load.
+Revision 20 and older saves are incompatible and left unchanged; start a fresh game.
+This revision changes Eviscerate from an assignable active into a passive; the previous
+revision also changed class unlock thresholds, including increases for learned skills.
+Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

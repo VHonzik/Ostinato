@@ -27,7 +27,7 @@ func before_each() -> void:
 	_game.start_new_game()
 	_game.world.hero.rage = 100
 	_game.world.hero.warrior_progress = 100
-	_game.world.hero.learn_skill(SkillRank.catalog(&"battle_shout_1"))
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"battle_shout_1"))
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -52,8 +52,8 @@ func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spen
 	_game.world.hero.selected_class = &"Rogue"
 	_game.refresh_view()
 	assert_false(bar.visible, "Class selection alone does not teach the combo passive.")
-	_game.world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
-	_game.world.hero.learn_skill(SkillRank.catalog(&"slice_and_dice_1"))
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"slice_and_dice_1"))
 	_game.world.hero.selected_class = &"Warrior"
 	_game.refresh_view()
 	assert_true(bar.visible, "Retained Rogue learning exposes points in every class.")
@@ -80,7 +80,7 @@ func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spen
 
 func test_combo_bar_follows_gameplay_hud_visibility() -> void:
 	var bar := _game.get_node("HUD/ComboPointBar") as Control
-	_game.world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
 	_game.refresh_view()
 	assert_true(bar.visible)
 	_game.menu.open_player()
@@ -178,17 +178,17 @@ func test_key_echo_does_not_advance_time() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_held_movement_waits_two_seconds_then_repeats_each_second_until_release() -> void:
+func test_held_movement_waits_one_second_then_repeats_each_half_second_until_release() -> void:
 	_prepare_held_movement()
 	_send_key(KEY_D, true)
 	_game._process(0.0)
 	assert_eq(_game.world.player_tile, Vector2i(21, 14))
-	_game._process(1.9)
+	_game._process(0.9)
 	assert_eq(_game.world.turn_count, 1)
 	_send_key(KEY_D, true, true)
 	_game._process(0.1)
 	assert_eq(_game.world.player_tile, Vector2i(22, 14))
-	_game._process(0.9)
+	_game._process(0.4)
 	assert_eq(_game.world.turn_count, 2)
 	_game._process(0.1)
 	assert_eq(_game.world.turn_count, 3)
@@ -737,7 +737,7 @@ func test_enemy_spell_target_stays_selected_across_spells_until_it_dies() -> voi
 	world.actors.append_array([near, far])
 	world.hero.add_experience(2700)
 	assert_eq(world.hero.level, 4)
-	assert_true(world.hero.learn_skill(SkillRank.catalog(&"charge_1")))
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"charge_1")))
 	var attack := world.hero.find_skill(&"mortal_strike_1")
 	attack.range_tiles = 7
 	attack.cast_seconds = 2.0
@@ -773,7 +773,7 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	var world := _game.world
 	StarterGear.exchange(world.hero, &"Warrior")
 	world.hero.learned_skills.clear()
-	for skill in SkillRank.starting_skills():
+	for skill in SkillDefinition.starting_skills():
 		world.hero.learn_skill(skill)
 	world.player_tile = Vector2i(30, 33)
 	world.hero.warrior_progress = 39
@@ -799,6 +799,8 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 			button.grab_focus()
 	await _tap_key(KEY_ENTER)
 	assert_not_null(world.hero.find_skill(&"anger_management_1"))
+	assert_eq(_game_viewport.gui_get_focus_owner().get_meta("skill_id"), &"anger_management_1")
+	assert_string_contains(_game.menu._preview.text, "Passive")
 	assert_eq(world.turn_count, 0)
 
 
@@ -981,8 +983,8 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 
 func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
 	var hero := _game.world.hero
-	assert_true(hero.learn_skill(SkillRank.catalog(&"lightning_shield_1")))
-	assert_true(hero.learn_skill(SkillRank.catalog(&"strength_of_earth_totem_1")))
+	assert_true(hero.learn_skill(SkillDefinition.catalog(&"lightning_shield_1")))
+	assert_true(hero.learn_skill(SkillDefinition.catalog(&"strength_of_earth_totem_1")))
 	await _tap_key(KEY_K)
 	var shout :=  _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
 		return button.text.begins_with("Battle Shout"))[0] as Button
@@ -1028,6 +1030,73 @@ func test_player_menu_inventory_entry_shows_binding_and_opens_without_time() -> 
 	assert_eq((_game.get_node("HUD/PlayerMenu/Buttons/Inventory") as Button).text, "Inventory (B)")
 	_game._open_player_menu()
 	assert_eq(_game.menu._buttons[2].text, "Inventory (B)")
+
+
+func test_quest_tracker_updates_multiple_objectives_and_removes_hand_ins_and_abandoned_quests() -> void:
+	var tracker := _game.get_node("HUD/QuestTracker") as Control
+	var text := tracker.get_node("Text") as Label
+	assert_false(tracker.visible, "No quests are tracked before accepting them.")
+	var world := _game.world
+	var marshal := world.actors[0]
+	world.player_tile = marshal.tile + Vector2i.DOWN
+	world.hero.level = 2
+	assert_true(QuestRules.accept(world, "valley_mine", marshal))
+	assert_true(QuestRules.accept(world, "valley_camp", marshal))
+	_game.refresh_view()
+	assert_true(tracker.visible)
+	assert_string_contains(text.text, "Into Echo Ridge")
+	assert_string_contains(text.text, "Kobold Worker: 0/2")
+	assert_string_contains(text.text, "The Northern Camp")
+	QuestRules.event(world, "kill", "257")
+	QuestRules.event(world, "kill", "80")
+	_game.refresh_view()
+	assert_string_contains(text.text, "Kobold Worker: 1/2")
+	assert_string_contains(text.text, "Kobold Laborer: Completed")
+	assert_false(text.text.contains("Into Echo Ridge — Completed"))
+	QuestRules.event(world, "kill", "257")
+	_game.refresh_view()
+	assert_string_contains(text.text, "Into Echo Ridge — Completed")
+	assert_string_contains(text.text, "Kobold Worker: Completed")
+	assert_true(QuestRules.hand_in(world, "valley_mine", marshal))
+	_game.refresh_view()
+	assert_false(text.text.contains("Into Echo Ridge"))
+	assert_string_contains(text.text, "The Northern Camp")
+	assert_true(QuestRules.abandon(world, "valley_camp"))
+	_game.refresh_view()
+	assert_false(tracker.visible)
+	assert_eq(text.text, "")
+	assert_eq(world.turn_count, 0, "Tracking and quest transactions spend no turns.")
+
+
+func test_quest_tracker_restores_progress_follows_hud_visibility_and_clears_on_death() -> void:
+	var tracker := _game.get_node("HUD/QuestTracker") as Control
+	var text := tracker.get_node("Text") as Label
+	var world := _game.world
+	var marshal := world.actors[0]
+	world.player_tile = marshal.tile + Vector2i.DOWN
+	assert_true(QuestRules.accept(world, "valley_patrol", marshal))
+	QuestRules.event(world, "kill", "299")
+	QuestRules.event(world, "kill", "299")
+	var restored := SaveCodec.restore(SaveCodec.capture(_game.session), true)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	_game.session.restore(restored, _game.session.seed_value, _game.session.loop_count)
+	assert_true(tracker.visible)
+	assert_string_contains(text.text, "Young Wolf: 2/8")
+	_game.menu.open_player()
+	assert_false(tracker.visible)
+	_game.menu.close()
+	assert_true(tracker.visible)
+	await _tap_key(KEY_K)
+	assert_false(tracker.visible)
+	await _tap_key(KEY_ESCAPE)
+	assert_true(tracker.visible)
+	_game.world.hero.health = 0
+	_game.refresh_view()
+	assert_false(tracker.visible)
+	assert_eq(text.text, "", "Quest state belongs to the previous Loop.")
+	assert_eq(_game.world.turn_count, 0)
 
 
 func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_time() -> void:
@@ -1141,7 +1210,7 @@ func test_last_boss_death_during_item_turn_preserves_completion_menu() -> void:
 	stalker.melee.hit = 100
 	stalker.melee.critical = 0
 	world.hero.facing = Vector2i.LEFT
-	world.hero.learn_skill(SkillRank.catalog(&"lightning_shield_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"lightning_shield_1"))
 	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
 	assert_true(InventoryRules.add(world.hero.inventory, ItemData.instance(118)))
 	_game.menu.open_inventory()
@@ -1307,15 +1376,15 @@ func test_hotbar_rebinding_changes_activation_and_labels_but_not_slot_assignment
 	assert_eq(_game.world.turn_count, 1)
 
 
-func test_hotbar_drop_validates_rank_lock_and_world() -> void:
+func test_hotbar_drop_validates_skill_lock_and_world() -> void:
 	await _tap_key(KEY_K)
 	var bar := _game.hotbar_panel
-	var rank := _game.world.hero.find_skill(&"mortal_strike_1")
-	var data := {"skill_id": rank.id, "hero": _game.world.hero}
+	var skill := _game.world.hero.find_skill(&"mortal_strike_1")
+	var data := {"skill_id": skill.id, "hero": _game.world.hero}
 	assert_true(bar._can_drop(Vector2.ZERO, data, 0))
 	bar._drop(Vector2.ZERO, data, 0)
-	assert_eq(_game.world.hotbar[0], rank.id)
-	assert_string_contains(bar.slots[0].tooltip_text, "Rank 1")
+	assert_eq(_game.world.hotbar[0], skill.id)
+	assert_string_contains(bar.slots[0].tooltip_text, "Mortal Strike")
 	assert_string_contains(bar.slots[0].tooltip_text, "30 rage")
 	assert_string_contains(bar.slots[0].tooltip_text, "damage")
 	assert_false(bar._can_drop(Vector2.ZERO, {"skill_id": &"fireball_2", "hero": _game.world.hero}, 0))
@@ -1334,7 +1403,7 @@ func test_hotbar_drop_validates_rank_lock_and_world() -> void:
 	])
 
 
-func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank() -> void:
+func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_skill() -> void:
 	await _tap_key(KEY_K)
 	var button := _game.hero_panel._skill_buttons.filter(func(skill: Button) -> bool:
 		return skill.get_meta("skill_id") == &"battle_shout_1")[0] as SkillButton
@@ -1357,7 +1426,7 @@ func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank()
 	motion.button_mask = MOUSE_BUTTON_MASK_LEFT
 	_viewport.push_input(motion, true)
 	await get_tree().process_frame
-	assert_true(_game_viewport.gui_is_dragging(), "Godot started a native rank drag.")
+	assert_true(_game_viewport.gui_is_dragging(), "Godot started a native skill drag.")
 	motion.relative = destination - motion.position
 	motion.position = destination
 	motion.global_position = destination
@@ -1378,18 +1447,18 @@ func test_native_drag_from_spell_book_and_mouse_assignment_activate_exact_rank()
 	assert_lt(_game.world.hero.rage, HeroState.MAX_RAGE)
 
 
-func test_tab_to_assign_keeps_first_rank_and_details_can_scroll_with_keyboard() -> void:
+func test_tab_to_assign_keeps_first_skill_and_details_can_scroll_with_keyboard() -> void:
 	_game.world.hero.level = 10
-	for identifier in SkillRank.all_ranks():
-		_game.world.hero.learn_skill(SkillRank.catalog(StringName(identifier)))
+	for identifier in SkillDefinition.all_skills():
+		_game.world.hero.learn_skill(SkillDefinition.catalog(StringName(identifier)))
 	await _tap_key(KEY_K)
 	await _tap_key(KEY_TAB)
 	assert_same(_game_viewport.gui_get_focus_owner(), _game.hero_panel._assign)
 	await _tap_key(KEY_ENTER)
 	await _tap_key(KEY_2)
-	assert_eq(_game.world.hotbar[1], &"mortal_strike_1", "Tab to Assign must preserve the selected rank.")
+	assert_eq(_game.world.hotbar[1], &"mortal_strike_1", "Tab to Assign must preserve the selected skill.")
 	var details := _game.hero_panel._details
-	details.text = "Long rank effect details.\n".repeat(20)
+	details.text = "Long skill effect details.\n".repeat(20)
 	details.grab_focus()
 	await get_tree().process_frame
 	await _tap_key(KEY_S)
@@ -1672,7 +1741,7 @@ func test_poison_hotbar_keyboard_selects_hands_and_single_weapon_casts_directly(
 	world.actors.clear()
 	world.hero.equipment.weapons = ItemData.instance(2224)
 	for identifier in PoisonRules.COATINGS:
-		world.hero.learn_skill(SkillRank.catalog(identifier))
+		world.hero.learn_skill(SkillDefinition.catalog(identifier))
 	world.hero.refresh_stats()
 	world.hotbar[0] = &"deadly_poison_1"
 	world.hotbar[1] = &"instant_poison_1"

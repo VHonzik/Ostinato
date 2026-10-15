@@ -48,7 +48,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Off-hand hits, procs, buffs and misses grant no points.
   Points persist across targets and encounters and reset on death. Slice and Dice
   requires points and deliberately spends all held points to extend its attack haste.
-  Eviscerate also deliberately spends all held points; finisher refunds follow spending.
+  Learned Eviscerate passively adds its attack to Slice and Dice against the current
+  melee target. Slice and Dice remains usable without a target; finisher refunds
+  happen once after spending.
   Judgement should cost no rage or world turn, with lower damage and a longer cooldown;
   that rework is postponed. It leaves Seal of Command active. Execute and Judgement
   currently do not spend points; optional empowerment remains a future choice.
@@ -65,6 +67,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   abilities from other classes remain usable but award no class XP. Count all uses
   of the selected class's abilities for now, without meaningful-use or anti-spam
   restrictions. Class XP accumulates toward thresholds and is not spent on unlocks.
+  Aim for roughly five completed Loops to learn a class through ordinary selected-class
+  play. Introduce its core attack early, then spread active and passive unlocks through
+  the path; do not require learning earlier skills to train a later eligible skill.
   Keep the current trainer structure: visit
   the matching trainer to learn eligible abilities, which become usable immediately
   and remain learned across death. Character XP comes from kills and quests and resets.

@@ -199,7 +199,7 @@ func test_ambidexterity_boosts_offhand_damage_across_classes_without_changing_ma
 	offhand.damage_max = 10
 	offhand.attack_power = 0
 	var ordinary_damage := MeleeRules.damage(offhand, target, &"hit", 0.5)
-	assert_true(hero.learn_skill(SkillRank.catalog(&"ambidexterity_1")))
+	assert_true(hero.learn_skill(SkillDefinition.catalog(&"ambidexterity_1")))
 	for category in ClassSkillData.PLAYABLE_CLASSES:
 		hero.selected_class = category
 		hero.refresh_stats()
