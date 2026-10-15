@@ -67,7 +67,10 @@ are banked out of range and target changes keep the weapon's remaining delay.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
 XP, gold, class XP, Death trigger, and Kill stalker for quick experiments. The stalker
-arrival schedule lives in the valley data; killing one ends the demo. Death resets the attempt, preserving
+arrival schedule lives in the valley data. The first arrival kills the gate guard early
+enough for a direct route to witness it. Defeating every present stalker immediately wins;
+escape beyond the valley is the story outcome, with no gate lock or crossing action.
+Death resets the attempt, preserving
 learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
 progression log notification to unlock Battle Shout, Anger Management, Charge or Execute;
 unlocking keeps your points. Newly learned actives fill empty hotbar slots; use the spell book to rearrange them.
@@ -129,8 +132,9 @@ profiles; saved actors keep their recorded stats. The saved
 [October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
 simulation setup and two-handed/dual-wield comparisons for future class tuning.
 
-Current saves are `demo` revision 18, with gear stats rebuilt from equipment on load.
-Revision 17 and older saves are incompatible and left unchanged; start a fresh game.
+Current saves are `demo` revision 19, with gear stats rebuilt from equipment on load.
+Revision 18 and older saves are incompatible and left unchanged; start a fresh game.
+The revision changes the stalker schedule. Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.

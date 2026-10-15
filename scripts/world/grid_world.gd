@@ -483,16 +483,26 @@ func is_terminal() -> bool:
 	return attempt_state != AttemptState.ACTIVE or is_player_dead()
 
 
-## Latch the first terminal effect; victory wins simultaneous deaths.
+func all_stalkers_defeated() -> bool:
+	var present := false
+	for actor in actors:
+		if not actor.stalker:
+			continue
+		present = true
+		if actor.health > 0:
+			return false
+	return present
+
+
+## Defeating the last present stalker ends the attempt; escape is the story outcome.
 func check_terminal() -> bool:
 	if attempt_state != AttemptState.ACTIVE:
 		return true
-	for actor in actors:
-		if actor.stalker and actor.health <= 0:
-			attempt_state = AttemptState.COMPLETED
-			break
-	if attempt_state == AttemptState.ACTIVE and is_player_dead():
+	if is_player_dead():
 		attempt_state = AttemptState.PLAYER_DIED
+	elif all_stalkers_defeated():
+		attempt_state = AttemptState.COMPLETED
+		add_message("You leave Northshire behind and step onto the road beyond the valley.")
 	if attempt_state == AttemptState.ACTIVE:
 		return false
 	cancel_melee()

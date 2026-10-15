@@ -199,14 +199,14 @@ func test_invalid_saved_deadlines_counts_and_identities_are_rejected() -> void:
 	assert_null(SaveCodec.restore(early, true))
 
 
-func test_each_of_five_stalkers_is_a_terminal_target_and_pending_arrivals_stop() -> void:
+func test_nonfinal_stalker_kill_keeps_playing_but_final_kill_stops_pending_arrivals() -> void:
 	for target_index in range(5):
 		var world := _world()
 		world.turn_count = 695
 		world._arrive_stalker()
 		var stalkers := _stalkers(world)
 		SpellEffects.damage(world, stalkers[target_index], 10000, "Victory fixture")
-		assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+		assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
 		for index in range(5):
 			assert_eq(stalkers[index].alive, index != target_index)
 	var pending := _world()

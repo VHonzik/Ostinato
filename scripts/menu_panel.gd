@@ -94,7 +94,8 @@ func open_main() -> void:
 
 func open_completion() -> void:
 	active_game = false
-	_begin("completion", "Thanks for playing", Callable())
+	_begin("completion", "Beyond the valley", Callable())
+	_label("The last stalker falls. You leave Northshire behind and escape into the world beyond.")
 	_button("Load", open_slots)
 	_button("Main Menu", func() -> void:
 		return_to_menu_requested.emit()

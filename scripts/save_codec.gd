@@ -1,7 +1,7 @@
 class_name SaveCodec
 extends RefCounted
 
-## Explicit demo revision-18 fields; JSON keeps RNG int64 values as decimal strings.
+## Explicit demo revision-19 fields; JSON keeps RNG int64 values as decimal strings.
 const WORLD_FIELDS: Array[String] = [
 	"bounds", "player_tile", "movement_speed", "movement_credit", "turn_count",
 	"global_cooldown_until", "stalker_schedule", "stalkers_arrived",
@@ -352,7 +352,7 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 		for skill in SkillRank.development_skills():
 			if world.hero.find_skill(skill.id) == null:
 				world.hero.learned_skills.append(skill)
-	# Never resume a snapshot containing a defeated stalker as a playable attempt.
+	# Rebuild terminal state; a defeated group of stalkers must never resume play.
 	world.check_terminal()
 	return world
 

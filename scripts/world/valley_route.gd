@@ -5,7 +5,7 @@ extends RefCounted
 const BOUNDS := Rect2i(0, 0, 84, 82)
 const SPAWN := Vector2i(30, 57)
 const MARSHAL := Vector2i(30, 52)
-const STALKER_DEADLINES: Array[int] = [420, 620, 800, 960, 1100]
+const STALKER_DEADLINES: Array[int] = [15, 800, 980, 1140, 1280]
 const STALKER_ENTRIES: Array[Vector2i] = [
 	Vector2i(12, 63), Vector2i(11, 63), Vector2i(13, 63),
 	Vector2i(12, 64), Vector2i(13, 64),

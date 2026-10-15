@@ -726,16 +726,17 @@ func test_divine_shield_expires_before_enemy_hits_on_the_expiry_boundary() -> vo
 	assert_lt(world.hero.health, health, "Four protected enemy turns include the cast turn.")
 
 
-func test_whirlwind_stops_after_terminal_boss_death_without_hitting_later_actors() -> void:
+func test_whirlwind_continues_after_nonfinal_boss_death_to_later_actors() -> void:
 	var world := _world()
 	_learn(world, [&"whirlwind_1", &"sweeping_strikes_1"])
 	var boss := _enemy(world)
 	boss.stalker = true
 	boss.health = 1
 	var later := _enemy(world, Vector2i(7, 8))
+	later.stalker = true
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
-	assert_eq(later.health, later.max_health)
+	assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
+	assert_lt(later.health, later.max_health)
 	assert_eq(world.turn_count, 1)
 
 

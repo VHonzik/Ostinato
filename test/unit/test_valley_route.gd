@@ -97,7 +97,7 @@ func test_route_save_preserves_art_dead_wolves_quest_and_seeded_continuation() -
 		restored.wait_turn()
 	assert_eq(JSON.stringify(SaveCodec.capture(copy)), JSON.stringify(SaveCodec.capture(session)))
 	assert_false(_actor(restored, 299).alive, "No wolf respawn after thirty turns.")
-	assert_eq(restored.stalkers_arrived, 0, "No early arrival interrupts the first patrol.")
+	assert_eq(restored.stalkers_arrived, 1, "The gate encounter happens early without reaching the patrol.")
 
 
 func test_death_rebuilds_the_same_route_with_learning_and_fresh_encounters() -> void:

@@ -2,247 +2,157 @@ extends GutTest
 
 
 func _world() -> GridWorld:
-	var world := GridWorld.new(Rect2i(0, 0, 60, 30), Vector2i(10, 10), 97)
-	world.hero.rage = 100
-	world.hero.melee.hit = 100
+	var world := ValleyRoute.create_world(97, true)
+	world.turn_count = ValleyRoute.STALKER_DEADLINES[0]
+	world._arrive_stalker()
 	return world
 
 
-func _enemy(world: GridWorld, tile: Vector2i, stalker: bool = true) -> GridActor:
-	var actor := GridActor.new(tile)
-	actor.title = "Stalker" if stalker else "Wolf"
-	actor.stalker = stalker
-	actor.relationship = GridActor.Relationship.HOSTILE
-	actor.aggro_range = 0
-	actor.health = 1
-	actor.melee.damage_min = 1
-	actor.melee.damage_max = 1
-	actor.melee.attack_power = 0
-	actor.melee.dodge = 0
-	world.actors.append(actor)
-	return actor
-
-
-func _cast(world: GridWorld, identifier: StringName, target: GridActor = null) -> void:
-	if world.hero.find_skill(identifier) == null:
-		world.hero.learned_skills.append(SkillRank.catalog(identifier))
-	assert_true(world.cast_skill(identifier, target), identifier)
-	for boundary in range(10):
-		if world.pending_skill == null:
-			break
-		world.continue_cast()
+func _stalkers(world: GridWorld) -> Array[GridActor]:
+	return world.actors.filter(func(actor: GridActor) -> bool: return actor.stalker)
 
 
 func _assert_complete(world: GridWorld) -> void:
 	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_false(world.can_save())
 	assert_null(world.pending_skill)
 	assert_null(world.pending_melee)
-	assert_false(world.can_save())
 	var turn := world.turn_count
-	var random_state := world.combat_random.state
 	var tile := world.player_tile
+	var random_state := world.combat_random.state
 	world.wait_turn()
 	assert_false(world.move_player(Vector2i.LEFT))
 	assert_false(world.cast_skill(&"practice_1"))
-	assert_false(world.continue_cast())
-	assert_false(world.continue_melee())
 	world._finish_turn()
-	assert_eq(world.turn_count, turn, "Repeated callbacks cannot advance completed time.")
-	assert_eq(world.combat_random.state, random_state)
+	world._arrive_stalker()
+	assert_eq(world.turn_count, turn)
 	assert_eq(world.player_tile, tile)
+	assert_eq(world.combat_random.state, random_state)
 
 
-func test_melee_victory_stops_following_actors_and_consumes_one_boundary() -> void:
-	var world := _world()
-	var stalker := _enemy(world, Vector2i(11, 10))
-	var later := _enemy(world, Vector2i(10, 11), false)
-	later.engaged = true
-	later.melee.damage_min = 1000
-	later.melee.damage_max = 1000
-	assert_true(world.request_melee(stalker))
-	assert_false(stalker.alive)
-	assert_eq(world.hero.health, world.hero.max_health)
-	assert_eq(world.turn_count, 1)
-	_assert_complete(world)
-
-
-func test_direct_active_attacks_complete_and_cancel_remaining_cast() -> void:
-	for identifier: StringName in [&"mortal_strike_1", &"earth_shock_1"]:
-		var world := _world()
-		var stalker := _enemy(world, Vector2i(11, 10))
-		stalker.stunned_until = 100
-		_cast(world, identifier, stalker)
-		assert_false(stalker.alive, identifier)
-		_assert_complete(world)
-
-
-func test_area_damage_stops_at_first_stalker_in_saved_actor_order() -> void:
-	var world := _world()
-	var first := _enemy(world, Vector2i(9, 10), false)
-	var stalker := _enemy(world, Vector2i(11, 10))
-	var later := _enemy(world, Vector2i(10, 11), false)
-	_cast(world, &"whirlwind_1")
-	assert_false(first.alive, "Earlier ordinary target resolves normally.")
-	assert_false(stalker.alive)
-	assert_true(later.alive, "No later area target is damaged.")
-	assert_eq(later.health, 1)
-	_assert_complete(world)
-
-
-func test_lightning_shield_wins_before_next_attacker() -> void:
-	for identifier: StringName in [&"lightning_shield_1"]:
-		var world := _world()
-		var stalker := _enemy(world, Vector2i(11, 10))
-		stalker.engaged = true
-		stalker.melee.hit = 100
-		# Rear attacks remove player avoidance even after aura refresh rebuilds stats.
-		world.hero.facing = Vector2i.LEFT
-		world.hero.buffs[identifier] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
-		var later := _enemy(world, Vector2i(10, 11), false)
-		later.engaged = true
-		later.melee.hit = 100
-		later.melee.damage_min = 1000
-		later.melee.damage_max = 1000
-		world.wait_turn()
-		assert_false(stalker.alive, identifier)
-		assert_gt(world.hero.health, 0)
-		_assert_complete(world)
-
-
-func test_first_lethal_player_effect_stops_retaliation_and_later_victory() -> void:
-	var world := _world()
-	var stalker := _enemy(world, Vector2i(11, 10))
-	stalker.engaged = true
-	stalker.melee.hit = 100
-	stalker.melee.damage_min = 1000
-	stalker.melee.damage_max = 1000
-	world.hero.facing = Vector2i.LEFT
-	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
+func test_no_stalker_arrival_is_not_victory() -> void:
+	var world := ValleyRoute.create_world(97, true)
+	assert_false(world.all_stalkers_defeated())
+	assert_false(world.check_terminal())
 	world.wait_turn()
+	assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
+
+
+func test_defeating_only_present_stalker_wins_immediately_without_moving() -> void:
+	var world := _world()
+	var tile := world.player_tile
+	assert_true(world.cast_skill(&"kill_stalker_1"))
+	assert_eq(world.turn_count, 16)
+	assert_eq(world.player_tile, tile)
+	assert_eq(world.stalkers_arrived, 1, "Future copies do not prevent victory.")
+	_assert_complete(world)
+
+
+func test_every_present_stalker_must_die_regardless_of_kill_order() -> void:
+	for first_index in [0, 1]:
+		var world := _world()
+		world.turn_count = ValleyRoute.STALKER_DEADLINES[1]
+		world._arrive_stalker()
+		var stalkers := _stalkers(world)
+		SpellEffects.damage(world, stalkers[first_index], 10000, "Victory fixture")
+		assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
+		assert_false(world.all_stalkers_defeated())
+		SpellEffects.damage(world, stalkers[1 - first_index], 10000, "Victory fixture")
+		assert_true(world.all_stalkers_defeated())
+		_assert_complete(world)
+
+
+func test_last_kill_stops_same_turn_reinforcement_and_later_enemy_response() -> void:
+	var world := _world()
+	world.turn_count = ValleyRoute.STALKER_DEADLINES[1] - 1
+	var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	enemy.engaged = true
+	enemy.melee.hit = 1000
+	enemy.melee.damage_min = 10000
+	enemy.melee.damage_max = 10000
+	world.actors.append(enemy)
+	assert_true(world.cast_skill(&"kill_stalker_1"))
+	assert_eq(world.turn_count, ValleyRoute.STALKER_DEADLINES[1])
+	assert_eq(world.stalkers_arrived, 1)
+	assert_eq(world.hero.health, world.hero.max_health)
+	_assert_complete(world)
+
+
+func test_area_attack_stops_after_last_present_stalker_dies() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 15, 15), Vector2i(7, 7), 97, false)
+	world.hero.learned_skills.append(SkillRank.catalog(&"whirlwind_1"))
+	world.hero.rage = 100
+	world.hero.melee.hit = 1000
+	for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]:
+		var actor := GridActor.new(world.player_tile + offset)
+		actor.relationship = GridActor.Relationship.HOSTILE
+		actor.health = 1
+		actor.stalker = offset != Vector2i.DOWN
+		actor.melee.dodge = 0
+		world.actors.append(actor)
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_false(world.actors[0].alive)
+	assert_false(world.actors[1].alive)
+	assert_true(world.actors[2].alive, "The last stalker ends the action before later targets.")
+	_assert_complete(world)
+
+
+func test_gate_has_no_lock_or_crossing_win_condition() -> void:
+	var world := _world()
+	# Keep the stalker out of this movement test; its presence still prevents victory.
+	_stalkers(world)[0].tile = Vector2i(70, 65)
+	_stalkers(world)[0].home_tile = Vector2i(70, 65)
+	for x in range(11, 14):
+		world.player_tile = Vector2i(x, 64)
+		assert_true(world.move_player(Vector2i.DOWN))
+		assert_true(world.move_player(Vector2i.DOWN))
+		assert_eq(world.player_tile, Vector2i(x, 66))
+		assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
+
+
+func test_player_death_cannot_be_overridden_by_simultaneous_or_later_stalker_death() -> void:
+	var world := _world()
+	world.hero.health = 0
+	var boss := _stalkers(world)[0]
+	boss.health = 0
+	world._check_npc_death(boss)
 	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
-	assert_true(stalker.alive)
-	assert_eq(stalker.health, 1)
-	SpellEffects.damage(world, stalker, 100, "Late callback")
-	assert_true(stalker.alive)
+	assert_true(world.check_terminal())
+	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
 	var session := GameSession.new()
 	session.world = world
 	assert_true(session.restart_after_death())
 	assert_eq(session.loop_count, 2)
-	assert_false(session.restart_after_death(), "The same death cannot reset twice.")
-	assert_eq(session.world.attempt_state, GridWorld.AttemptState.ACTIVE)
+	assert_false(session.world.all_stalkers_defeated())
+	assert_eq(session.world.stalkers_arrived, 0)
 
 
-func test_one_effect_killing_player_and_any_stalker_wins_before_xp_can_revive() -> void:
-	var world := _world()
-	_enemy(world, Vector2i(15, 10))
-	var second := _enemy(world, Vector2i(16, 10))
-	world.hero.experience = 399
-	# Controlled atomic effect: both health changes precede its one terminal checkpoint.
-	world.hero.health = 0
-	second.health = 0
-	world._check_npc_death(second)
-	assert_eq(world.hero.health, 0)
-	assert_eq(world.hero.level, 1)
-	_assert_complete(world)
-	var session := GameSession.new()
-	session.world = world
-	assert_false(session.restart_after_death())
-	assert_eq(session.loop_count, 1)
-	world._check_npc_death(second)
-	assert_true(world.check_terminal())
-	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
-
-
-func test_latched_player_death_cannot_be_replaced_by_a_later_stalker_death() -> void:
-	var world := _world()
-	var stalker := _enemy(world, Vector2i(11, 10))
-	world.hero.health = 0
-	assert_true(world.check_terminal())
-	stalker.health = 0
-	world._check_npc_death(stalker)
-	assert_true(world.check_terminal())
-	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
-
-
-func test_ordinary_death_keeps_xp_loot_and_later_turn_stages() -> void:
-	var world := _world()
-	var wolf := _enemy(world, Vector2i(11, 10), false)
-	wolf.loot_table = 299
-	assert_true(world.request_melee(wolf))
-	assert_false(wolf.alive)
-	assert_eq(world.hero.experience, 50)
-	assert_true(wolf.loot_assigned)
-	assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
-	world.wait_turn()
-	assert_eq(world.turn_count, 2)
-
-
-func test_replaced_world_rejects_stale_casts_and_time_callbacks() -> void:
-	var session := GameSession.new()
-	session.new_game(97)
-	var previous := session.world
-	session.new_game(98)
-	previous.wait_turn()
-	assert_false(previous.cast_skill(&"practice_1"))
-	assert_false(previous.move_player(Vector2i.LEFT))
-	assert_eq(previous.turn_count, 0)
-	assert_eq(session.world.turn_count, 0)
-	assert_eq(previous.attempt_state, GridWorld.AttemptState.DISCARDED)
-
-
-func test_development_kill_stalker_rejects_before_arrival_without_changing_simulation() -> void:
-	var session := GameSession.new()
-	session.new_game(97)
-	var world := session.world
-	world.movement_credit = 0.75
-	world.hero.casting_credit = 0.4
-	var before := SaveCodec.capture(session)
+func test_development_kill_stalker_rejects_before_arrival_without_spending_time() -> void:
+	var world := ValleyRoute.create_world(97, true)
 	assert_false(world.cast_skill(&"kill_stalker_1"))
-	assert_string_contains(world.messages[-1], "no living stalker")
-	var after := SaveCodec.capture(session)
-	# The only permitted change is the explicit feedback, not a turn or a new actor.
-	before.erase("messages")
-	after.erase("messages")
-	assert_eq(after, before)
-	assert_null(world.pending_skill)
-	for boundary in range(ValleyRoute.STALKER_DEADLINES[0]):
-		world.wait_turn()
-	assert_true(world.stalkers_arrived > 0, "Rejected use does not skip or delay the schedule.")
-	assert_true(world.cast_skill(&"kill_stalker_1"))
-	assert_eq(world.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
-	assert_eq(session.loop_count, 1)
-	_assert_complete(world)
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.stalkers_arrived, 0)
+	assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)
 
 
-func test_development_kill_stalker_is_guaranteed_and_stops_at_first_live_stalker() -> void:
-	var world := _world()
-	var ordinary := _enemy(world, Vector2i(11, 10), false)
-	ordinary.engaged = true
-	ordinary.melee.damage_min = 1000
-	ordinary.melee.damage_max = 1000
-	var first := _enemy(world, Vector2i(50, 20))
-	first.max_health = 494
-	first.health = 494
-	first.melee.level = 20
-	var later := _enemy(world, Vector2i(12, 10))
-	world.sight_blockers[Vector2i(11, 10)] = true
-	assert_false(world.has_sight(world.player_tile, first.tile))
-	world.hero.casting_credit = 0.4
-	world.movement_credit = 0.75
-	assert_true(world.cast_skill(&"kill_stalker_1"))
-	assert_false(first.alive)
-	assert_eq(first.health, 0)
-	assert_false(first.engaged)
-	assert_false(first.loot_assigned, "Uses stalker death processing, without ordinary loot.")
-	assert_true(later.alive, "Actor order wins over the nearer stalker.")
-	assert_eq(later.health, 1)
-	assert_true(ordinary.alive)
-	assert_eq(ordinary.health, 1)
-	assert_eq(world.hero.health, world.hero.max_health, "No later NPC phase attacks.")
-	assert_eq(world.hero.experience, 0)
-	assert_eq(world.hero.casting_credit, 0.4)
-	assert_eq(world.movement_credit, 0.75)
-	assert_eq(world.turn_count, 1)
-	assert_string_contains("\n".join(world.messages), "Kill stalker -> Stalker: 494 damage.")
-	assert_false(world.cast_skill(&"kill_stalker_1"), "A repeated activation cannot advance time.")
-	_assert_complete(world)
+func test_beeline_witnesses_guard_death_before_passing_the_gate() -> void:
+	for paladin in [false, true]:
+		var world := ValleyRoute.create_world(97, false)
+		if paladin:
+			world.hero.learned_skills.append(SkillRank.catalog(&"pursuit_of_justice_1"))
+		var guard: GridActor
+		for actor in world.actors:
+			if actor.story_guard:
+				guard = actor
+		while world.turn_count < ValleyRoute.STALKER_DEADLINES[0]:
+			var direction := Vector2i(-1, 1) if world.player_tile.y < 64 else Vector2i.LEFT
+			if not world.move_player(direction):
+				world.wait_turn()
+		assert_false(guard.alive)
+		assert_eq(guard.died_on_turn, 15)
+		assert_eq(world.stalkers_arrived, 1)
+		assert_lte(world.tile_distance(world.player_tile, guard.tile), 5)
+		assert_true(world.has_sight(world.player_tile, guard.tile))
+		assert_lt(world.player_tile.y, guard.tile.y + 2)
+		assert_eq(world.attempt_state, GridWorld.AttemptState.ACTIVE)

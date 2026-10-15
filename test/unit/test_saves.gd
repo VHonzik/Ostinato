@@ -103,7 +103,7 @@ func test_damage_is_preserved_byte_for_byte_and_no_partial_state_is_loaded() -> 
 
 
 func test_unsupported_schema_stays_unchanged() -> void:
-	for revision in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, SaveStore.REVISION + 1]:
+	for revision in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, SaveStore.REVISION + 1]:
 		assert_true(_saves.save_slot(_session, 1, true), _saves.last_error)
 		var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))
 		record.revision = revision
@@ -180,11 +180,9 @@ func test_completion_cannot_overwrite_or_create_saves_and_earlier_save_resumes()
 	assert_true(_saves.save_slot(_session, 1), _saves.last_error)
 	var bytes := FileAccess.get_file_as_bytes(_saves.slot_path(1))
 	var ended := _session.world
-	var stalker := GridActor.new(ended.player_tile + Vector2i.RIGHT)
-	stalker.stalker = true
-	stalker.relationship = GridActor.Relationship.HOSTILE
-	ended.actors.append(stalker)
-	SpellEffects.damage(ended, stalker, stalker.health, "Victory fixture")
+	ended.turn_count = ValleyRoute.STALKER_DEADLINES[0]
+	ended._arrive_stalker()
+	assert_true(ended.cast_skill(&"kill_stalker_1"))
 	assert_eq(ended.attempt_state, GridWorld.AttemptState.COMPLETED)
 	assert_false(_saves.save_slot(_session, 1, true))
 	assert_false(_saves.save_slot(_session, 2))
@@ -197,24 +195,42 @@ func test_completion_cannot_overwrite_or_create_saves_and_earlier_save_resumes()
 	_session.world.wait_turn()
 	assert_eq(_session.world.turn_count, 1)
 	ended.wait_turn()
-	assert_eq(ended.turn_count, 0)
+	assert_eq(ended.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 
 
-func test_supported_dead_stalker_snapshot_loads_as_completed() -> void:
-	var actor := GridActor.new(Vector2i(54, 14))
-	actor.stalker = true
-	actor.alive = false
-	actor.health = 0
-	_session.world.actors.append(actor)
-	# A snapshot without a terminal checkpoint must still never resume gameplay.
+func test_save_after_nonfinal_stalker_death_resumes_until_last_stalker_is_defeated() -> void:
+	_session.world.turn_count = ValleyRoute.STALKER_DEADLINES[1]
+	_session.world._arrive_stalker()
+	var actor := _session.world.actors[-2]
+	SpellEffects.damage(_session.world, actor, actor.health, "Escape fixture")
 	var data := SaveCodec.capture(_session)
 	assert_false(data.is_empty())
 	var restored := SaveCodec.restore(data, true)
 	assert_not_null(restored)
+	assert_eq(restored.attempt_state, GridWorld.AttemptState.ACTIVE)
+	assert_true(restored.can_save())
+	assert_false(restored.all_stalkers_defeated())
+	assert_true(restored.cast_skill(&"kill_stalker_1"))
 	assert_eq(restored.attempt_state, GridWorld.AttemptState.COMPLETED)
-	assert_false(restored.can_save())
-	restored.wait_turn()
-	assert_eq(restored.turn_count, 0)
+
+
+func test_saved_position_does_not_win_but_all_dead_stalkers_restore_as_terminal() -> void:
+	var data := SaveCodec.capture(_session)
+	data.world.player_tile = [12, 66]
+	var outside := SaveCodec.restore(data, true)
+	assert_not_null(outside)
+	if outside != null:
+		assert_eq(outside.attempt_state, GridWorld.AttemptState.ACTIVE)
+	_session.world.turn_count = ValleyRoute.STALKER_DEADLINES[0]
+	_session.world._arrive_stalker()
+	data = SaveCodec.capture(_session)
+	data.actors[-1].state.health = 0
+	data.actors[-1].state.alive = false
+	var escaped := SaveCodec.restore(data, true)
+	assert_not_null(escaped)
+	if escaped != null:
+		assert_eq(escaped.attempt_state, GridWorld.AttemptState.COMPLETED)
+		assert_false(escaped.can_save())
 
 
 func test_supported_save_predating_qa_skill_loads_helper_without_rewriting_slot() -> void:

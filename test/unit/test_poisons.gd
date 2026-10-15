@@ -184,13 +184,14 @@ func test_bonus_attacks_and_failed_hits_do_not_apply_deadly_and_instant_kill_doe
 	assert_true(enemy.debuffs.is_empty())
 
 
-func test_dot_boss_kill_stops_later_dots_and_player_death_prevents_ticks() -> void:
+func test_dot_nonfinal_boss_kill_allows_later_dots_but_player_death_prevents_ticks() -> void:
 	for player_dies in [true, false]:
 		var world := _world()
 		var boss := _enemy(world)
 		boss.stalker = true
 		boss.health = 1
 		var later := _enemy(world, Vector2i(7, 8))
+		later.stalker = true
 		PoisonRules.apply_deadly(world, boss)
 		PoisonRules.apply_deadly(world, later)
 		if player_dies:
@@ -202,8 +203,11 @@ func test_dot_boss_kill_stops_later_dots_and_player_death_prevents_ticks() -> vo
 			boss.melee.damage_max = 100000
 		world.wait_turn()
 		assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED
-			if player_dies else GridWorld.AttemptState.COMPLETED)
-		assert_eq(later.health, later.max_health)
+			if player_dies else GridWorld.AttemptState.ACTIVE)
+		if player_dies:
+			assert_eq(later.health, later.max_health)
+		else:
+			assert_lt(later.health, later.max_health)
 		assert_eq(boss.health, 1 if player_dies else 0)
 
 

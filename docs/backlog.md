@@ -210,7 +210,8 @@ live in game data and the spell book. Human balance and readability review remai
   seeded simulations under ignored `reports/`; keep experiments out of game code.
 - [x] Adopt the simulated stalker combat profile for every arrival and reinforcement;
   preserve the earlier [balance comparisons](../balance/2026-10-14/results.md) for later
-  class tuning. Arrival scheduling and the demo ending remain for the exit-boss slice.
+  class tuning. Early guard death, reinforcements and victory over all present stalkers are implemented;
+  their feel remains for playtesting.
 - [x] Implement the potion, stalker, class-kit and weapon-and-shield tuning pass.
   Give Rogue independent main-hand combo building through Relentless Assault, temper
   stacked damage and cooldown effects, and strengthen developed Warrior and Paladin
@@ -282,10 +283,12 @@ for owner review.
   action/loot orders; revisit chest placement if the deliberate landmarks change.
   Decide ordinary respawning rather than silently adopting the current absence of it.
   Preserve temporary gear/gold/quest resets and avoid unbounded XP farming by accident.
-- [ ] **Exit boss and timed clones:** place the boss at the guarded exit early in every
-  Loop, replacing the delayed first-stalker/demo-kill ending. Add the escape outcome
-  and a fixed global clone schedule; define blocked arrival behavior and whether clones
-  must also be defeated. Tune readable attack patterns, HP/damage and clone pressure
+- [ ] **Exit boss and timed clones playtest:** the first stalker arrives early for the
+  guard-death scene; later copies follow the fixed global schedule. Defeating every present
+  stalker immediately ends the attempt in victory; escape is the story outcome.
+  Blocked arrivals retry without shifting deadlines. Playtest the direct route, then a
+  developed quest/loot route and escape before reinforcements. Tune readable attack
+  patterns, HP/damage and clone pressure
   against finite route XP/gear and roughly three developed classes. Keep exceptional
   earlier wins possible rather than enforcing class or level victory gates.
 - [ ] **Integration, saves and playtesting:** keep learning/mastery and the seed while

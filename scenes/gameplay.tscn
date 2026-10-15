@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
@@ -6,6 +6,8 @@
 [ext_resource type="Script" path="res://scripts/hero/hero_panel.gd" id="3"]
 
 [ext_resource type="Script" path="res://scripts/combat/combat_panel.gd" id="4"]
+
+[ext_resource type="Script" path="res://scripts/hero/combo_point_bar.gd" id="5"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 18
@@ -192,6 +194,19 @@ theme_override_styles/background = SubResource("Style_rage_empty")
 theme_override_styles/fill = SubResource("Style_health_fill")
 show_percentage = false
 
+[node name="ComboPointBar" type="Control" parent="HUD"]
+visible = false
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = -100.0
+offset_right = 100.0
+offset_top = -216.0
+offset_bottom = -196.0
+mouse_filter = 2
+script = ExtResource("5")
+
 [node name="Auras" type="HBoxContainer" parent="HUD"]
 anchor_left = 0.5
 anchor_right = 0.5
@@ -199,8 +214,8 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = -260.0
 offset_right = 260.0
-offset_top = -210.0
-offset_bottom = -190.0
+offset_top = -190.0
+offset_bottom = -170.0
 alignment = 1
 mouse_filter = 2
 theme = SubResource("Theme_fixture")

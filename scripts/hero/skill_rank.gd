@@ -146,7 +146,7 @@ static func development_skills() -> Array[SkillRank]:
 		SkillRank.new(&"death_1", "Death trigger", &"Development", 1, 1,
 			"One turn; 0 rage. Die and begin the next Loop.", Effect.DEATH_NOTICE, true),
 		SkillRank.new(&"kill_stalker_1", "Kill stalker", &"Development", 1, 1,
-			"One turn; 0 rage. Kill the first living stalker anywhere and end the demo. "
+			"One turn; 0 rage. Kill the first living stalker anywhere. Defeat all present stalkers to win. "
 			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
 		SkillRank.new(&"class_points_1", "Gain 30 class XP", &"Development", 1, 1,
 			"One turn; 0 rage. Awards 30 cumulative class XP to the selected class.",

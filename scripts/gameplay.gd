@@ -87,6 +87,7 @@ func _ready() -> void:
 	$HUD/Auras.hide()
 	$HUD/RageBar.hide()
 	$HUD/HealthBar.hide()
+	$HUD/ComboPointBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 
@@ -370,6 +371,7 @@ func _return_to_menu() -> void:
 	$HUD/Auras.hide()
 	$HUD/RageBar.hide()
 	$HUD/HealthBar.hide()
+	$HUD/ComboPointBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 	session.world = null
@@ -429,6 +431,7 @@ func refresh_view() -> void:
 		$HUD/Auras.hide()
 		$HUD/RageBar.hide()
 		$HUD/HealthBar.hide()
+		$HUD/ComboPointBar.hide()
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
@@ -685,6 +688,9 @@ func _refresh_hotbar() -> void:
 	$HUD/RageBar.modulate.a = 0.2 if world.hero.rage == 0 else 0.8
 	$HUD/RageBar/Fill.max_value = HeroState.MAX_RAGE
 	$HUD/RageBar/Fill.value = world.hero.rage
+	$HUD/ComboPointBar.visible = ($HUD/Auras.visible
+		and world.hero.find_skill(&"relentless_assault_1") != null)
+	$HUD/ComboPointBar.refresh(world.hero)
 	var can_edit := _hotbar_can_edit()
 	hotbar_panel.refresh(world, menu.options, can_edit and not hero_panel.visible,
 		can_edit, hero_panel.choosing_slot)

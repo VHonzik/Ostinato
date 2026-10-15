@@ -17,8 +17,11 @@ class abilities, passives, cumulative class mastery and player knowledge. Charac
 level, character XP, equipment, gold, quests and world state belong to the current
 Loop and reset on death. There is no permanent equipment.
 
-A powerful boss guards the exit from early in each Loop; additional copies arrive on
-a fixed global world-turn schedule. Victory means defeating the obstacle and escaping.
+A powerful boss arrives early enough that a player heading directly for the exit sees
+it kill the guard. Its first arrival serves that scene. Additional copies arrive on a
+fixed global world-turn schedule. Defeating every currently present stalker immediately
+wins the game. Escape into the world beyond is the story outcome; there is no gate lock
+or movement requirement. Future copies do not prevent victory.
 The intended route to victory combines roughly three developed classes with near-maximum
 character level for the finite area. Two developed kits should usually struggle against
 the boss, three should offer a viable attempt, and the complete set should give a strong

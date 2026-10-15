@@ -45,6 +45,56 @@ func test_startup_creates_the_playable_world() -> void:
 	assert_gt(_game.world.actors.size(), 0)
 
 
+func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spent() -> void:
+	var bar := _game.get_node("HUD/ComboPointBar") as Control
+	_game.refresh_view()
+	assert_false(bar.visible, "A new Warrior has not unlocked combo points.")
+	_game.world.hero.selected_class = &"Rogue"
+	_game.refresh_view()
+	assert_false(bar.visible, "Class selection alone does not teach the combo passive.")
+	_game.world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	_game.world.hero.learn_skill(SkillRank.catalog(&"slice_and_dice_1"))
+	_game.world.hero.selected_class = &"Warrior"
+	_game.refresh_view()
+	assert_true(bar.visible, "Retained Rogue learning exposes points in every class.")
+	var empty_alpha := bar.modulate.a
+	_game.world.hero.gain_combo_point()
+	_game.refresh_view()
+	assert_gt(bar.modulate.a, empty_alpha)
+	assert_lt(bar.modulate.a, 1.0)
+	assert_true(_game.world.cast_skill(&"slice_and_dice_1"))
+	_game.refresh_view()
+	assert_true(bar.visible)
+	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001, "Spending the last point fades the bar.")
+	_game.world.hero.combo_points = HeroState.MAX_COMBO_POINTS
+	_game.refresh_view()
+	assert_gt(bar.modulate.a, empty_alpha)
+	_game.world.hero.health = 0
+	_game.refresh_view()
+	assert_true(bar.visible, "Death retains the learned passive.")
+	assert_eq(_game.world.hero.combo_points, 0)
+	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
+	_game.start_new_game()
+	assert_false(bar.visible, "A fresh game clears the Rogue unlock.")
+
+
+func test_combo_bar_follows_gameplay_hud_visibility() -> void:
+	var bar := _game.get_node("HUD/ComboPointBar") as Control
+	_game.world.hero.learn_skill(SkillRank.catalog(&"relentless_assault_1"))
+	_game.refresh_view()
+	assert_true(bar.visible)
+	_game.menu.open_player()
+	assert_false(bar.visible)
+	_game.menu.close()
+	assert_true(bar.visible)
+	await _tap_key(KEY_K)
+	assert_false(bar.visible)
+	await _tap_key(KEY_ESCAPE)
+	assert_true(bar.visible)
+	_game._return_to_menu()
+	assert_false(bar.visible)
+
+
 func test_camera_follows_movement_and_remains_centered_at_all_map_edges() -> void:
 	_game.world.move_player(Vector2i.LEFT)
 	_game.refresh_view()
@@ -1039,11 +1089,9 @@ func test_quest_pages_support_keyboard_and_mouse_navigation() -> void:
 
 func _complete_demo_fixture() -> GridWorld:
 	var world := _game.world
-	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
-	stalker.stalker = true
-	stalker.relationship = GridActor.Relationship.HOSTILE
-	world.actors.append(stalker)
-	SpellEffects.damage(world, stalker, stalker.health, "Victory fixture")
+	world.turn_count = ValleyRoute.STALKER_DEADLINES[0]
+	world._arrive_stalker()
+	assert_true(world.cast_skill(&"kill_stalker_1"))
 	_game.refresh_view()
 	return world
 
@@ -1054,7 +1102,7 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert_eq(_game.menu.page, "completion")
-	assert_eq((_game.menu._rows.get_child(0) as Label).text, "Thanks for playing")
+	assert_eq((_game.menu._rows.get_child(0) as Label).text, "Beyond the valley")
 	assert_eq(_game.menu._buttons.size(), 2)
 	assert_eq(_game.menu._buttons[0].text, "Load")
 	assert_eq(_game.menu._buttons[1].text, "Main Menu")
@@ -1073,7 +1121,7 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 	assert_eq(_game.menu.page, "completion")
 	_game._process(1.0)
 	_game._cast_skill(&"battle_shout_1")
-	assert_eq(world.turn_count, 0)
+	assert_eq(world.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 	assert_eq(_game.session.loop_count, 1)
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_ENTER)
@@ -1082,7 +1130,7 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 	assert_false(_game.active_game)
 
 
-func test_completion_from_item_turn_is_not_replaced_by_transaction_back_callback() -> void:
+func test_last_boss_death_during_item_turn_preserves_completion_menu() -> void:
 	var world := _game.world
 	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
 	stalker.stalker = true
@@ -1099,6 +1147,7 @@ func test_completion_from_item_turn_is_not_replaced_by_transaction_back_callback
 	_game.menu.open_inventory()
 	_game.menu._transaction(world.consume_item.bind(0), _game.menu.open_inventory)
 	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_false(stalker.alive)
 	assert_eq(_game.menu.page, "completion")
 	assert_true(_game.menu.visible)
 	await get_tree().process_frame
@@ -1119,13 +1168,13 @@ func test_completion_load_returns_to_saved_game_and_clears_queued_input() -> voi
 	assert_eq(_game.world.turn_count, 0)
 	await _tap_key(KEY_PERIOD)
 	assert_eq(_game.world.turn_count, 1)
-	assert_eq(ended.turn_count, 0)
+	assert_eq(ended.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 	for file in DirAccess.get_files_at(directory):
 		DirAccess.remove_absolute(directory.path_join(file))
 	DirAccess.remove_absolute(directory)
 
 
-func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act() -> void:
+func test_simultaneous_player_and_boss_death_resets_loop_without_completion() -> void:
 	_game.menu.open_inventory()
 	var stale := _game.menu._buttons[-1]
 	var world := _game.world
@@ -1138,14 +1187,14 @@ func test_simultaneous_victory_does_not_reset_and_stale_menu_button_cannot_act()
 	_game.refresh_view()
 	stale.pressed.emit()
 	_game.refresh_view()
-	assert_eq(_game.menu.page, "completion")
-	assert_same(_game.session.world, world)
-	assert_eq(_game.session.loop_count, 1)
+	assert_ne(_game.menu.page, "completion")
+	assert_ne(_game.session.world, world)
+	assert_eq(_game.session.loop_count, 2)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
 
-func test_development_kill_stalker_opens_completion_from_keyboard_and_mouse() -> void:
+func test_development_kill_last_stalker_completes_from_keyboard_and_mouse() -> void:
 	for use_mouse in [false, true]:
 		_game.start_new_game()
 		for boundary in range(ValleyRoute.STALKER_DEADLINES[0]):

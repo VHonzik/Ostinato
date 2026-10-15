@@ -466,12 +466,13 @@ func test_execute_learning_and_hotbar_roundtrip_in_revision_14_and_survive_death
 	assert_true(game.world.can_save())
 
 
-func test_execute_terminal_kill_spends_single_boundary_and_stops_swings_and_enemy_actions() -> void:
+func test_execute_nonfinal_boss_kill_spends_single_boundary_and_later_enemy_can_kill_player() -> void:
 	var world := _world()
 	var stalker := _enemy(world)
 	stalker.health = 1
 	stalker.stalker = true
 	var other := _enemy(world, Vector2i(4, 5))
+	other.stalker = true
 	other.engaged = true
 	other.stunned_until = 0
 	other.melee.hit = 100.0
@@ -482,11 +483,11 @@ func test_execute_terminal_kill_spends_single_boundary_and_stops_swings_and_enem
 	world.hero.swing.remaining = 0.0
 	world.hero.haste = 20.0
 	assert_true(world.cast_skill(&"execute_1", stalker))
-	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
 	assert_eq(world.turn_count, 1)
-	assert_eq(world.hero.rage, 70)
+	assert_eq(world.hero.rage, 73, "Execute spends 30; the later hit grants incoming rage.")
 	assert_eq(world.hero.warrior_progress, 151)
-	assert_eq(world.hero.health, 1)
+	assert_eq(world.hero.health, 0)
 	assert_eq(other.health, 2000)
 	assert_false(world.can_save())
 	assert_false(world.cast_skill(&"execute_1", other))
