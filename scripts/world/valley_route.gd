@@ -7,8 +7,8 @@ const SPAWN := Vector2i(30, 57)
 const MARSHAL := Vector2i(30, 52)
 const STALKER_DEADLINES: Array[int] = [420, 620, 800, 960, 1100]
 const STALKER_ENTRIES: Array[Vector2i] = [
-	Vector2i(12, 72), Vector2i(11, 72), Vector2i(13, 72),
-	Vector2i(11, 73), Vector2i(13, 73),
+	Vector2i(12, 63), Vector2i(11, 63), Vector2i(13, 63),
+	Vector2i(12, 64), Vector2i(13, 64),
 ]
 const OUTLINE: Array[Vector2] = [
 	Vector2(16, 1), Vector2(29, 1), Vector2(29, 11), Vector2(33, 14),
@@ -142,8 +142,7 @@ static func build_terrain(world: GridWorld) -> void:
 	world.scenery_tiles[Vector2i(22, 14)] = &"mine_mouth"
 	for row in [[Vector2i(28, 49), &"banner"], [Vector2i(33, 49), &"brazier"],
 		[Vector2i(31, 33), &"abbey_cross"], [Vector2i(27, 46), &"bench"],
-		[Vector2i(29, 41), &"crate"], [Vector2i(20, 13), &"timber_support"],
-		[Vector2i(25, 13), &"timber_support"], [Vector2i(24, 10), &"mine_cart"],
+		[Vector2i(29, 41), &"crate"],
 		[Vector2i(17, 6), &"ore"], [Vector2i(27, 4), &"ore"],
 		[Vector2i(35, 31), &"grape_basket"], [Vector2i(31, 35), &"banner"],
 		[Vector2i(40, 43), &"dropped_bag"], [Vector2i(38, 36), &"brazier"],
@@ -191,7 +190,7 @@ static func _creature(world: GridWorld, identity: int, tile: Vector2i, spawn_id:
 	creature.spawn_id = spawn_id
 	creature.loot_table = identity
 	creature.creature_type = "beast" if identity in [299, 69] else "humanoid"
-	creature.relationship = (GridActor.Relationship.NEUTRAL if identity in [299, 69, 80]
+	creature.relationship = (GridActor.Relationship.NEUTRAL if identity in [299, 69, 6]
 		else GridActor.Relationship.HOSTILE)
 	creature.aggro_range = 4
 	creature.max_health = int(data.health)

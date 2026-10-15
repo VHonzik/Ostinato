@@ -327,11 +327,11 @@ func test_quest_blink_uses_presentation_seconds_without_spending_turns() -> void
 
 
 func test_neutral_wolves_and_kobolds_only_retaliate_after_attack_and_reset_neutral() -> void:
-	for identity in [299, 69, 80]:
+	for identity in [299, 69, 6]:
 		var session := _session()
 		var world := session.world
 		for actor in world.actors:
-			if actor.npc_id in [299, 69, 80]:
+			if actor.npc_id in [299, 69, 6]:
 				assert_eq(actor.relationship, GridActor.Relationship.NEUTRAL, actor.title)
 				assert_false(actor.engaged)
 		assert_eq(_actor(world, 257).relationship, GridActor.Relationship.HOSTILE)
@@ -353,10 +353,10 @@ func test_neutral_wolves_and_kobolds_only_retaliate_after_attack_and_reset_neutr
 		assert_eq(_actor(session.world, identity).relationship, GridActor.Relationship.NEUTRAL)
 
 
-func test_laborers_engage_on_proximity_and_reset_hostile_each_loop() -> void:
+func test_mine_kobolds_engage_on_proximity_and_reset_hostile_each_loop() -> void:
 	var session := _session()
 	var world := session.world
-	var laborer := _actor(world, 6)
+	var laborer := _actor(world, 80)
 	assert_eq(laborer.relationship, GridActor.Relationship.HOSTILE)
 	world.actors.assign([laborer])
 	_beside(world, laborer)
@@ -364,7 +364,8 @@ func test_laborers_engage_on_proximity_and_reset_hostile_each_loop() -> void:
 	assert_true(laborer.engaged)
 	world.hero.health = 0
 	assert_true(session.restart_after_death())
-	assert_eq(_actor(session.world, 6).relationship, GridActor.Relationship.HOSTILE)
+	assert_eq(_actor(session.world, 80).relationship, GridActor.Relationship.HOSTILE)
+	assert_eq(_actor(session.world, 257).relationship, GridActor.Relationship.HOSTILE)
 
 
 func test_save_preserves_unprovoked_and_provoked_wolf_relationships() -> void:
@@ -474,12 +475,14 @@ func test_tile_sprite_priority_hides_terrain_and_corpses_without_removing_them()
 	view.free()
 
 
-func test_base_health_tints_include_full_health_and_twenty_percent_boundaries() -> void:
+func test_base_health_tints_include_seventy_five_and_twenty_percent_boundaries() -> void:
 	var cases := [
 		[101, 100, Color.WHITE], [100, 100, Color.WHITE],
-		[99, 100, Color.YELLOW], [21, 100, Color.YELLOW],
+		[99, 100, Color.WHITE], [75, 100, Color.WHITE],
+		[74, 100, Color.YELLOW], [21, 100, Color.YELLOW],
 		[20, 100, Color.RED], [0, 100, Color.RED],
-		[51, 51, Color.WHITE], [50, 51, Color.YELLOW],
+		[51, 51, Color.WHITE], [50, 51, Color.WHITE],
+		[39, 51, Color.WHITE], [38, 51, Color.YELLOW],
 		[11, 51, Color.YELLOW], [10, 51, Color.RED],
 		[5, 5, Color.WHITE], [2, 5, Color.YELLOW], [1, 5, Color.RED],
 	]
@@ -552,7 +555,7 @@ func test_health_changes_reach_npc_and_player_base_layers_without_changing_facti
 	view.world.hero.max_health = 100
 	var faction := view.npc_sprite_layers(enemy).faction_sprite
 	var player := view.player_sprite_layers(&"Warrior").base_sprite
-	for entry: Array in [[100, Color.WHITE], [99, Color.YELLOW], [20, Color.RED],
+	for entry: Array in [[100, Color.WHITE], [99, Color.WHITE], [74, Color.YELLOW], [20, Color.RED],
 		[21, Color.YELLOW], [100, Color.WHITE]]:
 		enemy.health = entry[0]
 		view.world.hero.health = entry[0]

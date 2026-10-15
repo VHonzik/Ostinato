@@ -258,7 +258,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	world.hero.buffs = _normalized_buffs(data.buffs)
 	for key in world.hero.buffs:
 		if ((ClassToolkitData.PASSIVES.has(String(key)) or ClassToolkitData.ACTIVES.has(String(key)))
-			and (world.hero.find_skill(key) == null or int(world.hero.buffs[key].until) <= world.turn_count)):
+			and (world.hero.find_skill(key) == null
+				or (int(world.hero.buffs[key].until) > 0
+					and int(world.hero.buffs[key].until) <= world.turn_count))):
 			return null
 	for actor in world.actors:
 		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
@@ -472,6 +474,8 @@ static func _buffs(data: Variant) -> bool:
 			return false
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
+			return false
+		if int(buff.until) == 0 and (skill.effect != SkillRank.Effect.PASSIVE or skill.duration != 0):
 			return false
 		for stat in buff:
 			if stat not in ["armor", "until", "strength", "agility", "stamina",

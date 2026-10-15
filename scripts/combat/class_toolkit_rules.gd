@@ -25,6 +25,8 @@ static func apply(world: GridWorld, identifier: StringName, fields: Dictionary) 
 	if skill == null:
 		return
 	var buff := {"armor": 0, "until": world.turn_count + 1 + skill.duration}
+	if skill.duration == 0:
+		buff.until = 0
 	buff.merge(fields, true)
 	world.hero.buffs[identifier] = buff
 	world.hero.refresh_stats()

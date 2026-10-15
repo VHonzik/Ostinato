@@ -83,7 +83,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   itself, and Shaman Flurry upgrades the one shared Warrior/Shaman effect. Bonus strikes
   cannot crit or trigger primary attack hooks. Spirit wolves follow the selected enemy;
   Spirit Hunt heals from their actual damage taken by the target.
-- Buffs persist between encounters until their duration expires. Hero buffs expire at
+- Consumable triggered procs persist until used or death. Timed buffs persist between
+  encounters until their duration expires. Timed hero buffs expire at
   the advanced world-turn boundary before due player swings and enemy actions, after
   the committed action's effect. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,

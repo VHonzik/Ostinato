@@ -953,7 +953,7 @@ func _tick_effects() -> void:
 func _expire_hero_buffs() -> void:
 	var changed := false
 	for key in hero.buffs.keys():
-		if int(hero.buffs[key].until) <= turn_count:
+		if int(hero.buffs[key].until) > 0 and int(hero.buffs[key].until) <= turn_count:
 			hero.buffs.erase(key)
 			changed = true
 	if changed:
@@ -980,7 +980,9 @@ func _arrive_stalker() -> void:
 			break
 		var entry := Vector2i(-1, -1)
 		for tile in (ValleyRoute.STALKER_ENTRIES if valley_route else STALKER_ENTRIES):
-			if is_open(tile):
+			var occupant := actor_at(tile)
+			if is_open(tile) or (stalkers_arrived == 0 and occupant != null
+				and occupant.story_guard and tile != player_tile and _terrain_open(tile)):
 				entry = tile
 				break
 		if entry == Vector2i(-1, -1):
@@ -1092,7 +1094,7 @@ func loot_all(source: GridActor) -> bool:
 
 
 func _hide_empty_corpse(source: GridActor) -> void:
-	if source.alive or (source.chest and not source.loot_assigned):
+	if source.alive or source.story_guard or (source.chest and not source.loot_assigned):
 		return
 	if source.loot.is_empty() and source.loot_copper == 0:
 		source.corpse_visible = false

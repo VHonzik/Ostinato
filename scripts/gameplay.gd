@@ -86,6 +86,7 @@ func _ready() -> void:
 	$HUD/PlayerMenu.hide()
 	$HUD/Auras.hide()
 	$HUD/RageBar.hide()
+	$HUD/HealthBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 
@@ -368,6 +369,7 @@ func _return_to_menu() -> void:
 	$HUD/PlayerMenu.hide()
 	$HUD/Auras.hide()
 	$HUD/RageBar.hide()
+	$HUD/HealthBar.hide()
 	grid_view.hide()
 	hotbar_panel.hide()
 	session.world = null
@@ -426,6 +428,7 @@ func refresh_view() -> void:
 		$HUD/PlayerMenu.hide()
 		$HUD/Auras.hide()
 		$HUD/RageBar.hide()
+		$HUD/HealthBar.hide()
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
@@ -474,16 +477,56 @@ func refresh_view() -> void:
 		_hero_status.text += "   CP %d/%d" % [hero.combo_points, HeroState.MAX_COMBO_POINTS]
 	hero_panel.refresh()
 	_refresh_hotbar()
-	var effects: PackedStringArray = []
+	for child in $HUD/Auras.get_children():
+		$HUD/Auras.remove_child(child)
+		child.queue_free()
 	for identifier in hero.buffs:
 		var skill := hero.find_skill(StringName(identifier))
 		var title := skill.title if skill != null else String(identifier).capitalize()
-		effects.append("%s (%dt)" % [title, int(hero.buffs[identifier].until) - world.turn_count])
+		_add_aura(title, hero.buffs[identifier], false)
 	for identifier in hero.debuffs:
-		effects.append("%s (%dt)" % [String(identifier).capitalize(),
-			int(hero.debuffs[identifier].until) - world.turn_count])
-	$HUD/Auras.text = " · ".join(effects)
+		_add_aura(String(identifier).capitalize(), hero.debuffs[identifier], true)
 	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, session.loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
+
+
+func _add_aura(title: String, effect: Dictionary, harmful: bool) -> void:
+	var square := Panel.new()
+	square.custom_minimum_size = Vector2(20, 20)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("243b35")
+	style.set_border_width_all(1)
+	style.border_color = Color("ff7777") if harmful else Color("a6c8a0")
+	square.add_theme_stylebox_override("panel", style)
+	var words := title.split(" ", false)
+	var shortcut := title.left(2).to_upper()
+	if words.size() > 1:
+		shortcut = (words[0].left(1) + words[-1].left(1)).to_upper()
+	var label := Label.new()
+	label.text = shortcut
+	label.add_theme_font_size_override("font_size", 10)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	square.add_child(label)
+	var until := int(effect.get("until", 0))
+	square.tooltip_text = title
+	if int(effect.get("charges", 0)) > 0:
+		square.tooltip_text += " / %d charges" % effect.charges
+	if until > 0:
+		var duration := Label.new()
+		duration.text = str(maxi(0, until - world.turn_count))
+		duration.add_theme_font_size_override("font_size", 8)
+		duration.add_theme_color_override("font_color", Color("ffe29a"))
+		duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		duration.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		duration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		duration.offset_right = -1
+		duration.offset_bottom = -1
+		duration.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		square.add_child(duration)
+		square.tooltip_text += " / %d turns" % maxi(0, until - world.turn_count)
+	$HUD/Auras.add_child(square)
 
 
 func _open_player_menu() -> void:
@@ -621,6 +664,11 @@ func _refresh_hotbar() -> void:
 	$HUD/PlayerMenu.visible = hotbar_panel.visible and not hero_panel.visible
 	$HUD/Auras.visible = hotbar_panel.visible and not hero_panel.visible
 	$HUD/RageBar.visible = $HUD/Auras.visible
+	$HUD/HealthBar.visible = $HUD/Auras.visible
+	$HUD/HealthBar.modulate.a = 0.8
+	$HUD/HealthBar/Fill.max_value = world.hero.max_health
+	$HUD/HealthBar/Fill.value = world.hero.health
+	$HUD/RageBar.modulate.a = 0.2 if world.hero.rage == 0 else 0.8
 	$HUD/RageBar/Fill.max_value = HeroState.MAX_RAGE
 	$HUD/RageBar/Fill.value = world.hero.rage
 	var can_edit := _hotbar_can_edit()

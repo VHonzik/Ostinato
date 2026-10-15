@@ -23,6 +23,8 @@ var _trainer: StringName = &""
 var _loot_source: GridActor
 var _merchant: GridActor
 var _quantity: int = 1
+var _preview_panel: PanelContainer
+var _preview: Label
 
 
 func _ready() -> void:
@@ -40,10 +42,30 @@ func _ready() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.follow_focus = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_panel.add_child(scroll)
+	var content := VBoxContainer.new()
+	_panel.add_child(content)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(scroll)
 	_rows = VBoxContainer.new()
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_rows)
+	_preview_panel = PanelContainer.new()
+	_preview_panel.custom_minimum_size.x = 680
+	var preview_style := StyleBoxFlat.new()
+	preview_style.bg_color = Color("182a26")
+	preview_style.border_width_top = 1
+	preview_style.border_color = Color("50665f")
+	preview_style.set_content_margin_all(6)
+	_preview_panel.add_theme_stylebox_override("panel", preview_style)
+	content.add_child(_preview_panel)
+	_preview = Label.new()
+	_preview.custom_minimum_size.y = 46
+	_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_preview.max_lines_visible = 2
+	_preview.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_preview.clip_text = true
+	_preview_panel.add_child(_preview)
+	_preview_panel.hide()
 	_footer = HBoxContainer.new()
 	_footer.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	_footer.offset_top = -32
@@ -210,29 +232,44 @@ func open_trainer(category: StringName) -> void:
 				if skill.progress_required > 0 else price)
 			var button := _button("%s rank %d / %s" % [skill.title, skill.rank, status],
 				_train.bind(skill.id))
-			button.tooltip_text = skill.description
 			var failure := session.world.training_failure(category, skill)
 			button.text += " / Lv %d" % skill.training_level
-			button.tooltip_text += " " + failure
-			button.disabled = failure != ""
+			button.set_meta("preview", skill.description + " " + failure)
+			# Locked skills stay focusable so keyboard players can inspect them.
 			if failure != "" and not known:
-				_label(failure)
+				for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+					button.add_theme_color_override(state, Color("ff7777"))
 	_button("Leave (Esc)", close)
 	_finish()
 
 
 func open_inventory() -> void:
-	_begin("inventory", "Equipment / Inventory", close)
+	_begin("inventory", "Items", close)
+	_button("Equipment", open_equipment)
+	_button("Bags", open_bags)
+	_button("Close (Esc)", close)
+	_finish()
+
+
+func open_equipment() -> void:
+	_begin("equipment_list", "Equipment", open_inventory)
 	var hero := session.world.hero
 	_label("%s / %s / 40 slots" % [hero.selected_class, InventoryRules.money(hero.copper)])
 	for slot in InventoryRules.SLOTS:
 		var item: Dictionary = hero.equipment.get(slot, {})
 		var title := "Empty" if item.is_empty() else String(ItemData.get_item(int(item.id)).title)
-		var button := _button("%s: %s" % [slot.replace("_", " "), title],
+		var button := _button("%s: %s" % [ItemData.slot_name(slot), title],
 			_equipped_detail.bind(slot))
-		button.disabled = item.is_empty()
 		if not item.is_empty():
 			_item_color(button, int(item.id))
+	_button("Bags", open_bags)
+	_button("Back (Esc)", open_inventory)
+	_finish()
+
+
+func open_bags() -> void:
+	_begin("bags", "Bags / " + InventoryRules.money(session.world.hero.copper), open_inventory)
+	var hero := session.world.hero
 	for index in range(40):
 		var item := hero.inventory[index]
 		var title := "Empty" if item.is_empty() else "%s x%d" % [
@@ -241,52 +278,75 @@ func open_inventory() -> void:
 		button.disabled = item.is_empty()
 		if not item.is_empty():
 			_item_color(button, int(item.id))
-	_button("Close (Esc)", close)
+	_button("Equipment", open_equipment)
+	_button("Back (Esc)", open_inventory)
 	_finish()
 
 
 func _equipped_detail(slot: String) -> void:
-	var item: Dictionary = session.world.hero.equipment[slot]
-	_begin("equipment", slot.replace("_", " "), open_inventory)
-	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
-	_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot), open_inventory))
-	_button("Back (Esc)", open_inventory)
+	var hero := session.world.hero
+	var item: Dictionary = hero.equipment.get(slot, {})
+	_begin("equipment", ItemData.slot_name(slot), open_equipment)
+	if item.is_empty():
+		_label("Nothing equipped.")
+	else:
+		_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
+		_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot),
+			_equipped_detail.bind(slot)))
+	_label("Equip from bags:")
+	var eligible := false
+	for index in range(hero.inventory.size()):
+		var candidate := hero.inventory[index]
+		if candidate.is_empty():
+			continue
+		var data := ItemData.get_item(int(candidate.id))
+		if not InventoryRules.fits_slot(data, slot):
+			continue
+		eligible = true
+		var button := _button(data.title + " (1 turn)", _transaction.bind(
+			session.world.equip_item.bind(index, slot), _equipped_detail.bind(slot)))
+		_item_color(button, int(candidate.id))
+	if not eligible:
+		_label("No matching items in bags.")
+	_button("Back (Esc)", open_equipment)
 	_finish()
 
 
 func _item_detail(index: int) -> void:
 	var item := session.world.hero.inventory[index]
 	var data := ItemData.get_item(int(item.id))
-	_begin("item", "%s x%d" % [data.title, item.quantity], open_inventory)
+	_begin("item", "%s x%d" % [data.title, item.quantity], open_bags)
 	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
 	if data.slot != "":
 		if data.slot == "ring":
 			for suffix in ["_1", "_2"]:
 				_button("Equip in %s%s (1 turn)" % [data.slot, suffix],
-					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_inventory))
+					_transaction.bind(session.world.equip_item.bind(index, data.slot + suffix), open_bags))
 		else:
 			_button("Equip (1 turn)",
-				_transaction.bind(session.world.equip_item.bind(index), open_inventory))
+				_transaction.bind(session.world.equip_item.bind(index), open_bags))
 	if data.use != "":
-		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_inventory))
+		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_bags))
 	_button("Move / split stack", func() -> void:
 		_quantity = 1
 		_quantity_menu("Move quantity", int(item.quantity), _move_destination.bind(index),
 			_item_detail.bind(index)))
-	_button("Back (Esc)", open_inventory)
+	_button("Back (Esc)", open_bags)
 	_finish()
 
 
 func _move_destination(quantity: int, source: int) -> void:
-	_begin("move", "Choose destination for %d item(s)" % quantity, open_inventory)
+	_begin("move", "Choose destination for %d item(s)" % quantity, open_bags)
 	for index in range(40):
 		var item := session.world.hero.inventory[index]
 		var label := "Empty" if item.is_empty() else "%s x%d" % [
 			ItemData.get_item(int(item.id)).title, item.quantity]
 		var button := _button("Slot %d: %s" % [index + 1, label], _transaction.bind(
-			InventoryRules.move.bind(session.world.hero, source, index, quantity), open_inventory))
+			InventoryRules.move.bind(session.world.hero, source, index, quantity), open_bags))
 		button.disabled = index == source
-	_button("Back (Esc)", open_inventory)
+		if not item.is_empty():
+			_item_color(button, int(item.id))
+	_button("Back (Esc)", open_bags)
 	_finish()
 
 
@@ -306,7 +366,6 @@ func open_loot(source: GridActor) -> void:
 			continue
 		var button := _button("Take %s x%d" % [ItemData.get_item(int(item.id)).title, item.quantity],
 			_transaction.bind(session.world.loot_item.bind(source, index), _refresh_loot))
-		button.tooltip_text = ItemData.describe(int(item.id))
 		_item_color(button, int(item.id))
 	_button("Leave (Esc)", close)
 	_finish()
@@ -346,7 +405,6 @@ func open_buy(merchant: GridActor) -> void:
 			"Unlimited" if stock == -1 else str(stock) + " left"],
 			_buy_options.bind(int(key)))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.tooltip_text = ItemData.describe(int(key))
 		_item_color(button, int(key))
 		button.disabled = stock == 0
 	_button("Back (Esc)", open_trade.bind(merchant))
@@ -377,7 +435,6 @@ func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
 			_transaction.bind(session.world.sell_item.bind(merchant, index, int(item.quantity)),
 				open_sell.bind(merchant, int(item.id))))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.tooltip_text = ItemData.describe(int(item.id))
 		_item_color(button, int(item.id))
 		if int(data.quality) == 0:
 			grey.disabled = false
@@ -519,6 +576,8 @@ func toggle_fullscreen() -> void:
 
 func _begin(next_page: String, title: String, back: Callable) -> void:
 	page = next_page
+	_preview.text = ""
+	_preview_panel.hide()
 	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
 	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
@@ -550,7 +609,9 @@ func _button(text: String, action: Callable, parent: Node = null) -> Button:
 			action.call())
 	# Defer until container layout settles, including a wrap from first to last.
 	button.focus_entered.connect(func() -> void:
+		_show_preview(button)
 		_ensure_button_visible.call_deferred(button))
+	button.mouse_entered.connect(_show_preview.bind(button))
 	(parent if parent != null else _rows).add_child(button)
 	_buttons.append(button)
 	return button
@@ -632,6 +693,8 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 
 
 func _train(identifier: StringName) -> void:
+	if session.world.training_failure(_trainer, SkillRank.catalog(identifier)) != "":
+		return
 	session.world.train(_trainer, identifier)
 	refreshed.emit()
 	open_trainer(_trainer)
@@ -685,7 +748,8 @@ func open_conversation(actor: GridActor) -> void:
 					titles.append(skill.title)
 				button.tooltip_text = "%d class XP. Learn %s for free at the trainer. Gear and learned skills remain." % [
 					session.world.hero.progression_points(category), " + ".join(titles)]
-		elif (session.world.hero.selected_class == &"Warrior"
+		elif (not session.world.class_selected and not session.world.ever_accepted_quest
+			and session.world.hero.selected_class == &"Warrior"
 			and not session.world.trainer_referral_received):
 			_button("It's been a long journey, is there a warrior master?", open_marshal)
 		choices = true
@@ -774,9 +838,22 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 
 
 func _item_color(control: Control, identifier: int) -> void:
+	if control is Button:
+		_item_preview(control, identifier)
 	var color := ItemData.quality_color(int(ItemData.get_item(identifier).quality))
 	if control is Label:
 		control.add_theme_color_override("font_color", color)
 	else:
 		for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
 			control.add_theme_color_override(state, color)
+
+
+func _item_preview(button: Button, identifier: int) -> void:
+	button.set_meta("preview", ItemData.describe(identifier))
+	button.set_meta("preview_color", ItemData.quality_color(int(ItemData.get_item(identifier).quality)))
+
+
+func _show_preview(button: Button) -> void:
+	_preview.text = button.get_meta("preview", "")
+	_preview.add_theme_color_override("font_color", button.get_meta("preview_color", Color.WHITE))
+	_preview_panel.visible = _preview.text != ""

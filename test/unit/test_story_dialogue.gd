@@ -169,14 +169,11 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	menu.open_conversation(marshal)
 	assert_false(_text(menu).contains("Other classes"))
 	assert_null(_button(menu, "Uhm... I seek paladin teaching"))
-	_button(menu, "It's been a long journey, is there a warrior master?").pressed.emit()
-	assert_string_contains(_text(menu), "Speak with Llane Beshere inside the abbey.")
-	menu.open_conversation(marshal)
 	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
 	var restored := SaveCodec.restore(SaveCodec.capture(session), false)
 	assert_not_null(restored)
 	if restored != null:
-		assert_true(restored.trainer_referral_received)
+		assert_false(restored.trainer_referral_received)
 	world.hero.health = 0
 	assert_true(session.restart_after_death())
 	world = session.world

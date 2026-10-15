@@ -209,11 +209,34 @@ func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itsel
 	var natural := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
 	assert_true(natural.critical)
 	assert_true(world.hero.buffs.has(&"incite_1"))
+	for turn in range(50):
+		world.wait_turn()
+	assert_true(world.hero.buffs.has(&"incite_1"), "The guarantee waits until consumed.")
 	world.hero.melee.critical = -100
 	var guaranteed := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
 	assert_true(guaranteed.critical)
 	assert_false(world.hero.buffs.has(&"incite_1"), "Consumed guarantees cannot renew Incite.")
 	assert_false(ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee).critical)
+
+
+func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> void:
+	var world := _world()
+	var procs: Array[StringName] = [&"incite_1", &"warrior_flurry_1", &"shaman_flurry_1",
+		&"battle_trance_1", &"sudden_death_1", &"juggernaut_1", &"elemental_assault_1",
+		&"art_of_war_1", &"divine_purpose_1", &"sacred_duty_1"]
+	_learn(world, procs)
+	_learn(world, [&"wrecking_crew_1", &"vengeance_1", &"bandits_guile_1"])
+	for identifier in procs:
+		ClassToolkitRules.apply(world, identifier, {"charges": 1})
+	for identifier: StringName in [&"wrecking_crew_1", &"vengeance_1", &"bandits_guile_1"]:
+		ClassToolkitRules.apply(world, identifier, {})
+	for turn in range(50):
+		world.wait_turn()
+	for identifier in procs:
+		assert_true(world.hero.buffs.has(identifier), String(identifier))
+	assert_false(world.hero.buffs.has(&"wrecking_crew_1"))
+	assert_false(world.hero.buffs.has(&"vengeance_1"))
+	assert_false(world.hero.buffs.has(&"bandits_guile_1"))
 
 
 func test_flurry_shares_one_upgrade_and_consumes_swing_charges_without_changing_cooldowns() -> void:

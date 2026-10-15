@@ -302,6 +302,7 @@ func test_default_warrior_hotbar_and_spell_book_use_rage_in_the_live_scene() -> 
 	world.hotbar[0] = &"mortal_strike_1"
 	world.hotbar[1] = &"heroic_strike_1"
 	var enemy := _enemy(world)
+	enemy.relationship = GridActor.Relationship.HOSTILE
 	enemy.stunned_until = 999
 	world.hero.rage = 50
 	var gameplay := _live_gameplay(world)
@@ -465,6 +466,7 @@ func test_mortal_strike_hotbar_keeps_melee_picker_until_player_has_attacked() ->
 		var world := _world()
 		world.hotbar[0] = &"mortal_strike_1"
 		var enemy := _enemy(world)
+		enemy.relationship = GridActor.Relationship.HOSTILE
 		enemy.engaged = engaged
 		enemy.stunned_until = 999
 		var distant := _enemy(world, Vector2i(8, 5))

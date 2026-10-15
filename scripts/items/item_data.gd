@@ -210,9 +210,10 @@ static func instance(identifier: int, quantity: int = 1, starter: bool = false) 
 
 static func describe(identifier: int) -> String:
 	var item := get_item(identifier)
-	var detail := "%s / %s / %s / armor %d" % [
-		item.title, quality_name(int(item.quality)),
-		item.slot if item.slot != "" else "Item", item.armor]
+	var detail := "%s / %s" % [item.title,
+		slot_name(item.slot) if item.slot != "" else "Item"]
+	if int(item.armor) != 0:
+		detail += " / armor %d" % item.armor
 	if item.weapon:
 		detail += " / " + String(item.weapon_style).replace("_", " ")
 		detail += " / %.0f–%.0f damage, %.1fs" % [item.minimum, item.maximum, item.interval]
@@ -220,6 +221,8 @@ static func describe(identifier: int) -> String:
 			detail += " / off-hand %.0f–%.0f damage, %.1fs" % [
 				item.off_minimum, item.off_maximum, item.off_interval]
 	for stat in item.stats:
+		if float(item.stats[stat]) == 0.0:
+			continue
 		if stat in ["crit", "haste"]:
 			detail += " / +%.2f%% %s" % [item.stats[stat], stat]
 		else:
@@ -231,6 +234,10 @@ static func describe(identifier: int) -> String:
 	if item.has("note"):
 		detail += " / " + String(item.note)
 	return detail
+
+
+static func slot_name(slot: String) -> String:
+	return "Outfit" if slot == "armor" else slot.replace("_", " ").capitalize()
 
 
 static func quality_name(quality: int) -> String:

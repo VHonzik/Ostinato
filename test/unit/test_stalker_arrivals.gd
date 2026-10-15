@@ -53,7 +53,7 @@ func test_exact_deadlines_five_identities_legal_tiles_and_only_one_guard_event()
 		assert_eq(stalkers[index].melee.interval, 2.5)
 		assert_false(stalkers[index].engaged)
 	assert_false(world.actors[0].alive)
-	assert_false(world.actors[0].corpse_visible, "Empty guard remains are removed.")
+	assert_true(world.actors[0].corpse_visible, "The story guard's remains persist.")
 	assert_eq(world.actors[0].died_on_turn, 15, "Reinforcements never repeat the guard event.")
 
 

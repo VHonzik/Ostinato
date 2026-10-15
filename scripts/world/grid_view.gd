@@ -114,7 +114,7 @@ static func actor_sprite(actor: GridActor) -> Vector2i:
 
 
 static func health_tint(health: int, max_health: int) -> Color:
-	if max_health <= 0 or health >= max_health:
+	if max_health <= 0 or health * 4 >= max_health * 3:
 		return Color.WHITE
 	return Color.RED if health * 5 <= max_health else Color.YELLOW
 

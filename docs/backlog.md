@@ -249,6 +249,15 @@ current deliberate spenders are Slice and Dice and Eviscerate.
 - [ ] Owner playtest: rebuild gear through quests, compare all three weapon setups,
   try selling mob loot for a vendor upgrade, and judge the impact of small stat bonuses.
 
+### Current playtest follow-up — Menus and encounter feedback
+
+The October playtest adjustments are implemented: separate Equipment/Bags pages,
+slot replacement lists and selection previews, inspectable training, compact auras,
+health/rage bars, consumable proc persistence, and valley faction/guard/prop changes.
+Playtest keyboard inspection and gear swaps, proc consumption between encounters,
+the outdoor camp versus mine, and the stalker arrival. Readability and feel remain
+for owner review.
+
 ### Remaining slices — after itemization
 
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area

@@ -262,7 +262,7 @@ func _send_key(key: Key, pressed: bool, echo: bool = false) -> void:
 
 
 func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
-	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	_prepare_melee(GridActor.Relationship.HOSTILE)
 	_game.set_process(true)
 	await _tap_key(KEY_P)
 	assert_true(_game.hero_panel.visible)
@@ -484,6 +484,7 @@ func test_pending_melee_stops_on_invalid_target_reset_and_death() -> void:
 	actor.melee.damage_max = 1000.0
 	actor.melee.critical = 100.0
 	actor.melee.level = 100
+	actor.melee.hit = 100.0
 	_game.world.hero.swing.remaining = 3.5
 	await _tap_key(KEY_F)
 	assert_false(_game.world.is_player_dead())
@@ -648,7 +649,7 @@ func test_main_menu_keyboard_starts_game_and_menu_actions_never_spend_time() -> 
 
 
 func test_targeted_spell_keyboard_confirmation_and_cast_cancellation() -> void:
-	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	_prepare_melee(GridActor.Relationship.HOSTILE)
 	_game.world.hero.find_skill(&"mortal_strike_1").cast_seconds = 2.0
 	_game.set_process(false)
 	await _tap_key(KEY_K)
@@ -674,12 +675,12 @@ func test_enemy_spell_target_stays_selected_across_spells_until_it_dies() -> voi
 	world.blocked_tiles.clear()
 	world.sight_blockers.clear()
 	var near := GridActor.new(world.player_tile + Vector2i.RIGHT)
-	near.relationship = GridActor.Relationship.NEUTRAL
+	near.relationship = GridActor.Relationship.HOSTILE
 	near.health = 1000
 	near.max_health = 1000
 	near.stunned_until = 1000
 	var far := GridActor.new(world.player_tile + Vector2i(3, 0))
-	far.relationship = GridActor.Relationship.NEUTRAL
+	far.relationship = GridActor.Relationship.HOSTILE
 	far.health = 1000
 	far.max_health = 1000
 	far.stunned_until = 1000
@@ -736,7 +737,11 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 		if button.text.begins_with("Anger Management"):
 			passive = button
 	assert_not_null(passive)
-	assert_true(passive.disabled)
+	assert_false(passive.disabled, "Locked skills remain focusable for inspection.")
+	passive.grab_focus()
+	assert_true(_game.menu._preview.text.contains("Passive"))
+	await _tap_key(KEY_ENTER)
+	assert_null(world.hero.find_skill(&"anger_management_1"))
 	world.hero.warrior_progress = 40
 	_game.menu.open_trainer(&"Warrior")
 	for button in _game.menu._buttons:
@@ -771,7 +776,7 @@ func test_ingame_menus_wrap_keyboard_focus_without_advancing_time() -> void:
 	_game.menu.close()
 
 
-func test_mortal_strike_can_be_selected_and_cast_from_all_eight_adjacent_tiles() -> void:
+func test_lone_neutral_mortal_strike_casts_directly_from_all_eight_adjacent_tiles() -> void:
 	_game.set_process(false)
 	for direction in GridWorld.DIRECTIONS:
 		_game.session.new_game(11)
@@ -788,11 +793,7 @@ func test_mortal_strike_can_be_selected_and_cast_from_all_eight_adjacent_tiles()
 		_game.world.combat_random.seed = 1
 		await _tap_key(KEY_K)
 		await _tap_key(KEY_ENTER)
-		assert_true(_game.combat_panel.visible)
-		assert_same(_game.combat_panel.selected, target)
-		assert_eq(_game.world.turn_count, 0)
-		assert_false(target.engaged)
-		await _tap_key(KEY_ENTER)
+		assert_false(_game.combat_panel.visible)
 		assert_eq(_game.world.turn_count, 1)
 		assert_true(target.engaged)
 		_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
@@ -852,7 +853,7 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.world.hero.equipment.armor.id, 85)
 	assert_eq(_game.world.turn_count, 1)
-	assert_eq(_game.menu.page, "inventory")
+	assert_eq(_game.menu.page, "bags")
 	_game.menu.close()
 	_game.world.hero.health = 1
 	_game.world.player_tile = Vector2i(40, 20)
@@ -870,6 +871,41 @@ func test_inventory_equipping_through_menu_spends_one_turn_and_death_closes_stal
 	assert_eq(_game.session.loop_count, 2)
 	assert_false(_game.menu.visible)
 	assert_eq(_game.world.hero.equipment.weapons.id, 35)
+
+
+func test_empty_equipment_slot_filters_bags_and_equips_into_the_selected_ring_slot() -> void:
+	var hero := _game.world.hero
+	hero.inventory[0] = ItemData.instance(70002)
+	hero.inventory[1] = ItemData.instance(70001)
+	_game.menu.open_inventory()
+	_game.menu._buttons[0].pressed.emit()
+	assert_eq(_game.menu.page, "equipment_list")
+	var ring := _game.menu._buttons[3]
+	assert_false(ring.disabled)
+	ring.pressed.emit()
+	assert_eq(_game.menu.page, "equipment")
+	var equip := _game.menu._buttons[0]
+	assert_string_contains(equip.text, "Steady Band")
+	assert_false(_game.menu._buttons.any(func(button: Button) -> bool:
+		return button.text.contains("Patrol Amulet")))
+	equip.grab_focus()
+	assert_string_contains(_game.menu._preview.text, "strength")
+	assert_eq(_game.world.turn_count, 0, "Inspection spends no turns.")
+	equip.pressed.emit()
+	assert_eq(hero.equipment.ring_2.id, 70002)
+	assert_false(hero.equipment.has("ring_1"))
+	assert_eq(_game.world.turn_count, 1)
+
+
+func test_lone_neutral_keeps_spell_picker_when_another_actor_is_in_melee() -> void:
+	var target := _prepare_melee(GridActor.Relationship.NEUTRAL)
+	var friend := GridActor.new(_game.world.player_tile + Vector2i.LEFT)
+	_game.world.actors.append(friend)
+	_game._cast_skill(&"mortal_strike_1")
+	assert_true(_game.combat_panel.visible)
+	assert_same(_game.combat_panel.selected, target)
+	assert_eq(_game.world.turn_count, 0)
+	assert_false(target.engaged)
 
 
 func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
@@ -1173,7 +1209,7 @@ func test_hotbar_keyboard_assign_lock_activate_clear_and_cancel() -> void:
 
 
 func test_hotbar_uses_spell_book_targeting_and_rejects_activation_with_modal_owners() -> void:
-	_prepare_melee(GridActor.Relationship.NEUTRAL)
+	_prepare_melee(GridActor.Relationship.HOSTILE)
 	_game.world.hero.find_skill(&"mortal_strike_1").cast_seconds = 2.0
 	assert_true(_game.world.assign_hotbar(0, &"mortal_strike_1"))
 	assert_true(_game.world.assign_hotbar(4, &"practice_1"))

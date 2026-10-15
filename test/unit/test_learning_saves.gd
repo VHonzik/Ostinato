@@ -1,6 +1,31 @@
 extends GutTest
 
 
+func test_waiting_proc_roundtrip_preserves_consumption_and_loop_reset() -> void:
+	var game := GameSession.new()
+	game.new_game(79)
+	var world := game.world
+	world.hero.warrior_progress = 80
+	assert_true(world.hero.learn_skill(SkillRank.catalog(&"incite_1")))
+	ClassToolkitRules.apply(world, &"incite_1", {"charges": 1})
+	for turn in range(25):
+		world.wait_turn()
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), true)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_true(restored.hero.buffs.has(&"incite_1"))
+	var target := GridActor.new(restored.player_tile + Vector2i.RIGHT)
+	restored.hero.melee.hit = 100
+	target.melee.dodge = 0
+	var strike := restored.hero.find_skill(&"heroic_strike_1")
+	assert_true(ClassToolkitRules.weapon_outcome(restored, target, strike, restored.hero.melee).critical)
+	assert_false(restored.hero.buffs.has(&"incite_1"))
+	world.hero.health = 0
+	assert_true(game.restart_after_death())
+	assert_true(game.world.hero.buffs.is_empty())
+
+
 func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_buff_expiry() -> void:
 	var game := GameSession.new()
 	game.new_game(79)

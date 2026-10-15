@@ -255,6 +255,19 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 		world.add_message("No valid target for " + skill.title + ".")
 		return
 	selected = _last_spell_target if _candidates.has(_last_spell_target) else _candidates[0]
+	if (skill.target == SkillRank.Target.ENEMY and _candidates.size() == 1
+		and selected.relationship == GridActor.Relationship.NEUTRAL
+		and world.tile_distance(world.player_tile, selected.tile) <= 1):
+		var nearby := world.actors.filter(func(actor: GridActor) -> bool:
+			return (actor.alive and actor != selected
+				and world.tile_distance(world.player_tile, actor.tile) <= 1))
+		if nearby.is_empty():
+			_last_spell_target = selected
+			_last_target_type = skill.target
+			world.cast_skill(skill.id, selected)
+			close()
+			action_taken.emit()
+			return
 	mode = Mode.SPELL
 	show()
 	_update_selection()

@@ -27,15 +27,15 @@ points to exploration caches, and Milly offers the vineyard encounter. The marsh
 also gives the stronger-wolf follow-up after the western patrol. Trees, walls
 and vine trellises block movement; flowers, small stones and sparse grass tufts are
 decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
-wolf types and kobold vermin are neutral until attacked; laborers, workers and bandits
-are hostile.
-The southwestern gate admits a timed stalker and reinforcements.
+wolf types and outdoor kobold vermin are neutral until attacked; all mine kobolds and
+bandits are hostile. The southwestern gate admits timed stalkers at the guard's position.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
 A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
 its current class artwork with an empty faction layer.
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
-corpses with items or money remain available for looting. Death rebuilds the
+corpses with items or money remain available for looting; the story guard's corpse remains.
+Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
 Janos Hammerknuckle supplies warrior gear and trades. Llane teaches Warrior unlocks;
 Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
@@ -96,7 +96,8 @@ Ambidexterity improves off-hand damage when learned.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
 Finishers spend all held points before refunds; Execute and Judgement do not spend points.
-Hero buffs expire at the advanced turn boundary before player swings and enemy attacks.
+Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
+boundary before player swings and enemy attacks.
 
 The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
 with weapon power and dodge as derived values. Gear works equally in all four classes.
