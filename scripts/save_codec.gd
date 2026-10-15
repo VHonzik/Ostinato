@@ -265,7 +265,9 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	for actor in world.actors:
 		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
 			return null
-	if not _debuffs(data.debuffs):
+		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
+			return null
+	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
 		return null
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
 	SummonRules.refresh_auras(world)
@@ -481,7 +483,8 @@ static func _buffs(data: Variant) -> bool:
 			if stat not in ["armor", "until", "strength", "agility", "stamina",
 				"charges", "ready", "weapon_id", "off_weapon_id", "physical_percent",
 				"haste_percent", "immunity", "bonus_percent", "critical_ready"]:
-				return false
+				if stat not in ["main_until", "off_until"] or not PoisonRules.is_poison(skill):
+					return false
 	return true
 
 
@@ -529,7 +532,7 @@ static func _number_map(data: Variant, minimum: int) -> bool:
 static func _normalized_numbers(data: Dictionary) -> Dictionary:
 	var result := {}
 	for key in data:
-		result[key] = int(data[key])
+		result[key] = float(data[key]) if key == "damage_credit" else int(data[key])
 	return result
 
 
@@ -537,9 +540,24 @@ static func _debuffs(data: Variant) -> bool:
 	if not data is Dictionary or data.size() > 100:
 		return false
 	for key in data:
-		if not key is String or not _number_map(data[key], 0) or not data[key].has("until"):
+		if not key is String or not data[key] is Dictionary or not data[key].has("until"):
+			return false
+		var effect: Dictionary = data[key].duplicate()
+		if key == "deadly_poison_1":
+			if not effect.has_all(["stacks", "next_tick", "damage_credit"]):
+				return false
+			var credit: Variant = effect.damage_credit
+			if (not (credit is int or credit is float) or not is_finite(float(credit))
+				or credit < 0 or credit >= 1 or not _integer(effect.stacks, 1)
+				or effect.stacks > SkillRank.catalog(&"deadly_poison_1").maximum
+				or not _integer(effect.next_tick, 1) or not _integer(effect.until, 1)
+				or effect.next_tick > effect.until):
+				return false
+			effect.erase("damage_credit")
+		if not _number_map(effect, 0):
 			return false
 		for field in data[key]:
 			if field not in ["until", "bonus"]:
-				return false
+				if key != "deadly_poison_1" or field not in ["stacks", "next_tick", "damage_credit"]:
+					return false
 	return true

@@ -46,12 +46,18 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Points persist across targets and encounters and reset on death. Slice and Dice
   requires points and deliberately spends all held points to extend its attack haste.
   Eviscerate also deliberately spends all held points; finisher refunds follow spending.
-  Judgement takes a turn and leaves Seal of Command active. Execute and Judgement
+  Judgement should cost no rage or world turn, with lower damage and a longer cooldown;
+  that rework is postponed. It leaves Seal of Command active. Execute and Judgement
   currently do not spend points; optional empowerment remains a future choice.
 - Warrior supplies physical burst, rage and execution; shaman supplies weapon
   enhancements, reactive damage and tactical procs; paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,
   speed and opportunistic damage. The milestone covers the full v0.1 toolkit.
+- Poisons offer a preparation choice: Instant rewards short fights, while Deadly
+  builds sustained damage. A later Rogue passive rewards mixed coatings with Instant
+  on the faster weapon and Deadly on the slower. Its extra stack is a deliberate
+  interaction; poison damage does not trigger further attack procs. Keep finishers
+  from bypassing Deadly's buildup for free.
 - Only abilities belonging to the selected class advance that class's XP. Retained
   abilities from other classes remain usable but award no class XP. Count all uses
   of the selected class's abilities for now, without meaningful-use or anti-spam
@@ -111,6 +117,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   main-hand plus shield pair, or dual-wield pair. Weapon names are flavor;
   Gear has no class, level or learning requirements. Ambidexterity improves
   off-hand damage in any class once learned.
+  Shields should offer a defensive preference without becoming the strongest
+  general-purpose weapon setup.
   Poor gear is gray with no stat bonuses and low damage/armor. Common gear is white
   with modest damage/armor and small crit/haste bonuses; common necklaces and rings
   also have primary stats. Uncommon gear is green with

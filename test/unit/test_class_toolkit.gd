@@ -37,7 +37,7 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(9, 8)) -> GridActor:
 
 
 func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing_hotbar() -> void:
-	var counts := {&"Warrior": 16, &"Shaman": 14, &"Paladin": 15, &"Rogue": 15}
+	var counts := {&"Warrior": 16, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
 	for category: StringName in counts:
 		var world := _world(category)
 		var ranks := SkillRank.trainer_skills(category)
@@ -177,27 +177,38 @@ func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
 		assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
 
-func test_sudden_death_splits_ordinary_hand_chances_but_keeps_active_chance() -> void:
+func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execute() -> void:
 	var generator := RandomNumberGenerator.new()
-	var chosen_seed := -1
-	for seed_value in range(1000):
-		generator.seed = seed_value
-		var roll := generator.randf()
-		if roll > 0.10 and roll < 0.12:
-			chosen_seed = seed_value
-			break
-	assert_ne(chosen_seed, -1)
-	for setup: Array in [[2129, false, false, true], [2139, false, false, false],
-		[2139, true, false, false], [2139, false, true, true]]:
-		var world := _world()
-		_learn(world, [&"sudden_death_1"])
-		world.hero.equipment.weapons = ItemData.instance(setup[0])
-		world.hero.refresh_stats()
-		world.combat_random.seed = chosen_seed
-		var enemy := _enemy(world)
-		var skill: SkillRank = world.hero.find_skill(&"mortal_strike_1") if setup[2] else null
-		ClassToolkitRules.on_attack(world, enemy, skill, true, false, 20, true, setup[1])
-		assert_eq(world.hero.buffs.has(&"sudden_death_1"), setup[3])
+	# Rolls either side of 20% cover eligibility without forcing the proc chance.
+	for below_chance in [true, false]:
+		var chosen_seed := -1
+		var roll_min := 0.10 if below_chance else 0.30
+		for seed_value in range(1000):
+			generator.seed = seed_value
+			var roll := generator.randf()
+			if roll > roll_min and roll < roll_min + 0.02:
+				chosen_seed = seed_value
+				break
+		assert_ne(chosen_seed, -1)
+		# Skill, landed, physical, off-hand, eligible.
+		for setup: Array in [
+			[&"mortal_strike_1", true, true, false, true],
+			[&"heroic_strike_1", true, true, false, true],
+			[&"eviscerate_1", true, true, false, true],
+			[&"execute_1", true, true, false, false],
+			[&"mortal_strike_1", false, true, false, false],
+			[&"earth_shock_1", true, false, false, false],
+			[&"", true, true, false, false],
+			[&"", true, true, true, false],
+		]:
+			var world := _world()
+			_learn(world, [&"sudden_death_1", &"execute_1", &"eviscerate_1", &"earth_shock_1"])
+			world.combat_random.seed = chosen_seed
+			var enemy := _enemy(world)
+			var skill := world.hero.find_skill(setup[0])
+			ClassToolkitRules.on_attack(world, enemy, skill, setup[1], false, 20, setup[2], setup[3])
+			assert_eq(world.hero.buffs.has(&"sudden_death_1"), below_chance and setup[4],
+				"Sudden Death eligibility for %s, off-hand=%s." % [setup[0], setup[3]])
 
 
 func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itself() -> void:
@@ -280,12 +291,23 @@ func test_sudden_death_allows_one_free_execute_at_full_health_and_does_not_spend
 	world.hero.melee.damage_min = 20
 	world.hero.melee.damage_max = 20
 	world.hero.melee.attack_power = 0
-	world.hero.find_skill(&"sudden_death_1").coefficient = 0
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1
 	assert_true(world.cast_skill(&"execute_1", enemy))
 	assert_eq(enemy.health, 9945)
 	assert_eq(world.hero.rage, 100)
 	assert_false(world.hero.buffs.has(&"sudden_death_1"))
 	assert_false(world.cast_skill(&"execute_1", enemy))
+
+
+func test_paid_execute_cannot_trigger_sudden_death() -> void:
+	var world := _world()
+	_learn(world, [&"execute_1", &"sudden_death_1"])
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1
+	var enemy := _enemy(world)
+	enemy.health = 2000
+	assert_true(world.cast_skill(&"execute_1", enemy))
+	assert_lt(enemy.health, 2000)
+	assert_false(world.hero.buffs.has(&"sudden_death_1"))
 
 
 func test_victory_rush_heals_enemy_kills_but_not_friendly_deaths() -> void:
@@ -382,7 +404,8 @@ func test_elemental_weapons_upgrades_totem_and_replacement_keeps_only_one_aura()
 
 func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_internal_cooldown() -> void:
 	var world := _world()
-	_learn(world, [&"windfury_weapon_1", &"elemental_weapons_1", &"relentless_assault_1"])
+	_learn(world, [&"windfury_weapon_1", &"elemental_weapons_1", &"relentless_assault_1", &"sudden_death_1"])
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1
 	var enemy := _enemy(world)
 	assert_true(world.cast_skill(&"windfury_weapon_1"))
 	world.hero.melee.damage_min = 20
@@ -398,6 +421,7 @@ func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_in
 	assert_eq(enemy.health, 9944, "No proc inside the internal cooldown.")
 	assert_eq(world.hero.rage, rage)
 	assert_eq(world.hero.combo_points, 0)
+	assert_false(world.hero.buffs.has(&"sudden_death_1"), "Windfury cannot trigger Sudden Death.")
 
 
 func test_wolf_pair_placement_is_atomic_replaces_expires_and_spirit_hunt_heals_actual_damage() -> void:
@@ -662,7 +686,8 @@ func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stop
 
 func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage() -> void:
 	var world := _world()
-	_learn(world, [&"instant_poison_1", &"ambidexterity_1", &"relentless_assault_1"])
+	_learn(world, [&"instant_poison_1", &"ambidexterity_1", &"relentless_assault_1", &"sudden_death_1"])
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1
 	world.hero.equipment.weapons = ItemData.instance(2139)
 	world.hero.refresh_stats()
 	world.hero.find_skill(&"instant_poison_1").coefficient = 1
@@ -674,6 +699,7 @@ func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage
 	assert_eq(enemy.health, 9984)
 	assert_eq(world.hero.rage, rage)
 	assert_eq(world.hero.combo_points, 0)
+	assert_false(world.hero.buffs.has(&"sudden_death_1"), "Poison cannot trigger Sudden Death.")
 	world.hero.equipment.weapons = ItemData.instance(70023)
 	world.hero.refresh_stats()
 	ClassToolkitRules.weapon_procs(world, enemy, true)
@@ -737,7 +763,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 60)
+	assert_eq(restored.hero.learned_skills.size(), 62)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -753,7 +779,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 60)
+	assert_eq(game.world.hero.learned_skills.size(), 62)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

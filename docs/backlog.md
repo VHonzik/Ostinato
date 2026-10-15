@@ -215,9 +215,21 @@ live in game data and the spell book. Human balance and readability review remai
   Give Rogue independent main-hand combo building through Relentless Assault, temper
   stacked damage and cooldown effects, and strengthen developed Warrior and Paladin
   payoffs. Numerical tuning lives in data and the spell book.
-- [ ] Further balance examination is paused at the owner's request. Resume comparisons
-  of retained kits and weapon preferences later; investigate partial unlocks, uncommon
-  gear, ordinary fights and reinforcement pressure before another tuning pass.
+- [ ] Redistribute damage within the developed toolkit while preserving overall strength.
+  Postpone the agreed free, off-turn Judgement rework and its Divine Purpose replacement.
+  Sudden Death now rewards physical actives without auto-attack triggers or Execute
+  self-procs. Review the resulting damage distribution, Heroic Strike's action/rage
+  tradeoff, Windfury, poison and Eviscerate use. Run further simulations with all four
+  developed classes.
+- [x] Integrate the poison prototype: Instant for short encounters, a Rogue
+  catalyst passive rewarding faster-weapon Instant and slower-weapon Deadly for sustained
+  fights. Keep the proposed free full-stack Eviscerate bonus out of this version because
+  a banked finisher bypasses the intended buildup. Both coatings unlock together;
+  Catalytic Venom follows later. Per-hand choices preserve independent coating timers.
+  Tuning remains provisional pending playtesting.
+- [ ] Further balance work: investigate partial unlocks, uncommon gear, ordinary fights
+  and reinforcement pressure as playtesting identifies a need. Keep isolated Stalker
+  comparisons separate from the route and reinforcement experience.
 - [ ] Owner playtest: compare single enemies and multiple pulls before and after learning
   skills, including enemies above character level. Adjust difficulty and route pacing
   from play; simulations do not establish feel or balance acceptance.

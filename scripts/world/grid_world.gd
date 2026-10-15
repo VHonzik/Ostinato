@@ -39,6 +39,7 @@ var turn_count: int = 0
 var random := RandomNumberGenerator.new()
 var pending_skill: SkillRank
 var pending_target: GridActor
+var pending_poison_hands: int = PoisonRules.Hands.BOTH
 var cast_turns: int = 0
 var cast_elapsed: int = 0
 var cast_duration: float = 1.0
@@ -151,7 +152,8 @@ func wait_turn() -> void:
 		_finish_turn()
 
 
-func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
+func cast_skill(identifier: StringName, target: GridActor = null,
+	poison_hands: int = PoisonRules.Hands.BOTH) -> bool:
 	if is_terminal() or pending_melee != null or pending_skill != null:
 		return false
 	var skill := hero.find_skill(identifier)
@@ -166,6 +168,11 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 		and skill.target == SkillRank.Target.ENEMY and target == null and in_combat()):
 		target = last_attacked_enemy
 	if skill.effect == SkillRank.Effect.PASSIVE:
+		return false
+	if PoisonRules.is_poison(skill) and (poison_hands not in [1, 2, 3]
+		or hero.weapon_id() == 0
+		or (poison_hands == PoisonRules.Hands.OFF and not hero.has_off_hand_weapon())):
+		add_message("Cannot coat: choose an equipped weapon hand. No turn spent.")
 		return false
 	if skill.available_resource(hero) < skill.cost(hero):
 		add_message("Not enough %s for %s: requires %d, have %d." % [
@@ -198,6 +205,7 @@ func cast_skill(identifier: StringName, target: GridActor = null) -> bool:
 	hero.restoration.clear()
 	pending_skill = skill
 	pending_target = target
+	pending_poison_hands = poison_hands
 	cast_elapsed = 0
 	cast_duration = skill.cast_seconds
 	cast_turns = maxi(1, ceili(cast_duration - hero.casting_credit))
@@ -226,6 +234,7 @@ func continue_cast() -> bool:
 	if cast_elapsed >= cast_turns:
 		var skill := pending_skill
 		var target := pending_target
+		var poison_hands := pending_poison_hands
 		cancel_cast()
 		if (skill.available_resource(hero) >= skill.cost(hero) and valid_spell_target(skill, target)
 			and SpellEffects.can_apply(self, skill, target)):
@@ -235,7 +244,7 @@ func continue_cast() -> bool:
 			ClassToolkitRules.consume_cost_proc(hero, skill)
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
-			_resolve_skill(skill, target, resource_spent)
+			_resolve_skill(skill, target, resource_spent, poison_hands)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
 	_finish_turn()
@@ -391,8 +400,12 @@ func _first_living_stalker() -> GridActor:
 	return null
 
 
-func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0) -> void:
+func _resolve_skill(skill: SkillRank, target: GridActor, resource_spent: int = 0,
+	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
 	_award_ability_use(skill)
+	if PoisonRules.is_poison(skill):
+		PoisonRules.coat(self, skill, poison_hands)
+		return
 	match skill.effect:
 		SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.EXECUTE:
 			var flat_bonus := skill.minimum

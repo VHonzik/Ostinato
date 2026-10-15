@@ -8,7 +8,7 @@ signal service_requested(actor: GridActor)
 signal conversation_requested(actor: GridActor)
 signal loot_requested(source: GridActor)
 
-enum Mode { SELECT, CONFIRM_ATTACK, SPELL }
+enum Mode { SELECT, CONFIRM_ATTACK, SPELL, POISON }
 
 var mode: Mode = Mode.SELECT
 var selected: GridActor
@@ -25,6 +25,7 @@ var _confirm: Button
 var _cancel: Button
 var _previous: Button
 var _next: Button
+var _poison_hands: int = PoisonRules.Hands.BOTH
 
 
 func _ready() -> void:
@@ -97,6 +98,11 @@ func close() -> void:
 
 
 func confirm() -> void:
+	if visible and mode == Mode.POISON and _world != null:
+		_world.cast_skill(_skill.id, null, _poison_hands)
+		close()
+		action_taken.emit()
+		return
 	if not visible or selected == null or _world == null or _world.is_terminal():
 		return
 	match mode:
@@ -125,6 +131,11 @@ func clear_spell_target() -> void:
 
 
 func navigate(direction: Vector2i) -> void:
+	if mode == Mode.POISON:
+		var step := 1 if direction.x > 0 or direction.y > 0 else -1
+		_poison_hands = wrapi(_poison_hands - 1 + step, 0, 3) + 1
+		_update_poison()
+		return
 	if mode not in [Mode.SELECT, Mode.SPELL] or _candidates.size() < 2:
 		return
 	# Prefer the nearest candidate ahead. If none is ahead, wrap from the far edge.
@@ -207,6 +218,10 @@ func _update_selection() -> void:
 		_detail.text += "\nExecute spends %d rage; %s." % [
 			_skill.cost(_world.hero), "Sudden Death allows any health" if _world.hero.buffs.has(&"sudden_death_1")
 			else "requires at or below %d%% health" % _skill.execute_health_percent]
+	if selected.debuffs.has(&"deadly_poison_1"):
+		var poison: Dictionary = selected.debuffs[&"deadly_poison_1"]
+		_detail.text += "\nDeadly Poison: %d stacks / %d turns." % [
+			poison.stacks, maxi(0, int(poison.until) - _world.turn_count)]
 	_configure_buttons(_candidates.size() > 1,
 		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)
@@ -271,3 +286,27 @@ func open_spell(world: GridWorld, skill: SkillRank) -> void:
 	mode = Mode.SPELL
 	show()
 	_update_selection()
+
+
+func open_poison(world: GridWorld, skill: SkillRank) -> void:
+	close()
+	clear_spell_target()
+	_world = world
+	_skill = skill
+	mode = Mode.POISON
+	_poison_hands = PoisonRules.Hands.BOTH
+	show()
+	_update_poison()
+
+
+func _update_poison() -> void:
+	var choice: String = ["Main hand", "Off hand", "Both hands"][_poison_hands - 1]
+	_heading.text = "%s / %s" % [_skill.title, choice]
+	var descriptions: Array[String] = []
+	for off_hand in [false, true]:
+		var identifier := PoisonRules.coating(_world.hero, _world.turn_count, off_hand)
+		var title := "Uncoated" if identifier == &"" else SkillRank.catalog(identifier).title
+		descriptions.append("%s: %s" % ["Off hand" if off_hand else "Main hand", title])
+	_detail.text = "%s.\nDirections choose hand(s); Enter coats for %d rage and one turn. Esc cancels." % [
+		"; ".join(descriptions), _skill.cost(_world.hero)]
+	_configure_buttons(true, "Coat (Enter)", true)

@@ -25,7 +25,7 @@ const ITEMS: Dictionary = {
 	"2129": {
 		"title": "Guard Sword and Shield", "quality": 1, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 200,
-		"sell": 20, "armor": 70, "two_handed": false,
+		"sell": 20, "armor": 40, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
 		"minimum": 3, "maximum": 5, "interval": 2.4,
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",
@@ -107,7 +107,7 @@ const ITEMS: Dictionary = {
 	"4560": {
 		"title": "Fine Scimitar", "quality": 1, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 200,
-		"sell": 20, "armor": 70, "two_handed": false,
+		"sell": 20, "armor": 40, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
 		"minimum": 3, "maximum": 5, "interval": 2.4,
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",
@@ -179,7 +179,7 @@ const ITEMS: Dictionary = {
 	"70022": {
 		"title": "Sentinel Sword and Shield", "quality": 2, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 200,
-		"sell": 30, "armor": 100, "two_handed": false,
+		"sell": 30, "armor": 70, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
 		"minimum": 6, "maximum": 9, "interval": 2.4,
 		"stats": {"strength": 2, "crit": 1.0, "haste": 4.0}, "use": "", "quest": "",

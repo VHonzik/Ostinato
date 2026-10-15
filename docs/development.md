@@ -95,6 +95,14 @@ Every class can equip any gear without level or learning requirements.
 Ambidexterity improves off-hand damage when learned.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
+Instant and Deadly Poison become available together at the Rogue trainer; Catalytic
+Venom unlocks later. Casting either coating with dual wield opens a hand picker:
+directions choose main hand, off hand or both; Enter applies, Escape cancels freely.
+Each hand keeps its own coating and expiration, shown separately in the aura display.
+Single-weapon setups coat the main hand directly. Catalytic Venom rewards Instant
+on the faster base-speed weapon and Deadly on the slower; equal-speed pairs do not
+catalyze. Deadly stacks belong to each enemy and tick after enemy actions, retaining
+fractional damage across ticks. Saves retain coatings, stacks and pending tick damage.
 Finishers spend all held points before refunds; Execute and Judgement do not spend points.
 Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
 boundary before player swings and enemy attacks.

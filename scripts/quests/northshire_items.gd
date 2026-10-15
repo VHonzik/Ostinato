@@ -61,7 +61,7 @@ const ITEMS: Dictionary = {
 	"5580": {
 		"title": "Militia Hammer and Shield", "quality": 1, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 200,
-		"sell": 20, "armor": 70, "two_handed": false,
+		"sell": 20, "armor": 40, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
 		"minimum": 5, "maximum": 7, "interval": 2.4,
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",
@@ -70,7 +70,7 @@ const ITEMS: Dictionary = {
 	"1161": {
 		"title": "Militia Shortsword", "quality": 1, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 200,
-		"sell": 20, "armor": 70, "two_handed": false,
+		"sell": 20, "armor": 40, "two_handed": false,
 		"unique": false, "weapon": true, "shield": true,
 		"minimum": 3, "maximum": 5, "interval": 2.4,
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",

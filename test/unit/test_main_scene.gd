@@ -1618,6 +1618,43 @@ func test_new_game_launches_the_valley() -> void:
 	assert_eq(_game.world.turn_count, 1)
 
 
+func test_poison_hotbar_keyboard_selects_hands_and_single_weapon_casts_directly() -> void:
+	var world := _game.world
+	world.actors.clear()
+	world.hero.equipment.weapons = ItemData.instance(2224)
+	for identifier in PoisonRules.COATINGS:
+		world.hero.learn_skill(SkillRank.catalog(identifier))
+	world.hero.refresh_stats()
+	world.hotbar[0] = &"deadly_poison_1"
+	world.hotbar[1] = &"instant_poison_1"
+	await _tap_key(KEY_1)
+	assert_eq(_game.combat_panel.mode, CombatPanel.Mode.POISON)
+	assert_true(_game.combat_panel.visible)
+	await _tap_key(KEY_D)
+	assert_eq(_game.combat_panel._poison_hands, PoisonRules.Hands.MAIN)
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.hero.rage, 100)
+	await _tap_key(KEY_1)
+	await _tap_key(KEY_D)
+	await _tap_key(KEY_ENTER)
+	assert_false(_game.combat_panel.visible)
+	assert_eq(world.turn_count, 1)
+	assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"deadly_poison_1")
+	assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), &"")
+	await _tap_key(KEY_2)
+	await _tap_key(KEY_A)
+	await _tap_key(KEY_ENTER)
+	assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"deadly_poison_1")
+	assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), &"instant_poison_1")
+	world.hero.equipment.weapons = ItemData.instance(35)
+	world.hero.refresh_stats()
+	await _tap_key(KEY_2)
+	assert_false(_game.combat_panel.visible)
+	assert_eq(world.turn_count, 3)
+	assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"instant_poison_1")
+
+
 func _test_merchant(identity: int) -> GridActor:
 	for actor in _game.world.actors:
 		if actor.npc_id == identity:

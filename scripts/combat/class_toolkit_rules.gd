@@ -84,7 +84,7 @@ static func can_apply(world: GridWorld, skill: SkillRank, target: GridActor) -> 
 	match skill.family:
 		&"eviscerate": return world.hero.combo_points > 0
 		&"feral_spirit": return wolf_tiles(world).size() >= 2
-		&"windfury_weapon", &"instant_poison": return world.hero.equipment.has("weapons")
+		&"windfury_weapon", &"instant_poison", &"deadly_poison": return world.hero.equipment.has("weapons")
 		&"whirlwind":
 			return world.actors.any(func(actor: GridActor) -> bool:
 				return eligible(world, actor, 1))
@@ -247,14 +247,7 @@ static func on_attack(world: GridWorld, target: GridActor, skill: SkillRank,
 	if not landed:
 		return
 	if physical:
-		var sudden_death_chance := 1.0
-		if not direct:
-			# Ordinary hands share a base-speed proc budget; actives keep their listed chance.
-			var weapon := world.hero.off_hand_melee() if off_hand else world.hero.melee
-			sudden_death_chance = weapon.interval / 2.4
-			if world.hero.has_off_hand_weapon():
-				sudden_death_chance *= 0.5
-		if proc(world, &"sudden_death_1", sudden_death_chance):
+		if direct and skill.family != &"execute" and proc(world, &"sudden_death_1"):
 			apply(world, &"sudden_death_1", {"charges": 1})
 		if off_hand:
 			if proc(world, &"combat_potency_1"):
@@ -307,15 +300,7 @@ static func weapon_procs(world: GridWorld, target: GridActor, off_hand: bool,
 			bonus_strike(world, target, false, 1.0 + magnitude(world.hero, &"elemental_weapons_1") / 100.0, "Windfury")
 	if world.is_terminal() or not target.alive:
 		return
-	var poison := effect(world.hero, &"instant_poison_1")
-	var coated := "off_weapon_id" if off_hand else "weapon_id"
-	if (not poison.is_empty() and int(poison.get(coated, 0)) > 0
-		and int(poison[coated]) == world.hero.weapon_id(off_hand)
-		and world.combat_random.randf() < world.hero.find_skill(&"instant_poison_1").coefficient):
-		var value := floori(SkillRank.catalog(&"instant_poison_1").minimum
-			* damage_multiplier(world.hero)
-			* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
-		SpellEffects.damage(world, target, value, "Instant Poison")
+	PoisonRules.on_hit(world, target, off_hand)
 	if world.is_terminal() or not target.alive:
 		return
 	if proc(world, &"static_shock_1"):

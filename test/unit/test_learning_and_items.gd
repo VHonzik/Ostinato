@@ -105,7 +105,7 @@ func test_weapon_setups_swap_as_one_item_with_a_full_bag() -> void:
 	world.hero.inventory[0] = ItemData.instance(2129)
 	assert_true(world.equip_item(0))
 	assert_eq(world.hero.equipment.weapons.id, 2129)
-	assert_eq(world.hero.melee.armor, 78)
+	assert_eq(world.hero.melee.armor, 48, "Travel clothes plus the reduced shield armor.")
 	_fill(world.hero)
 	world.hero.inventory[0] = ItemData.instance(35)
 	assert_true(world.equip_item(0), "The source slot fits the entire displaced pair.")

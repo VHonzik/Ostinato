@@ -29,6 +29,9 @@ static func resolve(world: GridWorld, skill: SkillRank, target: GridActor) -> vo
 
 
 static func buff(world: GridWorld, skill: SkillRank) -> void:
+	if PoisonRules.is_poison(skill):
+		PoisonRules.coat(world, skill)
+		return
 	var buffs := world.hero.buffs
 	for key in buffs.keys():
 		var previous := SkillRank.catalog(StringName(key))
@@ -45,9 +48,6 @@ static func buff(world: GridWorld, skill: SkillRank) -> void:
 		&"windfury_weapon":
 			effect["weapon_id"] = world.hero.weapon_id()
 			effect["ready"] = 0
-		&"instant_poison":
-			effect["weapon_id"] = world.hero.weapon_id()
-			effect["off_weapon_id"] = world.hero.weapon_id(true)
 		&"slice_and_dice":
 			effect["haste_percent"] = skill.haste_percent
 			effect.until += skill.duration_per_combo * world.hero.combo_points
@@ -96,6 +96,9 @@ static func on_melee(world: GridWorld, target: GridActor, _amount: int, landed: 
 
 static func tick(world: GridWorld) -> void:
 	for actor in world.actors:
+		PoisonRules.tick(world, actor)
+		if world.is_terminal():
+			return
 		for key in actor.debuffs.keys():
 			if int(actor.debuffs[key].until) <= world.turn_count:
 				actor.debuffs.erase(key)

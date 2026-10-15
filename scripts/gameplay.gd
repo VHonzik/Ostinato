@@ -483,13 +483,22 @@ func refresh_view() -> void:
 	for identifier in hero.buffs:
 		var skill := hero.find_skill(StringName(identifier))
 		var title := skill.title if skill != null else String(identifier).capitalize()
+		if skill != null and PoisonRules.is_poison(skill):
+			for off_hand in [false, true]:
+				if PoisonRules.coating(hero, world.turn_count, off_hand) != identifier:
+					continue
+				var effect: Dictionary = hero.buffs[identifier].duplicate()
+				effect.until = int(effect.get("off_until" if off_hand else "main_until", effect.until))
+				_add_aura(title + (" (OH)" if off_hand else " (MH)"), effect, false,
+					title.left(1) + ("O" if off_hand else "M"))
+			continue
 		_add_aura(title, hero.buffs[identifier], false)
 	for identifier in hero.debuffs:
 		_add_aura(String(identifier).capitalize(), hero.debuffs[identifier], true)
 	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, session.loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
 
 
-func _add_aura(title: String, effect: Dictionary, harmful: bool) -> void:
+func _add_aura(title: String, effect: Dictionary, harmful: bool, abbreviation: String = "") -> void:
 	var square := Panel.new()
 	square.custom_minimum_size = Vector2(20, 20)
 	var style := StyleBoxFlat.new()
@@ -501,6 +510,8 @@ func _add_aura(title: String, effect: Dictionary, harmful: bool) -> void:
 	var shortcut := title.left(2).to_upper()
 	if words.size() > 1:
 		shortcut = (words[0].left(1) + words[-1].left(1)).to_upper()
+	if not abbreviation.is_empty():
+		shortcut = abbreviation
 	var label := Label.new()
 	label.text = shortcut
 	label.add_theme_font_size_override("font_size", 10)
@@ -568,7 +579,10 @@ func _cast_skill(identifier: StringName) -> void:
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
 		return
-	if (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
+	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
+		hero_panel.close()
+		combat_panel.open_poison(world, skill)
+	elif (skill.effect in [SkillRank.Effect.MORTAL_STRIKE, SkillRank.Effect.HEROIC_STRIKE,
 		SkillRank.Effect.EXECUTE, SkillRank.Effect.TOOLKIT]
 		and skill.target == SkillRank.Target.ENEMY
 		and world.in_combat()
