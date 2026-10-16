@@ -32,11 +32,11 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 ## Classes, learning and combat
 
-- Start as warrior with Mortal Strike and Whirlwind. Mortal Strike supplies focused
-  burst; Whirlwind spends spare rage and gains value against adjacent groups. Execute
-  remains a later finisher. Heroic Strike and Incite are removed; further passive
-  development remains open until the revised kit has been playtested. The roster is
-  warrior, shaman, paladin and rogue.
+- Start as warrior with Mortal Strike and Whirlwind. Mortal Strike is the stronger
+  single-target spender; Whirlwind spends spare rage and gains value against adjacent
+  groups. Execute remains a later finisher. Heroic Strike and Incite are removed;
+  further passive development remains open until the revised kit has been playtested.
+  The roster is warrior, shaman, paladin and rogue.
 - Choose which class track to advance at the marshal before accepting any quest.
   Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
   from Loop two. Returning Loops begin in the previous class; confirming a class,

@@ -828,8 +828,8 @@ func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -
 	world.last_attacked_enemy = first
 	world.auto_attack_target = first
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(first.health, 9980)
-	assert_eq(second.health, 9980)
+	assert_eq(first.health, 9986)
+	assert_eq(second.health, 9986)
 	assert_eq(distant.health, 10000)
 	assert_eq(friendly.health, 10000)
 	assert_eq(dead.health, 10000)
@@ -849,7 +849,7 @@ func test_whirlwind_requires_an_adjacent_enemy_and_rejects_without_spending() ->
 		var enemy := _enemy(world, world.player_tile + Vector2i(distance, distance))
 		assert_eq(world.cast_skill(&"whirlwind_1"), distance == 1)
 		assert_eq(world.turn_count, 1 if distance == 1 else 0)
-		assert_eq(enemy.health, 9980 if distance == 1 else 10000)
+		assert_eq(enemy.health, 9986 if distance == 1 else 10000)
 		assert_eq(world.hero.rage, 85 if distance == 1 else 100)
 
 

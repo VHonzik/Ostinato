@@ -1160,7 +1160,7 @@ func test_whirlwind_keeps_due_ordinary_swing_damage_and_rage_after_its_own_hit()
 	world.auto_attack_target = enemy
 	world.last_attacked_enemy = enemy
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(enemy.health, enemy.max_health - 40)
+	assert_eq(enemy.health, enemy.max_health - 34, "14 Whirlwind damage plus the ordinary 20-damage swing.")
 	assert_eq(world.hero.rage, 14)
 	assert_string_contains(world.messages[0], "Whirlwind (hit)")
 	assert_string_contains(world.messages[1], "You ->")
@@ -1181,7 +1181,7 @@ func test_whirlwind_miss_spends_rage_and_counts_one_use() -> void:
 	assert_eq(world.hero.warrior_progress, 1)
 
 
-func test_whirlwind_crit_doubles_weapon_damage() -> void:
+func test_whirlwind_crit_doubles_its_reduced_weapon_damage() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
 	enemy.stunned_until = 999
@@ -1191,7 +1191,7 @@ func test_whirlwind_crit_doubles_weapon_damage() -> void:
 	world.hero.melee.damage_max = 20.0
 	world.hero.melee.attack_power = 0
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(enemy.health, enemy.max_health - 40)
+	assert_eq(enemy.health, enemy.max_health - 28)
 
 
 func test_live_whirlwind_hotbar_casts_without_target_picker_or_attack_commitment() -> void:

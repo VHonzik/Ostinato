@@ -226,7 +226,7 @@ func test_recklessness_boosts_physical_attacks_but_not_holy_or_nature_damage() -
 	var before := enemy.health
 	_fixed_weapon(world.hero)
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(before - enemy.health, 120)
+	assert_eq(before - enemy.health, 84)
 	before = enemy.health
 	_fixed_weapon(world.hero)
 	world._player_swing(enemy)
