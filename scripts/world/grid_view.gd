@@ -27,6 +27,7 @@ const ENVIRONMENT: Texture2D = preload(
 )
 
 const NPC_BASE_SPRITE: Texture2D = preload("res://assets/sprites/dev/npc_base.svg")
+const EARTH_ELEMENTAL_SPRITE: Texture2D = preload("res://assets/sprites/dev/earth_elemental.svg")
 
 const VALLEY_ATLAS: Texture2D = preload("res://assets/spritesheets/valley/sprites.png")
 const VALLEY_ACTORS: Dictionary[int, StringName] = {
@@ -62,7 +63,7 @@ const REFERENCE_ENVIRONMENT: Dictionary[StringName, Vector2i] = {
 const BLINK_SECONDS: float = 2.0
 const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
 
-## NPC keys match valley sprite names; totems use earth_totem,
+## NPC keys match valley sprite names; summons use earth_elemental or wolf,
 ## and fallback characters use character_<column>_<row>.
 @export var npc_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
 ## Player keys are class names. The default faction layer is empty.
@@ -120,8 +121,8 @@ static func health_tint(health: int, max_health: int) -> Color:
 func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 	var key: StringName
 	var contact := NpcDefinition.find(actor.npc_id)
-	if actor.summon_kind in ["earth", "fire"]:
-		key = StringName(actor.summon_kind + "_totem")
+	if actor.summon_kind == "earth_elemental":
+		key = &"earth_elemental"
 	elif actor.summon_kind == "wolf":
 		key = &"wolf"
 	elif not actor.stalker and contact != null and contact.sprite != &"":
@@ -135,8 +136,8 @@ func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 		key = StringName("character_%d_%d" % [source.x, source.y])
 	if not npc_sprites.has(key):
 		var faction: Texture2D
-		if actor.summon_kind in ["earth", "fire"]:
-			faction = _totem_sprite(actor.summon_kind)
+		if actor.summon_kind == "earth_elemental":
+			faction = EARTH_ELEMENTAL_SPRITE
 		elif key.begins_with("character_"):
 			faction = _character_sprite(actor_sprite(actor))
 		else:
@@ -261,15 +262,6 @@ func _atlas_sprite(texture: Texture2D, region: Rect2) -> AtlasTexture:
 	sprite.atlas = texture
 	sprite.region = region
 	return sprite
-
-
-func _totem_sprite(kind: String) -> ImageTexture:
-	var image := Image.create(16, 16, false, Image.FORMAT_RGBA8)
-	image.fill(Color.TRANSPARENT)
-	image.fill_rect(Rect2i(5, 2, 6, 12),
-		Color("#cf884c") if kind == "earth" else Color("#ffb75a"))
-	image.fill_rect(Rect2i(3, 5, 10, 1), Color.WHITE)
-	return ImageTexture.create_from_image(image)
 
 
 func _draw_valley_ground(occupants: Dictionary[Vector2i, GridActor]) -> void:

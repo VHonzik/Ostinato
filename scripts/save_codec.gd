@@ -244,7 +244,7 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 				return false
 		actor.threat = _normalized_numbers(record.threat)
 		actor.debuffs = _normalized_buffs(record.debuffs)
-		if (actor.summon_kind not in ["", "earth", "wolf"]
+		if (actor.summon_kind not in ["", "earth_elemental", "wolf"]
 			or actor.expires_turn < 0 or actor.stunned_until < 0):
 			return false
 		if actor.summon_kind != "":
@@ -254,6 +254,8 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
 				return false
 			if actor.alive and actor.summon_kind != "wolf" and SummonRules.active(world, actor.summon_kind) != null:
+				return false
+			if actor.summon_kind == "earth_elemental" and actor.expires_turn != 0:
 				return false
 			if actor.alive and actor.summon_kind == "wolf":
 				var wolves := world.actors.filter(func(other: GridActor) -> bool:
@@ -335,7 +337,7 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
 		return false
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
-	SummonRules.refresh_auras(world)
+	world.hero.refresh_stats()
 	world.hero.health = int(data.hero.health)
 	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health):
 		return false

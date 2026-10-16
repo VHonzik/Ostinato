@@ -2,14 +2,12 @@ class_name ClassSpellEffects
 extends RefCounted
 
 ## Buffs, Holy weapon effects and explicit class defenses.
-static func absorb(world: GridWorld, target: GridActor, amount: int, physical: bool) -> int:
+static func absorb(world: GridWorld, target: GridActor, amount: int, _physical: bool) -> int:
 	var buffs := world.hero.buffs if target == null else target.buffs
 	if buffs.has(&"divine_shield_1"):
 		return 0
 	if target == null:
 		amount = floori(amount * ClassToolkitRules.recklessness_taken_multiplier(world.hero))
-	if not physical and target == null:
-		amount = floori(amount * (1.0 - ClassToolkitRules.magnitude(world.hero, &"elemental_warding_1") / 100.0))
 	return amount
 
 
@@ -48,4 +46,3 @@ static func tick(world: GridWorld) -> void:
 	for key in world.hero.debuffs.keys():
 		if int(world.hero.debuffs[key].until) <= world.turn_count:
 			world.hero.debuffs.erase(key)
-	SummonRules.refresh_auras(world)

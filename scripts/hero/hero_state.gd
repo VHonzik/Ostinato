@@ -48,7 +48,6 @@ var haste: float = 1.0
 var cooldowns: Dictionary = {}
 var potion_ready_turn: int = 0
 var restoration: Dictionary = {}
-var aura_strength: int = 0
 var debuffs: Dictionary = {}
 var _passive_hit_bonus: float = 0.0
 
@@ -114,7 +113,6 @@ func refresh_stats() -> void:
 	for buff in buffs.values():
 		for stat in attributes:
 			attributes[stat] += int(buff.get(stat, 0))
-	attributes.strength += aura_strength
 	strength = int(attributes.strength)
 	agility = int(attributes.agility)
 	stamina = int(attributes.stamina)

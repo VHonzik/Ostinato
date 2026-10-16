@@ -646,13 +646,13 @@ func test_charge_holds_engaged_target_until_arrival_then_releases_it() -> void:
 	assert_ne(enemy.tile, home, "The hold ends on arrival; subsequent pursuit works.")
 
 
-func test_charge_hold_allows_target_to_attack_adjacent_totem() -> void:
+func test_charge_hold_allows_target_to_attack_adjacent_elemental() -> void:
 	var world := _charge_world()
 	var enemy := _enemy(world, Vector2i(11, 10))
 	var totem := GridActor.new(Vector2i(11, 9))
-	totem.summon_kind = "totem"
-	totem.summon_skill = &"strength_of_earth_totem_1"
-	totem.expires_turn = 30
+	totem.summon_kind = "earth_elemental"
+	totem.summon_skill = &"earth_elemental_1"
+	totem.expires_turn = 0
 	totem.awards_experience = false
 	totem.max_health = 100
 	totem.health = 100

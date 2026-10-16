@@ -61,8 +61,13 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - Warrior supplies physical burst, rage, execution and strength through taking damage.
   Enrage rewards surviving enemy hits; passive Recklessness trades more incoming damage
   for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
-  Shaman retains its attack-haste passive. Shaman supplies weapon
-  enhancements, reactive damage and tactical procs; paladin supplies Holy damage,
+  Shaman retains its attack-haste passive. Shaman starts with Lightning Shield and
+  Earth Shock, supplies free weapon/shield preparation, reactive damage and tactical
+  procs. Earth Shock deals flat Nature damage independent of weapons and Strength.
+  Earth Elemental is a mobile, lasting summon that draws nearby engaged enemies
+  away from the player; only one may be alive. Spirit wolves supply damage and healing.
+  Strength of Earth Totem and Elemental Warding are removed.
+  Paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,
   speed and opportunistic damage. The milestone covers the full v0.1 toolkit.
 - Poisons offer a preparation choice: Instant rewards short fights, while Deadly
@@ -146,7 +151,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   chance and haste speeds weapon swings. These effects are independent of the selected
   class. Small primary bonuses must matter; preserve fractional weapon power through
   damage resolution so rounding cannot erase them. Crit and haste bonuses remain direct
-  percentages, with small numbers on gear. Keep existing weapon-based Holy/Nature scaling;
+  percentages, with small numbers on gear. Keep existing weapon-based Holy/Nature scaling
+  except for flat-damage Earth Shock;
   broader damage/healing scaling
   remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.

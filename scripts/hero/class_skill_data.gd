@@ -5,11 +5,11 @@ extends RefCounted
 const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior", &"Shaman", &"Paladin", &"Rogue"]
 const MAINTENANCE_FAMILIES: Array[StringName] = [
 	&"battle_shout", &"windfury_weapon", &"lightning_shield", &"seal_of_command",
-	&"instant_poison", &"deadly_poison", &"strength_of_earth_totem", &"blessing_of_might",
+	&"instant_poison", &"deadly_poison", &"blessing_of_might",
 ]
 const STARTERS: Dictionary = {
 	&"Warrior": [&"mortal_strike_1", &"whirlwind_1"],
-	&"Shaman": [&"lightning_shield_1", &"strength_of_earth_totem_1"],
+	&"Shaman": [&"lightning_shield_1", &"earth_shock_1"],
 	&"Paladin": [&"seal_of_command_1", &"judgement_1"],
 	&"Rogue": [&"slice_and_dice_1", &"relentless_assault_1"],
 }
@@ -21,16 +21,9 @@ const WARRIOR_SKILLS: Array[StringName] = [
 const STARTER_SKILLS: Dictionary = {
 	"lightning_shield_1": {
 		"title": "Lightning Shield", "class_tab": "Shaman", "training_level": 1,
-		"rage_cost": 10, "cast_seconds": 1.0, "duration": 30, "minimum": 10,
+		"rage_cost": 0, "cast_seconds": 1.0, "duration": 30, "minimum": 10,
 		"family": "lightning_shield", "effect": "ARMOR", "target": "SELF", "school": 3,
 		"detail": "Three Nature-damage charges for 30 turns. At most one discharge per 3 turns. Refreshing counts as a use."
-	},
-	"strength_of_earth_totem_1": {
-		"title": "Strength of Earth Totem", "class_tab": "Shaman",
-		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
-		"minimum": 5, "range_tiles": 4,
-		"family": "strength_of_earth_totem", "effect": "SUMMON", "target": "NONE",
-		"detail": "Place a 5-health totem for 30 turns: +5 Strength within 4 tiles. Replaces your previous earth totem."
 	},
 	"seal_of_command_1": {
 		"title": "Seal of Command", "class_tab": "Paladin",

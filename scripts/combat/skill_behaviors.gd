@@ -119,7 +119,6 @@ class EarthShock extends SkillBehavior:
 		if world.hero.buffs.has(&"elemental_assault_1"):
 			extra += 0.5
 			world.hero.buffs.erase(&"elemental_assault_1")
-		extra *= ClassToolkitData.EARTH_SHOCK_DAMAGE_MULTIPLIER
 		var result := ClassToolkitRules.magic_attack(world, cast.target, cast.skill, extra)
 		var target := cast.target
 		if result.landed() and target.alive and not world.is_terminal():
@@ -141,7 +140,8 @@ class FeralSpirit extends SkillBehavior:
 
 class Summon extends SkillBehavior:
 	func can_apply(world: GridWorld, skill: SkillDefinition, _target: GridActor) -> bool:
-		return SummonRules.placement(world, skill) != Vector2i(-1, -1)
+		return (SummonRules.active(world, SummonRules.slot(skill)) == null
+			and SummonRules.placement(world, skill) != Vector2i(-1, -1))
 
 	func resolve(world: GridWorld, cast: Cast) -> void:
 		SummonRules.summon(world, cast.skill)

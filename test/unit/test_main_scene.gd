@@ -984,7 +984,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
 	var hero := _game.world.hero
 	assert_true(hero.learn_skill(SkillDefinition.catalog(&"lightning_shield_1")))
-	assert_true(hero.learn_skill(SkillDefinition.catalog(&"strength_of_earth_totem_1")))
+	assert_true(hero.learn_skill(SkillDefinition.catalog(&"earth_shock_1")))
 	await _tap_key(KEY_K)
 	var shout :=  _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
 		return button.text.begins_with("Battle Shout"))[0] as Button
@@ -995,12 +995,12 @@ func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> v
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.change_tab(2)
 	var healing := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
-		return button.text.begins_with("Strength of Earth Totem"))[0] as Button
+		return button.text.begins_with("Earth Shock"))[0] as Button
 	healing.grab_focus()
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_K)
 	assert_eq(_game.hero_panel._tabs.get_tab_title(_game.hero_panel._tabs.current_tab), "Shaman")
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Strength of Earth Totem")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Earth Shock")
 	_game.hero_panel.change_tab(-2)
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.close()

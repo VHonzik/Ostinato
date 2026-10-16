@@ -158,14 +158,17 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 				critical = true
 				world.hero.buffs.erase(key)
 	var weapon_roll := world.combat_random.randf()
-	var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
+	var raw := (MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
+		if skill.weapon_multiplier != 0.0 else 0.0)
 	var flat_bonus := skill.minimum
 	if skill.family == &"judgement":
 		flat_bonus += magnitude(world.hero, &"sanctity_of_battle_1")
-	var value := MeleeRules.round_weapon_damage((raw * skill.weapon_multiplier
-		+ flat_bonus) * extra * damage_multiplier(world.hero)
-		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level),
-		world.hero.melee, weapon_roll)
+	var amount := (raw * skill.weapon_multiplier + flat_bonus) * extra * damage_multiplier(world.hero)
+	amount *= MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level)
+	# Flat spells reuse a uniform rounding roll without depending on weapon damage bands.
+	var value := (floori(amount) + int(weapon_roll < amount - floori(amount))
+		if skill.weapon_multiplier == 0.0 else
+		MeleeRules.round_weapon_damage(amount, world.hero.melee, weapon_roll))
 	if critical:
 		value *= 2
 	var event := AttackEvent.new(target, skill, &"critical" if critical else &"hit",

@@ -309,8 +309,6 @@ func valid_spell_target(skill: SkillDefinition, target: GridActor) -> bool:
 	if (distance < skill.minimum_range_tiles or distance > skill.range_tiles
 		or not has_sight(player_tile, target.tile)):
 		return false
-	if skill.target == SkillDefinition.Target.ALLY and target.summon_kind in ["earth", "fire"]:
-		return false
 	var friendly := target.relationship == GridActor.Relationship.FRIENDLY
 	return friendly if skill.target == SkillDefinition.Target.ALLY else not friendly
 
@@ -624,7 +622,7 @@ func _finish_turn() -> void:
 	for actor in actors:
 		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
 			SummonRules.remove(self, actor)
-	SummonRules.refresh_auras(self)
+	hero.refresh_stats()
 	NpcRules.acquire_hostiles(self)
 	for actor in actors:
 		if not actor.alive:
@@ -813,8 +811,7 @@ func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
 func _tick_effects() -> void:
 	ClassSpellEffects.tick(self)
 	_expire_hero_buffs()
-
-	SummonRules.refresh_auras(self)
+	hero.refresh_stats()
 
 
 func _expire_hero_buffs() -> void:

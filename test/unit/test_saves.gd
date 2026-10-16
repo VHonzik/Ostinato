@@ -42,14 +42,14 @@ func test_full_round_trip_restores_random_streams_effects_outfit_and_future_arri
 	_session.restart_after_death()
 	StarterGear.exchange(_session.world.hero, &"Shaman")
 	_session.world.train(&"Shaman", &"lightning_shield_1")
-	_session.world.train(&"Shaman", &"strength_of_earth_totem_1")
+	_session.world.train(&"Shaman", &"earth_shock_1")
 	_session.world.hero.rage = 100
 	_session.world.hero.casting_credit = 0.6
 	_session.world.movement_credit = 0.5
 	_session.world.hero.copper = 200
 	_session.world.hotbar[0] = &"lightning_shield_1"
 	_session.world.hotbar_locked = true
-	_session.world.cast_skill(&"strength_of_earth_totem_1")
+	_session.world.cast_skill(&"lightning_shield_1")
 	for index in range(12):
 		_session.world.wait_turn()
 	assert_true(_saves.save_slot(_session, 1), _saves.last_error)

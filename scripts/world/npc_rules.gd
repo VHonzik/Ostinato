@@ -14,7 +14,7 @@ static func acquire_hostiles(world: GridWorld) -> void:
 			world.add_message("%s engages you." % actor.title)
 		else:
 			for ally in world.actors:
-				if (ally.alive and ally.summon_kind != ""
+				if (ally.alive and ally.summon_kind not in ["", "earth_elemental"]
 					and GridWorld.tile_distance(actor.tile, ally.tile) <= actor.aggro_range
 					and world.has_sight(actor.tile, ally.tile)):
 					actor.engaged = true

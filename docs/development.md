@@ -91,7 +91,7 @@ Late Warrior training adds Booming Shout, a guaranteed area hit for pulling neut
 and hostile NPCs in sight. It grants no combo points or attack procs and keeps the
 selected attack target.
 
-Shaman starts with Lightning Shield and Strength of Earth Totem; Paladin with Seal of
+Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
 Command and Judgement; Rogue with Slice and Dice and the Relentless Assault passive.
 All use rage. Retained abilities/passives work in every class, but only selected-class
 uses grant class XP; learning does not spend it. Relentless Assault builds player-held
@@ -108,6 +108,11 @@ be cast or assigned. New catalogue data lives in
 [starter and Warrior data](../scripts/hero/class_skill_data.gd).
 Every class can equip any gear without level or learning requirements.
 Ambidexterity improves off-hand damage when learned.
+Lightning Shield and Windfury cost no rage but still use a world turn. Earth Shock
+deals flat Nature damage independent of weapon damage and Strength. Strength of Earth
+Totem and Elemental Warding are removed. Earth Elemental follows the player or an
+engaged target and repeatedly taunts nearby engaged hostiles in sight. It lasts until
+killed or Loop reset, blocks resummoning while alive and keeps its cooldown after death.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
 Instant and Deadly Poison become available together at the Rogue trainer; Catalytic
@@ -144,11 +149,11 @@ profiles; saved actors keep their recorded stats. The saved
 [October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
 simulation setup and two-handed/dual-wield comparisons for future class tuning.
 
-Current saves are `demo` revision 23, with gear stats rebuilt from equipment on load.
-Revision 22 and older saves are incompatible and left unchanged; start a fresh game.
-This revision replaces Warrior Flurry with Enrage and Recklessness and preserves the
-Enrage roll boundary across saves. The previous revision replaced Heroic Strike with
-starter Whirlwind and removed Incite.
+Current saves are `demo` revision 24, with gear stats rebuilt from equipment on load.
+Revision 23 and older saves are incompatible and left unchanged; start a fresh game.
+This revision replaces Strength of Earth Totem and Elemental Warding with the lasting
+Earth Elemental and starts Shaman with Earth Shock. Enrage's roll boundary and summon
+state remain preserved across saves.
 Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user

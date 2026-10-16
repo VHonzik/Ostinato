@@ -43,7 +43,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing_hotbar() -> void:
-	var counts := {&"Warrior": 16, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
+	var counts := {&"Warrior": 16, &"Shaman": 13, &"Paladin": 15, &"Rogue": 17}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -71,32 +71,25 @@ func test_trainers_list_unlocks_in_class_xp_order() -> void:
 			previous = skill.progress_required
 
 
-func test_early_core_skills_unlock_from_starter_use_and_advance_class_xp() -> void:
-	for category: StringName in [&"Shaman", &"Rogue"]:
-		var world := _world(category)
-		for starter in ClassSkillData.STARTERS[category]:
-			assert_true(world.train(category, starter))
-		var attack: StringName = &"earth_shock_1" if category == &"Shaman" else &"eviscerate_1"
-		var checkpoint := 10 if category == &"Shaman" else 5
-		world.hero.class_progress[category] = checkpoint - 1
-		assert_false(world.train(category, attack))
-		world.hero.rage = 100
-		world.hero.combo_points = 1
-		var starter: StringName = &"lightning_shield_1" if category == &"Shaman" else &"slice_and_dice_1"
-		assert_true(world.cast_skill(starter))
-		assert_eq(world.hero.progression_points(category), checkpoint)
-		assert_string_contains("\n".join(world.messages), "learn " + SkillDefinition.catalog(attack).title)
-		assert_true(world.train(category, attack), "No earlier passive is required.")
-		assert_eq(world.hero.progression_points(category), checkpoint, "Learning does not spend XP.")
-		world.hero.combo_points = 2
-		if category == &"Rogue":
-			assert_false(world.cast_skill(attack), "Eviscerate is passive.")
-			assert_false(world.assign_hotbar(0, attack))
-			assert_true(world.cast_skill(starter))
-		else:
-			assert_true(world.cast_skill(attack, _enemy(world)))
-		assert_eq(world.hero.progression_points(category), checkpoint + 1)
-		world.discard()
+
+func test_early_rogue_attack_unlocks_from_starter_use_and_advances_class_xp() -> void:
+	var world := _world(&"Rogue")
+	for starter in ClassSkillData.STARTERS[&"Rogue"]:
+		assert_true(world.train(&"Rogue", starter))
+	world.hero.class_progress[&"Rogue"] = 4
+	assert_false(world.train(&"Rogue", &"eviscerate_1"))
+	world.hero.rage = 100
+	world.hero.combo_points = 1
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	assert_eq(world.hero.progression_points(&"Rogue"), 5)
+	assert_string_contains("\n".join(world.messages), "learn Eviscerate")
+	assert_true(world.train(&"Rogue", &"eviscerate_1"))
+	assert_eq(world.hero.progression_points(&"Rogue"), 5)
+	world.hero.combo_points = 2
+	assert_false(world.cast_skill(&"eviscerate_1"), "Eviscerate is passive.")
+	assert_false(world.assign_hotbar(0, &"eviscerate_1"))
+	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	assert_eq(world.hero.progression_points(&"Rogue"), 6)
 
 
 func test_rogue_unlocks_reach_the_early_and_final_skills_five_points_sooner() -> void:
@@ -140,7 +133,7 @@ func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() 
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
-		var expected := 23
+		var expected := 18 if identifier == &"earth_shock_1" else 23
 		assert_true(world.cast_skill(identifier, enemy))
 		assert_eq(enemy.max_health - enemy.health, expected,
 			"A +2 target reduces spell damage once, without physical armor mitigation.")
@@ -439,17 +432,19 @@ func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_po
 	assert_eq(world.hero.progression_points(&"Shaman"), 1001)
 
 
-func test_earth_shock_reduces_full_damage_by_thirty_percent_before_crit() -> void:
+
+func test_earth_shock_flat_damage_and_crits_ignore_weapon_and_strength() -> void:
 	for critical in [false, true]:
-		var world := _world(&"Shaman")
-		_learn(world, [&"earth_shock_1"])
-		var enemy := _enemy(world, Vector2i(10, 8))
-		world.hero.melee.damage_min = 16
-		world.hero.melee.damage_max = 16
-		world.hero.melee.critical = 100.0 if critical else 0.0
-		assert_true(world.cast_skill(&"earth_shock_1", enemy))
-		assert_eq(enemy.max_health - enemy.health, 56 if critical else 28,
-			"The full weapon + flat damage is reduced, including critical hits.")
+		for weapon_damage in [1.0, 16.0, 1000.0]:
+			var world := _world(&"Shaman")
+			_learn(world, [&"earth_shock_1"])
+			var enemy := _enemy(world, Vector2i(10, 8))
+			world.hero.melee.damage_min = weapon_damage
+			world.hero.melee.damage_max = weapon_damage + 0.5
+			world.hero.melee.attack_power = 1000
+			world.hero.melee.critical = 100.0 if critical else 0.0
+			assert_true(world.cast_skill(&"earth_shock_1", enemy))
+			assert_eq(enemy.max_health - enemy.health, 48 if critical else 24)
 
 
 func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_upgrade() -> void:
@@ -464,7 +459,7 @@ func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_up
 	world.hero.melee.damage_max = 76
 	world.hero.melee.attack_power = 0
 	assert_true(world.cast_skill(&"earth_shock_1", enemy))
-	assert_eq(enemy.health, 10000 - 119, "100 * 1.7 Elemental Assault * 0.7 damage tuning.")
+	assert_eq(enemy.health, 10000 - 41, "Flat Nature damage retains Elemental Assault empowerment.")
 	assert_eq(enemy.stunned_until, 2)
 	assert_almost_eq(enemy.swing.remaining, 5.0, 0.001)
 	assert_eq(world.hero.cooldowns.shock, 7)
@@ -472,14 +467,10 @@ func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_up
 	assert_false(world.hero.buffs.has(&"elemental_assault_1"))
 
 
-func test_elemental_weapons_upgrades_totem_and_replacement_keeps_only_one_aura() -> void:
-	var world := _world()
-	_learn(world, [&"elemental_weapons_1", &"strength_of_earth_totem_1"])
-	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_eq(world.hero.aura_strength, 7)
-	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_eq(world.hero.aura_strength, 7)
-	assert_eq(world.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "earth").size(), 1)
+
+func test_removed_shaman_abilities_are_unavailable() -> void:
+	assert_null(SkillDefinition.catalog(&"strength_of_earth_totem_1"))
+	assert_null(SkillDefinition.catalog(&"elemental_warding_1"))
 
 
 func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_internal_cooldown() -> void:
@@ -549,8 +540,8 @@ func test_blessing_strength_and_benediction_work_when_retained_as_warrior() -> v
 
 func test_shield_protects_both_schools_penalizes_damage_and_guardians_favor_extends_it() -> void:
 	var world := _world()
-	_learn(world, [&"divine_shield_1", &"guardians_favor_1", &"elemental_warding_1"])
-	assert_eq(ClassSpellEffects.absorb(world, null, 100, false), 85)
+	_learn(world, [&"divine_shield_1", &"guardians_favor_1"])
+	assert_eq(ClassSpellEffects.absorb(world, null, 100, false), 100)
 	assert_eq(ClassSpellEffects.absorb(world, null, 100, true), 100)
 	assert_true(world.cast_skill(&"divine_shield_1"))
 	assert_eq(world.hero.cooldowns.divine_shield, 21)
@@ -1048,7 +1039,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 62)
+	assert_eq(restored.hero.learned_skills.size(), 61)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1064,7 +1055,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 62)
+	assert_eq(game.world.hero.learned_skills.size(), 61)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

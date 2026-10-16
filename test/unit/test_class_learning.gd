@@ -201,32 +201,17 @@ func test_lightning_shield_counts_reapplications_but_discharges_grant_no_xp_or_p
 	assert_eq(world.hero.combo_points, 0)
 
 
-func test_totem_replacement_range_expiry_and_failed_placement_keep_resources_and_xp() -> void:
+
+func test_shaman_starters_include_a_direct_attack_without_mastery_requirement() -> void:
 	var world := _world(&"Shaman")
-	_learn_starters(world, &"Shaman")
-	world.hero.rage = 100
-	var strength := world.hero.strength
-	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	var first := SummonRules.active(world, "earth")
-	assert_eq(world.hero.strength, strength + 5)
-	assert_true(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_false(first.alive)
-	var second := SummonRules.active(world, "earth")
-	world.player_tile = Vector2i(14, 14)
-	SummonRules.refresh_auras(world)
-	assert_eq(world.hero.strength, strength)
-	for direction in GridWorld.DIRECTIONS:
-		world.blocked_tiles[world.player_tile + direction] = true
-	var rage := world.hero.rage
-	var turn := world.turn_count
-	assert_false(world.cast_skill(&"strength_of_earth_totem_1"))
-	assert_eq(world.hero.rage, rage)
-	assert_eq(world.turn_count, turn)
+	assert_true(world.train(&"Shaman", &"earth_shock_1"))
+	assert_true(world.train(&"Shaman", &"lightning_shield_1"))
+	world.hero.rage = 15
+	world.hero.melee.hit = 100.0
+	assert_true(world.cast_skill(&"earth_shock_1", _enemy(world)))
+	assert_eq(world.hero.progression_points(&"Shaman"), 1)
+	assert_true(world.cast_skill(&"lightning_shield_1"))
 	assert_eq(world.hero.progression_points(&"Shaman"), 2)
-	assert_same(SummonRules.active(world, "earth"), second)
-	world.turn_count = second.expires_turn - 1
-	world.wait_turn()
-	assert_null(SummonRules.active(world, "earth"))
 
 
 func test_combo_points_require_passive_persist_between_targets_and_cap_without_proc_credit() -> void:
@@ -359,7 +344,6 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 			assert_true(game.restart_after_death())
 			game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 	game.world.hero.rage = 100
-	assert_true(game.world.cast_skill(&"strength_of_earth_totem_1"))
 	assert_true(game.world.cast_skill(&"lightning_shield_1"))
 	assert_true(game.world.cast_skill(&"seal_of_command_1"))
 	game.world.hero.combo_points = 3

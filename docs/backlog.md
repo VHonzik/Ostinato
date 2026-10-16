@@ -263,6 +263,20 @@ current deliberate spender is Slice and Dice, with a passive Eviscerate attack w
 - [ ] Decide later passive development after moving Whirlwind out of trainer progression
   and adding the early risk/reward passives.
 
+### Current class-identity follow-up — Shaman preparation and summons
+
+- [x] Make Lightning Shield and Windfury free to apply and move Earth Shock into the
+  starter pair. Remove weapon/Strength scaling from Earth Shock, compensate its flat
+  damage and retain its interrupt and critical empowerment.
+- [x] Remove Strength of Earth Totem and Elemental Warding. Add one lasting mobile
+  Earth Elemental with a long cooldown and a local taunt of already engaged enemies.
+  Keep its health, cooldown and singleton state through saves; clear it on Loop reset.
+- [x] Strengthen spirit-wolf attacks and their damage-based healing. Keep tuning in
+  game data and descriptions, with a placeholder elemental sprite for playtesting.
+- [ ] Owner playtest: compare Earth Shock across weapon setups, summon the elemental
+  during a Stalker fight and against a group, then compare wolves' damage/healing.
+  Judge whether the elemental buys useful time without making ordinary pulls trivial.
+
 ### Current playable task — Simplified itemization
 
 - [x] Replace individual armor pieces and hands with armor, neck, two rings and a

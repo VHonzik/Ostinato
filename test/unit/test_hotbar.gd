@@ -34,9 +34,10 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 	assert_true(world.assign_hotbar(11, &"mortal_strike_1"))
 	for identifier: StringName in [
 		&"battle_shout_1", &"windfury_weapon_1", &"lightning_shield_1", &"seal_of_command_1",
-		&"instant_poison_1", &"deadly_poison_1", &"strength_of_earth_totem_1", &"blessing_of_might_1",
+		&"instant_poison_1", &"deadly_poison_1", &"blessing_of_might_1",
 		&"charge_1", &"execute_1", &"booming_shout_1", &"earth_shock_1", &"feral_spirit_1",
-		&"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1", &"relentless_assault_1",
+		&"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1",
+		&"earth_elemental_1", &"relentless_assault_1",
 	]:
 		var skill := SkillDefinition.catalog(identifier)
 		world.hero.selected_class = skill.class_tab
@@ -49,7 +50,7 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 	assert_eq(world.hotbar.slice(10), [
 		&"battle_shout_1", &"mortal_strike_1", &"windfury_weapon_1", &"lightning_shield_1",
 		&"seal_of_command_1", &"instant_poison_1", &"deadly_poison_1",
-		&"strength_of_earth_totem_1", &"blessing_of_might_1", &"",
+		&"blessing_of_might_1", &"earth_elemental_1", &"",
 	])
 	assert_eq(world.turn_count, 0)
 
