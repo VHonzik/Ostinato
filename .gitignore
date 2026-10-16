@@ -3,6 +3,8 @@
 !/bin/.gdignore
 /builds/
 /reports/*
+# Includes all simulation results, logs, baselines and isolated runtime files.
+/reports/bench/
 !/reports/.gdignore
 *.translation
 /art/__pycache__/

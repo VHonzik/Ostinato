@@ -22,6 +22,13 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
 - Use simple typed GDScript and built-in Godot features. Avoid speculative frameworks,
   broad refactors, and unrelated cleanup. Keep the game runnable between tasks.
 - Keep the exact dependency pins in `tools/versions.json`; upgrade deliberately.
+- For design simulations, read [bench/README.md](bench/README.md). Keep reusable bench
+  source in `bench/`, separate from game code; put generated runs in ignored
+  `reports/bench/`. Use `pwsh -NoProfile -File tools/simulate.ps1` with its scenario
+  options as a standalone command so the saved launcher approval applies. Routine
+  local sims are authorized during design work; do not ask for conversational approval
+  for each run. Respect any tool-enforced approval and request only the launcher prefix
+  if needed. Sims inform design; they do not establish balance or human acceptance.
 - Run `tools/validate.ps1` for code/resource changes: import, script loading, startup.
   Add `-Test <path>` for affected behavior tests. Use `-Full` for changes spanning many
   systems, validation-tool changes, or when requested. Documentation-only changes need

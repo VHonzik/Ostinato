@@ -156,6 +156,11 @@ files during failures and declare future compatibility breaks explicitly.
 
 ## Checks
 
+Design experiments use the temporary [simulation bench](../bench/README.md), launched
+with `pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Smoke`.
+Its source is tracked separately in `bench/`; generated results, logs and runtime files
+stay under ignored `reports/bench/`. Use the documented launcher for reusable approval.
+
 ```powershell
 # Default: headless import, load/check first-party scripts, startup. No unit tests.
 pwsh -NoProfile -File tools/validate.ps1
