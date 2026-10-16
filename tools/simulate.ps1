@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'accessories', 'loot', 'loot-rates')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'accessories', 'loot', 'loot-rates')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [ValidateRange(-1, 2)][int]$Shard = -1,
@@ -13,6 +13,7 @@ param(
 $scriptsByScenario = @{
   warrior = 'warrior_identity_sim.gd'; 'warrior-harder' = 'warrior_identity_harder.gd'
   paladin = 'paladin_sim.gd'
+  rogue = 'rogue_sim.gd'
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
 }
@@ -22,7 +23,7 @@ $savedEnvironment = @{}
 $metadata = $null
 $passed = $false
 try {
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -ne 'paladin') { throw '-Shard is only for combat simulations.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -94,9 +95,9 @@ try {
     if ($Shard -eq -1) { $expectedCells *= 3 }
     if ($data.rows.Count -ne $expectedCells) { throw "Incomplete Warrior matrix: expected $expectedCells cells." }
   }
-  if ($Scenario -eq 'paladin') {
+  if ($Scenario -in @('paladin', 'rogue')) {
     $expectedCells = if ($Shard -eq -1) { 54 } else { 18 }
-    if ($data.rows.Count -ne $expectedCells) { throw "Incomplete Paladin matrix: expected $expectedCells cells." }
+    if ($data.rows.Count -ne $expectedCells) { throw "Incomplete $Scenario matrix: expected $expectedCells cells." }
   }
   $passed = $true
   $metadata.status = 'passed'

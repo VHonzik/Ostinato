@@ -43,6 +43,35 @@ func test_poison_unlocks_share_checkpoint_and_catalyst_is_later() -> void:
 	assert_false(world.assign_hotbar(0, &"catalytic_venom_1"))
 
 
+func test_poisons_work_at_zero_rage_take_one_turn_and_preserve_a_free_attack_proc() -> void:
+	for identifier in PoisonRules.COATINGS:
+		var world := _world()
+		var trance := SkillDefinition.catalog(&"battle_trance_1")
+		world.hero.class_progress[&"Warrior"] = 1000
+		assert_true(world.hero.learn_skill(trance))
+		ClassToolkitRules.apply(world, trance.id, {"charges": 1})
+		world.hero.rage = 0
+		assert_true(world.cast_skill(identifier))
+		assert_eq(world.hero.rage, 0)
+		assert_eq(world.turn_count, 1)
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), identifier)
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), identifier)
+		assert_true(world.hero.buffs.has(trance.id), "Free preparation keeps the next free attack.")
+
+
+func test_both_poison_coatings_last_sixty_turns() -> void:
+	for identifier in PoisonRules.COATINGS:
+		var world := _world()
+		assert_true(world.cast_skill(identifier))
+		for index in range(59):
+			world.wait_turn()
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), identifier)
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), identifier)
+		world.wait_turn()
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"")
+		assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), &"")
+
+
 func test_selected_hand_replacement_preserves_other_coating_and_expiration() -> void:
 	var world := _world()
 	assert_true(world.cast_skill(&"instant_poison_1"))
@@ -184,31 +213,82 @@ func test_bonus_attacks_and_failed_hits_do_not_apply_deadly_and_instant_kill_doe
 	assert_true(enemy.debuffs.is_empty())
 
 
-func test_dot_nonfinal_boss_kill_allows_later_dots_but_player_death_prevents_ticks() -> void:
-	for player_dies in [true, false]:
+func test_poison_kill_prevents_retaliation_and_nonfinal_boss_death_allows_later_ticks() -> void:
+	for final_boss in [false, true]:
 		var world := _world()
 		var boss := _enemy(world)
 		boss.stalker = true
 		boss.health = 1
+		boss.stunned_until = 0
+		boss.engaged = true
+		boss.melee.hit = 1000
+		boss.melee.damage_min = 100000
+		boss.melee.damage_max = 100000
 		var later := _enemy(world, Vector2i(7, 8))
-		later.stalker = true
+		later.stalker = not final_boss
 		PoisonRules.apply_deadly(world, boss)
 		PoisonRules.apply_deadly(world, later)
-		if player_dies:
-			world.hero.facing = Vector2i.LEFT
-			boss.stunned_until = 0
-			boss.engaged = true
-			boss.melee.hit = 1000
-			boss.melee.damage_min = 100000
-			boss.melee.damage_max = 100000
+		world.auto_attack_target = boss
+		world.hero.swing.remaining = 0
+		var health := world.hero.health
 		world.wait_turn()
-		assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED
-			if player_dies else GridWorld.AttemptState.ACTIVE)
-		if player_dies:
-			assert_eq(later.health, later.max_health)
-		else:
-			assert_lt(later.health, later.max_health)
-		assert_eq(boss.health, 1 if player_dies else 0)
+		assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED
+			if final_boss else GridWorld.AttemptState.ACTIVE)
+		assert_eq(boss.health, 0)
+		assert_eq(world.hero.health, health, "Poison kills before enemy retaliation.")
+		assert_eq(world.hero.combo_points, 0, "The dead target receives no due swing.")
+		assert_eq(later.health, later.max_health if final_boss else later.max_health - 1)
+
+
+func test_player_death_prevents_future_poison_ticks() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	enemy.stunned_until = 0
+	enemy.engaged = true
+	enemy.melee.hit = 1000
+	enemy.melee.damage_min = 100000
+	enemy.melee.damage_max = 100000
+	world.hero.facing = Vector2i.LEFT
+	world.hero.melee.dodge = 0
+	PoisonRules.apply_deadly(world, enemy)
+	enemy.debuffs[&"deadly_poison_1"].next_tick = 2
+	world.wait_turn()
+	assert_eq(world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
+	world.wait_turn()
+	assert_eq(enemy.health, enemy.max_health)
+
+
+func test_swing_poison_application_waits_until_the_next_boundary() -> void:
+	var world := _world(5579)
+	var enemy := _enemy(world)
+	enemy.melee.dodge = 0
+	PoisonRules.coat(world, world.hero.find_skill(&"deadly_poison_1"))
+	world.hero.melee.hit = 100
+	world.hero.melee.critical = 0
+	world.auto_attack_target = enemy
+	world.hero.swing.remaining = 0
+	world.wait_turn()
+	assert_true(enemy.debuffs.has(&"deadly_poison_1"))
+	if not enemy.debuffs.has(&"deadly_poison_1"):
+		return
+	assert_eq(int(enemy.debuffs[&"deadly_poison_1"].next_tick), 2)
+	assert_false("\n".join(world.messages).contains("Deadly Poison ->"))
+	world.hero.swing.remaining = 100
+	var health := enemy.health
+	world.wait_turn()
+	assert_eq(enemy.health, health - 1)
+
+
+func test_expiring_damage_bonus_is_removed_before_poison_ticks() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	var guile := SkillDefinition.catalog(&"bandits_guile_1")
+	assert_true(world.hero.learn_skill(guile))
+	ClassToolkitRules.apply(world, guile.id, {"bonus_percent": 100, "until": 1})
+	PoisonRules.apply_deadly(world, enemy)
+	world.wait_turn()
+	assert_false(world.hero.buffs.has(guile.id))
+	assert_eq(enemy.health, 9999, "The expired bonus cannot amplify this boundary's tick.")
 
 
 func test_poison_picker_cancel_costs_nothing_and_confirm_uses_selected_hand() -> void:
@@ -228,7 +308,7 @@ func test_poison_picker_cancel_costs_nothing_and_confirm_uses_selected_hand() ->
 	panel.confirm()
 	assert_false(panel.visible)
 	assert_eq(world.turn_count, 1)
-	assert_eq(world.hero.rage, 88, "Ten rage plus the ordinary out-of-combat decay.")
+	assert_eq(world.hero.rage, 98, "Only ordinary out-of-combat rage decay applies.")
 	assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"")
 	assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), &"deadly_poison_1")
 

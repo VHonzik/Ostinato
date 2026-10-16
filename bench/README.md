@@ -11,6 +11,7 @@ From the repository root, after the normal [setup](../docs/development.md):
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Smoke
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario paladin
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario rogue
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario accessories
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot -Smoke
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
@@ -21,6 +22,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `warrior` | Full Warrior kit, three weapons, cold/prepared entry, groups and Stalker; paired potion runs for Stalker. Independent pilot seeds select the rotation. Traced damage is reconciled and replayed against plain `GridWorld`. |
 | `warrior-harder` | Harder groups using policies from a previous `warrior` result. Supply `-Baseline reports/bench/warrior/<run>/result.json`. |
 | `paladin` | Full Paladin, Warrior + Paladin and all four kits; single enemies, groups and Stalker, three weapons and cold/prepared entry. Independent pilots select Holy-first, physical-first or Holy-first without ground. Damage reconciles to enemy HP and sample fights replay on plain `GridWorld`. |
+| `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `accessories` | Expected auto-attack damage and physical effective HP for common gear, upgrades and primary stats. No active rotation; `-Smoke` runs the same calculation. |
 | `loot` | Seeded valley loot, obtainable loadouts and estimated auto-attack gains. |
 | `loot-rates` | Compare candidate uncommon drop rates on copied loot tables. These are experimental rates, not live tuning. |
@@ -30,6 +32,10 @@ Omit it for the normal sample counts held in each script. Warrior `-Shard 0/1/2`
 selects two-hand/shield/dual wield; omit it to run all three. A harder run needs a
 baseline covering its selected weapons. Use a non-smoke baseline for design decisions.
 Paladin also accepts `-Shard 0/1/2` for two-hand/shield/dual wield; omit it for all three.
+Rogue accepts the same shards. Cold entries apply Instant Poison; prepared dual-wield
+entries start with faster-weapon Instant and slower-weapon Deadly. Rogue supports
+the earlier active Slice and Dice kit for paired before/after runs; older builds only
+refresh that active when its haste expires.
 `-TimeoutSeconds` controls each child process, up to 600 seconds; shard combat runs
 if necessary. Run launchers sequentially because they share the project import cache.
 

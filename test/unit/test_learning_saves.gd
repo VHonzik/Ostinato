@@ -1,28 +1,42 @@
 extends GutTest
 
 
-func test_passive_eviscerate_and_slice_and_dice_roundtrip_and_loop_reset() -> void:
+func test_active_eviscerate_and_passive_slice_and_dice_roundtrip_and_loop_reset() -> void:
 	var game := GameSession.new()
 	game.new_game(79)
 	var world := game.world
 	world.hero.class_progress[&"Rogue"] = 1000
 	for identifier: StringName in [&"slice_and_dice_1", &"eviscerate_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(identifier)))
-	assert_false(world.assign_hotbar(0, &"eviscerate_1"))
+	assert_false(world.assign_hotbar(0, &"slice_and_dice_1"))
+	assert_true(world.assign_hotbar(0, &"eviscerate_1"))
 	world.hero.rage = 100
 	world.hero.combo_points = 3
-	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	enemy.health = 10000
+	enemy.max_health = 10000
+	enemy.stunned_until = 999
+	world.actors.append(enemy)
+	world.hero.swing.remaining = 100.0
+	world.hero.swing._active = true
+	assert_true(world.cast_skill(&"eviscerate_1", enemy))
+	world.actors.erase(enemy)
+	world.auto_attack_target = null
+	world.last_attacked_enemy = null
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), true)
 	assert_not_null(restored)
 	if restored == null:
 		return
 	game.restore(restored, game.seed_value, game.loop_count)
-	assert_eq(restored.hero.find_skill(&"eviscerate_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(restored.hero.find_skill(&"slice_and_dice_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(restored.hotbar[0], &"eviscerate_1")
 	assert_eq(restored.hero.combo_points, 0)
 	assert_eq(int(restored.hero.buffs[&"slice_and_dice_1"].until) - restored.turn_count, 14)
 	restored.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.find_skill(&"eviscerate_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(game.world.hero.find_skill(&"slice_and_dice_1").effect, SkillDefinition.Effect.PASSIVE)
+	assert_eq(game.world.hotbar[0], &"eviscerate_1")
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_false(game.world.hero.buffs.has(&"slice_and_dice_1"))
 

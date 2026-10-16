@@ -36,13 +36,19 @@ static func on_melee(world: GridWorld, event: AttackEvent) -> void:
 
 
 static func tick(world: GridWorld) -> void:
+	# Delayed verdicts and poison own their expiry so their final delivery is preserved.
 	for actor in world.actors:
-		PoisonRules.tick(world, actor)
-		if world.is_terminal():
-			return
 		for key in actor.debuffs.keys():
-			if int(actor.debuffs[key].until) <= world.turn_count:
+			if (key not in [&"execution_sentence_1", &"deadly_poison_1"]
+				and int(actor.debuffs[key].until) <= world.turn_count):
 				actor.debuffs.erase(key)
 	for key in world.hero.debuffs.keys():
 		if int(world.hero.debuffs[key].until) <= world.turn_count:
 			world.hero.debuffs.erase(key)
+	PaladinRules.tick(world)
+	if world.is_terminal():
+		return
+	for actor in world.actors:
+		PoisonRules.tick(world, actor)
+		if world.is_terminal():
+			return

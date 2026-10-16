@@ -11,7 +11,7 @@ const STARTERS: Dictionary = {
 	&"Warrior": [&"mortal_strike_1", &"whirlwind_1"],
 	&"Shaman": [&"lightning_shield_1", &"earth_shock_1"],
 	&"Paladin": [&"seal_of_command_1", &"execution_sentence_1"],
-	&"Rogue": [&"slice_and_dice_1", &"relentless_assault_1"],
+	&"Rogue": [&"eviscerate_1", &"relentless_assault_1"],
 }
 const WARRIOR_SKILLS: Array[StringName] = [
 	&"mortal_strike_1", &"whirlwind_1", &"battle_shout_1", &"anger_management_1", &"charge_1",
@@ -39,12 +39,12 @@ const STARTER_SKILLS: Dictionary = {
 		"effect": "EXECUTION_SENTENCE", "target": "ENEMY",
 		"detail": "Requires Seal of Command. Sentence the target to 150% weapon damage as Holy damage after 1 further turn. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; seal remains active."
 	},
-	"slice_and_dice_1": {
-		"title": "Slice and Dice", "class_tab": "Rogue", "training_level": 1,
-		"rage_cost": 15, "cast_seconds": 1.0, "haste_percent": 30,
-		"duration": 5, "duration_per_combo": 3, "family": "slice_and_dice",
-		"effect": "ARMOR", "target": "SELF",
-		"detail": "Requires at least 1 combo point. Spend all held points for +30% attack speed, lasting 5 turns plus 3 per point. With Eviscerate learned, also attack your current melee target. Usable without a target. Ordinary ability cooldowns are unchanged."
+	"eviscerate_1": {
+		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,
+		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
+		"weapon_multiplier": 0.75, "minimum": 12, "family": "eviscerate",
+		"effect": "TOOLKIT", "target": "ENEMY",
+		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 75% weapon damage plus 12 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. Finisher refunds happen once after spending. Builds no attack points. One turn, no cooldown; weapon timing continues."
 	},
 	"relentless_assault_1": {
 		"title": "Relentless Assault", "class_tab": "Rogue", "training_level": 1,

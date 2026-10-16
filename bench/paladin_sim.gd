@@ -8,6 +8,8 @@ const ENCOUNTERS: Array[Dictionary] = [
 ]
 var build: String = "Paladin"
 var kit_skills: Dictionary = {}
+var builds: Array[String] = ["Paladin", "Warrior+Paladin", "All"]
+var selected_class: StringName = &"Paladin"
 
 
 func _initialize() -> void:
@@ -27,7 +29,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
-	for category in ["Paladin", "Warrior+Paladin", "All"]:
+	for category in builds:
 		build = category
 		for weapon in range(3):
 			if shard >= 0 and weapon != shard:
@@ -42,7 +44,7 @@ func _run() -> void:
 	var setup := {"samples_per_cell": samples, "pilot_samples_per_policy": pilot_samples,
 		"cases": ENCOUNTERS, "weapons": WEAPONS,
 		"gear": "Common armor 85, neck 70001, rings 70002/70003; weapon 5579/5580/2224.",
-		"kits": "Full named kits. Paladin-only clears initial Warrior learning. Selected Paladin.",
+		"kits": "Full named kits %s; initial Warrior learning cleared. Selected %s." % [str(builds), selected_class],
 		"entry": "All enemies adjacent and hostile. Cold: full HP, zero rage, no buffs. Prepared: full HP, 90 rage, known maintenance buffs and mixed poisons; no assigned procs, combo points or summons.",
 		"policies": "Choose Holy-first, physical-first or Holy-first without ground on %d independent pilot seeds per policy. Maintain buffs, use defenses below 50%% HP, summon allies and spend combo points at 3+. Holy-first: Sentence, ground, Shock, Mortal Strike. Physical-first: Mortal Strike, Shock, Sentence, ground. Follow targets without kiting." % pilot_samples,
 		"potions": "One Minor Healing Potion in Stalker fights, used at 40+ missing HP.",
@@ -53,7 +55,7 @@ func _run() -> void:
 		"replayed": replayed, "seconds": (Time.get_ticks_msec() - started) / 1000.0}):
 		quit(1)
 		return
-	print("COMPLETE Paladin: %d cells, %d fights, %d replays" % [
+	print("COMPLETE %s: %d cells, %d fights, %d replays" % [selected_class,
 		rows.size(), rows.size() * samples, replayed])
 	quit()
 
@@ -85,12 +87,10 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12), seed_value, false))
 	var hero := world.hero
 	hero.level = int(encounter.hero_level)
-	hero.selected_class = &"Paladin"
+	hero.selected_class = selected_class
 	hero.learned_skills.clear()
 	for category in ClassSkillData.PLAYABLE_CLASSES:
-		if build == "Paladin" and category != &"Paladin":
-			continue
-		if build == "Warrior+Paladin" and category not in [&"Warrior", &"Paladin"]:
+		if build != "All" and String(category) not in build.split("+"):
 			continue
 		hero.class_progress[category] = 1000
 		for skill in kit_skills[category]:
@@ -157,8 +157,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		choices.append_array([&"earth_elemental_1", &"feral_spirit_1", &"execute_1"])
 		if not hero.buffs.has(&"instant_poison_1"):
 			choices.append(&"instant_poison_1")
-		if hero.combo_points >= 3 and not hero.buffs.has(&"slice_and_dice_1"):
-			choices.append(&"slice_and_dice_1")
+		choices.append_array(_finishers(hero))
 		if policy == "physical":
 			choices.append_array([&"mortal_strike_1", &"earth_shock_1", &"judgement_1",
 				&"execution_sentence_1", &"consecration_1"])
@@ -205,7 +204,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	assert(world.turn_count < 300 or enemy_hp == 0 or hero.health == 0)
 	var result := {"seed": seed_value, "win": enemy_hp == 0, "hp": hero.health,
 		"enemy_hp": enemy_hp, "turns": world.turn_count, "rage": hero.rage,
-		"combat_random": str(world.combat_random.state), "class_xp": hero.progression_points(&"Paladin")}
+		"combat_random": str(world.combat_random.state), "class_xp": hero.progression_points(selected_class)}
 	if traced:
 		var trace := world as PaladinWorld
 		assert(trace.valid_accounting and trace.damage_total == initial_hp - enemy_hp)
@@ -213,6 +212,17 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			"casts": trace.casts.duplicate(), "activations": trace.activations.duplicate()})
 	world.discard()
 	return result
+
+
+func _finishers(hero: HeroState) -> Array[StringName]:
+	if hero.combo_points < 3:
+		return []
+	var finisher := hero.find_skill(&"eviscerate_1")
+	if finisher != null and finisher.effect != SkillDefinition.Effect.PASSIVE:
+		return [&"eviscerate_1"]
+	if not hero.buffs.has(&"slice_and_dice_1"):
+		return [&"slice_and_dice_1"]
+	return []
 
 
 func _prepare(world: GridWorld) -> void:

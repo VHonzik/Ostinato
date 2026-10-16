@@ -614,9 +614,8 @@ func _finish_turn() -> void:
 		cancel_cast(true)
 		resolving_turn = false
 		return
-	_expire_hero_buffs()
-	# Delayed verdicts and ground ticks resolve at the boundary before due swings.
-	PaladinRules.tick(self)
+	# Expiry, delayed verdicts, ground and poison share the boundary before due swings.
+	_tick_effects()
 	if check_terminal():
 		pending_melee = null
 		cancel_cast(true)
@@ -627,9 +626,6 @@ func _finish_turn() -> void:
 	if check_terminal():
 		resolving_turn = false
 		return
-	for actor in actors:
-		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
-			SummonRules.remove(self, actor)
 	hero.refresh_stats()
 	NpcRules.acquire_hostiles(self)
 	for actor in actors:
@@ -644,10 +640,6 @@ func _finish_turn() -> void:
 			cancel_cast(true)
 			resolving_turn = false
 			return
-	_tick_effects()
-	if check_terminal():
-		resolving_turn = false
-		return
 	_regenerate()
 	_tick_restoration()
 	_arrive_stalker()
@@ -818,9 +810,11 @@ func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
 
 
 func _tick_effects() -> void:
-	ClassSpellEffects.tick(self)
 	_expire_hero_buffs()
-	hero.refresh_stats()
+	for actor in actors:
+		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
+			SummonRules.remove(self, actor)
+	ClassSpellEffects.tick(self)
 
 
 func _expire_hero_buffs() -> void:

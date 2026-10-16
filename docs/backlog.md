@@ -118,7 +118,7 @@ deferred. The Execute slice is implemented below.
   names its trainer; learn other classes' starters free at the matching trainer, with
   no class XP requirement. Learning is permanent and fills empty hotbar slots for actives
   without replacing assignments. Implement Lightning Shield and Strength of Earth Totem,
-  Seal of Command and Execution Sentence, Slice and Dice and Relentless Assault. Use rage;
+  Seal of Command and Execution Sentence, Eviscerate and Relentless Assault. Use rage;
   trainers expose only implemented skills, leaving legacy mana kits unavailable.
 - [x] Retain learned abilities/passives and cumulative class XP across death and class
   choice. Only uses belonging to the selected class grant XP; retained abilities grant
@@ -127,7 +127,7 @@ deferred. The Execute slice is implemented below.
 - [x] Build player-held combo points from landed direct active attacks and ordinary
   main-hand hits after learning Relentless Assault, across classes and targets, with
   one base point per turn. Exclude off-hand hits, procs, buffs and misses.
-  Slice and Dice requires points and spends all held points; Execution Sentence leaves
+  Eviscerate requires points and spends all held points; Execution Sentence leaves
   Seal of Command active. Clear combat resources and effects on death.
 - [x] Save class choice, learning, class XP, combo points, buffs and totems in revision 14;
   leave older files incompatible and unchanged. Cover selection confirmation, quest and
@@ -243,7 +243,7 @@ Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wiel
 defensive windows and mixed-class combinations. Adjust code/data from that feedback;
 do not treat catalogue completion or automated tests as balance/readability acceptance.
 Optional combo empowerment of Execute/Execution Sentence remains a later design choice; the
-current deliberate spender is Slice and Dice, with a passive Eviscerate attack when learned.
+current deliberate spender is Eviscerate, with passive Slice and Dice haste when learned.
 
 ### Current class-identity follow-up — Warrior rage spending
 
@@ -293,6 +293,30 @@ current deliberate spender is Slice and Dice, with a passive Eviscerate attack w
   and staying on or leaving the consecrated ground. Cold Paladin-only group fights
   remain less forgiving, especially with a two-hander; revisit that timing tradeoff
   from play. Simulations do not settle feel or balance.
+
+### Current class-identity follow-up — Rogue
+
+- [x] Remove Opportunity, make Eviscerate the starter active finisher and move Slice
+  and Dice to its early passive upgrade. Require a valid melee target; spend points
+  on misses, grant learned haste and resolve refunds once after spending.
+- [x] Make both poison coatings free in rage while keeping their preparation action
+  and per-hand choices. Keep Seal Fate and Bandit's Guile working with qualifying
+  retained attacks from other classes.
+- [x] Compare Rogue alone, Warrior + Rogue and all four kits in ordinary and Stalker
+  simulations across weapon setups and cold/prepared entries. Keep damage accounting
+  and sample replays against the plain game model.
+- [ ] Owner playtest finisher frequency, haste feedback and poison preparation,
+  including the extra preparation action in short cold fights. Simulations do not
+  decide feel or balance.
+
+### Current combat timing follow-up
+
+- [x] Align longer preparation buffs, retain the shorter rotational Seal and Shield,
+  and normalize timed damage-bonus procs. Keep tuning in ability data.
+- [x] Resolve combat expiry, delayed verdicts, ground damage and poison in one phase
+  before weapon swings and enemy actions. Preserve final ticks and stop on terminal death.
+- [ ] Owner playtest poison kills before enemy retaliation and combined ground/poison
+  damage, plus preparation refresh frequency and damage-proc feedback.
 
 ### Current playable task — Simplified itemization
 

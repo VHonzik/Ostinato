@@ -92,15 +92,16 @@ and hostile NPCs in sight. It grants no combo points or attack procs and keeps t
 selected attack target.
 
 Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
-Command and Execution Sentence; Rogue with Slice and Dice and the Relentless Assault passive.
+Command and Execution Sentence; Rogue with Eviscerate and the Relentless Assault passive.
 All use rage. Retained abilities/passives work in every class, but only selected-class
 uses grant class XP; learning does not spend it. Relentless Assault builds player-held
 combo points from landed direct active attacks and ordinary main-hand hits, across
 classes and targets, with one base point per world turn. Seal Fate can add an extra point
-on an active crit; off-hand hits and bonus damage grant none. Slice and Dice needs points
-and spends them all for attack haste. Learned Eviscerate passively adds its attack
-against the current melee target, using those same spent points. Slice and Dice can
-still be used without a target. Execution Sentence leaves the seal active.
+on an active crit; off-hand hits and bonus damage grant none. Eviscerate needs points
+and a melee target and spends all held points on its physical attack. Learned Slice
+and Dice adds attack haste using those same spent points, even on a miss. It cannot
+be cast or assigned separately. Opportunity is removed; Seal Fate and Bandit's Guile
+continue to reward qualifying retained class attacks. Execution Sentence leaves the seal active.
 All four class kits are available, including their actives and passives. The spell book
 describes their provisional mechanics; passives can be focused and inspected but cannot
 be cast or assigned. New catalogue data lives in
@@ -115,17 +116,19 @@ engaged target and repeatedly taunts nearby engaged hostiles in sight. It lasts 
 killed or Loop reset, blocks resummoning while alive and keeps its cooldown after death.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
-Instant and Deadly Poison become available together at the Rogue trainer; Catalytic
+Instant and Deadly Poison cost no rage and become available together at the Rogue trainer; Catalytic
 Venom unlocks later. Casting either coating with dual wield opens a hand picker:
 directions choose main hand, off hand or both; Enter applies, Escape cancels freely.
 Each hand keeps its own coating and expiration, shown separately in the aura display.
 Single-weapon setups coat the main hand directly. Catalytic Venom rewards Instant
 on the faster base-speed weapon and Deadly on the slower; equal-speed pairs do not
-catalyze. Deadly stacks belong to each enemy and tick after enemy actions, retaining
+catalyze. Deadly stacks belong to each enemy and tick at the turn boundary, retaining
 fractional damage across ticks. Saves retain coatings, stacks and pending tick damage.
 Finishers spend all held points before refunds; Execute and Execution Sentence do not spend points.
 Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
-boundary before player swings and enemy attacks.
+boundary before player swings and enemy attacks. The same phase expires summons and
+ordinary combat debuffs, then resolves Execution Sentence, Consecration and Deadly
+Poison in that order. Their handlers preserve the final verdict or poison tick.
 
 The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
 with weapon power and dodge as derived values. Gear works equally in all four classes.
@@ -156,10 +159,11 @@ a target dying early loses its sentence. Existing Holy/critical rewards happen o
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 26, with gear stats rebuilt from equipment on load.
-Revision 25 and older saves are incompatible and left unchanged; start a fresh game.
-This revision replaces Judgement with Execution Sentence and preserves committed
-verdicts and Consecration ground across saves. Both clear with the physical world on death.
+Current saves are `demo` revision 27, with gear stats rebuilt from equipment on load.
+Revision 26 and older saves are incompatible and left unchanged; start a fresh game.
+This revision swaps the Rogue active/passive finisher roles and removes Opportunity.
+Committed Execution Sentence verdicts and Consecration ground persist across saves;
+both clear with the physical world on death.
 Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user

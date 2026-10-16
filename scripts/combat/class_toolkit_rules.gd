@@ -92,17 +92,12 @@ static func eligible(world: GridWorld, target: GridActor, radius: int) -> bool:
 		and world.has_sight(world.player_tile, target.tile))
 
 
-static func eviscerate(world: GridWorld, points: int) -> void:
-	var skill := world.hero.find_skill(&"eviscerate_1")
-	var target := world.last_attacked_enemy
-	if (skill == null or target == null or not world.actors.has(target)
-		or not eligible(world, target, skill.range_tiles)):
+static func slice_and_dice(world: GridWorld, points: int) -> void:
+	var skill := world.hero.find_skill(&"slice_and_dice_1")
+	if skill == null or world.is_terminal():
 		return
-	target.relationship = GridActor.Relationship.HOSTILE
-	target.engaged = true
-	target.returning_home = false
-	world.auto_attack_target = target
-	physical_attack(world, target, skill, skill.minimum * points, false)
+	apply(world, skill.id, {"haste_percent": skill.haste_percent,
+		"until": world.turn_count + 1 + skill.duration + skill.duration_per_combo * points})
 
 
 static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
@@ -110,10 +105,7 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 	if commit_target:
 		world.last_attacked_enemy = target
 	var event := weapon_outcome(world, target, skill, world.hero.melee)
-	var behind := MeleeRules.is_behind(target.facing, world.player_tile - target.tile)
 	var multiplier := skill.weapon_multiplier
-	if behind:
-		multiplier *= 1.0 + magnitude(world.hero, &"opportunity_1") / 100.0
 	var value := MeleeRules.damage(world.hero.melee, target.melee, event.result,
 		world.combat_random.randf(), multiplier, flat_bonus,
 		recklessness_damage_multiplier(world.hero))

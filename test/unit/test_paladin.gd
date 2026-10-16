@@ -159,6 +159,24 @@ func test_consecration_stays_put_ticks_six_times_and_never_triggers_attack_rewar
 	assert_eq(world.hero.progression_points(&"Paladin"), 1001)
 
 
+func test_ground_and_poison_tick_once_at_the_same_boundary_in_stable_order() -> void:
+	var world := _world()
+	world.hero.class_progress[&"Rogue"] = 1000
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"deadly_poison_1")))
+	var enemy := _enemy(world, Vector2i(9, 8))
+	enemy.title = "Target"
+	var ground := world.hero.find_skill(&"consecration_1")
+	ground.weapon_multiplier = 0
+	ground.periodic_damage = 5
+	PoisonRules.apply_deadly(world, enemy)
+	assert_true(world.cast_skill(ground.id))
+	assert_eq(enemy.health, 9994, "One ground tick plus one poison tick.")
+	var messages := "\n".join(world.messages)
+	assert_lt(messages.find("Consecration -> Target:"), messages.find("Deadly Poison -> Target:"))
+	world.wait_turn()
+	assert_eq(enemy.health, 9987, "The next boundary delivers each effect exactly once.")
+
+
 func test_ground_respects_sight_and_replacement_does_not_stack_patches() -> void:
 	var world := _world()
 	var skill := world.hero.find_skill(&"consecration_1")

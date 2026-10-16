@@ -53,7 +53,7 @@ func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spen
 	_game.refresh_view()
 	assert_false(bar.visible, "Class selection alone does not teach the combo passive.")
 	_game.world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
-	_game.world.hero.learn_skill(SkillDefinition.catalog(&"slice_and_dice_1"))
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"eviscerate_1"))
 	_game.world.hero.selected_class = &"Warrior"
 	_game.refresh_view()
 	assert_true(bar.visible, "Retained Rogue learning exposes points in every class.")
@@ -62,7 +62,15 @@ func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spen
 	_game.refresh_view()
 	assert_gt(bar.modulate.a, empty_alpha)
 	assert_lt(bar.modulate.a, 1.0)
-	assert_true(_game.world.cast_skill(&"slice_and_dice_1"))
+	var enemy := GridActor.new(_game.world.player_tile + Vector2i.RIGHT)
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	enemy.health = 10000
+	enemy.max_health = 10000
+	enemy.stunned_until = 999
+	_game.world.actors.append(enemy)
+	_game.world.hero.swing.remaining = 100.0
+	_game.world.hero.swing._active = true
+	assert_true(_game.world.cast_skill(&"eviscerate_1", enemy))
 	_game.refresh_view()
 	assert_true(bar.visible)
 	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001, "Spending the last point fades the bar.")

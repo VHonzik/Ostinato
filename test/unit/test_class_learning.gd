@@ -248,26 +248,31 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 	assert_eq(world.hero.progression_points(&"Paladin"), 0)
 
 
-func test_slice_and_dice_requires_points_spends_all_and_leaves_ability_cooldowns_unchanged() -> void:
+func test_eviscerate_requires_points_spends_all_and_leaves_ability_cooldowns_unchanged() -> void:
 	var world := _world(&"Rogue")
 	_learn_starters(world, &"Rogue")
+	world.hero.class_progress[&"Rogue"] = 5
+	assert_true(world.train(&"Rogue", &"slice_and_dice_1"))
+	var enemy := _enemy(world)
+	world.hero.swing.remaining = 100.0
+	world.hero.swing._active = true
 	world.hero.rage = 100
-	assert_false(world.cast_skill(&"slice_and_dice_1"))
+	assert_false(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.rage, 100)
 	assert_eq(world.turn_count, 0)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0)
+	assert_eq(world.hero.progression_points(&"Rogue"), 5)
 	assert_false(world.cast_skill(&"relentless_assault_1"), "Passive is always active, never cast.")
 	world.hero.combo_points = 2
 	world.hero.cooldowns["mortal_strike"] = 10
-	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.combo_points, 0)
 	assert_almost_eq(world.hero.attack_haste(), 1.3, 0.00001)
 	assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].until) - world.turn_count, 11)
 	assert_eq(int(world.hero.cooldowns.mortal_strike), 10)
-	assert_eq(world.hero.progression_points(&"Rogue"), 1)
+	assert_eq(world.hero.progression_points(&"Rogue"), 6)
 	world.hero.combo_points = 1
 	world.hero.rage = 0
-	assert_false(world.cast_skill(&"slice_and_dice_1"))
+	assert_false(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.combo_points, 1, "Failed cast keeps points.")
 	world.hero.buffs[&"slice_and_dice_1"].until = world.turn_count + 1
 	world.wait_turn()
@@ -350,7 +355,13 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 	assert_true(game.world.cast_skill(&"lightning_shield_1"))
 	assert_true(game.world.cast_skill(&"seal_of_command_1"))
 	game.world.hero.combo_points = 3
-	assert_true(game.world.cast_skill(&"slice_and_dice_1"))
+	game.world.hero.class_progress[&"Rogue"] = 5
+	assert_true(game.world.train(&"Rogue", &"slice_and_dice_1"))
+	var enemy := _enemy(game.world, game.world.player_tile + Vector2i.RIGHT)
+	assert_true(game.world.cast_skill(&"eviscerate_1", enemy))
+	game.world.actors.erase(enemy)
+	game.world.auto_attack_target = null
+	game.world.last_attacked_enemy = null
 	game.world.hero.combo_points = 2
 	assert_true(game.world.can_save())
 	var snapshot := SaveCodec.capture(game)
@@ -361,15 +372,16 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 	var copy := GameSession.new()
 	copy.development_build = false
 	copy.restore(restored, game.seed_value, game.loop_count)
-	assert_eq(SaveCodec.capture(copy), snapshot)
+	# Weapon timing and fractional swing rage pass through JSON's numeric precision.
+	assert_eq(JSON.stringify(SaveCodec.capture(copy)), JSON.stringify(snapshot))
 	assert_false(copy.can_select_class(), "Confirmed choice stays locked after load.")
 	assert_eq(copy.world.hero.combo_points, 2)
-	assert_eq(copy.world.hero.progression_points(&"Rogue"), 1)
+	assert_eq(copy.world.hero.progression_points(&"Rogue"), 6)
 	assert_almost_eq(copy.world.hero.attack_haste(), 1.3, 0.00001)
 	for turn in range(15):
 		game.world.wait_turn()
 		copy.world.wait_turn()
-	assert_eq(SaveCodec.capture(copy), SaveCodec.capture(game))
+	assert_eq(JSON.stringify(SaveCodec.capture(copy)), JSON.stringify(SaveCodec.capture(game)))
 	for invalid_points: Variant in [-1, 6, 1.5, "2"]:
 		var invalid := snapshot.duplicate(true)
 		invalid.hero.combo_points = invalid_points
@@ -514,7 +526,8 @@ func test_misses_do_not_build_combo_points_and_retained_passive_works_as_warrior
 	assert_eq(world.hero.combo_points, 1)
 	assert_eq(world.hero.warrior_progress, 3)
 	assert_eq(world.hero.progression_points(&"Rogue"), 0)
-	assert_true(world.cast_skill(&"slice_and_dice_1"))
+	world.hero.swing.remaining = 100.0
+	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.combo_points, 0)
 	assert_eq(world.hero.progression_points(&"Rogue"), 0)
 	assert_eq(world.hero.warrior_progress, 3)
@@ -530,6 +543,9 @@ func test_save_rejects_first_loop_other_class_and_legacy_kit_in_runnable_game() 
 	var legacy := snapshot.duplicate(true)
 	legacy.learned.append("holy_light_1")
 	assert_null(SaveCodec.restore(legacy, false))
+	var removed := snapshot.duplicate(true)
+	removed.learned.append("opportunity_1")
+	assert_null(SaveCodec.restore(removed, false))
 
 
 func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() -> void:
@@ -667,7 +683,7 @@ func test_matching_trainer_menu_teaches_both_starters_free_and_assigns_only_acti
 			assert_false(learn.disabled)
 			learn.pressed.emit()
 			assert_not_null(game.world.hero.find_skill(skill.id))
-	assert_eq(game.world.hotbar[2], &"slice_and_dice_1")
+	assert_eq(game.world.hotbar[2], &"eviscerate_1")
 	assert_false(game.world.hotbar.has(&"relentless_assault_1"))
 	assert_eq(game.world.hero.copper, 0)
 	assert_eq(game.world.hero.progression_points(&"Rogue"), 0)

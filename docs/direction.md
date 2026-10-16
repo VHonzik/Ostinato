@@ -50,11 +50,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   attacks across classes, and ordinary main-hand hits. Relentless Assault grants at most
   one base point per world turn; Seal Fate can add its extra active-critical point.
   Off-hand hits, procs, buffs and misses grant no points.
-  Points persist across targets and encounters and reset on death. Slice and Dice
-  requires points and deliberately spends all held points to extend its attack haste.
-  Learned Eviscerate passively adds its attack to Slice and Dice against the current
-  melee target. Slice and Dice remains usable without a target; finisher refunds
-  happen once after spending.
+  Points persist across targets and encounters and reset on death. Eviscerate is the
+  starter active finisher: it requires a melee target and spends all held points.
+  Learned Slice and Dice passively grants attack haste from the same spent points,
+  including on a missed finisher. Finisher refunds happen once after spending.
   Execution Sentence replaces Judgement with a delayed verdict, without stacks or
   damage accumulation. It commits damage and hit/critical results on casting and
   delivers its attack rewards on impact, without retargeting. Consecration adds fixed
@@ -75,8 +74,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   buffs and guaranteed-critical payoffs. Blessing of Might is free maintenance;
   Seal of Command retains its rage cost for rotational flavor. Benediction is removed.
   Rogue supplies combo points, dual wielding,
-  speed and opportunistic damage. The milestone covers the full v0.1 toolkit.
-- Poisons offer a preparation choice: Instant rewards short fights, while Deadly
+  speed, poisons and finishers. Opportunity is removed. Seal Fate and Bandit's Guile
+  reward qualifying retained attacks from other classes. The milestone covers the full v0.1 toolkit.
+- Poisons cost no rage and offer a preparation choice: Instant rewards short fights, while Deadly
   builds sustained damage. A later Rogue passive rewards mixed coatings with Instant
   on the faster weapon and Deadly on the slower. Its extra stack is a deliberate
   interaction; poison damage does not trigger further attack procs. Keep finishers
@@ -114,8 +114,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Spirit Hunt heals from their actual damage taken by the target.
 - Consumable triggered procs persist until used or death. Timed buffs persist between
   encounters until their duration expires. Timed hero buffs expire at
-  the advanced world-turn boundary before due player swings and enemy actions, after
-  the committed action's effect. Simplify combat to
+  the advanced world-turn boundary after the committed action's effect. Expire timed
+  combat effects first, then resolve delayed verdicts, ground damage and poison ticks
+  before due player swings and enemy actions. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
   Holy and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
   hit or crit; shields contribute armor. Holy and Nature damage bypass armor.

@@ -16,7 +16,7 @@ static var _families: Dictionary[StringName, SkillBehavior] = {
 	&"consecration": Consecration.new(),
 	&"blessing_of_might": BlessingOfMight.new(),
 	&"divine_shield": DivineShield.new(),
-	&"slice_and_dice": SliceAndDice.new(),
+	&"eviscerate": Eviscerate.new(),
 	&"lightning_shield": LightningShield.new(),
 }
 static var _effects: Dictionary[int, SkillBehavior] = {
@@ -211,16 +211,16 @@ class DivineShield extends Buff:
 			effect.until += world.hero.find_skill(&"guardians_favor_1").duration
 
 
-class SliceAndDice extends Buff:
+class Eviscerate extends PhysicalAttack:
 	func can_apply(world: GridWorld, _skill: SkillDefinition, _target: GridActor) -> bool:
 		return world.hero.combo_points > 0
 
-	func configure(world: GridWorld, skill: SkillDefinition, effect: Dictionary) -> void:
-		effect["haste_percent"] = skill.haste_percent
-		effect.until += skill.duration_per_combo * world.hero.combo_points
+	func resolve(world: GridWorld, cast: Cast) -> void:
 		var points := world.hero.combo_points
 		world.hero.combo_points = 0
-		ClassToolkitRules.eviscerate(world, points)
+		ClassToolkitRules.physical_attack(world, cast.target, cast.skill,
+			cast.skill.minimum * points, false)
+		ClassToolkitRules.slice_and_dice(world, points)
 		ClassToolkitRules.finish(world, points)
 
 
