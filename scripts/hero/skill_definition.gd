@@ -83,7 +83,7 @@ static func all_skills() -> Dictionary:
 
 
 func cost(hero: HeroState) -> int:
-	return ClassToolkitRules.cost(hero, self)
+	return SkillCost.quote(hero, self).rage_cost
 
 
 func execute_eligible(target_actor: GridActor) -> bool:
@@ -98,10 +98,6 @@ func resource_name() -> String:
 
 func available_resource(hero: HeroState) -> int:
 	return hero.rage
-
-
-func spend_resource(hero: HeroState) -> void:
-	hero.rage -= cost(hero)
 
 
 static func catalog(identifier: StringName) -> SkillDefinition:

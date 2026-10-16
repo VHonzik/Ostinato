@@ -1,7 +1,7 @@
 class_name ClassToolkitRules
 extends RefCounted
 
-## Primary attacks call these hooks once. Bonus damage never calls attack hooks.
+## Shared class calculations and attacks. AttackProcs owns primary attack hooks.
 static func has(hero: HeroState, identifier: StringName) -> bool:
 	return hero.find_skill(identifier) != null
 
@@ -33,32 +33,6 @@ static func apply(world: GridWorld, identifier: StringName, fields: Dictionary) 
 	world.add_message("%s activated." % skill.title)
 
 
-static func cost(hero: HeroState, skill: SkillDefinition) -> int:
-	if skill.effect == SkillDefinition.Effect.PASSIVE:
-		return 0
-	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
-		return 0
-	if skill.family == &"judgement" and hero.buffs.has(&"divine_purpose_1"):
-		return 0
-	if skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1"):
-		return 0
-	var amount := skill.rage_cost
-	if skill.effect == SkillDefinition.Effect.EXECUTE:
-		amount = clampi(hero.rage, skill.rage_cost, skill.execute_rage_cap)
-	if skill.class_tab == &"Paladin":
-		amount = ceili(amount * (1.0 - magnitude(hero, &"benediction_1") / 100.0))
-	return amount
-
-
-static func consume_cost_proc(hero: HeroState, skill: SkillDefinition) -> void:
-	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
-		hero.buffs.erase(&"sudden_death_1")
-	elif skill.family == &"judgement" and hero.buffs.has(&"divine_purpose_1"):
-		hero.buffs.erase(&"divine_purpose_1")
-	elif skill.rage_cost > 0:
-		hero.buffs.erase(&"battle_trance_1")
-
-
 static func cooldown(hero: HeroState, skill: SkillDefinition) -> int:
 	var turns := skill.cooldown_seconds
 	match skill.family:
@@ -80,57 +54,10 @@ static func damage_multiplier(hero: HeroState) -> float:
 	return multiplier
 
 
-static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
-	match skill.family:
-		&"feral_spirit": return wolf_tiles(world).size() >= 2
-		&"windfury_weapon", &"instant_poison", &"deadly_poison": return world.hero.equipment.has("weapons")
-		&"whirlwind":
-			return world.actors.any(func(actor: GridActor) -> bool:
-				return eligible(world, actor, skill.range_tiles))
-		&"execute":
-			return skill.execute_eligible(target) or world.hero.buffs.has(&"sudden_death_1")
-	return true
-
-
 static func eligible(world: GridWorld, target: GridActor, radius: int) -> bool:
 	return (target.alive and target.relationship != GridActor.Relationship.FRIENDLY
 		and GridWorld.tile_distance(world.player_tile, target.tile) <= radius
 		and world.has_sight(world.player_tile, target.tile))
-
-
-static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor) -> void:
-	match skill.family:
-		&"whirlwind":
-			for enemy in world.actors.duplicate():
-				if world.is_terminal():
-					break
-				if eligible(world, enemy, skill.range_tiles):
-					enemy.relationship = GridActor.Relationship.HOSTILE
-					enemy.engaged = true
-					physical_attack(world, enemy, skill, skill.minimum, true, false)
-		&"booming_shout":
-			for enemy in world.actors.duplicate():
-				if world.is_terminal():
-					break
-				if not enemy.chest and eligible(world, enemy, skill.range_tiles):
-					enemy.relationship = GridActor.Relationship.HOSTILE
-					enemy.engaged = true
-					enemy.returning_home = false
-					SpellEffects.damage(world, enemy, skill.minimum, skill.title, -1, null, true)
-		&"earth_shock":
-			var extra := 1.0 + magnitude(world.hero, &"elemental_assault_1") / 100.0
-			if world.hero.buffs.has(&"elemental_assault_1"):
-				extra += 0.5
-				world.hero.buffs.erase(&"elemental_assault_1")
-			extra *= ClassToolkitData.EARTH_SHOCK_DAMAGE_MULTIPLIER
-			var result := magic_attack(world, target, skill, extra)
-			if result.landed and target.alive and not world.is_terminal():
-				target.swing.remaining += 1.0
-				target.debuffs["interrupt"] = {"until": world.turn_count + 3}
-				if has(world.hero, &"improved_earth_shock_1"):
-					target.stunned_until = world.turn_count + 1 + magnitude(world.hero, &"improved_earth_shock_1")
-				world.add_message("Earth Shock interrupts %s and delays its next swing." % target.title)
-		&"feral_spirit": summon_wolves(world, skill)
 
 
 static func eviscerate(world: GridWorld, points: int) -> void:
@@ -150,21 +77,21 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 	flat_bonus: int, build_points: bool = true, commit_target: bool = true) -> void:
 	if commit_target:
 		world.last_attacked_enemy = target
-	var outcome := weapon_outcome(world, target, skill, world.hero.melee)
+	var event := weapon_outcome(world, target, skill, world.hero.melee)
 	var behind := MeleeRules.is_behind(target.facing, world.player_tile - target.tile)
 	var multiplier := skill.weapon_multiplier
 	if behind:
 		multiplier *= 1.0 + magnitude(world.hero, &"opportunity_1") / 100.0
-	var value := MeleeRules.damage(world.hero.melee, target.melee, outcome.result,
+	var value := MeleeRules.damage(world.hero.melee, target.melee, event.result,
 		world.combat_random.randf(), multiplier, flat_bonus)
-	value = floori(value * damage_multiplier(world.hero))
-	SpellEffects.damage(world, target, value, "%s (%s)" % [skill.title, outcome.result],
-		-1, null, true, outcome.result)
-	on_attack(world, target, skill, outcome.landed, outcome.critical, value, true, false, build_points)
+	event.amount = floori(value * damage_multiplier(world.hero))
+	event.build_points = build_points
+	SpellEffects.attack(world, event, skill.title)
+	AttackProcs.on_attack(world, event)
 
 
 static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	weapon: MeleeProfile) -> Dictionary:
+	weapon: MeleeProfile) -> AttackEvent:
 	var extra := int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
 	if skill != null and skill.family == &"heroic_strike":
 		extra += magnitude(world.hero, &"incite_1")
@@ -185,18 +112,18 @@ static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefi
 	if (skill != null and skill.family == &"heroic_strike" and result == &"critical"
 		and not guaranteed):
 		apply(world, &"incite_1", {"charges": 1})
-	return {"result": result, "landed": landed, "critical": result == &"critical"}
+	return AttackEvent.new(target, skill, result, 0)
 
 
 static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	extra: float = 1.0) -> Dictionary:
+	extra: float = 1.0) -> AttackEvent:
 	world.last_attacked_enemy = target
 	world.auto_attack_target = target
 	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
 	if world.combat_random.randf() * 100.0 >= hit_chance:
 		world.npc_combat_text.emit(target.tile, 0, &"miss")
 		world.add_message("%s misses %s." % [skill.title, target.title])
-		return {"landed": false, "critical": false}
+		return AttackEvent.new(target, skill, &"miss", 0, skill.school as AttackEvent.School)
 	var critical := false
 	var chance := MeleeRules.critical_chance(world.hero.melee, target.melee)
 	chance += int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
@@ -217,73 +144,13 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 		world.hero.melee, weapon_roll)
 	if critical:
 		value *= 2
-	SpellEffects.damage(world, target, value, skill.title, -1, null, false,
-		&"critical" if critical else &"hit")
-	on_attack(world, target, skill, true, critical, value, false)
+	var event := AttackEvent.new(target, skill, &"critical" if critical else &"hit",
+		value, skill.school as AttackEvent.School)
+	SpellEffects.attack(world, event, skill.title)
+	AttackProcs.on_attack(world, event)
 	if not world.is_terminal() and skill.school == 1:
 		holy_event(world)
-	return {"landed": true, "critical": critical}
-
-
-static func on_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	landed: bool, critical: bool, value: int, physical: bool, off_hand: bool = false,
-	build_points: bool = true) -> void:
-	if world.is_terminal():
-		return
-	var direct := skill != null
-	var finisher := direct and skill.family == &"eviscerate"
-	if landed and build_points and not finisher and (direct or (physical and not off_hand)):
-		if has(world.hero, &"relentless_assault_1") and not world.combo_event_counted:
-			world.hero.gain_combo_point()
-			world.combo_event_counted = true
-	if landed and direct and build_points and not finisher:
-		if critical and has(world.hero, &"relentless_assault_1") and has(world.hero, &"seal_fate_1"):
-			world.hero.combo_points = mini(5, world.hero.combo_points + 1)
-		if has(world.hero, &"bandits_guile_1"):
-			var previous := effect(world.hero, &"bandits_guile_1")
-			var hits := int(previous.get("charges", 0)) + 1
-			var percent := int(previous.get("bonus_percent", 0))
-			if hits >= 4:
-				var step := magnitude(world.hero, &"bandits_guile_1")
-				percent = mini(3 * step, percent + step)
-				hits = 0
-			apply(world, &"bandits_guile_1", {"charges": hits, "bonus_percent": percent})
-	if critical:
-		if physical:
-			var flurry := &"shaman_flurry_1" if has(world.hero, &"shaman_flurry_1") else &"warrior_flurry_1"
-			world.hero.buffs.erase(&"warrior_flurry_1")
-			world.hero.buffs.erase(&"shaman_flurry_1")
-			apply(world, flurry, {"charges": 3, "haste_percent": magnitude(world.hero, flurry)})
-			apply(world, &"wrecking_crew_1", {"physical_percent": magnitude(world.hero, &"wrecking_crew_1")})
-			apply(world, &"elemental_assault_1", {"charges": 1})
-		if direct and skill.family != &"heroic_strike" and not finisher:
-			apply(world, &"battle_trance_1", {"charges": 1})
-		var stacks := mini(3, int(effect(world.hero, &"vengeance_1").get("charges", 0)) + 1)
-		apply(world, &"vengeance_1", {"charges": stacks,
-			"bonus_percent": stacks * magnitude(world.hero, &"vengeance_1")})
-	if not landed:
-		return
-	if physical:
-		if direct and skill.family != &"execute" and proc(world, &"sudden_death_1"):
-			apply(world, &"sudden_death_1", {"charges": 1})
-		if off_hand:
-			if proc(world, &"combat_potency_1"):
-				world.hero.gain_rage(magnitude(world.hero, &"combat_potency_1"))
-		if target.alive:
-			weapon_procs(world, target, off_hand, not direct or skill.family == &"heroic_strike")
-		if direct and value > 0 and has(world.hero, &"sweeping_strikes_1"):
-			for other in world.actors:
-				if other != target and other.relationship == GridActor.Relationship.HOSTILE and eligible(world, other, 1):
-					SpellEffects.damage(world, other, floori(value * magnitude(world.hero, &"sweeping_strikes_1") / 100.0), "Sweeping Strikes", -1, null, true)
-					break
-	if direct and skill.family == &"judgement" and not world.is_terminal():
-		if target.alive and has(world.hero, &"heart_of_the_crusader_1"):
-			target.debuffs["crusader_crit"] = {"until": world.turn_count + 11,
-				"bonus": magnitude(world.hero, &"heart_of_the_crusader_1")}
-		if proc(world, &"divine_purpose_1"):
-			apply(world, &"divine_purpose_1", {"charges": 1})
-		if proc(world, &"sacred_duty_1"):
-			apply(world, &"sacred_duty_1", {"critical_ready": 1})
+	return event
 
 
 static func consume_flurry(hero: HeroState) -> void:
@@ -305,27 +172,6 @@ static func holy_event(world: GridWorld) -> void:
 	apply(world, &"art_of_war_1", {"charges": events % 3, "critical_ready": 1 if events >= 3 else 0})
 
 
-static func weapon_procs(world: GridWorld, target: GridActor, off_hand: bool,
-	allow_main_gauche: bool = true) -> void:
-	var enchant := effect(world.hero, &"windfury_weapon_1")
-	var weapon_id := world.hero.weapon_id()
-	if (not off_hand and not enchant.is_empty() and int(enchant.weapon_id) == weapon_id
-		and world.turn_count >= int(enchant.ready)
-		and world.combat_random.randf() < SkillDefinition.catalog(&"windfury_weapon_1").coefficient):
-		enchant.ready = world.turn_count + 3
-		for index in range(2):
-			bonus_strike(world, target, false, 1.0 + magnitude(world.hero, &"elemental_weapons_1") / 100.0, "Windfury")
-	if world.is_terminal() or not target.alive:
-		return
-	PoisonRules.on_hit(world, target, off_hand)
-	if world.is_terminal() or not target.alive:
-		return
-	if proc(world, &"static_shock_1"):
-		discharge(world, target, false)
-	if allow_main_gauche and not off_hand and world.hero.has_off_hand_weapon() and proc(world, &"main_gauche_1"):
-		bonus_strike(world, target, true, 1.0, "Main Gauche")
-
-
 static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 	multiplier: float, title: String) -> void:
 	if world.is_terminal() or not target.alive:
@@ -338,8 +184,11 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 		result = &"hit"
 	var value := MeleeRules.damage(weapon, target.melee, result,
 		world.combat_random.randf(), multiplier)
-	SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)),
-		title, -1, null, true, result)
+	var event := AttackEvent.new(target, null, result,
+		floori(value * damage_multiplier(world.hero)))
+	event.origin = AttackEvent.Origin.BONUS
+	event.hand = AttackEvent.Hand.OFF if off_hand else AttackEvent.Hand.MAIN
+	SpellEffects.attack(world, event, title)
 
 
 static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> void:

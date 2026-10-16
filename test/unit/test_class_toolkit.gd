@@ -36,6 +36,12 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(9, 8)) -> GridActor:
 	return enemy
 
 
+func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
+	var event := AttackEvent.new(enemy, null, &"hit", 0)
+	event.hand = AttackEvent.Hand.OFF
+	AttackProcs.weapon_procs(world, event)
+
+
 func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing_hotbar() -> void:
 	var counts := {&"Warrior": 17, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
 	for category: StringName in counts:
@@ -146,7 +152,7 @@ func test_level_penalties_apply_once_to_seal_and_lightning_shield_damage() -> vo
 	var enemy := _enemy(world)
 	enemy.melee.level = 3
 	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
-	ClassSpellEffects.on_melee(world, enemy, 20, true)
+	ClassSpellEffects.on_melee(world, AttackEvent.new(enemy, null, &"hit", 20))
 	assert_eq(enemy.max_health - enemy.health, 4,
 		"Seal averages 3.8 damage: a quarter of 20, then the level penalty, with unbiased rounding.")
 	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "until": 100,
@@ -170,7 +176,7 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 	generator.state = world.combat_random.state
 	for index in range(10000):
 		generator.randf()
-		ClassSpellEffects.on_melee(world, enemy, 20, true)
+		ClassSpellEffects.on_melee(world, AttackEvent.new(enemy, null, &"hit", 20))
 	var average := (enemy.max_health - enemy.health) / 10000.0
 	var raw := 20.0 + 4.0 / 14.0 * world.hero.melee.interval
 	assert_almost_eq(average, raw * 0.25 * 0.76, 0.02)
@@ -231,6 +237,30 @@ func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
 		assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
 
+func test_bonus_event_cannot_trigger_primary_procs_even_when_dispatched_explicitly() -> void:
+	var world := _world()
+	_learn(world, [&"relentless_assault_1", &"battle_trance_1", &"sudden_death_1",
+		&"warrior_flurry_1", &"vengeance_1", &"windfury_weapon_1", &"seal_of_command_1"])
+	ClassToolkitRules.apply(world, &"windfury_weapon_1",
+		{"weapon_id": world.hero.weapon_id(), "ready": 0})
+	ClassToolkitRules.apply(world, &"seal_of_command_1", {})
+	world.hero.find_skill(&"sudden_death_1").coefficient = 1.0
+	var enemy := _enemy(world)
+	var event := AttackEvent.new(enemy, world.hero.find_skill(&"mortal_strike_1"),
+		&"critical", 20)
+	event.origin = AttackEvent.Origin.BONUS
+	var buffs := world.hero.buffs.duplicate(true)
+	var random_state := world.combat_random.state
+	var rage := world.hero.rage
+	AttackProcs.on_attack(world, event)
+	AttackProcs.weapon_procs(world, event)
+	assert_eq(world.hero.combo_points, 0)
+	assert_eq(world.hero.rage, rage)
+	assert_eq(world.hero.buffs, buffs)
+	assert_eq(enemy.health, 10000)
+	assert_eq(world.combat_random.state, random_state)
+
+
 func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execute() -> void:
 	var generator := RandomNumberGenerator.new()
 	# Rolls either side of 20% cover eligibility without forcing the proc chance.
@@ -260,7 +290,10 @@ func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execut
 			world.combat_random.seed = chosen_seed
 			var enemy := _enemy(world)
 			var skill := world.hero.find_skill(setup[0])
-			ClassToolkitRules.on_attack(world, enemy, skill, setup[1], false, 20, setup[2], setup[3])
+			var event := AttackEvent.new(enemy, skill, &"hit" if setup[1] else &"miss", 20,
+				AttackEvent.School.PHYSICAL if setup[2] else AttackEvent.School.NATURE)
+			event.hand = AttackEvent.Hand.OFF if setup[3] else AttackEvent.Hand.MAIN
+			AttackProcs.on_attack(world, event)
 			assert_eq(world.hero.buffs.has(&"sudden_death_1"), below_chance and setup[4],
 				"Sudden Death eligibility for %s, off-hand=%s." % [setup[0], setup[3]])
 
@@ -272,16 +305,16 @@ func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itsel
 	var strike := world.hero.find_skill(&"heroic_strike_1")
 	world.hero.melee.critical = 100
 	var natural := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
-	assert_true(natural.critical)
+	assert_true(natural.critical())
 	assert_true(world.hero.buffs.has(&"incite_1"))
 	for turn in range(50):
 		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"incite_1"), "The guarantee waits until consumed.")
 	world.hero.melee.critical = -100
 	var guaranteed := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
-	assert_true(guaranteed.critical)
+	assert_true(guaranteed.critical())
 	assert_false(world.hero.buffs.has(&"incite_1"), "Consumed guarantees cannot renew Incite.")
-	assert_false(ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee).critical)
+	assert_false(ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee).critical())
 
 
 func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> void:
@@ -402,7 +435,7 @@ func test_juggernaut_changes_charge_cooldown_and_guarantees_only_one_mortal_stri
 	assert_eq(world.hero.cooldowns.charge - world.turn_count, 8)
 	assert_true(world.hero.buffs.has(&"juggernaut_1"))
 	world.hero.melee.critical = -100
-	assert_true(ClassToolkitRules.weapon_outcome(world, enemy, world.hero.find_skill(&"mortal_strike_1"), world.hero.melee).critical)
+	assert_true(ClassToolkitRules.weapon_outcome(world, enemy, world.hero.find_skill(&"mortal_strike_1"), world.hero.melee).critical())
 	assert_false(world.hero.buffs.has(&"juggernaut_1"))
 
 
@@ -414,7 +447,7 @@ func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_po
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 6)
 	world.hero.find_skill(&"static_shock_1").coefficient = 1.0
 	var rage := world.hero.rage
-	ClassToolkitRules.on_attack(world, enemy, null, true, false, 20, true)
+	AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"hit", 20))
 	assert_eq(enemy.health, 9985, "50% improvement increases shield damage from 10 to 15.")
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 5)
 	ClassToolkitRules.discharge(world, enemy, true)
@@ -480,11 +513,11 @@ func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_in
 	world.hero.melee.attack_power = 0
 	var rage := world.hero.rage
 	for index in range(100):
-		ClassToolkitRules.weapon_procs(world, enemy, false)
+		AttackProcs.weapon_procs(world, AttackEvent.new(enemy, null, &"hit", 0))
 		if enemy.health < 10000:
 			break
 	assert_eq(enemy.health, 9944, "Exactly two 140% bonus hits.")
-	ClassToolkitRules.weapon_procs(world, enemy, false)
+	AttackProcs.weapon_procs(world, AttackEvent.new(enemy, null, &"hit", 0))
 	assert_eq(enemy.health, 9944, "No proc inside the internal cooldown.")
 	assert_eq(world.hero.rage, rage)
 	assert_eq(world.hero.combo_points, 0)
@@ -562,9 +595,9 @@ func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_judgement_o
 	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.melee.critical = -100
 	var result := ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1"))
-	assert_true(result.critical)
+	assert_true(result.critical())
 	assert_eq(int(world.hero.buffs[&"art_of_war_1"].get("critical_ready", 0)), 0)
-	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1")).critical)
+	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1")).critical())
 
 
 func test_judgement_procs_apply_after_consumption_keep_seal_and_haste_shortens_only_judgement() -> void:
@@ -596,7 +629,7 @@ func test_vengeance_caps_three_stacks_and_eye_reflection_does_not_build_combo_po
 	_learn(world, [&"vengeance_1", &"eye_for_an_eye_1", &"relentless_assault_1"])
 	var enemy := _enemy(world)
 	for index in range(4):
-		ClassToolkitRules.on_attack(world, enemy, null, true, true, 20, true)
+		AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"critical", 20))
 	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.09, 0.001)
 	ClassToolkitRules.incoming(world, enemy, 100, true)
 	assert_eq(enemy.health, 9970)
@@ -668,10 +701,12 @@ func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand
 	world.hero.find_skill(&"main_gauche_1").coefficient = 1
 	var enemy := _enemy(world)
 	world.hero.rage = 0
-	ClassToolkitRules.on_attack(world, enemy, null, true, false, 20, true)
+	AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"hit", 20))
 	assert_lt(enemy.health, enemy.max_health)
 	assert_eq(world.hero.rage, 0, "Main Gauche bonus cannot trigger Combat Potency.")
-	ClassToolkitRules.on_attack(world, enemy, null, true, false, 20, true, true)
+	var event := AttackEvent.new(enemy, null, &"hit", 20)
+	event.hand = AttackEvent.Hand.OFF
+	AttackProcs.on_attack(world, event)
 	assert_eq(world.hero.rage, 5)
 	assert_eq(world.hero.combo_points, 1, "Off-hand and Main Gauche add no points.")
 
@@ -707,7 +742,8 @@ func test_opportunity_seal_fate_and_bandits_guile_reward_direct_crits_without_fi
 	assert_eq(enemy.health, 9904, "40 * 1.2 behind bonus * 2 crit.")
 	assert_eq(world.hero.combo_points, 2)
 	for index in range(3):
-		ClassToolkitRules.on_attack(world, enemy, world.hero.find_skill(&"mortal_strike_1"), true, false, 20, true)
+		AttackProcs.on_attack(world, AttackEvent.new(enemy,
+			world.hero.find_skill(&"mortal_strike_1"), &"hit", 20))
 	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.05, 0.001)
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"slice_and_dice_1"))
@@ -962,15 +998,15 @@ func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage
 	assert_true(world.cast_skill(&"instant_poison_1"))
 	var enemy := _enemy(world)
 	var rage := world.hero.rage
-	ClassToolkitRules.weapon_procs(world, enemy, false)
-	ClassToolkitRules.weapon_procs(world, enemy, true)
+	AttackProcs.weapon_procs(world, AttackEvent.new(enemy, null, &"hit", 0))
+	_off_hand_procs(world, enemy)
 	assert_eq(enemy.health, 9984)
 	assert_eq(world.hero.rage, rage)
 	assert_eq(world.hero.combo_points, 0)
 	assert_false(world.hero.buffs.has(&"sudden_death_1"), "Poison cannot trigger Sudden Death.")
 	world.hero.equipment.weapons = ItemData.instance(70023)
 	world.hero.refresh_stats()
-	ClassToolkitRules.weapon_procs(world, enemy, true)
+	_off_hand_procs(world, enemy)
 	assert_eq(enemy.health, 9984, "Changing the pair loses both coatings.")
 
 

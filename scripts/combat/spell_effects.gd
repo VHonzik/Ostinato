@@ -3,30 +3,41 @@ extends RefCounted
 
 ## Shared damage, healing and class effects; all playable abilities use rage.
 static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
-	return ClassSpellEffects.can_apply(world, skill, target)
+	return SkillBehaviors.for_skill(skill).can_apply(world, skill, target)
 
 
-static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor) -> void:
+static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor,
+	resource_spent: int = 0, poison_hands: int = PoisonRules.Hands.BOTH) -> void:
 	if world.is_terminal():
 		return
-	ClassSpellEffects.resolve(world, skill, target)
+	var cast := SkillBehavior.Cast.new(skill, target, resource_spent, poison_hands)
+	SkillBehaviors.for_skill(skill).resolve(world, cast)
+
+
+static func attack(world: GridWorld, event: AttackEvent, title: String,
+	death_turn: int = -1) -> void:
+	var label := title
+	if event.is_primary() and event.school == AttackEvent.School.PHYSICAL:
+		label = "%s (%s)" % [title, event.result]
+	damage(world, event.target, event.amount, label, death_turn, null,
+		event.school == AttackEvent.School.PHYSICAL, event.result,
+		event.origin == AttackEvent.Origin.SWING and event.hand == AttackEvent.Hand.MAIN)
 
 
 static func damage(
 	world: GridWorld, target: GridActor, value: int, title: String,
 	death_turn: int = -1, source: GridActor = null, physical: bool = false,
-	result: StringName = &"hit"
+	result: StringName = &"hit", log_outcome: bool = false
 ) -> void:
 	if world.is_terminal() or not target.alive:
 		return
-	value = ClassSpellEffects.absorb(world, target, value, physical or title.begins_with("You ("))
+	value = ClassSpellEffects.absorb(world, target, value, physical)
 	if target.relationship != GridActor.Relationship.FRIENDLY:
 		SummonRules.add_threat(world, target, source, value)
 	target.health = maxi(0, target.health - value)
 	world.npc_combat_text.emit(target.tile, value, result)
-	if title.begins_with("You ("):
-		world.add_message("You -> %s: %s, %d damage." % [target.title,
-			title.trim_prefix("You (").trim_suffix(")"), value])
+	if log_outcome:
+		world.add_message("You -> %s: %s, %d damage." % [target.title, result, value])
 	else:
 		world.add_message("%s -> %s: %d damage." % [title, target.title, value])
 	world._check_npc_death(target, death_turn)

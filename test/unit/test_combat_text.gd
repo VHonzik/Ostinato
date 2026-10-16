@@ -76,6 +76,17 @@ func test_absorbed_hit_shows_zero_instead_of_miss() -> void:
 	assert_eq(_enemy.health, 1000)
 
 
+func test_display_labels_do_not_choose_attack_type_or_rewrite_log_format() -> void:
+	var holy := AttackEvent.new(_enemy, SkillDefinition.catalog(&"judgement_1"),
+		&"hit", 11, AttackEvent.School.HOLY)
+	SpellEffects.attack(_world, holy, "You (custom label)")
+	assert_eq(_world.messages[-1], "You (custom label) -> Enemy: 11 damage.")
+	var swing := AttackEvent.new(_enemy, null, &"hit", 7)
+	SpellEffects.attack(_world, swing, "Renamed swing")
+	assert_eq(_world.messages[-1], "You -> Enemy: hit, 7 damage.")
+	assert_eq(_enemy.health, 982)
+
+
 func test_text_expires_without_turns_and_world_replacement_disconnects_old_events() -> void:
 	SpellEffects.damage(_world, _enemy, 1, "First")
 	SpellEffects.damage(_world, _enemy, 1, "Second")

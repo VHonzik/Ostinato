@@ -45,7 +45,7 @@ func test_waiting_proc_roundtrip_preserves_consumption_and_loop_reset() -> void:
 	restored.hero.melee.hit = 100
 	target.melee.dodge = 0
 	var strike := restored.hero.find_skill(&"heroic_strike_1")
-	assert_true(ClassToolkitRules.weapon_outcome(restored, target, strike, restored.hero.melee).critical)
+	assert_true(ClassToolkitRules.weapon_outcome(restored, target, strike, restored.hero.melee).critical())
 	assert_false(restored.hero.buffs.has(&"incite_1"))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())

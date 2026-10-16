@@ -196,9 +196,9 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		if not _valid_melee(target):
 			add_message("Cannot queue Heroic Strike: no valid melee target.")
 			return false
-		queued_rage_cost = skill.cost(hero)
-		skill.spend_resource(hero)
-		ClassToolkitRules.consume_cost_proc(hero, skill)
+		var payment := SkillCost.quote(hero, skill)
+		queued_rage_cost = payment.rage_cost
+		payment.pay(hero)
 		queued_strike = skill
 		add_message("Heroic Strike queued on %s; %d rage reserved. Esc refunds it." % [
 			target.title, queued_rage_cost])
@@ -237,15 +237,14 @@ func continue_cast() -> bool:
 		var target := pending_target
 		var poison_hands := pending_poison_hands
 		cancel_cast()
-		if (skill.available_resource(hero) >= skill.cost(hero) and valid_spell_target(skill, target)
+		var payment := SkillCost.quote(hero, skill)
+		if (skill.available_resource(hero) >= payment.rage_cost and valid_spell_target(skill, target)
 			and SpellEffects.can_apply(self, skill, target)):
 			hero.casting_credit += cast_turns - cast_duration
-			var resource_spent := skill.cost(hero)
-			skill.spend_resource(hero)
-			ClassToolkitRules.consume_cost_proc(hero, skill)
+			payment.pay(hero)
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
-			_resolve_skill(skill, target, resource_spent, poison_hands)
+			_resolve_skill(skill, target, payment.rage_cost, poison_hands)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
 	_finish_turn()
@@ -410,52 +409,7 @@ func _first_living_stalker() -> GridActor:
 func _resolve_skill(skill: SkillDefinition, target: GridActor, resource_spent: int = 0,
 	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
 	_award_ability_use(skill)
-	if PoisonRules.is_poison(skill):
-		PoisonRules.coat(self, skill, poison_hands)
-		return
-	match skill.effect:
-		SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.EXECUTE:
-			var flat_bonus := skill.minimum
-			if skill.effect == SkillDefinition.Effect.EXECUTE:
-				flat_bonus += maxi(0, resource_spent - skill.rage_cost) * skill.execute_damage_per_rage
-				add_message("Execute: spent %d rage." % resource_spent)
-			ClassToolkitRules.physical_attack(self, target, skill, flat_bonus)
-		SkillDefinition.Effect.TOOLKIT:
-			ClassToolkitRules.resolve(self, skill, target)
-		SkillDefinition.Effect.BATTLE_SHOUT:
-			hero.gain_rage(skill.rage_generated)
-			hero.buffs[skill.id] = {"armor": 0, "physical_percent": skill.physical_percent,
-				"until": turn_count + 1 + skill.duration}
-			hero.refresh_stats()
-			add_message("Battle Shout: physical damage increased; gained %d rage." % skill.rage_generated)
-		SkillDefinition.Effect.CHARGE:
-			last_attacked_enemy = target
-			auto_attack_target = target
-			hero.gain_rage(skill.rage_generated)
-			add_message("Charge: reached %s; gained %d rage." % [target.title, skill.rage_generated])
-			ClassToolkitRules.apply(self, &"juggernaut_1", {"charges": 1})
-		SkillDefinition.Effect.CLASS_POINTS:
-			add_class_progress(hero.selected_class, 30)
-			add_message("Gained 30 %s progression points." % String(hero.selected_class).to_lower())
-		SkillDefinition.Effect.PRACTICE:
-			add_message("%s: cast complete (1 turn, 0 rage)." % skill.title)
-		SkillDefinition.Effect.EXPERIENCE:
-			add_message("%s: gained 450 XP." % skill.title)
-			for gained_level in hero.add_experience(450):
-				add_message("Level up! You are now level %d. Health restored." % gained_level)
-		SkillDefinition.Effect.GOLD:
-			hero.copper += 10000
-			add_message("Gain 1 gold: gained %s." % InventoryRules.money(10000))
-		SkillDefinition.Effect.KILL_STALKER:
-			var stalker := _first_living_stalker()
-			if stalker != null:
-				var lethal_damage := stalker.health
-				SpellEffects.damage(self, stalker, lethal_damage, "Kill stalker")
-		SkillDefinition.Effect.DEATH_NOTICE:
-			hero.health = 0
-			add_message("Death trigger invoked. You died.")
-		_:
-			SpellEffects.resolve(self, skill, target)
+	SpellEffects.resolve(self, skill, target, resource_spent, poison_hands)
 	check_terminal()
 
 
@@ -817,29 +771,26 @@ func _player_swing(target: GridActor) -> void:
 	else:
 		_award_ability_use(strike)
 	ClassToolkitRules.consume_flurry(hero)
-	var outcome := ClassToolkitRules.weapon_outcome(self, target, strike, hero.melee)
-	var result: StringName = outcome.result
+	var event := ClassToolkitRules.weapon_outcome(self, target, strike, hero.melee)
+	var result := event.result
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
 		combat_random.randf(),
 		1.0 if strike == null else strike.weapon_multiplier,
 		0 if strike == null else strike.minimum)
-	amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
-	SpellEffects.damage(self, target, amount, "%s (%s)" % [
-		"You" if strike == null else strike.title, result], turn_count, null, true, result)
-	var landed := result not in [&"miss", &"dodge"]
-	ClassSpellEffects.on_melee(self, target, amount, landed)
-	ClassToolkitRules.on_attack(self, target, strike, landed, outcome.critical, amount, true)
+	event.amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
+	SpellEffects.attack(self, event, "You" if strike == null else strike.title, turn_count)
+	AttackProcs.on_attack(self, event)
 
 
 func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
 	ClassToolkitRules.consume_flurry(hero)
-	var outcome := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
-	var value := MeleeRules.damage(weapon, target.melee, outcome.result,
+	var event := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
+	event.hand = AttackEvent.Hand.OFF
+	var value := MeleeRules.damage(weapon, target.melee, event.result,
 		combat_random.randf())
-	value = floori(value * ClassToolkitRules.damage_multiplier(hero))
-	SpellEffects.damage(self, target, value, "Off-hand (%s)" % outcome.result,
-		turn_count, null, true, outcome.result)
-	ClassToolkitRules.on_attack(self, target, null, outcome.landed, outcome.critical, value, true, true)
+	event.amount = floori(value * ClassToolkitRules.damage_multiplier(hero))
+	SpellEffects.attack(self, event, "Off-hand", turn_count)
+	AttackProcs.on_attack(self, event)
 
 
 func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
