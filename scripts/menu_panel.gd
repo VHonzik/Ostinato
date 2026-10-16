@@ -194,23 +194,23 @@ func open_marshal() -> void:
 
 func _confirm_class(category: StringName, marshal: GridActor) -> void:
 	confirm("Advance %s for Loop %d? This locks your choice until death. Visit its trainer to learn starter skills." % [category, session.loop_count],
-		_select_class.bind(category, marshal), open_conversation.bind(marshal))
+		_select_class.bind(category, marshal), _show_conversation.bind(marshal))
 
 
 func _request_spare_gear(actor: GridActor) -> void:
-	if not QuestRules.in_range(session.world, actor, 900003):
+	if not QuestRules.in_range(session.world, actor, NpcDefinition.JANOS_ID):
 		close()
 		return
 	if session.world.starter_gear_received:
-		open_conversation(actor)
+		_show_conversation(actor)
 		return
 	if not session.world.receive_starter_gear(actor):
 		notice("Cannot exchange gear; make inventory space and try again.",
-			open_conversation.bind(actor))
+			_show_conversation.bind(actor))
 		return
-	_begin("spare_gear", actor.title, open_conversation.bind(actor))
+	_begin("spare_gear", actor.title, _show_conversation.bind(actor))
 	_label("I can find some left overs if you are not picky.")
-	_button("Back (Esc)", open_conversation.bind(actor))
+	_button("Back (Esc)", _show_conversation.bind(actor))
 	_finish()
 	refreshed.emit()
 
@@ -696,15 +696,15 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 	if session.select_class(category, marshal):
 		session.world.trainer_referral_received = true
 		refreshed.emit()
-		_begin("class_referral", marshal.title, open_conversation.bind(marshal))
-		_label(ValleyRoute.trainer_referral(category))
+		_begin("class_referral", marshal.title, _show_conversation.bind(marshal))
+		_label(NpcDefinition.trainer_referral(category))
 		_label("Visit your trainer to learn skills. Everything you already learned remains usable.")
-		_button("Back (Esc)", open_conversation.bind(marshal))
+		_button("Back (Esc)", _show_conversation.bind(marshal))
 		_button("Leave", close)
 		_finish()
 	else:
 		notice("Class choice is unavailable. Speak to the marshal outside combat before accepting a quest.",
-			open_conversation.bind(marshal))
+			_show_conversation.bind(marshal))
 
 
 func _train(identifier: StringName) -> void:
@@ -734,57 +734,56 @@ func open_conversation(actor: GridActor) -> void:
 	if not QuestRules.in_range(session.world, actor, actor.npc_id):
 		close()
 		return
-	QuestRules.event(session.world, "talk", str(actor.npc_id))
-	_begin("conversation", actor.title, close)
-	_label(ValleyRoute.greeting(actor.npc_id))
-	var choices := false
-	for identifier in QuestData.QUESTS:
-		var quest: Dictionary = QuestData.QUESTS[identifier]
-		if QuestRules.available(session.world, identifier) and int(quest.giver) == actor.npc_id:
-			_quest_button(identifier, "Available: ", _quest_detail.bind(identifier, actor))
-			choices = true
-		elif (session.world.quests.has(identifier)
-			and not session.world.quests[identifier].handed_in
-			and int(quest.receiver) == actor.npc_id):
-			_quest_button(identifier, "Ready: " if QuestRules.ready(session.world, identifier)
-				else "In progress: ", _quest_detail.bind(identifier, actor))
-			choices = true
-	if actor.service == &"Marshal":
-		if session.loop_count > 1 and (session.world.class_selected or session.world.ever_accepted_quest):
-			_label("Advancing %s this Loop. Class choice is locked until death." % session.world.hero.selected_class)
-		elif session.loop_count > 1 and not session.can_select_class():
-			_label("Return outside combat to choose your class before accepting a quest.")
-		if session.can_select_class():
-			for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
-				var button := _button("Uhm... I seek %s teaching" % String(category).to_lower(),
-					_confirm_class.bind(category, actor))
-				var titles: PackedStringArray = []
-				for skill in SkillDefinition.starting_skills(category):
-					titles.append(skill.title)
-				button.tooltip_text = "%d class XP. Learn %s for free at the trainer. Gear and learned skills remain." % [
-					session.world.hero.progression_points(category), " + ".join(titles)]
-		elif (not session.world.class_selected and not session.world.ever_accepted_quest
-			and session.world.hero.selected_class == &"Warrior"
-			and not session.world.trainer_referral_received):
-			_button("It's been a long journey, is there a warrior master?", open_marshal)
-		choices = true
-	elif actor.service == &"Trader":
-		if (actor.npc_id == 900003 and session.world.valley_route
-			and session.world.hero.selected_class == &"Warrior"
-			and not session.world.starter_gear_received):
-			_button("Do you have any spare gear for warrior?", _request_spare_gear.bind(actor))
-		_button("Trade", open_trade.bind(actor))
-		choices = true
-	elif actor.service in ClassSkillData.PLAYABLE_CLASSES:
-		_button("Train", open_trainer.bind(actor.service))
-		choices = true
-	if not choices:
-		session.world.add_message(session.world.interact(actor))
+	session.world.interact(actor)
+	_show_conversation(actor)
+
+
+func _show_conversation(actor: GridActor) -> void:
+	var conversation := NpcConversation.build(session, actor)
+	if conversation == null:
+		close()
+		return
+	if not conversation.keep_open:
+		session.world.add_message(session.world.contact_greeting(actor))
 		close()
 	else:
+		_begin("conversation", actor.title, close)
+		_label(conversation.greeting)
+		for line in conversation.lines:
+			_label(line)
+		for choice in conversation.choices:
+			var callback := _conversation_choice.bind(choice, actor)
+			if choice.action == NpcConversation.Action.QUEST:
+				_quest_button(choice.quest_id, choice.quest_prefix, callback)
+			else:
+				var button := _button(choice.title, callback)
+				button.tooltip_text = choice.tooltip
 		_button("Leave (Esc)", close)
 		_finish()
 	refreshed.emit()
+
+
+func _conversation_choice(choice: NpcConversation.Choice, actor: GridActor) -> void:
+	var conversation := NpcConversation.build(session, actor)
+	if conversation == null:
+		close()
+		return
+	if not conversation.offers(choice):
+		_show_conversation(actor)
+		return
+	match choice.action:
+		NpcConversation.Action.QUEST:
+			_quest_detail(choice.quest_id, actor)
+		NpcConversation.Action.SELECT_CLASS:
+			_confirm_class(choice.category, actor)
+		NpcConversation.Action.REFERRAL:
+			open_marshal()
+		NpcConversation.Action.SPARE_GEAR:
+			_request_spare_gear(actor)
+		NpcConversation.Action.TRADE:
+			open_trade(actor)
+		NpcConversation.Action.TRAIN:
+			open_trainer(choice.category)
 
 
 func open_quest_log() -> void:
@@ -812,17 +811,17 @@ func _quest_button(identifier: String, prefix: String, action: Callable) -> void
 
 
 func _quest_detail(identifier: String, actor: GridActor) -> void:
-	var back := open_quest_log if actor == null else open_conversation.bind(actor)
+	var back := open_quest_log if actor == null else _show_conversation.bind(actor)
 	var world := session.world
 	var quest: Dictionary = QuestData.QUESTS[identifier]
 	_begin("quest_detail", quest.title, back)
 	_label("Level %d / %s. Return to %s." % [quest.level,
 		QuestRules.difficulty(int(quest.level), world.hero.level),
-		ValleyRoute.npc_name(int(quest.receiver))])
+		NpcDefinition.display_name(int(quest.receiver))])
 	for index in range(quest.objectives.size()):
-		var objective: Dictionary = quest.objectives[index]
+		var objective: QuestObjective = quest.objectives[index]
 		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0
-		_label("%s: %d/%d" % [QuestRules.objective_label(objective), amount, objective.count])
+		_label("%s: %d/%d" % [objective.label(), amount, objective.count])
 	_label("Reward: %d XP, %s." % [QuestRules.experience(int(quest.xp),
 		int(quest.level), world.hero.level), InventoryRules.money(int(quest.copper))])
 	if QuestRules.available(world, identifier) and actor != null:

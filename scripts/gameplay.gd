@@ -25,16 +25,11 @@ var _repeat_key: Key = KEY_NONE
 var _repeat_seconds: float = 0.0
 var _repeat_arrow: bool = false
 
+@onready var hud: GameplayHud = $HUD
 @onready var grid_view: GridView = $GridView
 @onready var camera: Camera2D = $Camera2D
 @onready var combat_panel: CombatPanel = $HUD/CombatPanel
 @onready var hero_panel: HeroPanel = $HUD/HeroPanel
-@onready var _cancel_attack: Button = $HUD/Top/Rows/CancelAttack
-@onready var _status: Label = $HUD/Top/Rows/Status
-@onready var _hero_status: Label = $HUD/Top/Rows/HeroStatus
-@onready var _chat: RichTextLabel = $HUD/Bottom/Rows/Chat
-@onready var _feedback: Label = $HUD/Bottom/Rows/Feedback
-@onready var _quest_tracker: Label = $HUD/QuestTracker/Text
 
 
 func _ready() -> void:
@@ -64,7 +59,7 @@ func _ready() -> void:
 	menu.options.load_options()
 	_apply_fullscreen()
 	get_tree().auto_accept_quit = false
-	_cancel_attack.pressed.connect(_cancel_pending_melee)
+	hud.cancel_attack.pressed.connect(_cancel_pending_melee)
 	combat_panel.action_taken.connect(refresh_view)
 	combat_panel.visibility_changed.connect(_on_combat_panel_visibility_changed)
 	combat_panel.selection_changed.connect(_select_actor)
@@ -82,13 +77,7 @@ func _ready() -> void:
 	world = MovementFixture.create_world()
 	grid_view.world = world
 	menu.open_main()
-	$HUD/Top.hide()
-	$HUD/Bottom.hide()
-	$HUD/PlayerMenu.hide()
-	$HUD/Auras.hide()
-	$HUD/RageBar.hide()
-	$HUD/HealthBar.hide()
-	$HUD/ComboPointBar.hide()
+	hud.hide_game()
 	grid_view.hide()
 	hotbar_panel.hide()
 
@@ -110,7 +99,7 @@ func _process(delta: float) -> void:
 		if _melee_delay_seconds <= 0.0:
 			world.continue_melee()
 			if world.pending_melee == null:
-				_feedback.text = "Attack ended. Choose your next action."
+				hud.feedback.text = "Attack ended. Choose your next action."
 			refresh_view()
 		return
 	if (world.is_terminal() or world.pending_melee != null
@@ -140,12 +129,12 @@ func _process(delta: float) -> void:
 			direction = arrows
 	if direction == Vector2i.ZERO:
 		world.wait_turn()
-		_feedback.text = "Waited one turn. The meadow stirs."
+		hud.feedback.text = "Waited one turn. The meadow stirs."
 	elif world.move_player(direction):
-		_feedback.text = "Action complete."
+		hud.feedback.text = "Action complete."
 	else:
 		var contact := world.actor_at(world.player_tile + direction)
-		_feedback.text = "Interacted with %s." % contact.title if (
+		hud.feedback.text = "Interacted with %s." % contact.title if (
 			contact != null and contact.relationship == GridActor.Relationship.FRIENDLY
 		) else "Blocked. No time or movement credit spent."
 	refresh_view()
@@ -331,8 +320,7 @@ func start_new_game() -> void:
 	menu.active_game = true
 	menu.close()
 	session.new_game()
-	$HUD/Top.show()
-	$HUD/Bottom.show()
+	hud.show_game()
 	grid_view.show()
 	refresh_view()
 
@@ -350,12 +338,11 @@ func _adopt_world() -> void:
 	world.friendly_interaction_requested.connect(_interact_with_friendly)
 	grid_view.world = world
 	grid_view.show()
-	$HUD/Top.show()
-	$HUD/Bottom.show()
+	hud.show_game()
 	_pending_action = false
 	_melee_delay_seconds = 0.0
 	_refresh_chat("")
-	_feedback.text = ""
+	hud.feedback.text = ""
 	refresh_view()
 
 
@@ -366,14 +353,7 @@ func _return_to_menu() -> void:
 	active_game = false
 	hero_panel.close()
 	combat_panel.close()
-	$HUD/Top.hide()
-	$HUD/Bottom.hide()
-	$HUD/PlayerMenu.hide()
-	$HUD/Auras.hide()
-	$HUD/RageBar.hide()
-	$HUD/HealthBar.hide()
-	$HUD/ComboPointBar.hide()
-	$HUD/QuestTracker.hide()
+	hud.hide_game()
 	grid_view.hide()
 	hotbar_panel.hide()
 	session.world = null
@@ -425,16 +405,9 @@ func refresh_view() -> void:
 		hero_panel.close()
 		combat_panel.close()
 		combat_panel.clear_spell_target()
-		_cancel_attack.hide()
+		hud.cancel_attack.hide()
 		hotbar_panel.hide()
-		$HUD/Top.hide()
-		$HUD/Bottom.hide()
-		$HUD/PlayerMenu.hide()
-		$HUD/Auras.hide()
-		$HUD/RageBar.hide()
-		$HUD/HealthBar.hide()
-		$HUD/ComboPointBar.hide()
-		$HUD/QuestTracker.hide()
+		hud.hide_game()
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
@@ -449,134 +422,28 @@ func refresh_view() -> void:
 	elif world.pending_skill != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
-		_feedback.text = "Charging. Actions resume on arrival." if world.is_charging() else (
+		hud.feedback.text = "Charging. Actions resume on arrival." if world.is_charging() else (
 			"Casting %s. Esc cancels." % world.pending_skill.title)
 	elif world.pending_melee != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
 		_select_actor(world.pending_melee)
-		_feedback.text = "%s on %s. Waiting for swing; Esc cancels." % [
+		hud.feedback.text = "%s on %s. Waiting for swing; Esc cancels." % [
 			"Attack" if world.queued_strike == null else "Heroic Strike queued",
 			world.pending_melee.title]
 	else:
 		_melee_delay_seconds = 0.0
 		if not combat_panel.visible:
 			_select_actor(world.auto_attack_target)
-	_cancel_attack.visible = (world.pending_melee != null or world.pending_skill != null)
-	_cancel_attack.disabled = world.is_charging()
+	hud.cancel_attack.visible = (world.pending_melee != null or world.pending_skill != null)
+	hud.cancel_attack.disabled = world.is_charging()
 	grid_view.alternate_palette = menu.options.alternate_palette
-	$HUD/PlayerMenu/Buttons/PlayerMenu.text = "Menu (%s)" % menu.options.key_label(&"player_menu")
-	$HUD/PlayerMenu/Buttons/Character.text = "Character (%s)" % menu.options.key_label(&"character")
-	$HUD/PlayerMenu/Buttons/Spells.text = "Spells (%s)" % menu.options.key_label(&"spell_book")
-	$HUD/PlayerMenu/Buttons/Inventory.text = "Inventory (%s)" % menu.options.key_label(&"inventory")
-	$HUD/PlayerMenu/Buttons/Interact.text = "Interact (%s)" % menu.options.key_label(&"interact")
-	$HUD/PlayerMenu/Buttons/Quests.text = "Quests (%s)" % menu.options.key_label(&"quest_log")
 	camera.position = GridView.tile_center(world.player_tile)
 	camera.force_update_scroll()
 	grid_view.queue_redraw()
-	var hero := world.hero
-	_hero_status.text = "HP %d/%d   Rage %d/%d\nLv %d  XP %d/%d" % [
-		hero.health, hero.max_health, hero.rage, HeroState.MAX_RAGE,
-		hero.level, hero.experience, hero.experience_to_next_level(),
-	]
-	if hero.find_skill(&"relentless_assault_1") != null:
-		_hero_status.text += "   CP %d/%d" % [hero.combo_points, HeroState.MAX_COMBO_POINTS]
 	hero_panel.refresh()
 	_refresh_hotbar()
-	for child in $HUD/Auras.get_children():
-		$HUD/Auras.remove_child(child)
-		child.queue_free()
-	for identifier in hero.buffs:
-		var skill := hero.find_skill(StringName(identifier))
-		var title := skill.title if skill != null else String(identifier).capitalize()
-		if skill != null and PoisonRules.is_poison(skill):
-			for off_hand in [false, true]:
-				if PoisonRules.coating(hero, world.turn_count, off_hand) != identifier:
-					continue
-				var effect: Dictionary = hero.buffs[identifier].duplicate()
-				effect.until = int(effect.get("off_until" if off_hand else "main_until", effect.until))
-				_add_aura(title + (" (OH)" if off_hand else " (MH)"), effect, false,
-					title.left(1) + ("O" if off_hand else "M"))
-			continue
-		_add_aura(title, hero.buffs[identifier], false)
-	for identifier in hero.debuffs:
-		_add_aura(String(identifier).capitalize(), hero.debuffs[identifier], true)
-	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, session.loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
-
-
-func _refresh_quest_tracker() -> void:
-	var quests: PackedStringArray = []
-	for identifier in world.quests:
-		if world.quests[identifier].handed_in:
-			continue
-		var quest: Dictionary = QuestData.QUESTS[identifier]
-		var lines: PackedStringArray = [String(quest.title)]
-		if QuestRules.ready(world, identifier):
-			lines[0] += " — Completed"
-		for index in range(quest.objectives.size()):
-			var objective: Dictionary = quest.objectives[index]
-			var amount := QuestRules.progress(world, identifier, index)
-			var required := int(objective.count)
-			var status := "Completed" if amount >= required else "%d/%d" % [amount, required]
-			lines.append("  %s: %s" % [QuestRules.objective_label(objective), status])
-		quests.append("\n".join(lines))
-	_quest_tracker.text = "\n\n".join(quests)
-	$HUD/QuestTracker.reset_size()
-	$HUD/QuestTracker.visible = $HUD/Auras.visible and not quests.is_empty()
-
-
-func _add_aura(title: String, effect: Dictionary, harmful: bool, abbreviation: String = "") -> void:
-	var square := Panel.new()
-	square.custom_minimum_size = Vector2(32, 32)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("243b35")
-	style.set_border_width_all(1)
-	style.border_color = Color("ff7777") if harmful else Color("a6c8a0")
-	square.add_theme_stylebox_override("panel", style)
-	var words := title.split(" ", false)
-	var shortcut := title.left(2).to_upper()
-	if words.size() > 1:
-		shortcut = (words[0].left(1) + words[-1].left(1)).to_upper()
-	if not abbreviation.is_empty():
-		shortcut = abbreviation
-	var label := Label.new()
-	label.text = shortcut
-	label.add_theme_font_size_override("font_size", 14)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	square.add_child(label)
-	var until := int(effect.get("until", 0))
-	square.tooltip_text = title
-	if int(effect.get("charges", 0)) > 0:
-		square.tooltip_text += " / %d charges" % effect.charges
-		var charges := Label.new()
-		charges.name = "Charges"
-		charges.text = str(int(effect.charges))
-		charges.add_theme_font_size_override("font_size", 10)
-		charges.add_theme_color_override("font_color", Color.WHITE)
-		charges.add_theme_color_override("font_outline_color", Color.BLACK)
-		charges.add_theme_constant_override("outline_size", 2)
-		charges.position = Vector2(2, 1)
-		charges.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		square.add_child(charges)
-	if until > 0:
-		var remaining := maxi(0, until - world.turn_count)
-		var duration := Label.new()
-		duration.text = str(remaining)
-		duration.add_theme_font_size_override("font_size", 10)
-		duration.add_theme_color_override("font_color",
-			Color("ff6464") if remaining <= 3 else Color.WHITE)
-		duration.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		duration.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-		duration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		duration.offset_right = -1
-		duration.offset_bottom = -1
-		duration.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		square.add_child(duration)
-		square.tooltip_text += " / %d turns" % maxi(0, until - world.turn_count)
-	$HUD/Auras.add_child(square)
+	hud.refresh(world, session.loop_count, menu.options)
 
 
 func _open_player_menu() -> void:
@@ -641,13 +508,12 @@ func _cast_skill(identifier: StringName) -> void:
 
 
 func _refresh_chat(_message: String) -> void:
-	_chat.text = "\n".join(world.messages)
+	hud.refresh_chat(world)
 
 
 func _on_hero_panel_visibility_changed() -> void:
-	$HUD/Bottom.visible = active_game and not hero_panel.visible and not combat_panel.visible
+	hud.refresh_overlay(active_game, hero_panel.visible, combat_panel.visible)
 	_refresh_hotbar()
-	_feedback.visible = not hero_panel.visible
 
 
 func _select_actor(actor: GridActor) -> void:
@@ -676,7 +542,7 @@ func _handle_combat_input(event: InputEvent) -> void:
 
 
 func _on_combat_panel_visibility_changed() -> void:
-	$HUD/Bottom.visible = active_game and not combat_panel.visible and not hero_panel.visible
+	hud.refresh_overlay(active_game, hero_panel.visible, combat_panel.visible)
 	_refresh_hotbar()
 
 
@@ -687,7 +553,7 @@ func _cancel_pending_melee() -> void:
 	world.cancel_cast()
 	_pending_action = false
 	_melee_delay_seconds = 0.0
-	_feedback.text = "Attack canceled. Elapsed turns remain spent."
+	hud.feedback.text = "Attack canceled. Elapsed turns remain spent."
 	refresh_view()
 
 
@@ -714,20 +580,7 @@ func _refresh_hotbar() -> void:
 		return
 	hotbar_panel.visible = (active_game and not world.is_terminal()
 		and not combat_panel.visible and not menu.visible)
-	$HUD/PlayerMenu.visible = hotbar_panel.visible and not hero_panel.visible
-	$HUD/Auras.visible = hotbar_panel.visible and not hero_panel.visible
-	$HUD/RageBar.visible = $HUD/Auras.visible
-	$HUD/HealthBar.visible = $HUD/Auras.visible
-	$HUD/HealthBar.modulate.a = 0.8
-	$HUD/HealthBar/Fill.max_value = world.hero.max_health
-	$HUD/HealthBar/Fill.value = world.hero.health
-	$HUD/RageBar.modulate.a = 0.2 if world.hero.rage == 0 else 0.8
-	$HUD/RageBar/Fill.max_value = HeroState.MAX_RAGE
-	$HUD/RageBar/Fill.value = world.hero.rage
-	$HUD/ComboPointBar.visible = ($HUD/Auras.visible
-		and world.hero.find_skill(&"relentless_assault_1") != null)
-	$HUD/ComboPointBar.refresh(world.hero)
-	_refresh_quest_tracker()
+	hud.refresh_resources(world, hotbar_panel.visible and not hero_panel.visible)
 	var can_edit := _hotbar_can_edit()
 	hotbar_panel.refresh(world, menu.options, can_edit and not hero_panel.visible,
 		can_edit, hero_panel.choosing_slot)

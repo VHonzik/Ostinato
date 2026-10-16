@@ -77,271 +77,24 @@ static func capture(session: GameSession) -> Dictionary:
 
 
 static func restore(data: Variant, development_build: bool) -> GridWorld:
-	if not data is Dictionary:
-		return null
-	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
-		"blocked", "sight", "actors", "learned", "equipment", "inventory",
-		"buffs", "hotbar", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "quests", "population", "debuffs", "off_hand_swing"]
-	for key in keys:
-		if not data.has(key):
-			return null
-	for key in ["seed", "random", "combat_random"]:
-		if (not data[key] is String or not data[key].is_valid_int()
-			or str(int(data[key])) != data[key]):
-			return null
-	if not _integer(data.loop, 1):
+	if not _valid_envelope(data):
 		return null
 	var world := GridWorld.new(Rect2i(0, 0, 1, 1), Vector2i.ZERO, int(data.seed), false)
-	if not _restore_fields(world, data.world, WORLD_FIELDS):
+	# Restore into a new world. A failure never mutates the active session.
+	if not _restore_world(world, data) or not _restore_hero_state(world, data):
 		return null
-	if not data.get("valley_route", false) is bool:
+	if not _restore_terrain(world, data) or not _restore_actors(world, data):
 		return null
-	world.valley_route = data.get("valley_route", false)
-	if not data.get("starter_gear_received", false) is bool:
-		return null
-	world.starter_gear_received = data.get("starter_gear_received", false)
-	if world.valley_route:
-		if world.bounds != ValleyRoute.BOUNDS or not world.northshire:
-			return null
-		ValleyRoute.build_terrain(world)
-		# Collision and indoor state below come from the saved attempt.
-		world.blocked_tiles.clear()
-		world.sight_blockers.clear()
-		world.indoor_tiles.clear()
-	if not _restore_fields(world.hero, data.hero, HERO_FIELDS):
-		return null
-	if (world.bounds.size.x < 1 or world.bounds.size.y < 1
-		or world.bounds.size.x > 1024 or world.bounds.size.y > 1024
-		or not world.bounds.has_point(world.player_tile)
-		or world.turn_count < 0 or world.movement_speed <= 0 or world.movement_credit < 0
-		or world.hero.combo_points < 0 or world.hero.combo_points > HeroState.MAX_COMBO_POINTS
-		or world.hero.rage < 0 or world.hero.rage > HeroState.MAX_RAGE
-		or world.hero.rage_credit < 0.0 or world.hero.rage_credit >= 1.0
-		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
-		or world.hero.last_hit_rage_turn < -1 or world.hero.last_hit_rage_turn > world.turn_count
-		or world.hero.warrior_progress < 0
-		or world.hero.level < 1
-		or world.hero.experience < 0 or world.hero.copper < 0
-		or world.hero.potion_ready_turn < 0
-		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
-		or world.hero.selected_class not in ClassSkillData.CLASSES):
-		return null
-	if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
-		and int(data.loop) == 1 and world.hero.selected_class != &"Warrior"):
-		return null
-	if data.has("class_progress"):
-		if not data.class_progress is Dictionary:
-			return null
-		for category in data.class_progress:
-			if (not category is String or StringName(category) not in ClassSkillData.CLASSES
-				or not _integer(data.class_progress[category], 0)):
-				return null
-		if int(data.class_progress.get("Warrior", 0)) != world.hero.warrior_progress:
-			return null
-		world.hero.class_progress.clear()
-		for category in data.class_progress:
-			world.hero.class_progress[StringName(category)] = int(data.class_progress[category])
-	world.hero._apply_level_stats()
-	if world.hero.experience >= world.hero.experience_to_next_level():
-		return null
-	if not _tiles(data.indoors, world.indoor_tiles, world.bounds):
-		return null
-	if not _tiles(data.blocked, world.blocked_tiles, world.bounds):
-		return null
-	if not _tiles(data.sight, world.sight_blockers, world.bounds):
-		return null
-	if world.blocked_tiles.has(world.player_tile):
-		return null
-	if not data.actors is Array or data.actors.size() > 1000:
-		return null
-	for record in data.actors:
-		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "threat", "debuffs"])):
-			return null
-		var actor := GridActor.new(Vector2i.ZERO)
-		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
-			return null
-		if world.valley_route and actor.npc_id in [900002, 900003]:
-			actor.title = ValleyRoute.npc_name(actor.npc_id)
-		if not _restore_fields(actor.melee, record.melee, MELEE_FIELDS):
-			return null
-		if not _restore_swing(actor.swing, record.swing) or not _buffs(record.buffs):
-			return null
-		if (not world.bounds.has_point(actor.tile) or not world.bounds.has_point(actor.home_tile)
-			or actor.max_health <= 0 or actor.health < 0 or actor.health > actor.max_health
-			or actor.relationship < 0 or actor.relationship > 2
-			or actor.melee.level < 1 or actor.melee.interval <= 0
-			or actor.melee.armor < 0 or actor.melee.damage_min < 0
-			or actor.melee.damage_max < actor.melee.damage_min
-			or actor.movement_credit < 0 or actor.blocked_turns < 0
-			or (actor.alive and not world.is_open(actor.tile))):
-			return null
-		if not record.loot is Array or record.loot.size() > 100:
-			return null
-		for item in record.loot:
-			if not _item(item) or item.is_empty():
-				return null
-			actor.loot.append(_normalized_item(item))
-		if actor.loot_copper < 0:
-			return null
-		if not _number_map(record.threat, 0) or not _debuffs(record.debuffs):
-			return null
-		for key in record.threat:
-			if not key.is_valid_int() or int(key) < -1 or int(key) >= data.actors.size():
-				return null
-		actor.threat = _normalized_numbers(record.threat)
-		actor.debuffs = _normalized_buffs(record.debuffs)
-		if (actor.summon_kind not in ["", "earth", "wolf"]
-			or actor.expires_turn < 0 or actor.stunned_until < 0):
-			return null
-		if actor.summon_kind != "":
-			var summon := SkillDefinition.catalog(actor.summon_skill)
-			if (summon == null or (summon.effect != SkillDefinition.Effect.SUMMON and summon.family != &"feral_spirit")
-				or SummonRules.slot(summon) != actor.summon_kind
-				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
-				return null
-			if actor.alive and actor.summon_kind != "wolf" and SummonRules.active(world, actor.summon_kind) != null:
-				return null
-			if actor.alive and actor.summon_kind == "wolf":
-				var wolves := world.actors.filter(func(other: GridActor) -> bool:
-					return other.alive and other.summon_kind == "wolf")
-				if wolves.size() >= 2:
-					return null
-		actor.buffs = _normalized_buffs(record.buffs)
-		world._hide_empty_corpse(actor)
-		world.actors.append(actor)
-	if not data.learned is Array or data.learned.size() > 1000:
-		return null
-	world.hero.learned_skills.clear()
+	# Preserve raw IDs too: release builds filter development skills from the hero,
+	# but those saved IDs are still allowed in hotbar slots.
 	var learned: Array[String] = []
-	for identifier in data.learned:
-		if not identifier is String or learned.has(identifier):
-			return null
-		var skill := SkillDefinition.catalog(StringName(identifier))
-		if skill == null:
-			return null
-		if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
-			and not skill.development_only and not ClassSkillData.is_playable_skill(skill.id)):
-			return null
-		learned.append(identifier)
-		if development_build or not skill.development_only:
-			world.hero.learned_skills.append(skill)
-	# New classes may be saved before visiting their trainer, or after learning one starter.
-	var mandatory: Array = ClassSkillData.STARTERS[&"Warrior"]
-	for identifier: StringName in mandatory:
-		if not learned.has(String(identifier)):
-			return null
-	if world.hero.combo_points > 0 and not learned.has("relentless_assault_1"):
+	if not _restore_learning(world, data, development_build, learned):
 		return null
-	for identifier in learned:
-		var skill := SkillDefinition.catalog(StringName(identifier))
-		if world.hero.progression_points(skill.class_tab) < skill.progress_required:
-			return null
-	if not _inventory(data.inventory) or not data.equipment is Dictionary:
+	if not _restore_inventory(world, data) or not _restore_effects(world, data):
 		return null
-	for slot in data.equipment:
-		var item: Variant = data.equipment[slot]
-		if not _item(item) or item.is_empty():
-			return null
-		if (not InventoryRules.fits_slot(ItemData.get_item(int(item.id)), slot)
-			or int(item.quantity) != 1):
-			return null
-	world.hero.inventory.clear()
-	for item in data.inventory:
-		world.hero.inventory.append(_normalized_item(item))
-	world.hero.equipment.clear()
-	for slot in data.equipment:
-		world.hero.equipment[slot] = _normalized_item(data.equipment[slot])
-	if (not _buffs(data.buffs) or not _restore_swing(world.hero.swing, data.hero_swing)
-		or not _restore_swing(world.hero.off_hand_swing, data.off_hand_swing)):
+	if not _restore_merchants(world, data) or not _restore_action_state(world, data):
 		return null
-	world.hero.buffs = _normalized_buffs(data.buffs)
-	for key in world.hero.buffs:
-		if ((ClassToolkitData.PASSIVES.has(String(key)) or ClassToolkitData.ACTIVES.has(String(key)))
-			and (world.hero.find_skill(key) == null
-				or (int(world.hero.buffs[key].until) > 0
-					and int(world.hero.buffs[key].until) <= world.turn_count))):
-			return null
-	for actor in world.actors:
-		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
-			return null
-		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
-			return null
-	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
-		return null
-	world.hero.debuffs = _normalized_buffs(data.debuffs)
-	SummonRules.refresh_auras(world)
-	world.hero.health = int(data.hero.health)
-	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health):
-		return null
-	if not _number_map(data.cooldowns, 0):
-		return null
-	if not data.vendor_stock is Dictionary:
-		return null
-	var initial_stock := MerchantData.initial_stock(world.actors)
-	if data.vendor_stock.size() != initial_stock.size():
-		return null
-	# A merchant instance owns its stock; duplicate identities cannot share a pool.
-	var merchant_ids: Array[String] = []
-	for actor in world.actors:
-		if actor.service != &"Trader":
-			continue
-		if (actor.spawn_id.is_empty() or merchant_ids.has(actor.spawn_id)
-			or MerchantData.catalog(actor.npc_id).is_empty()):
-			return null
-		merchant_ids.append(actor.spawn_id)
-	for merchant_id in initial_stock:
-		if not data.vendor_stock.has(merchant_id):
-			return null
-		var stock: Variant = data.vendor_stock[merchant_id]
-		var initial: Dictionary = initial_stock[merchant_id]
-		if not _number_map(stock, -1) or stock.size() != initial.size():
-			return null
-		for key in initial:
-			if not stock.has(key):
-				return null
-			if (int(initial[key]) == -1 and stock[key] != -1
-				or int(initial[key]) >= 0 and (stock[key] < 0 or stock[key] > initial[key])):
-				return null
-		world.vendor_stock[merchant_id] = _normalized_numbers(stock)
-
-	world.hero.cooldowns = _normalized_numbers(data.cooldowns)
-	if not data.loot_quests is Array:
-		return null
-	for quest in data.loot_quests:
-		if not quest is String:
-			return null
-		world.loot_quests.append(quest)
-	if not data.restoration is Dictionary:
-		return null
-	for kind in data.restoration:
-		var effect: Variant = data.restoration[kind]
-		if kind != "food" or not _number_map(effect, 0):
-			return null
-		if not effect.has_all(["total", "duration", "started", "delivered"]):
-			return null
-		if effect.duration < 1 or effect.started > world.turn_count or effect.delivered > effect.total:
-			return null
-		world.hero.restoration[kind] = _normalized_numbers(effect)
-	if not data.hotbar is Array or data.hotbar.size() != GridWorld.HOTBAR_SIZE:
-		return null
-	world.hotbar.clear()
-	for identifier in data.hotbar:
-		if not identifier is String:
-			return null
-		if (identifier != "" and not learned.has(identifier)
-			and world.hero.find_skill(StringName(identifier)) == null):
-			return null
-		world.hotbar.append(StringName(identifier))
-	if not data.messages is Array or data.messages.size() > GridWorld.CHAT_LIMIT:
-		return null
-	for message in data.messages:
-		if not message is String:
-			return null
-		world.messages.append(message)
-	if (not QuestRules.restore(world, data.quests) or not data.population is Array
-		or not data.population.is_empty()
-		or world.actors.any(func(actor: GridActor) -> bool: return actor.population_slot != -1)):
+	if not _restore_ui(world, data, learned) or not _restore_quests(world, data):
 		return null
 	if not _restore_stalkers(world, data.get("stalker_deadlines")):
 		return null
@@ -355,6 +108,320 @@ static func restore(data: Variant, development_build: bool) -> GridWorld:
 	# Rebuild terminal state; a defeated group of stalkers must never resume play.
 	world.check_terminal()
 	return world
+
+
+static func _valid_envelope(data: Variant) -> bool:
+	if not data is Dictionary:
+		return false
+	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
+		"blocked", "sight", "actors", "learned", "equipment", "inventory",
+		"buffs", "hotbar", "messages", "hero_swing", "indoors",
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "quests", "population", "debuffs", "off_hand_swing"]
+	for key in keys:
+		if not data.has(key):
+			return false
+	for key in ["seed", "random", "combat_random"]:
+		if (not data[key] is String or not data[key].is_valid_int()
+			or str(int(data[key])) != data[key]):
+			return false
+	if not _integer(data.loop, 1):
+		return false
+	return true
+
+
+static func _restore_world(world: GridWorld, data: Dictionary) -> bool:
+	if not _restore_fields(world, data.world, WORLD_FIELDS):
+		return false
+	if not data.get("valley_route", false) is bool:
+		return false
+	world.valley_route = data.get("valley_route", false)
+	if not data.get("starter_gear_received", false) is bool:
+		return false
+	world.starter_gear_received = data.get("starter_gear_received", false)
+	if world.valley_route:
+		if world.bounds != ValleyRoute.BOUNDS or not world.northshire:
+			return false
+		ValleyRoute.build_terrain(world)
+		# Collision and indoor state below come from the saved attempt.
+		world.blocked_tiles.clear()
+		world.sight_blockers.clear()
+		world.indoor_tiles.clear()
+	if (world.bounds.size.x < 1 or world.bounds.size.y < 1
+		or world.bounds.size.x > 1024 or world.bounds.size.y > 1024
+		or not world.bounds.has_point(world.player_tile)
+		or world.turn_count < 0 or world.movement_speed <= 0 or world.movement_credit < 0):
+		return false
+	return true
+
+
+static func _restore_hero_state(world: GridWorld, data: Dictionary) -> bool:
+	if not _restore_fields(world.hero, data.hero, HERO_FIELDS):
+		return false
+	if (world.hero.combo_points < 0 or world.hero.combo_points > HeroState.MAX_COMBO_POINTS
+		or world.hero.rage < 0 or world.hero.rage > HeroState.MAX_RAGE
+		or world.hero.rage_credit < 0.0 or world.hero.rage_credit >= 1.0
+		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
+		or world.hero.last_hit_rage_turn < -1 or world.hero.last_hit_rage_turn > world.turn_count
+		or world.hero.warrior_progress < 0
+		or world.hero.level < 1
+		or world.hero.experience < 0 or world.hero.copper < 0
+		or world.hero.potion_ready_turn < 0
+		or world.hero.casting_credit < 0 or world.hero.casting_credit >= 1.0
+		or world.hero.selected_class not in ClassSkillData.CLASSES):
+		return false
+	if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
+		and int(data.loop) == 1 and world.hero.selected_class != &"Warrior"):
+		return false
+	if data.has("class_progress"):
+		if not data.class_progress is Dictionary:
+			return false
+		for category in data.class_progress:
+			if (not category is String or StringName(category) not in ClassSkillData.CLASSES
+				or not _integer(data.class_progress[category], 0)):
+				return false
+		if int(data.class_progress.get("Warrior", 0)) != world.hero.warrior_progress:
+			return false
+		world.hero.class_progress.clear()
+		for category in data.class_progress:
+			world.hero.class_progress[StringName(category)] = int(data.class_progress[category])
+	world.hero._apply_level_stats()
+	if world.hero.experience >= world.hero.experience_to_next_level():
+		return false
+	return true
+
+
+static func _restore_terrain(world: GridWorld, data: Dictionary) -> bool:
+	if not _tiles(data.indoors, world.indoor_tiles, world.bounds):
+		return false
+	if not _tiles(data.blocked, world.blocked_tiles, world.bounds):
+		return false
+	if not _tiles(data.sight, world.sight_blockers, world.bounds):
+		return false
+	if world.blocked_tiles.has(world.player_tile):
+		return false
+	return true
+
+
+static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
+	if not data.actors is Array or data.actors.size() > 1000:
+		return false
+	for record in data.actors:
+		if (not record is Dictionary or not record.has_all(["state", "melee", "swing", "buffs", "loot", "threat", "debuffs"])):
+			return false
+		var actor := GridActor.new(Vector2i.ZERO)
+		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
+			return false
+		var contact := NpcDefinition.find(actor.npc_id)
+		if world.valley_route and contact != null and contact.refresh_saved_name:
+			actor.title = contact.title
+		if not _restore_fields(actor.melee, record.melee, MELEE_FIELDS):
+			return false
+		if not _restore_swing(actor.swing, record.swing) or not _buffs(record.buffs):
+			return false
+		if (not world.bounds.has_point(actor.tile) or not world.bounds.has_point(actor.home_tile)
+			or actor.max_health <= 0 or actor.health < 0 or actor.health > actor.max_health
+			or actor.relationship < 0 or actor.relationship > 2
+			or actor.melee.level < 1 or actor.melee.interval <= 0
+			or actor.melee.armor < 0 or actor.melee.damage_min < 0
+			or actor.melee.damage_max < actor.melee.damage_min
+			or actor.movement_credit < 0 or actor.blocked_turns < 0
+			or (actor.alive and not world.is_open(actor.tile))):
+			return false
+		if not record.loot is Array or record.loot.size() > 100:
+			return false
+		for item in record.loot:
+			if not _item(item) or item.is_empty():
+				return false
+			actor.loot.append(_normalized_item(item))
+		if actor.loot_copper < 0:
+			return false
+		if not _number_map(record.threat, 0) or not _debuffs(record.debuffs):
+			return false
+		for key in record.threat:
+			if not key.is_valid_int() or int(key) < -1 or int(key) >= data.actors.size():
+				return false
+		actor.threat = _normalized_numbers(record.threat)
+		actor.debuffs = _normalized_buffs(record.debuffs)
+		if (actor.summon_kind not in ["", "earth", "wolf"]
+			or actor.expires_turn < 0 or actor.stunned_until < 0):
+			return false
+		if actor.summon_kind != "":
+			var summon := SkillDefinition.catalog(actor.summon_skill)
+			if (summon == null or (summon.effect != SkillDefinition.Effect.SUMMON and summon.family != &"feral_spirit")
+				or SummonRules.slot(summon) != actor.summon_kind
+				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
+				return false
+			if actor.alive and actor.summon_kind != "wolf" and SummonRules.active(world, actor.summon_kind) != null:
+				return false
+			if actor.alive and actor.summon_kind == "wolf":
+				var wolves := world.actors.filter(func(other: GridActor) -> bool:
+					return other.alive and other.summon_kind == "wolf")
+				if wolves.size() >= 2:
+					return false
+		actor.buffs = _normalized_buffs(record.buffs)
+		world._hide_empty_corpse(actor)
+		world.actors.append(actor)
+	return true
+
+
+static func _restore_learning(world: GridWorld, data: Dictionary,
+	development_build: bool, learned: Array[String]) -> bool:
+	if not data.learned is Array or data.learned.size() > 1000:
+		return false
+	world.hero.learned_skills.clear()
+	for identifier in data.learned:
+		if not identifier is String or learned.has(identifier):
+			return false
+		var skill := SkillDefinition.catalog(StringName(identifier))
+		if skill == null:
+			return false
+		if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
+			and not skill.development_only and not ClassSkillData.is_playable_skill(skill.id)):
+			return false
+		learned.append(identifier)
+		if development_build or not skill.development_only:
+			world.hero.learned_skills.append(skill)
+	# New classes may be saved before visiting their trainer, or after learning one starter.
+	var mandatory: Array = ClassSkillData.STARTERS[&"Warrior"]
+	for identifier: StringName in mandatory:
+		if not learned.has(String(identifier)):
+			return false
+	if world.hero.combo_points > 0 and not learned.has("relentless_assault_1"):
+		return false
+	for identifier in learned:
+		var skill := SkillDefinition.catalog(StringName(identifier))
+		if world.hero.progression_points(skill.class_tab) < skill.progress_required:
+			return false
+	return true
+
+
+static func _restore_inventory(world: GridWorld, data: Dictionary) -> bool:
+	if not _inventory(data.inventory) or not data.equipment is Dictionary:
+		return false
+	for slot in data.equipment:
+		var item: Variant = data.equipment[slot]
+		if not _item(item) or item.is_empty():
+			return false
+		if (not InventoryRules.fits_slot(ItemData.get_item(int(item.id)), slot)
+			or int(item.quantity) != 1):
+			return false
+	world.hero.inventory.clear()
+	for item in data.inventory:
+		world.hero.inventory.append(_normalized_item(item))
+	world.hero.equipment.clear()
+	for slot in data.equipment:
+		world.hero.equipment[slot] = _normalized_item(data.equipment[slot])
+	return true
+
+
+static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
+	if (not _buffs(data.buffs) or not _restore_swing(world.hero.swing, data.hero_swing)
+		or not _restore_swing(world.hero.off_hand_swing, data.off_hand_swing)):
+		return false
+	world.hero.buffs = _normalized_buffs(data.buffs)
+	for key in world.hero.buffs:
+		if ((ClassToolkitData.PASSIVES.has(String(key)) or ClassToolkitData.ACTIVES.has(String(key)))
+			and (world.hero.find_skill(key) == null
+				or (int(world.hero.buffs[key].until) > 0
+					and int(world.hero.buffs[key].until) <= world.turn_count))):
+			return false
+	for actor in world.actors:
+		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
+			return false
+		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
+			return false
+	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
+		return false
+	world.hero.debuffs = _normalized_buffs(data.debuffs)
+	SummonRules.refresh_auras(world)
+	world.hero.health = int(data.hero.health)
+	if (world.hero.health <= 0 or world.hero.health > world.hero.max_health):
+		return false
+	return true
+
+
+static func _restore_merchants(world: GridWorld, data: Dictionary) -> bool:
+	if not data.vendor_stock is Dictionary:
+		return false
+	var initial_stock := MerchantData.initial_stock(world.actors)
+	if data.vendor_stock.size() != initial_stock.size():
+		return false
+	# A merchant instance owns its stock; duplicate identities cannot share a pool.
+	var merchant_ids: Array[String] = []
+	for actor in world.actors:
+		if actor.service != &"Trader":
+			continue
+		if (actor.spawn_id.is_empty() or merchant_ids.has(actor.spawn_id)
+			or MerchantData.catalog(actor.npc_id).is_empty()):
+			return false
+		merchant_ids.append(actor.spawn_id)
+	for merchant_id in initial_stock:
+		if not data.vendor_stock.has(merchant_id):
+			return false
+		var stock: Variant = data.vendor_stock[merchant_id]
+		var initial: Dictionary = initial_stock[merchant_id]
+		if not _number_map(stock, -1) or stock.size() != initial.size():
+			return false
+		for key in initial:
+			if not stock.has(key):
+				return false
+			if (int(initial[key]) == -1 and stock[key] != -1
+				or int(initial[key]) >= 0 and (stock[key] < 0 or stock[key] > initial[key])):
+				return false
+		world.vendor_stock[merchant_id] = _normalized_numbers(stock)
+	return true
+
+
+static func _restore_action_state(world: GridWorld, data: Dictionary) -> bool:
+	if not _number_map(data.cooldowns, 0):
+		return false
+	world.hero.cooldowns = _normalized_numbers(data.cooldowns)
+	if not data.restoration is Dictionary:
+		return false
+	for kind in data.restoration:
+		var effect: Variant = data.restoration[kind]
+		if kind != "food" or not _number_map(effect, 0):
+			return false
+		if not effect.has_all(["total", "duration", "started", "delivered"]):
+			return false
+		if effect.duration < 1 or effect.started > world.turn_count or effect.delivered > effect.total:
+			return false
+		world.hero.restoration[kind] = _normalized_numbers(effect)
+	return true
+
+
+static func _restore_ui(world: GridWorld, data: Dictionary, learned: Array[String]) -> bool:
+	if not data.hotbar is Array or data.hotbar.size() != GridWorld.HOTBAR_SIZE:
+		return false
+	world.hotbar.clear()
+	for identifier in data.hotbar:
+		if not identifier is String:
+			return false
+		if (identifier != "" and not learned.has(identifier)
+			and world.hero.find_skill(StringName(identifier)) == null):
+			return false
+		world.hotbar.append(StringName(identifier))
+	if not data.messages is Array or data.messages.size() > GridWorld.CHAT_LIMIT:
+		return false
+	for message in data.messages:
+		if not message is String:
+			return false
+		world.messages.append(message)
+	return true
+
+
+static func _restore_quests(world: GridWorld, data: Dictionary) -> bool:
+	if not data.loot_quests is Array:
+		return false
+	for quest in data.loot_quests:
+		if not quest is String:
+			return false
+		world.loot_quests.append(quest)
+	if (not QuestRules.restore(world, data.quests) or not data.population is Array
+		or not data.population.is_empty()
+		or world.actors.any(func(actor: GridActor) -> bool: return actor.population_slot != -1)):
+		return false
+	return true
 
 
 static func _restore_stalkers(world: GridWorld, deadlines: Variant) -> bool:

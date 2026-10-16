@@ -666,7 +666,7 @@ func test_evasion_can_dodge_attacks_from_behind_and_expires() -> void:
 	world.hero.melee.dodge = 100
 	enemy.swing.remaining = 0
 	var health := world.hero.health
-	world._act_npc(enemy)
+	NpcRules.act(world, enemy)
 	assert_eq(world.hero.health, health)
 	enemy.stunned_until = 999
 	for index in range(5):

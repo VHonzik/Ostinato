@@ -142,7 +142,7 @@ func move_player(direction: Vector2i) -> bool:
 		QuestRules.visit(self)
 		hero.facing = direction
 		movement_credit = maxf(0.0, movement_credit - 1.0)
-		_acquire_hostiles()
+		NpcRules.acquire_hostiles(self)
 	_finish_turn()
 	return true
 
@@ -286,7 +286,7 @@ func _continue_charge() -> bool:
 			hero.facing = MeleeRules.facing_toward(route[index] - player_tile)
 			player_tile = route[index]
 			QuestRules.visit(self)
-			_acquire_hostiles()
+			NpcRules.acquire_hostiles(self)
 		if steps == route.size() - 1:
 			cancel_cast(true)
 			hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
@@ -533,13 +533,17 @@ func interact(actor: GridActor) -> String:
 	if not actor.alive:
 		return "%s: no loot remains." % actor.title
 	if actor.relationship == GridActor.Relationship.FRIENDLY:
-		QuestRules.event(self, "talk", str(actor.npc_id))
-		if northshire:
-			return actor.title + ": " + ValleyRoute.greeting(actor.npc_id)
-		return ("%s: Welcome. The Legion is invading. The cities are besieged, and the gate is unsafe. " +
-			"Some here still think this is only a bandit raid.") % actor.title
+		QuestRules.record_talk(self, actor.npc_id)
+		return contact_greeting(actor)
 	request_melee(actor)
 	return ""
+
+
+func contact_greeting(actor: GridActor) -> String:
+	if northshire:
+		return actor.title + ": " + NpcDefinition.greeting_for(actor.npc_id)
+	return ("%s: Welcome. The Legion is invading. The cities are besieged, and the gate is unsafe. " +
+		"Some here still think this is only a bandit raid.") % actor.title
 
 
 func request_melee(target: GridActor) -> bool:
@@ -644,14 +648,14 @@ func _finish_turn() -> void:
 		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
 			SummonRules.remove(self, actor)
 	SummonRules.refresh_auras(self)
-	_acquire_hostiles()
+	NpcRules.acquire_hostiles(self)
 	for actor in actors:
 		if not actor.alive:
 			continue
 		if actor.summon_kind != "":
 			SummonRules.act(self, actor)
 		else:
-			_act_npc(actor)
+			NpcRules.act(self, actor)
 		if check_terminal():
 			pending_melee = null
 			cancel_cast(true)
@@ -664,7 +668,7 @@ func _finish_turn() -> void:
 	_regenerate()
 	_tick_restoration()
 	_arrive_stalker()
-	_acquire_hostiles()
+	NpcRules.acquire_hostiles(self)
 	resolving_turn = false
 	combo_event_counted = false
 	for actor in actors:
@@ -672,93 +676,6 @@ func _finish_turn() -> void:
 		if not actor.alive and not actor.chest and not actor.story_guard and actor.died_on_turn >= 0:
 			if turn_count - actor.died_on_turn >= 300:
 				actor.corpse_visible = false
-
-
-func _acquire_hostiles() -> void:
-	for actor in actors:
-		if not actor.alive or actor.relationship != GridActor.Relationship.HOSTILE or actor.returning_home or actor.engaged:
-			continue
-		if tile_distance(actor.tile, player_tile) <= actor.aggro_range and has_sight(actor.tile, player_tile):
-			actor.engaged = true
-			SummonRules.add_threat(self, actor, null, 1)
-			add_message("%s engages you." % actor.title)
-		else:
-			for ally in actors:
-				if (ally.alive and ally.summon_kind != "" and tile_distance(actor.tile, ally.tile) <= actor.aggro_range
-					and has_sight(actor.tile, ally.tile)):
-					actor.engaged = true
-					SummonRules.add_threat(self, actor, ally, 1)
-					break
-
-
-func _act_npc(actor: GridActor) -> void:
-	if actor.stunned_until > turn_count:
-		actor.swing.advance(false, actor.melee.interval)
-		return
-	var target := SummonRules.enemy_target(self, actor)
-	var target_tile := player_tile if target == null else target.tile
-	if actor.returning_home:
-		if not _route(actor.tile, [actor.home_tile], false, actor.home_tile).is_empty():
-			_step_toward(actor, [actor.home_tile], actor.home_tile)
-		if actor.tile == actor.home_tile:
-			actor.returning_home = false
-			actor.health = actor.max_health
-			actor.blocked_turns = 0
-	elif actor.engaged:
-		var goals: Array[Vector2i] = []
-		for direction in DIRECTIONS:
-			var tile := target_tile + direction
-			if _terrain_open(tile) and has_sight(tile, target_tile):
-				goals.append(tile)
-		var static_path := _route(actor.tile, goals, false, target_tile)
-		if static_path.is_empty():
-			actor.blocked_turns += 1
-			if actor.blocked_turns >= 5:
-				actor.engaged = false
-				actor.threat.clear()
-				actor.returning_home = true
-				add_message("%s cannot reach you and returns home." % actor.title)
-		else:
-			actor.blocked_turns = 0
-			_step_toward(actor, goals, target_tile, static_path)
-	else:
-		_wander(actor)
-	var in_melee := (actor.engaged and tile_distance(actor.tile, target_tile) == 1
-		and has_sight(actor.tile, target_tile))
-	var interval := actor.melee.interval
-	var swings := actor.swing.advance(in_melee, interval)
-	for index in range(swings):
-		if is_terminal():
-			return
-		actor.facing = MeleeRules.facing_toward(target_tile - actor.tile)
-		var result := MeleeRules.outcome(actor.melee, hero.melee if target == null else target.melee,
-			MeleeRules.is_behind(hero.facing if target == null else target.facing, actor.tile - target_tile)
-				and not (target == null and hero.buffs.has(&"evasion_1")),
-			combat_random.randf() * 100.0)
-		var amount := MeleeRules.damage(actor.melee, hero.melee if target == null else target.melee, result,
-			combat_random.randf())
-		amount = ClassSpellEffects.absorb(self, target, amount, true)
-		if target == null:
-			hero.health = maxi(0, hero.health - amount)
-			if amount > 0 and hero.last_hit_rage_turn != turn_count:
-				hero.gain_rage(HeroState.INCOMING_RAGE_PER_TURN)
-				hero.last_hit_rage_turn = turn_count
-		else:
-			target.health = maxi(0, target.health - amount)
-			npc_combat_text.emit(target.tile, amount, result)
-			_check_npc_death(target, turn_count)
-		add_message("%s -> %s: %s, %d damage." % [actor.title, "You" if target == null else target.title, result, amount])
-		# Retaliation is a subsequent effect, so a lethal incoming hit ends first.
-		if check_terminal():
-			add_message("You died.")
-			return
-		if target != null and not target.alive:
-			return
-		ClassSpellEffects.retaliate(self, actor, target, amount)
-		if target == null:
-			ClassToolkitRules.incoming(self, actor, amount, result == &"critical")
-		if not actor.alive:
-			return
 
 
 func _player_swing(target: GridActor) -> void:
@@ -813,7 +730,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 		_hide_empty_corpse(target)
 		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
 		if target.relationship != GridActor.Relationship.FRIENDLY:
-			QuestRules.event(self, "kill", str(target.npc_id))
+			QuestRules.record_kill(self, target.npc_id)
 		var xp := MeleeRules.kill_experience(hero.level, target.melee.level)
 		if not target.awards_experience:
 			xp = 0
@@ -969,7 +886,7 @@ func _arrive_stalker() -> void:
 		if entry == Vector2i(-1, -1):
 			break
 		_spawn_stalker(entry)
-	_acquire_hostiles()
+	NpcRules.acquire_hostiles(self)
 
 
 func _spawn_stalker(entry: Vector2i) -> void:
@@ -1081,12 +998,17 @@ func _hide_empty_corpse(source: GridActor) -> void:
 		source.corpse_visible = false
 
 
-func receive_starter_gear(merchant: GridActor) -> bool:
-	if (starter_gear_received or hero.selected_class != &"Warrior"
-		or not valley_route or not QuestRules.in_range(self, merchant, 900003)
-		or not trader_in_range(merchant)):
+func can_receive_starter_gear(merchant: GridActor) -> bool:
+	if merchant == null:
 		return false
-	if not StarterGear.exchange(hero, &"Warrior"):
+	var contact := NpcDefinition.find(merchant.npc_id)
+	return (contact != null and contact.offers_starter_gear and valley_route
+		and not starter_gear_received and hero.selected_class == &"Warrior"
+		and QuestRules.in_range(self, merchant, contact.npc_id) and trader_in_range(merchant))
+
+
+func receive_starter_gear(merchant: GridActor) -> bool:
+	if not can_receive_starter_gear(merchant) or not StarterGear.exchange(hero, &"Warrior"):
 		return false
 	starter_gear_received = true
 	return true

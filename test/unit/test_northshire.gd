@@ -41,7 +41,7 @@ func test_conversation_acceptance_and_rewards_are_free_and_once() -> void:
 	assert_true(world.ever_accepted_quest)
 	assert_false(QuestRules.ready(world, "valley_patrol"))
 	for count in range(8):
-		QuestRules.event(world, "kill", "299")
+		QuestRules.record_kill(world, 299)
 	_talk_and_hand_in(world, "valley_patrol")
 	assert_gt(world.hero.experience, 0)
 	assert_false(QuestRules.hand_in(world, "valley_patrol", _npc(world, 197)))

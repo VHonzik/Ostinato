@@ -1,5 +1,22 @@
 extends GutTest
 
+const TALK_QUEST: String = "conversation_test"
+
+
+func after_each() -> void:
+	QuestData.QUESTS.erase(TALK_QUEST)
+
+
+func _talk_quest(world: GridWorld, target: GridActor, receiver: int = 0) -> void:
+	var contact := target.npc_id if receiver == 0 else receiver
+	QuestData.QUESTS[TALK_QUEST] = {"title": "Conversation test", "minimum": 1,
+		"category": "", "previous": [], "giver": contact, "receiver": contact,
+		"level": 1, "xp": 0, "copper": 0, "choices": [], "rewards": [], "source_item": 0,
+		"objectives": [QuestObjective.talk(target.npc_id, 3)]}
+	world.quests[TALK_QUEST] = {"handed_in": false, "counts": [0]}
+	world.loot_quests.append(TALK_QUEST)
+	world.ever_accepted_quest = true
+
 
 func _session() -> GameSession:
 	var session := GameSession.new()
@@ -244,7 +261,7 @@ func test_contacts_without_services_log_their_new_greetings() -> void:
 	_beside(session.world, contact)
 	menu.open_conversation(contact)
 	assert_false(menu.visible)
-	assert_eq(session.world.messages[-1], contact.title + ": " + ValleyRoute.greeting(198))
+	assert_eq(session.world.messages[-1], contact.title + ": " + NpcDefinition.greeting_for(198))
 	assert_eq(session.world.turn_count, 0)
 
 
@@ -256,7 +273,7 @@ func test_new_class_contacts_keep_greetings_and_open_only_implemented_training()
 		_beside(session.world, contact)
 		menu.open_conversation(contact)
 		assert_true(menu.visible)
-		assert_string_contains(_text(menu), ValleyRoute.greeting(identity))
+		assert_string_contains(_text(menu), NpcDefinition.greeting_for(identity))
 		var train := _button(menu, "Train")
 		assert_not_null(train)
 		if train == null:
@@ -266,3 +283,88 @@ func test_new_class_contacts_keep_greetings_and_open_only_implemented_training()
 		assert_string_contains(_text(menu), "Select %s before learning here." % contact.service)
 		assert_eq(session.world.hero.learned_skills.size(), 2)
 	assert_eq(session.world.turn_count, 0)
+
+
+func test_building_conversation_choices_does_not_record_talking_or_change_world_state() -> void:
+	var session := _session()
+	var world := session.world
+	var janos := _contact(world, NpcDefinition.JANOS_ID)
+	_beside(world, janos)
+	_talk_quest(world, janos)
+	var snapshot := SaveCodec.capture(session)
+	var messages := world.messages.duplicate()
+	for index in range(3):
+		var conversation := NpcConversation.build(session, janos)
+		assert_not_null(conversation)
+		assert_true(conversation.keep_open)
+	assert_eq(SaveCodec.capture(session), snapshot)
+	assert_eq(world.messages, messages)
+	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 0)
+
+
+func test_new_conversation_records_one_talk_but_returning_from_a_service_records_none() -> void:
+	var session := _session()
+	var world := session.world
+	var janos := _contact(world, NpcDefinition.JANOS_ID)
+	_beside(world, janos)
+	_talk_quest(world, janos)
+	var menu := _menu(session)
+	menu.open_conversation(janos)
+	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 1)
+	_button(menu, "Do you have any spare gear for warrior?").pressed.emit()
+	assert_eq(menu.page, "spare_gear")
+	menu._back.call()
+	assert_eq(menu.page, "conversation")
+	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 1)
+	menu.open_conversation(janos)
+	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 2)
+	assert_eq(world.turn_count, 0)
+
+
+func test_greeting_without_menu_choices_records_only_one_talk() -> void:
+	var session := _session()
+	var world := session.world
+	var contact := _contact(world, 198)
+	_beside(world, contact)
+	_talk_quest(world, contact, NpcDefinition.MARSHAL_ID)
+	var menu := _menu(session)
+	menu.open_conversation(contact)
+	assert_false(menu.visible)
+	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 1)
+	assert_eq(world.messages[-1], world.contact_greeting(contact))
+
+
+func test_conversation_button_from_previous_loop_cannot_grant_gear_in_new_world() -> void:
+	var session := _session()
+	var janos := _contact(session.world, NpcDefinition.JANOS_ID)
+	_beside(session.world, janos)
+	var menu := _menu(session)
+	menu.open_conversation(janos)
+	var spare := _button(menu, "Do you have any spare gear for warrior?")
+	session.world.hero.health = 0
+	assert_true(session.restart_after_death())
+	_beside(session.world, _contact(session.world, NpcDefinition.JANOS_ID))
+	spare.pressed.emit()
+	assert_false(menu.visible)
+	assert_false(session.world.starter_gear_received)
+	assert_eq(session.world.hero.equipment.weapons.id, 35)
+	assert_eq(session.world.turn_count, 0)
+
+
+func test_saved_contact_keeps_actor_stats_when_definition_refreshes_its_display_name() -> void:
+	var session := _session()
+	var janos := _contact(session.world, NpcDefinition.JANOS_ID)
+	janos.title = "Old supply trader"
+	janos.max_health = 123
+	janos.health = 111
+	janos.melee.level = 4
+	janos.melee.damage_min = 24.0
+	janos.melee.damage_max = 30.0
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	var saved := _contact(restored, NpcDefinition.JANOS_ID)
+	assert_eq(saved.title, "Janos Hammerknuckle")
+	assert_eq([saved.max_health, saved.health, saved.melee.level], [123, 111, 4])
+	assert_eq([saved.melee.damage_min, saved.melee.damage_max], [24.0, 30.0])

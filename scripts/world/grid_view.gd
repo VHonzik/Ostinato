@@ -30,9 +30,7 @@ const NPC_BASE_SPRITE: Texture2D = preload("res://assets/sprites/dev/npc_base.sv
 
 const VALLEY_ATLAS: Texture2D = preload("res://assets/spritesheets/valley/sprites.png")
 const VALLEY_ACTORS: Dictionary[int, StringName] = {
-	197: &"marshal", 823: &"willem", 900003: &"trader", 299: &"wolf", 69: &"wolf",
-	9296: &"milly", 1642: &"gate_guard", 911: &"llane", 915: &"jorrick",
-	925: &"sammuel", 900002: &"shaman_mentor", 6: &"kobold_miner", 257: &"kobold_worker",
+	299: &"wolf", 69: &"wolf", 6: &"kobold_miner", 257: &"kobold_worker",
 	80: &"kobold_foreman", 38: &"bandit", 103: &"garrick",
 }
 const VALLEY_CLASSES: Dictionary[StringName, StringName] = {
@@ -121,10 +119,13 @@ static func health_tint(health: int, max_health: int) -> Color:
 
 func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 	var key: StringName
+	var contact := NpcDefinition.find(actor.npc_id)
 	if actor.summon_kind in ["earth", "fire"]:
 		key = StringName(actor.summon_kind + "_totem")
 	elif actor.summon_kind == "wolf":
 		key = &"wolf"
+	elif not actor.stalker and contact != null and contact.sprite != &"":
+		key = contact.sprite
 	elif (actor.stalker or VALLEY_ACTORS.has(actor.npc_id)
 		or VALLEY_CLASSES.has(actor.service)):
 		key = &"stalker" if actor.stalker else VALLEY_ACTORS.get(actor.npc_id,

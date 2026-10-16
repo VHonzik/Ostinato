@@ -59,14 +59,8 @@ static func accept(world: GridWorld, identifier: String, actor: GridActor) -> bo
 
 
 static func progress(world: GridWorld, identifier: String, index: int) -> int:
-	var objective: Dictionary = QuestData.QUESTS[identifier].objectives[index]
-	if objective.kind == "loot":
-		var total := 0
-		for item in world.hero.inventory:
-			if not item.is_empty() and str(item.id) == objective.target:
-				total += int(item.quantity)
-		return mini(total, int(objective.count))
-	return int(world.quests[identifier].counts[index])
+	var objective: QuestObjective = QuestData.QUESTS[identifier].objectives[index]
+	return objective.progress(world.hero, int(world.quests[identifier].counts[index]))
 
 
 static func ready(world: GridWorld, identifier: String) -> bool:
@@ -79,27 +73,23 @@ static func ready(world: GridWorld, identifier: String) -> bool:
 	return true
 
 
-static func event(world: GridWorld, kind: String, target: String) -> void:
-	for identifier in world.quests:
-		if world.quests[identifier].handed_in:
-			continue
-		var objectives: Array = QuestData.QUESTS[identifier].objectives
-		for index in range(objectives.size()):
-			var objective: Dictionary = objectives[index]
-			if objective.kind == kind and objective.target == target:
-				var old: int = world.quests[identifier].counts[index]
-				world.quests[identifier].counts[index] = mini(old + 1, int(objective.count))
-				if old < int(objective.count):
-					world.add_message("%s: %d/%d %s." % [
-						QuestData.QUESTS[identifier].title, old + 1, objective.count,
-						objective_label(objective)])
+static func record_kill(world: GridWorld, npc_id: int) -> void:
+	_event(world, QuestObjective.Kind.KILL, npc_id)
+
+
+static func record_talk(world: GridWorld, npc_id: int) -> void:
+	_event(world, QuestObjective.Kind.TALK, npc_id)
+
+
+static func record_location(world: GridWorld, location_id: StringName) -> void:
+	_event(world, QuestObjective.Kind.LOCATION, 0, location_id)
 
 
 static func visit(world: GridWorld) -> void:
 	if world.valley_route:
-		for destination in ValleyRoute.CHESTS:
-			if world.tile_distance(world.player_tile, ValleyRoute.CHESTS[destination]) <= 1:
-				event(world, "location", destination)
+		for destination in ValleyLandmarks.CHESTS:
+			if world.tile_distance(world.player_tile, ValleyLandmarks.CHESTS[destination].tile) <= 1:
+				record_location(world, StringName(destination))
 		return
 
 
@@ -114,21 +104,16 @@ static func hand_in(
 	if (not quest.choices.is_empty() and not quest.choices.has(choice)
 		or quest.choices.is_empty() and choice != 0):
 		return false
-	var inventory := world.hero.inventory.duplicate(true)
-	_remove_items(inventory, identifier)
-	var previous_inventory := world.hero.inventory.duplicate(true)
-	var previous_equipment := world.hero.equipment.duplicate(true)
-	world.hero.inventory.assign(inventory)
+	var draft := InventoryDraft.new(world.hero)
+	_remove_items(draft.inventory, identifier)
 	var rewards: Array = quest.get("rewards", []).duplicate()
 	if choice > 0:
 		rewards.append(choice)
 	for reward in rewards:
-		if not InventoryRules.receive(world.hero, ItemData.instance(int(reward))):
-			world.hero.inventory.assign(previous_inventory)
-			world.hero.equipment = previous_equipment
-			world.hero.refresh_stats()
+		if not draft.receive(ItemData.instance(int(reward))):
 			world.add_message("Inventory full. Make room before collecting your reward.")
 			return false
+	draft.commit()
 	world.quests[identifier].handed_in = true
 	_clear_loot(world, identifier)
 	world.hero.copper += int(quest.copper)
@@ -198,26 +183,6 @@ static func difficulty(quest_level: int, player_level: int) -> String:
 	return "Green" if difference >= -green_range else "Gray"
 
 
-static func objective_label(objective: Dictionary) -> String:
-	match objective.kind:
-		"loot":
-			return ItemData.get_item(int(objective.target)).title
-		"kill":
-			return NorthshireData.CREATURES[objective.target].title
-		"location":
-			match objective.target:
-				"mine_chest":
-					return "Explore the back of Echo Ridge Mine"
-				"ridge_chest":
-					return "Explore the eastern ridge above the vineyard"
-				"vineyard_chest":
-					return "Explore the southern vineyard edge"
-			return "Visit the gate overlook (43–45, 11–17)"
-		"talk":
-			return "Speak with " + ValleyRoute.npc_name(int(objective.target))
-	return ""
-
-
 static func restore(world: GridWorld, records: Variant) -> bool:
 	if not records is Dictionary:
 		return false
@@ -241,3 +206,20 @@ static func restore(world: GridWorld, records: Variant) -> bool:
 	if not records.is_empty() and not world.ever_accepted_quest:
 		return false
 	return true
+
+
+static func _event(world: GridWorld, kind: QuestObjective.Kind, npc_id: int,
+	location_id: StringName = &"") -> void:
+	for identifier in world.quests:
+		if world.quests[identifier].handed_in:
+			continue
+		var objectives: Array = QuestData.QUESTS[identifier].objectives
+		for index in range(objectives.size()):
+			var objective: QuestObjective = objectives[index]
+			if objective.matches(kind, npc_id, location_id):
+				var old: int = world.quests[identifier].counts[index]
+				world.quests[identifier].counts[index] = mini(old + 1, int(objective.count))
+				if old < int(objective.count):
+					world.add_message("%s: %d/%d %s." % [
+						QuestData.QUESTS[identifier].title, old + 1, objective.count,
+						objective.label()])

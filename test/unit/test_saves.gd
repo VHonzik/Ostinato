@@ -255,3 +255,17 @@ func test_supported_save_predating_qa_skill_loads_helper_without_rewriting_slot(
 	assert_null(release_world.hero.find_skill(&"kill_stalker_1"))
 	assert_false(release_world.cast_skill(&"kill_stalker_1"))
 	assert_eq(release_world.turn_count, 0)
+
+
+func test_release_restore_preserves_saved_development_hotbar_ids_without_learning_them() -> void:
+	_session.world.hotbar[0] = &"practice_1"
+	var data: Variant = JSON.parse_string(JSON.stringify(SaveCodec.capture(_session)))
+	var restored := SaveCodec.restore(data, false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_eq(restored.hotbar[0], &"practice_1")
+	assert_null(restored.hero.find_skill(&"practice_1"))
+	assert_false(restored.cast_skill(&"practice_1"))
+	assert_eq(restored.turn_count, 0)
+	assert_true(restored.hotbar.has(&"heroic_strike_1"))

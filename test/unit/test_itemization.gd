@@ -95,7 +95,7 @@ func test_quest_route_guarantees_all_common_slots_and_each_weapon_setup() -> voi
 	world.discard()
 
 
-func test_multi_reward_quest_rolls_back_equipment_inventory_and_money_when_full() -> void:
+func test_multi_reward_quest_preserves_equipment_inventory_and_money_when_full() -> void:
 	var world := ValleyRoute.create_world(92, false)
 	world.ever_accepted_quest = true
 	world.quests["valley_camp"] = {"handed_in": false, "counts": [4]}
@@ -111,7 +111,7 @@ func test_multi_reward_quest_rolls_back_equipment_inventory_and_money_when_full(
 	var inventory := world.hero.inventory.duplicate(true)
 	var health := world.hero.health
 	assert_false(QuestRules.hand_in(world, "valley_camp", marshal))
-	assert_eq(world.hero.equipment, equipment, "Auto-equipped first reward must roll back.")
+	assert_eq(world.hero.equipment, equipment, "The first reward must not be committed if the second cannot fit.")
 	assert_eq(world.hero.inventory, inventory)
 	assert_eq(world.hero.health, health)
 	assert_eq(world.hero.copper, 0)

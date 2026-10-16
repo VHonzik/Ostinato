@@ -108,7 +108,7 @@ func test_chest_pools_are_seeded_legal_and_never_expose_development_supplies() -
 				continue
 			count += 1
 			var pool: String = actor.spawn_id.split("/")[2]
-			assert_true(ValleyRoute.CHESTS[pool] == actor.tile)
+			assert_true(ValleyLandmarks.CHESTS[pool].tile == actor.tile)
 			assert_false(first.blocked_tiles.has(actor.tile))
 			assert_eq(_source(second, actor.spawn_id).tile, actor.tile)
 			positions[actor.tile] = true

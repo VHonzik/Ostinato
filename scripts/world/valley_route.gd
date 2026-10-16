@@ -4,7 +4,6 @@ extends RefCounted
 ## Fixed encounters and landmarks, following the valley sketch's proportions.
 const BOUNDS := Rect2i(0, 0, 84, 82)
 const SPAWN := Vector2i(30, 57)
-const MARSHAL := Vector2i(30, 52)
 const STALKER_DEADLINES: Array[int] = [15, 800, 980, 1140, 1280]
 const STALKER_ENTRIES: Array[Vector2i] = [
 	Vector2i(12, 63), Vector2i(11, 63), Vector2i(13, 63),
@@ -32,18 +31,6 @@ const TIMBER_WOLVES: Array[Vector2i] = [
 	Vector2i(7, 35), Vector2i(12, 32), Vector2i(14, 28), Vector2i(18, 30),
 	Vector2i(6, 39), Vector2i(10, 42), Vector2i(20, 37), Vector2i(16, 45),
 ]
-const CONTACTS: Array = [
-	[197, "Marshal McBride", MARSHAL, "Marshal"],
-	[823, "Deputy Willem", Vector2i(24, 45), ""],
-	[900003, "Janos Hammerknuckle", Vector2i(28, 41), "Trader"],
-	[198, "Khelden Bremen", Vector2i(32, 35), ""],
-	[9296, "Milly Osworth", Vector2i(35, 32), ""],
-	[1642, "Northshire Guard", Vector2i(12, 63), ""],
-	[911, "Llane Beshere", Vector2i(31, 34), "Warrior"],
-	[915, "Jorik Kerridan", Vector2i(39, 43), "Rogue"],
-	[925, "Brother Sammuel", Vector2i(30, 37), "Paladin"],
-	[900002, "Farseer Lopaa", Vector2i(38, 37), "Shaman"],
-]
 # Identity, home tile, encounter name. No replacement population is scheduled.
 const ENCOUNTERS: Array = [
 	[6, Vector2i(23, 25), "camp"], [6, Vector2i(29, 23), "camp"],
@@ -58,11 +45,6 @@ const ENCOUNTERS: Array = [
 	[257, Vector2i(19, 9), "mine"], [257, Vector2i(26, 11), "mine"],
 	[80, Vector2i(25, 3), "mine"],
 ]
-const CHESTS: Dictionary[String, Vector2i] = {
-	"mine_chest": Vector2i(19, 3),
-	"ridge_chest": Vector2i(69, 52),
-	"vineyard_chest": Vector2i(50, 79),
-}
 const QUESTS: Array[String] = [
 	"valley_patrol", "valley_timber_wolves", "valley_camp", "valley_mine", "valley_vineyard", "valley_explore",
 ]
@@ -75,15 +57,8 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	world.stalker_schedule = true
 	world.stalker_deadlines = STALKER_DEADLINES.duplicate()
 	build_terrain(world)
-	for row in CONTACTS:
-		var actor := GridActor.new(row[2])
-		actor.npc_id = int(row[0])
-		actor.title = row[1]
-		actor.service = StringName(row[3])
-		actor.spawn_id = "fixed/%d" % actor.npc_id
-		actor.awards_experience = false
-		actor.story_guard = actor.npc_id == 1642
-		world.actors.append(actor)
+	for contact in NpcDefinition.CONTACTS:
+		world.actors.append(contact.create_actor())
 	for index in range(WOLVES.size()):
 		_creature(world, 299, WOLVES[index], "valley/wolf/%d" % index)
 	for index in range(TIMBER_WOLVES.size()):
@@ -91,8 +66,8 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	for index in range(ENCOUNTERS.size()):
 		var row: Array = ENCOUNTERS[index]
 		_creature(world, int(row[0]), row[1], "valley/%s/%d" % [row[2], index])
-	for destination in CHESTS:
-		var chest := GridActor.new(CHESTS[destination])
+	for destination in ValleyLandmarks.CHESTS:
+		var chest := GridActor.new(ValleyLandmarks.CHESTS[destination].tile)
 		chest.title = "Battered Chest"
 		chest.chest = true
 		chest.alive = false
@@ -242,46 +217,3 @@ static func _path(world: GridWorld, points: Array[Vector2i]) -> void:
 				if not world.blocked_tiles.has(tile + offset):
 					world.ground_tiles[tile + offset] = &"dirt_road"
 			tile += (end - tile).sign()
-
-
-static func npc_name(identity: int) -> String:
-	for row in CONTACTS:
-		if int(row[0]) == identity:
-			return row[1]
-	return "the quest contact"
-
-
-static func trainer_referral(category: StringName) -> String:
-	match category:
-		&"Warrior":
-			return "Speak with %s inside the abbey." % npc_name(911)
-		&"Shaman":
-			return "Speak with %s east of the abbey." % npc_name(900002)
-		&"Paladin":
-			return "Speak with %s inside the abbey." % npc_name(925)
-		&"Rogue":
-			return "Speak with %s southeast of the abbey." % npc_name(915)
-	return ""
-
-
-static func greeting(identity: int) -> String:
-	match identity:
-		197:
-			return "Greeting adventurer, welcome to Northshire Abbey. You look worn out from your travels."
-		911:
-			return "Practice your warrior skills. Return when you are ready to learn new tricks."
-		823:
-			return "A new face is always a pleasant sight, how can I help?"
-		9296:
-			return "A gang of brigands, the Defias, moved into the Northshire Vineyards while I was harvesting!"
-		1642:
-			return "This is the road out of the valley. Stay alert; I heard something beyond the gate."
-		915:
-			return "Hello adventurer. Jorik Kerridan, famous rogue at your service."
-		925:
-			return "Hello adventurer. I am Brother Sammuel, follower of the light."
-		900002:
-			return "Hello adventurer, I am Farseer Lopaa, a storm-chaser."
-		900003:
-			return "Greetings, what can I get you?"
-	return "Hello adventurer."

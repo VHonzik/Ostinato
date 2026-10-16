@@ -1047,13 +1047,13 @@ func test_quest_tracker_updates_multiple_objectives_and_removes_hand_ins_and_aba
 	assert_string_contains(text.text, "Into Echo Ridge")
 	assert_string_contains(text.text, "Kobold Worker: 0/2")
 	assert_string_contains(text.text, "The Northern Camp")
-	QuestRules.event(world, "kill", "257")
-	QuestRules.event(world, "kill", "80")
+	QuestRules.record_kill(world, 257)
+	QuestRules.record_kill(world, 80)
 	_game.refresh_view()
 	assert_string_contains(text.text, "Kobold Worker: 1/2")
 	assert_string_contains(text.text, "Kobold Laborer: Completed")
 	assert_false(text.text.contains("Into Echo Ridge — Completed"))
-	QuestRules.event(world, "kill", "257")
+	QuestRules.record_kill(world, 257)
 	_game.refresh_view()
 	assert_string_contains(text.text, "Into Echo Ridge — Completed")
 	assert_string_contains(text.text, "Kobold Worker: Completed")
@@ -1075,8 +1075,8 @@ func test_quest_tracker_restores_progress_follows_hud_visibility_and_clears_on_d
 	var marshal := world.actors[0]
 	world.player_tile = marshal.tile + Vector2i.DOWN
 	assert_true(QuestRules.accept(world, "valley_patrol", marshal))
-	QuestRules.event(world, "kill", "299")
-	QuestRules.event(world, "kill", "299")
+	QuestRules.record_kill(world, 299)
+	QuestRules.record_kill(world, 299)
 	var restored := SaveCodec.restore(SaveCodec.capture(_game.session), true)
 	assert_not_null(restored)
 	if restored == null:
@@ -1118,7 +1118,7 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	assert_eq(_game.world.player_tile, position)
 	await _tap_key(KEY_ESCAPE)
 	for count in range(8):
-		QuestRules.event(_game.world, "kill", "299")
+		QuestRules.record_kill(_game.world, 299)
 	await _tap_key(KEY_F)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quest_detail")
@@ -1771,6 +1771,23 @@ func test_poison_hotbar_keyboard_selects_hands_and_single_weapon_casts_directly(
 	assert_false(_game.combat_panel.visible)
 	assert_eq(world.turn_count, 3)
 	assert_eq(PoisonRules.coating(world.hero, world.turn_count, false), &"instant_poison_1")
+
+
+func test_hud_refresh_does_not_advance_casts_expire_buffs_or_change_world_state() -> void:
+	var world := _game.world
+	world.hero.buffs[&"battle_shout_1"] = {"armor": 0, "until": world.turn_count,
+		"physical_percent": 10}
+	world.pending_skill = world.hero.find_skill(&"mortal_strike_1")
+	world.cast_elapsed = 0
+	var snapshot := SaveCodec.capture(_game.session)
+	for index in range(3):
+		_game.hud.refresh(world, _game.session.loop_count, _game.menu.options)
+		_game.hud.refresh_resources(world, true)
+	assert_eq(SaveCodec.capture(_game.session), snapshot)
+	assert_eq(world.cast_elapsed, 0)
+	assert_not_null(world.pending_skill)
+	assert_true(world.hero.buffs.has(&"battle_shout_1"))
+	assert_eq(_game.get_node("HUD/Auras").get_child_count(), 1)
 
 
 func _test_merchant(identity: int) -> GridActor:

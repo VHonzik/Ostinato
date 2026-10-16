@@ -29,28 +29,11 @@ static func add(inventory: Array[Dictionary], item: Dictionary) -> bool:
 	return true
 
 
-## Acquired gear fills vacant slots without displacing existing gear.
 static func receive(hero: HeroState, item: Dictionary) -> bool:
-	var data := ItemData.get_item(int(item.id))
-	var slot: String = data.slot
-	if slot == "ring":
-		slot += "_1" if not hero.equipment.has(slot + "_1") else "_2"
-	var can_equip: bool = fits_slot(data, slot) and not hero.equipment.has(slot)
-	if data.unique:
-		for equipped in hero.equipment.values():
-			if equipped.id == item.id:
-				can_equip = false
-	if not can_equip:
-		return add(hero.inventory, item)
-	var inventory := hero.inventory.duplicate(true)
-	if int(item.quantity) > 1:
-		var remaining := item.duplicate()
-		remaining.quantity -= 1
-		if not add(inventory, remaining):
-			return false
-	hero.inventory.assign(inventory)
-	hero.equipment[slot] = ItemData.instance(int(item.id), 1, item.starter)
-	hero.refresh_stats()
+	var draft := InventoryDraft.new(hero)
+	if not draft.receive(item):
+		return false
+	draft.commit()
 	return true
 
 
@@ -67,8 +50,9 @@ static func equip(hero: HeroState, index: int, slot: String = "") -> bool:
 			slot += "_1" if not hero.equipment.has(slot + "_1") else "_2"
 	if not fits_slot(data, slot):
 		return false
-	var equipment := hero.equipment.duplicate(true)
-	var inventory := hero.inventory.duplicate(true)
+	var draft := InventoryDraft.new(hero)
+	var equipment := draft.equipment
+	var inventory := draft.inventory
 	inventory[index] = {}
 	var displaced: Array[String] = [slot]
 	for location in displaced:
@@ -81,19 +65,18 @@ static func equip(hero: HeroState, index: int, slot: String = "") -> bool:
 			if equipped.id == item.id:
 				return false
 	equipment[slot] = item.duplicate()
-	hero.inventory.assign(inventory)
-	hero.equipment = equipment
-	hero.refresh_stats()
+	draft.commit()
 	return true
 
 
 static func unequip(hero: HeroState, slot: String) -> bool:
 	if not hero.equipment.has(slot):
 		return false
-	if not add(hero.inventory, hero.equipment[slot]):
+	var draft := InventoryDraft.new(hero)
+	if not add(draft.inventory, draft.equipment[slot]):
 		return false
-	hero.equipment.erase(slot)
-	hero.refresh_stats()
+	draft.equipment.erase(slot)
+	draft.commit()
 	return true
 
 

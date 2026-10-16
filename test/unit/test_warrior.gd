@@ -311,7 +311,7 @@ func test_default_warrior_hotbar_and_spell_book_use_rage_in_the_live_scene() -> 
 	gameplay.combat_panel.confirm()
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.warrior_progress, 1)
-	assert_string_contains(gameplay._hero_status.text, "Rage")
+	assert_string_contains((gameplay.get_node("HUD/Top/Rows/HeroStatus") as Label).text, "Rage")
 	assert_string_contains(gameplay.hotbar_panel.slots[0].tooltip_text, "30 rage")
 	gameplay.hero_panel.open(world.hero, true)
 	assert_eq(gameplay.hero_panel._tabs.get_tab_title(1), "Warrior")
@@ -754,7 +754,7 @@ func test_charge_hotbar_targets_enemy_and_live_ui_cannot_cancel_or_pause_travel(
 	gameplay.combat_panel.confirm()
 	assert_true(world.is_charging())
 	assert_false(gameplay.combat_panel.visible)
-	assert_true(gameplay._cancel_attack.disabled)
+	assert_true((gameplay.get_node("HUD/Top/Rows/CancelAttack") as Button).disabled)
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.physical_keycode = KEY_ESCAPE
@@ -810,7 +810,7 @@ func test_friendly_bump_greets_plain_npc_without_attack_confirmation() -> void:
 	gameplay._process(0.0)
 	assert_false(gameplay.combat_panel.visible)
 	assert_false(gameplay.menu.visible)
-	assert_eq(gameplay._feedback.text, "Interacted with Helpful Neighbor.")
+	assert_eq((gameplay.get_node("HUD/Bottom/Rows/Feedback") as Label).text, "Interacted with Helpful Neighbor.")
 	assert_eq(world.turn_count, 0)
 	assert_eq(friendly.health, friendly.max_health)
 	assert_string_contains(world.messages[-1], "Helpful Neighbor")
@@ -1176,7 +1176,7 @@ func test_live_heroic_queue_indicator_and_escape_refund() -> void:
 	var indicator := gameplay.hotbar_panel.slots[1].get_node("Cooldown") as Label
 	assert_true(indicator.visible)
 	assert_eq(indicator.text, "Q")
-	assert_string_contains(gameplay._feedback.text, "Heroic Strike queued")
+	assert_string_contains((gameplay.get_node("HUD/Bottom/Rows/Feedback") as Label).text, "Heroic Strike queued")
 	var escape := InputEventKey.new()
 	escape.keycode = KEY_ESCAPE
 	escape.pressed = true

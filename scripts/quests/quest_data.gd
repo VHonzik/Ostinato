@@ -2,45 +2,45 @@ class_name QuestData
 extends RefCounted
 
 ## Valley objectives and fixed common gear rewards; historical fixture quests below.
-const QUESTS: Dictionary = {
+static var QUESTS: Dictionary = {
 	"valley_patrol": {
 		"title": "The Western Path", "level": 1, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
-		"objectives": [{"kind": "kill", "target": "299", "count": 8}],
+		"objectives": [QuestObjective.kill(299, 8)],
 		"xp": 300, "copper": 0, "rewards": [85], "choices": [], "source_item": 0,
 	},
 	"valley_timber_wolves": {
 		"title": "Timber Wolves of the Western Woods", "level": 2, "minimum": 1,
 		"previous": ["valley_patrol"], "giver": 197, "receiver": 197, "category": "",
-		"objectives": [{"kind": "kill", "target": "69", "count": 5}],
+		"objectives": [QuestObjective.kill(69, 5)],
 		"xp": 500, "copper": 0, "rewards": [70001], "choices": [], "source_item": 0,
 	},
 	"valley_camp": {
 		"title": "The Northern Camp", "level": 2, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
-		"objectives": [{"kind": "kill", "target": "6", "count": 4}],
+		"objectives": [QuestObjective.kill(6, 4)],
 		"xp": 750, "copper": 50, "rewards": [70002, 2224], "choices": [], "source_item": 0,
 	},
 	"valley_mine": {
 		"title": "Into Echo Ridge", "level": 3, "minimum": 2, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
-		"objectives": [{"kind": "kill", "target": "257", "count": 2},
-			{"kind": "kill", "target": "80", "count": 1}],
+		"objectives": [QuestObjective.kill(257, 2),
+			QuestObjective.kill(80, 1)],
 		"xp": 1200, "copper": 100, "rewards": [5579], "choices": [], "source_item": 0,
 	},
 	"valley_vineyard": {
 		"title": "Milly's Vineyard", "level": 4, "minimum": 2, "previous": [],
 		"giver": 9296, "receiver": 9296, "category": "",
-		"objectives": [{"kind": "kill", "target": "38", "count": 4},
-			{"kind": "kill", "target": "103", "count": 1}],
+		"objectives": [QuestObjective.kill(38, 4),
+			QuestObjective.kill(103, 1)],
 		"xp": 800, "copper": 100, "rewards": [5580], "choices": [], "source_item": 0,
 	},
 	"valley_explore": {
 		"title": "Around the Valley", "level": 3, "minimum": 1, "previous": [],
 		"giver": 823, "receiver": 823, "category": "",
-		"objectives": [{"kind": "location", "target": "mine_chest", "count": 1},
-			{"kind": "location", "target": "ridge_chest", "count": 1},
-			{"kind": "location", "target": "vineyard_chest", "count": 1}],
+		"objectives": [QuestObjective.location(&"mine_chest", 1),
+			QuestObjective.location(&"ridge_chest", 1),
+			QuestObjective.location(&"vineyard_chest", 1)],
 		"xp": 1100, "copper": 0, "rewards": [70003], "choices": [], "source_item": 0,
 	},
 	"6": {
@@ -54,11 +54,7 @@ const QUESTS: Dictionary = {
 		"receiver": 823,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "loot",
-				"target": "182",
-				"count": 1
-			}
+			QuestObjective.loot(182, 1)
 		],
 		"xp": 340,
 		"copper": 0,
@@ -80,11 +76,7 @@ const QUESTS: Dictionary = {
 		"receiver": 197,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "kill",
-				"target": "6",
-				"count": 10
-			}
+			QuestObjective.kill(6, 10)
 		],
 		"xp": 170,
 		"copper": 25,
@@ -102,11 +94,7 @@ const QUESTS: Dictionary = {
 		"receiver": 197,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "kill",
-				"target": "257",
-				"count": 10
-			}
+			QuestObjective.kill(257, 10)
 		],
 		"xp": 250,
 		"copper": 40,
@@ -124,11 +112,7 @@ const QUESTS: Dictionary = {
 		"receiver": 823,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "loot",
-				"target": "752",
-				"count": 12
-			}
+			QuestObjective.loot(752, 12)
 		],
 		"xp": 360,
 		"copper": 0,
@@ -152,11 +136,7 @@ const QUESTS: Dictionary = {
 		"receiver": 197,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "kill",
-				"target": "80",
-				"count": 12
-			}
+			QuestObjective.kill(80, 12)
 		],
 		"xp": 450,
 		"copper": 0,
@@ -178,11 +158,7 @@ const QUESTS: Dictionary = {
 		"receiver": 196,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "loot",
-				"target": "750",
-				"count": 8
-			}
+			QuestObjective.loot(750, 8)
 		],
 		"xp": 170,
 		"copper": 0,
@@ -201,11 +177,7 @@ const QUESTS: Dictionary = {
 		"receiver": 197,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "talk",
-				"target": "197",
-				"count": 1
-			}
+			QuestObjective.talk(197, 1)
 		],
 		"xp": 40,
 		"copper": 0,
@@ -223,11 +195,7 @@ const QUESTS: Dictionary = {
 		"receiver": 9296,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "talk",
-				"target": "9296",
-				"count": 1
-			}
+			QuestObjective.talk(9296, 1)
 		],
 		"xp": 35,
 		"copper": 0,
@@ -245,11 +213,7 @@ const QUESTS: Dictionary = {
 		"receiver": 9296,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "loot",
-				"target": "11119",
-				"count": 8
-			}
+			QuestObjective.loot(11119, 8)
 		],
 		"xp": 180,
 		"copper": 0,
@@ -267,16 +231,8 @@ const QUESTS: Dictionary = {
 		"receiver": 952,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "loot",
-				"target": "11125",
-				"count": 1
-			},
-			{
-				"kind": "talk",
-				"target": "952",
-				"count": 1
-			}
+			QuestObjective.loot(11125, 1),
+			QuestObjective.talk(952, 1)
 		],
 		"xp": 360,
 		"copper": 0,
@@ -297,11 +253,7 @@ const QUESTS: Dictionary = {
 		"receiver": 196,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "talk",
-				"target": "196",
-				"count": 1
-			}
+			QuestObjective.talk(196, 1)
 		],
 		"xp": 85,
 		"copper": 0,
@@ -319,16 +271,8 @@ const QUESTS: Dictionary = {
 		"receiver": 197,
 		"category": "",
 		"objectives": [
-			{
-				"kind": "location",
-				"target": "gate_overlook",
-				"count": 1
-			},
-			{
-				"kind": "talk",
-				"target": "823",
-				"count": 1
-			}
+			QuestObjective.location(&"gate_overlook", 1),
+			QuestObjective.talk(823, 1)
 		],
 		"xp": 85,
 		"copper": 0,
@@ -346,11 +290,7 @@ const QUESTS: Dictionary = {
 		"receiver": 925,
 		"category": "Paladin",
 		"objectives": [
-			{
-				"kind": "talk",
-				"target": "925",
-				"count": 1
-			}
+			QuestObjective.talk(925, 1)
 		],
 		"xp": 40,
 		"copper": 0,
@@ -368,11 +308,7 @@ const QUESTS: Dictionary = {
 		"receiver": 900002,
 		"category": "Shaman",
 		"objectives": [
-			{
-				"kind": "talk",
-				"target": "900002",
-				"count": 1
-			}
+			QuestObjective.talk(900002, 1)
 		],
 		"xp": 40,
 		"copper": 0,

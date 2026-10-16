@@ -57,7 +57,7 @@ func test_spawn_can_reach_contacts_encounters_and_connected_abbey_rooms() -> voi
 
 func test_patrol_can_be_completed_and_handed_in_once() -> void:
 	var world := _session().world
-	world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
+	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
 	assert_true(QuestRules.available(world, "valley_patrol"))
 	assert_false(QuestRules.available(world, "783"), "Do not offer quests into unbuilt branches.")
 	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
@@ -75,7 +75,7 @@ func test_patrol_can_be_completed_and_handed_in_once() -> void:
 func test_route_save_preserves_art_dead_wolves_quest_and_seeded_continuation() -> void:
 	var session := _session()
 	var world := session.world
-	world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
+	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
 	QuestRules.accept(world, "valley_patrol", _marshal(world))
 	var wolf := _actor(world, 299)
 	wolf.health = 0
@@ -103,7 +103,7 @@ func test_route_save_preserves_art_dead_wolves_quest_and_seeded_continuation() -
 func test_death_rebuilds_the_same_route_with_learning_and_fresh_encounters() -> void:
 	var session := _session()
 	var before := session.world
-	before.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
+	before.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
 	QuestRules.accept(before, "valley_patrol", _marshal(before))
 	_actor(before, 299).health = 0
 	before._check_npc_death(_actor(before, 299), 0)
@@ -149,7 +149,7 @@ func test_patrol_ignores_wolves_cleared_before_the_first_conversation() -> void:
 		if actor.npc_id == 299:
 			actor.health = 0
 			world._check_npc_death(actor, 0)
-	world.player_tile = ValleyRoute.MARSHAL + Vector2i.DOWN
+	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
 	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
 	assert_false(QuestRules.ready(world, "valley_patrol"))
 	assert_true(QuestRules.abandon(world, "valley_patrol"))
@@ -164,7 +164,8 @@ func test_all_landmarks_and_loot_sources_are_reachable_without_overlapping_live_
 		if actor.alive:
 			assert_false(occupied.has(actor.tile), actor.title)
 			occupied.append(actor.tile)
-	for destination: Vector2i in ValleyRoute.CHESTS.values():
+	for landmark: ValleyLandmarks.Landmark in ValleyLandmarks.CHESTS.values():
+		var destination := landmark.tile
 		assert_true(world._terrain_open(destination))
 		var goals: Array[Vector2i] = [destination]
 		assert_false(world._route(ValleyRoute.SPAWN, goals, false, destination).is_empty())
@@ -204,8 +205,8 @@ func test_exploration_credits_destinations_independently_and_never_rolls_chests_
 	var deputy := _actor(world, 823)
 	_beside(world, deputy)
 	assert_true(QuestRules.accept(world, "valley_explore", deputy))
-	for destination in ValleyRoute.CHESTS:
-		world.player_tile = ValleyRoute.CHESTS[destination] + Vector2i.DOWN
+	for destination in ValleyLandmarks.CHESTS:
+		world.player_tile = ValleyLandmarks.CHESTS[destination].tile + Vector2i.DOWN
 		QuestRules.visit(world)
 		QuestRules.visit(world)
 	assert_true(QuestRules.ready(world, "valley_explore"))
@@ -301,7 +302,7 @@ func test_quest_marker_tracks_availability_completion_and_dead_contacts() -> voi
 	assert_true(QuestRules.accept(world, "valley_vineyard", milly))
 	assert_false(QuestRules.has_marker(world, milly), "Unfinished objectives are not a turn-in.")
 	for identity in ["38", "38", "38", "38", "103"]:
-		QuestRules.event(world, "kill", identity)
+		QuestRules.record_kill(world, int(identity))
 	assert_true(QuestRules.has_marker(world, milly))
 	assert_true(QuestRules.hand_in(world, "valley_vineyard", milly))
 	assert_false(QuestRules.has_marker(world, milly))

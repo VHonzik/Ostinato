@@ -28,8 +28,9 @@ static func equip_outfit(hero: HeroState) -> void:
 static func exchange(hero: HeroState, category: StringName) -> bool:
 	if category not in ClassSkillData.PLAYABLE_CLASSES:
 		return false
-	var equipment := hero.equipment.duplicate(true)
-	var inventory := hero.inventory.duplicate(true)
+	var draft := InventoryDraft.new(hero)
+	var equipment := draft.equipment
+	var inventory := draft.inventory
 	for slot in equipment.keys():
 		if equipment[slot].starter:
 			equipment.erase(slot)
@@ -37,19 +38,10 @@ static func exchange(hero: HeroState, category: StringName) -> bool:
 		if not inventory[index].is_empty() and inventory[index].starter:
 			inventory[index] = {}
 	for identifier in outfit(category):
-		var slot: String = ItemData.get_item(identifier).slot
-		if not equipment.has(slot):
-			equipment[slot] = item(identifier)
-		else:
-			var empty := inventory.find({})
-			if empty == -1:
-				return false
-			inventory[empty] = item(identifier)
-	hero.equipment = equipment
-	hero.inventory.assign(inventory)
+		if not draft.receive(item(identifier)):
+			return false
 	hero.selected_class = category
-	hero.refresh_stats()
-	hero.health = mini(hero.health, hero.max_health)
+	draft.commit()
 	return true
 
 

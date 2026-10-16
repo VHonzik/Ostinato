@@ -55,14 +55,14 @@ func can_select_class() -> bool:
 
 func select_class(category: StringName, marshal: GridActor = null) -> bool:
 	if (not can_select_class() or category not in ClassSkillData.PLAYABLE_CLASSES
-		or not QuestRules.in_range(world, marshal, 197) or marshal.service != &"Marshal"):
+		or not QuestRules.in_range(world, marshal, NpcDefinition.MARSHAL_ID) or marshal.service != &"Marshal"):
 		return false
 	world.resolving_turn = true
 	world.hero.selected_class = category
 	world.class_selected = true
 	world.hero.refresh_stats()
 	world.add_message("%s selected for Loop %d. Only its ability uses award class XP; learned skills remain usable." % [category, loop_count])
-	world.add_message("Marshal: " + ValleyRoute.trainer_referral(category))
+	world.add_message("Marshal: " + NpcDefinition.trainer_referral(category))
 	world.resolving_turn = false
 	return true
 

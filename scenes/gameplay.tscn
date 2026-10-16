@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scripts/gameplay.gd" id="1"]
 [ext_resource type="Script" path="res://scripts/world/grid_view.gd" id="2"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://scripts/combat/combat_panel.gd" id="4"]
 
 [ext_resource type="Script" path="res://scripts/hero/combo_point_bar.gd" id="5"]
+
+[ext_resource type="Script" path="res://scripts/gameplay_hud.gd" id="6"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 18
@@ -47,6 +49,7 @@ position = Vector2(328, 232)
 position_smoothing_enabled = false
 
 [node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("6")
 
 [node name="Top" type="PanelContainer" parent="HUD"]
 offset_left = 16.0
