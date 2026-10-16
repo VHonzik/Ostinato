@@ -30,7 +30,6 @@ var sight_blockers: Dictionary[Vector2i, bool] = {}
 var pending_melee: GridActor
 var last_attacked_enemy: GridActor
 var auto_attack_target: GridActor
-var queued_strike: SkillDefinition
 var combat_random := RandomNumberGenerator.new()
 var actors: Array[GridActor] = []
 var player_tile: Vector2i
@@ -47,7 +46,6 @@ var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
 var holy_event_counted: bool = false
 var combo_event_counted: bool = false
-var queued_rage_cost: int = 0
 var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
@@ -164,7 +162,7 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 	if skill.effect == SkillDefinition.Effect.KILL_STALKER and _first_living_stalker() == null:
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
-	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.HEROIC_STRIKE,
+	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
 		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
 		and skill.target == SkillDefinition.Target.ENEMY and target == null and in_combat()):
 		target = last_attacked_enemy
@@ -192,17 +190,6 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 	if skill.effect == SkillDefinition.Effect.CHARGE and charge_route(target).is_empty():
 		add_message("Cannot Charge: no reachable empty melee tile.")
 		return false
-	if skill.effect == SkillDefinition.Effect.HEROIC_STRIKE:
-		if not _valid_melee(target):
-			add_message("Cannot queue Heroic Strike: no valid melee target.")
-			return false
-		var payment := SkillCost.quote(hero, skill)
-		queued_rage_cost = payment.rage_cost
-		payment.pay(hero)
-		queued_strike = skill
-		add_message("Heroic Strike queued on %s; %d rage reserved. Esc refunds it." % [
-			target.title, queued_rage_cost])
-		return request_melee(target)
 	hero.restoration.clear()
 	pending_skill = skill
 	pending_target = target
@@ -576,17 +563,9 @@ func continue_melee() -> bool:
 func cancel_melee() -> void:
 	pending_melee = null
 	auto_attack_target = null
-	if queued_strike != null:
-		var reserved := queued_rage_cost
-		queued_rage_cost = 0
-		queued_strike = null
-		hero.gain_rage(reserved)
-		add_message("Heroic Strike cancelled; %d reserved rage refunded." % reserved)
 
 
 func _advance_player_weapon() -> void:
-	if queued_strike != null and not _valid_melee(pending_melee):
-		cancel_melee()
 	if (auto_attack_target != null and (not auto_attack_target.alive
 		or not actors.has(auto_attack_target)
 		or auto_attack_target.relationship == GridActor.Relationship.FRIENDLY)):
@@ -614,8 +593,6 @@ func _advance_player_weapon() -> void:
 			_player_off_hand_swing(target, off_weapon)
 		else:
 			_player_swing(target)
-	if queued_strike != null and not _valid_melee(pending_melee):
-		cancel_melee()
 	if swings > 0:
 		pending_melee = null
 
@@ -680,22 +657,14 @@ func _finish_turn() -> void:
 
 func _player_swing(target: GridActor) -> void:
 	last_attacked_enemy = target
-	var strike := queued_strike
-	queued_strike = null
-	queued_rage_cost = 0
-	if strike == null:
-		hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
-	else:
-		_award_ability_use(strike)
+	hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
 	ClassToolkitRules.consume_flurry(hero)
-	var event := ClassToolkitRules.weapon_outcome(self, target, strike, hero.melee)
+	var event := ClassToolkitRules.weapon_outcome(self, target, null, hero.melee)
 	var result := event.result
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
-		combat_random.randf(),
-		1.0 if strike == null else strike.weapon_multiplier,
-		0 if strike == null else strike.minimum)
+		combat_random.randf(), 1.0, 0, ClassToolkitRules.recklessness_damage_multiplier(hero))
 	event.amount = floori(amount * ClassToolkitRules.damage_multiplier(hero))
-	SpellEffects.attack(self, event, "You" if strike == null else strike.title, turn_count)
+	SpellEffects.attack(self, event, "You", turn_count)
 	AttackProcs.on_attack(self, event)
 
 
@@ -704,7 +673,7 @@ func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
 	var event := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
 	event.hand = AttackEvent.Hand.OFF
 	var value := MeleeRules.damage(weapon, target.melee, event.result,
-		combat_random.randf())
+		combat_random.randf(), 1.0, 0, ClassToolkitRules.recklessness_damage_multiplier(hero))
 	event.amount = floori(value * ClassToolkitRules.damage_multiplier(hero))
 	SpellEffects.attack(self, event, "Off-hand", turn_count)
 	AttackProcs.on_attack(self, event)

@@ -132,16 +132,28 @@ func test_execute_spends_completion_rage_up_to_cap_instead_of_initial_quote() ->
 	assert_string_contains("\n".join(world.messages), "Execute: spent 30 rage.")
 
 
-func test_free_queued_strike_consumes_proc_but_cancellation_refunds_only_reserved_rage() -> void:
+func test_free_whirlwind_preserves_proc_on_rejection_and_consumes_it_once_for_all_targets() -> void:
 	var world := _world()
 	world.hero.rage = 7
 	_free_proc(world, &"battle_trance_1")
-	assert_true(world.cast_skill(&"heroic_strike_1", world.actors[0]))
-	assert_not_null(world.queued_strike)
+	var first := world.actors[0]
+	first.tile = Vector2i(8, 5)
+	assert_false(world.cast_skill(&"whirlwind_1"))
+	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 7)
-	assert_eq(world.queued_rage_cost, 0)
-	assert_false(world.hero.buffs.has(&"battle_trance_1"))
-	world.cancel_melee()
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
+	first.tile = Vector2i(6, 5)
+	var second := GridActor.new(Vector2i(5, 6))
+	second.relationship = GridActor.Relationship.HOSTILE
+	second.health = 10000
+	second.max_health = 10000
+	second.awards_experience = false
+	second.stunned_until = 999
+	second.melee.dodge = 0.0
+	world.actors.append(second)
+	assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.rage, 7)
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
-	assert_null(world.queued_strike)
+	assert_lt(first.health, 10000)
+	assert_lt(second.health, 10000)
+	assert_eq(world.turn_count, 1)

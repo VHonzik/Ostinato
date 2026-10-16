@@ -8,7 +8,8 @@ const WORLD_FIELDS: Array[String] = [
 	"class_selected", "ever_accepted_quest", "hotbar_locked", "northshire", "trainer_referral_received",
 ]
 const HERO_FIELDS: Array[String] = [
-	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn", "warrior_progress",
+	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn",
+	"last_enrage_roll_turn", "warrior_progress",
 	"level", "experience", "health", "selected_class", "copper",
 	"casting_credit", "facing", "potion_ready_turn",
 ]
@@ -162,6 +163,7 @@ static func _restore_hero_state(world: GridWorld, data: Dictionary) -> bool:
 		or world.hero.rage_credit < 0.0 or world.hero.rage_credit >= 1.0
 		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
 		or world.hero.last_hit_rage_turn < -1 or world.hero.last_hit_rage_turn > world.turn_count
+		or world.hero.last_enrage_roll_turn < -1 or world.hero.last_enrage_roll_turn > world.turn_count
 		or world.hero.warrior_progress < 0
 		or world.hero.level < 1
 		or world.hero.experience < 0 or world.hero.copper < 0
@@ -549,7 +551,7 @@ static func _buffs(data: Variant) -> bool:
 		for stat in buff:
 			if stat not in ["armor", "until", "strength", "agility", "stamina",
 				"charges", "ready", "weapon_id", "off_weapon_id", "physical_percent",
-				"haste_percent", "immunity", "bonus_percent", "critical_ready"]:
+				"haste_percent", "critical_percent", "immunity", "bonus_percent", "critical_ready"]:
 				if stat not in ["main_until", "off_until"] or not PoisonRules.is_poison(skill):
 					return false
 	return true

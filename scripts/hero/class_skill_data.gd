@@ -8,13 +8,13 @@ const MAINTENANCE_FAMILIES: Array[StringName] = [
 	&"instant_poison", &"deadly_poison", &"strength_of_earth_totem", &"blessing_of_might",
 ]
 const STARTERS: Dictionary = {
-	&"Warrior": [&"mortal_strike_1", &"heroic_strike_1"],
+	&"Warrior": [&"mortal_strike_1", &"whirlwind_1"],
 	&"Shaman": [&"lightning_shield_1", &"strength_of_earth_totem_1"],
 	&"Paladin": [&"seal_of_command_1", &"judgement_1"],
 	&"Rogue": [&"slice_and_dice_1", &"relentless_assault_1"],
 }
 const WARRIOR_SKILLS: Array[StringName] = [
-	&"mortal_strike_1", &"heroic_strike_1", &"battle_shout_1", &"anger_management_1", &"charge_1",
+	&"mortal_strike_1", &"whirlwind_1", &"battle_shout_1", &"anger_management_1", &"charge_1",
 	&"execute_1",
 ]
 # Starter tuning is provisional; full class slices extend this runnable set.
@@ -67,13 +67,6 @@ const SKILLS: Dictionary = {
 		"family": "mortal_strike", "effect": "MORTAL_STRIKE", "target": "ENEMY",
 		"weapon_multiplier": 2.0,
 		"detail": "200% weapon damage. One turn; weapon timing continues. 4-turn cooldown."
-	},
-	"heroic_strike_1": {
-		"title": "Heroic Strike", "class_tab": "Warrior", "training_level": 1,
-		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
-		"family": "heroic_strike", "effect": "HEROIC_STRIKE", "target": "ENEMY",
-		"weapon_multiplier": 1.5, "minimum": 5,
-		"detail": "Reserve 15 rage and wait for the next main-hand swing: 150% weapon damage + 5. No ordinary swing rage; misses consume the strike. Esc or target loss refunds the reservation."
 	},
 	"battle_shout_1": {
 		"title": "Battle Shout", "class_tab": "Warrior", "training_level": 1,

@@ -66,12 +66,8 @@ static func _critical_buffs(world: GridWorld, event: AttackEvent) -> void:
 	if not event.critical():
 		return
 	if event.school == AttackEvent.School.PHYSICAL:
-		var flurry := &"shaman_flurry_1" if ClassToolkitRules.has(world.hero, &"shaman_flurry_1") \
-			else &"warrior_flurry_1"
-		world.hero.buffs.erase(&"warrior_flurry_1")
-		world.hero.buffs.erase(&"shaman_flurry_1")
-		ClassToolkitRules.apply(world, flurry,
-			{"charges": 3, "haste_percent": ClassToolkitRules.magnitude(world.hero, flurry)})
+		ClassToolkitRules.apply(world, &"shaman_flurry_1",
+			{"charges": 3, "haste_percent": ClassToolkitRules.magnitude(world.hero, &"shaman_flurry_1")})
 		ClassToolkitRules.apply(world, &"wrecking_crew_1",
 			{"physical_percent": ClassToolkitRules.magnitude(world.hero, &"wrecking_crew_1")})
 		ClassToolkitRules.apply(world, &"elemental_assault_1", {"charges": 1})

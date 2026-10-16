@@ -47,7 +47,8 @@ static func outcome(
 
 static func damage(
 	attacker: MeleeProfile, defender: MeleeProfile, result: StringName,
-	weapon_roll: float, weapon_multiplier: float = 1.0, flat_bonus: int = 0
+	weapon_roll: float, weapon_multiplier: float = 1.0, flat_bonus: int = 0,
+	damage_multiplier: float = 1.0
 ) -> int:
 	if result in [&"miss", &"dodge"]:
 		return 0
@@ -55,7 +56,7 @@ static func damage(
 	var armor := maxf(0.0, defender.armor)
 	var reduction := minf(0.75, armor / (armor + 400.0 + 85.0 * attacker.level))
 	var adjusted := maxf(1.0, (raw * weapon_multiplier + flat_bonus)
-		* attacker.damage_multiplier * (1.0 - reduction)
+		* attacker.damage_multiplier * damage_multiplier * (1.0 - reduction)
 		* level_damage_multiplier(attacker.level, defender.level))
 	var amount := round_weapon_damage(adjusted, attacker, weapon_roll)
 	if result == &"critical":

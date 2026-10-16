@@ -84,6 +84,12 @@ func _refresh_auras(world: GridWorld) -> void:
 		_add_aura(world, title, hero.buffs[identifier], false)
 	for identifier in hero.debuffs:
 		_add_aura(world, String(identifier).capitalize(), hero.debuffs[identifier], true)
+	var reckless_damage := (ClassToolkitRules.recklessness_damage_multiplier(hero) - 1.0) * 100.0
+	if reckless_damage > 0.0:
+		var reckless_taken := (ClassToolkitRules.recklessness_taken_multiplier(hero) - 1.0) * 100.0
+		_add_aura(world, "Recklessness", {"until": 0,
+			"detail": "+%.1f%% physical damage / +%.1f%% damage taken" % [
+				reckless_damage, reckless_taken]}, false)
 
 
 func _refresh_quest_tracker(world: GridWorld) -> void:
@@ -131,6 +137,12 @@ func _add_aura(world: GridWorld, title: String, effect: Dictionary, harmful: boo
 	square.add_child(label)
 	var until := int(effect.get("until", 0))
 	square.tooltip_text = title
+	if effect.has("physical_percent"):
+		square.tooltip_text += "\n+%d%% physical damage" % effect.physical_percent
+	if effect.has("critical_percent"):
+		square.tooltip_text += "\n+%d percentage points attack crit" % effect.critical_percent
+	if effect.has("detail"):
+		square.tooltip_text += "\n" + String(effect.detail)
 	if int(effect.get("charges", 0)) > 0:
 		square.tooltip_text += " / %d charges" % effect.charges
 		var charges := Label.new()

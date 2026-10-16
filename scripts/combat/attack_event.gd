@@ -2,7 +2,7 @@ class_name AttackEvent
 extends RefCounted
 
 ## Facts about one resolved attack. Bonus damage cannot enter the primary proc pipeline.
-enum Origin { SWING, ACTIVE, QUEUED_STRIKE, BONUS }
+enum Origin { SWING, ACTIVE, BONUS }
 enum Hand { MAIN, OFF }
 enum School { PHYSICAL = 0, HOLY = 1, NATURE = 3 }
 
@@ -24,8 +24,6 @@ func _init(actor: GridActor, ability: SkillDefinition, outcome: StringName,
 	amount = damage
 	school = damage_school
 	origin = Origin.SWING if skill == null else Origin.ACTIVE
-	if is_family(&"heroic_strike"):
-		origin = Origin.QUEUED_STRIKE
 
 
 func landed() -> bool:
@@ -37,11 +35,11 @@ func critical() -> bool:
 
 
 func is_direct() -> bool:
-	return origin in [Origin.ACTIVE, Origin.QUEUED_STRIKE]
+	return origin == Origin.ACTIVE
 
 
 func is_swing() -> bool:
-	return origin in [Origin.SWING, Origin.QUEUED_STRIKE]
+	return origin == Origin.SWING
 
 
 func is_primary() -> bool:
@@ -67,8 +65,8 @@ func can_trigger_weapon_procs() -> bool:
 
 func can_trigger_main_gauche() -> bool:
 	return (can_trigger_weapon_procs() and hand == Hand.MAIN
-		and (origin == Origin.SWING or is_family(&"heroic_strike")))
+		and origin == Origin.SWING)
 
 
 func can_trigger_battle_trance() -> bool:
-	return is_direct() and critical() and not is_finisher() and not is_family(&"heroic_strike")
+	return is_direct() and critical() and not is_finisher()

@@ -92,4 +92,6 @@ static func _attack(world: GridWorld, actor: GridActor, target: NpcTarget) -> vo
 		return
 	if not target.alive:
 		return
+	if target.is_player():
+		ClassToolkitRules.on_damage_taken(world, amount)
 	target.retaliate(actor, amount, result == &"critical")

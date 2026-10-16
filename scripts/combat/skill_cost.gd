@@ -1,7 +1,7 @@
 class_name SkillCost
 extends RefCounted
 
-## A fresh quote is paid immediately at cast completion or strike reservation.
+## A fresh quote is paid immediately at cast completion.
 var rage_cost: int = 0
 var consumed_proc: StringName = &""
 

@@ -20,7 +20,7 @@ func new_game(chosen_seed: int = -1) -> void:
 	var fresh := ValleyRoute.create_world(seed_value, development_build)
 	fresh.class_selected = true
 	fresh.hotbar[0] = &"mortal_strike_1"
-	fresh.hotbar[1] = &"heroic_strike_1"
+	fresh.hotbar[1] = &"whirlwind_1"
 	_replace_world(fresh)
 	world.add_message("Valley. Marshal north, wolves west, mine farther north, vineyards east. Watch the gate.")
 

@@ -54,6 +54,38 @@ static func damage_multiplier(hero: HeroState) -> float:
 	return multiplier
 
 
+static func recklessness_scale(hero: HeroState) -> float:
+	var skill := hero.find_skill(&"recklessness_1")
+	if skill == null or hero.health <= 0 or hero.max_health <= 0:
+		return 0.0
+	var missing := 1.0 - float(hero.health) / hero.max_health
+	var capped_missing := 1.0 - skill.health_cap_percent / 100.0
+	return clampf(missing / capped_missing, 0.0, 1.0)
+
+
+static func recklessness_damage_multiplier(hero: HeroState) -> float:
+	return 1.0 + recklessness_scale(hero) * magnitude(hero, &"recklessness_1") / 100.0
+
+
+static func recklessness_taken_multiplier(hero: HeroState) -> float:
+	var skill := hero.find_skill(&"recklessness_1")
+	if skill == null:
+		return 1.0
+	return 1.0 + recklessness_scale(hero) * skill.damage_taken_percent / 100.0
+
+
+static func on_damage_taken(world: GridWorld, amount: int) -> void:
+	var hero := world.hero
+	var skill := hero.find_skill(&"enrage_1")
+	if (skill == null or amount <= 0 or hero.health <= 0 or world.is_terminal()
+		or hero.last_enrage_roll_turn == world.turn_count):
+		return
+	hero.last_enrage_roll_turn = world.turn_count
+	if proc(world, skill.id):
+		apply(world, skill.id,
+			{"physical_percent": skill.minimum, "critical_percent": skill.critical_percent})
+
+
 static func eligible(world: GridWorld, target: GridActor, radius: int) -> bool:
 	return (target.alive and target.relationship != GridActor.Relationship.FRIENDLY
 		and GridWorld.tile_distance(world.player_tile, target.tile) <= radius
@@ -83,7 +115,8 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 	if behind:
 		multiplier *= 1.0 + magnitude(world.hero, &"opportunity_1") / 100.0
 	var value := MeleeRules.damage(world.hero.melee, target.melee, event.result,
-		world.combat_random.randf(), multiplier, flat_bonus)
+		world.combat_random.randf(), multiplier, flat_bonus,
+		recklessness_damage_multiplier(world.hero))
 	event.amount = floori(value * damage_multiplier(world.hero))
 	event.build_points = build_points
 	SpellEffects.attack(world, event, skill.title)
@@ -93,25 +126,16 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	weapon: MeleeProfile) -> AttackEvent:
 	var extra := int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
-	if skill != null and skill.family == &"heroic_strike":
-		extra += magnitude(world.hero, &"incite_1")
 	weapon.critical += extra
 	var result := MeleeRules.outcome(weapon, target.melee,
 		MeleeRules.is_behind(target.facing, world.player_tile - target.tile),
 		world.combat_random.randf() * 100.0)
 	weapon.critical -= extra
 	var landed := result not in [&"miss", &"dodge"]
-	var guaranteed := false
-	if skill != null and landed:
-		var key := &"incite_1" if skill.family == &"heroic_strike" else (
-			&"juggernaut_1" if skill.family == &"mortal_strike" else &"")
-		if key != &"" and world.hero.buffs.has(key):
-			world.hero.buffs.erase(key)
-			result = &"critical"
-			guaranteed = true
-	if (skill != null and skill.family == &"heroic_strike" and result == &"critical"
-		and not guaranteed):
-		apply(world, &"incite_1", {"charges": 1})
+	if (skill != null and landed and skill.family == &"mortal_strike"
+		and world.hero.buffs.has(&"juggernaut_1")):
+		world.hero.buffs.erase(&"juggernaut_1")
+		result = &"critical"
 	return AttackEvent.new(target, skill, result, 0)
 
 
@@ -154,11 +178,10 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 
 
 static func consume_flurry(hero: HeroState) -> void:
-	for key: StringName in [&"warrior_flurry_1", &"shaman_flurry_1"]:
-		if hero.buffs.has(key):
-			hero.buffs[key].charges -= 1
-			if int(hero.buffs[key].charges) <= 0:
-				hero.buffs.erase(key)
+	if hero.buffs.has(&"shaman_flurry_1"):
+		hero.buffs[&"shaman_flurry_1"].charges -= 1
+		if int(hero.buffs[&"shaman_flurry_1"].charges) <= 0:
+			hero.buffs.erase(&"shaman_flurry_1")
 
 
 static func holy_event(world: GridWorld) -> void:
@@ -183,7 +206,7 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 	if result == &"critical":
 		result = &"hit"
 	var value := MeleeRules.damage(weapon, target.melee, result,
-		world.combat_random.randf(), multiplier)
+		world.combat_random.randf(), multiplier, 0, recklessness_damage_multiplier(world.hero))
 	var event := AttackEvent.new(target, null, result,
 		floori(value * damage_multiplier(world.hero)))
 	event.origin = AttackEvent.Origin.BONUS

@@ -10,7 +10,7 @@ func test_training_prefers_its_row_even_when_locked_and_preserves_full_hotbar() 
 	world.hotbar_locked = true
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	assert_eq(world.hotbar.slice(0, 3),
-		[&"mortal_strike_1", &"heroic_strike_1", &""])
+		[&"mortal_strike_1", &"whirlwind_1", &""])
 	assert_eq(world.hotbar[10], &"battle_shout_1")
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_false(world.hotbar.has(&"anger_management_1"))
@@ -30,12 +30,12 @@ func test_training_prefers_its_row_even_when_locked_and_preserves_full_hotbar() 
 
 func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignments() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	assert_true(world.assign_hotbar(0, &"heroic_strike_1"))
+	assert_true(world.assign_hotbar(0, &"whirlwind_1"))
 	assert_true(world.assign_hotbar(11, &"mortal_strike_1"))
 	for identifier: StringName in [
 		&"battle_shout_1", &"windfury_weapon_1", &"lightning_shield_1", &"seal_of_command_1",
 		&"instant_poison_1", &"deadly_poison_1", &"strength_of_earth_totem_1", &"blessing_of_might_1",
-		&"charge_1", &"execute_1", &"whirlwind_1", &"earth_shock_1", &"feral_spirit_1",
+		&"charge_1", &"execute_1", &"booming_shout_1", &"earth_shock_1", &"feral_spirit_1",
 		&"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1", &"relentless_assault_1",
 	]:
 		var skill := SkillDefinition.catalog(identifier)
@@ -43,7 +43,7 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 		world.hero.class_progress[skill.class_tab] = 1000
 		assert_true(world.train(skill.class_tab, identifier))
 	assert_eq(world.hotbar.slice(0, 10), [
-		&"heroic_strike_1", &"charge_1", &"execute_1", &"whirlwind_1", &"earth_shock_1",
+		&"whirlwind_1", &"charge_1", &"execute_1", &"booming_shout_1", &"earth_shock_1",
 		&"feral_spirit_1", &"judgement_1", &"divine_shield_1", &"evasion_1", &"slice_and_dice_1",
 	])
 	assert_eq(world.hotbar.slice(10), [
@@ -72,12 +72,12 @@ func test_assignments_reject_unknown_skills_and_locked_edits_without_time_or_res
 	assert_false(world.assign_hotbar(-1, &"mortal_strike_1"))
 	assert_false(world.assign_hotbar(20, &"mortal_strike_1"))
 	assert_true(world.assign_hotbar(0, &"mortal_strike_1"))
-	assert_true(world.assign_hotbar(4, &"heroic_strike_1"))
+	assert_true(world.assign_hotbar(4, &"whirlwind_1"))
 	world.hotbar_locked = true
-	assert_false(world.assign_hotbar(0, &"heroic_strike_1"))
+	assert_false(world.assign_hotbar(0, &"whirlwind_1"))
 	assert_false(world.assign_hotbar(4, &""))
 	assert_eq(world.hotbar, [
-		&"mortal_strike_1", &"", &"", &"", &"heroic_strike_1", &"", &"", &"", &"", &"",
+		&"mortal_strike_1", &"", &"", &"", &"whirlwind_1", &"", &"", &"", &"", &"",
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 	assert_eq(world.turn_count, 0)
@@ -97,25 +97,25 @@ func test_training_does_not_replace_skill_and_reset_load_new_game_keep_their_con
 	world.hero.warrior_progress = 40
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_eq(world.hotbar[0], &"mortal_strike_1")
-	assert_true(world.assign_hotbar(1, &"heroic_strike_1"))
+	assert_true(world.assign_hotbar(1, &"whirlwind_1"))
 	world.hotbar_locked = true
 	world.hero.health = 0
 	assert_true(session.restart_after_death())
 	assert_eq(session.world.hero.level, 1)
 	assert_eq(session.world.hotbar[0], &"mortal_strike_1")
-	assert_eq(session.world.hotbar[1], &"heroic_strike_1")
+	assert_eq(session.world.hotbar[1], &"whirlwind_1")
 	assert_true(session.world.hotbar_locked)
 	var snapshot := SaveCodec.capture(session)
 	var restored := SaveCodec.restore(snapshot, true)
 	assert_not_null(restored)
 	assert_eq(restored.hotbar, session.world.hotbar)
 	assert_true(restored.hotbar_locked)
-	assert_eq(restored.hero.find_skill(restored.hotbar[1]).id, &"heroic_strike_1")
+	assert_eq(restored.hero.find_skill(restored.hotbar[1]).id, &"whirlwind_1")
 	snapshot.hotbar[4] = "wrath_1"
 	assert_null(SaveCodec.restore(snapshot, true), "Unlearned saved assignments are invalid.")
 	session.new_game(318)
 	assert_eq(session.world.hotbar, [
-		&"mortal_strike_1", &"heroic_strike_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 	assert_false(session.world.hotbar_locked)
@@ -125,7 +125,7 @@ func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death()
 	var session := GameSession.new()
 	session.new_game(318)
 	assert_eq(session.world.hotbar, [
-		&"mortal_strike_1", &"heroic_strike_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 	for index in [0, 1]:

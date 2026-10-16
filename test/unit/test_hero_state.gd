@@ -7,7 +7,7 @@ func test_starting_warrior_has_attributes_rage_and_known_abilities() -> void:
 	assert_eq([hero.level, hero.experience], [1, 0])
 	assert_eq([hero.health, hero.max_health, hero.rage], [51, 51, 0])
 	assert_not_null(hero.find_skill(&"mortal_strike_1"))
-	assert_not_null(hero.find_skill(&"heroic_strike_1"))
+	assert_not_null(hero.find_skill(&"whirlwind_1"))
 	assert_null(hero.find_skill(&"fireball_2"), "Leveling does not grant unlearned skills.")
 
 

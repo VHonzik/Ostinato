@@ -44,7 +44,7 @@ Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, 
 and Rogue kits. Each trainer exposes the complete v0.1 catalogue, with free learning
 at cumulative class XP checkpoints. Tuning remains provisional.
 
-New Game starts a warrior with rage, Mortal Strike and Heroic Strike, wearing travel clothes.
+New Game starts a warrior with rage, Mortal Strike and Whirlwind, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
 warrior referrals, with "Uhm... I seek ... teaching" choices for each class from the second Loop. Speak
 to the marshal before accepting any quest to choose the class whose ability uses grant
@@ -61,11 +61,14 @@ F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, 
 M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
 Bump a friendly NPC to interact; bump a stationary neutral enemy twice to attack.
-Mortal Strike and Heroic Strike use your last attacked enemy in combat; before your
+Mortal Strike uses your last attacked enemy in combat; before your
 first attack, choose an enemy in melee range. Automatic attacks continue on that enemy
 while it remains in melee range, including turns spent moving, waiting and using abilities.
-Heroic Strike reserves rage and commits until the next main-hand swing; Escape or target
-loss cancels and refunds it. Its hotbar shows Q while queued. A miss consumes the strike.
+Whirlwind casts directly from the hotbar against adjacent enemies, preserving the
+selected attack target and ordinary swing timing. Heroic Strike and Incite are removed.
+Early Warrior training adds Enrage from surviving enemy hits and passive Recklessness,
+which increases physical damage dealt and damage taken as health falls. Its aura shows
+the current tradeoff. Warrior Flurry is removed; Shaman retains its own Flurry.
 The action effect resolves before player swings, followed by enemy actions. No attacks
 are banked out of range and target changes keep the weapon's remaining delay.
 
@@ -141,10 +144,11 @@ profiles; saved actors keep their recorded stats. The saved
 [October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
 simulation setup and two-handed/dual-wield comparisons for future class tuning.
 
-Current saves are `demo` revision 21, with gear stats rebuilt from equipment on load.
-Revision 20 and older saves are incompatible and left unchanged; start a fresh game.
-This revision changes Eviscerate from an assignable active into a passive; the previous
-revision also changed class unlock thresholds, including increases for learned skills.
+Current saves are `demo` revision 23, with gear stats rebuilt from equipment on load.
+Revision 22 and older saves are incompatible and left unchanged; start a fresh game.
+This revision replaces Warrior Flurry with Enrage and Recklessness and preserves the
+Enrage roll boundary across saves. The previous revision replaced Heroic Strike with
+starter Whirlwind and removed Incite.
 Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user

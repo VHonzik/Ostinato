@@ -19,6 +19,7 @@ var combo_points: int = 0
 var rage_credit: float = 0.0
 var rage_decay_credit: float = 0.0
 var last_hit_rage_turn: int = -1
+var last_enrage_roll_turn: int = -1
 var class_progress: Dictionary[StringName, int] = {}
 var warrior_progress: int:
 	get:
@@ -132,6 +133,7 @@ func refresh_melee_stats() -> void:
 		critical_bonus += float(data.stats.get("crit", 0.0))
 	for buff in buffs.values():
 		armor += int(buff.get("armor", 0))
+		critical_bonus += float(buff.get("critical_percent", 0))
 	melee.damage_multiplier = 1.0
 	melee.player = true
 	melee.level = level

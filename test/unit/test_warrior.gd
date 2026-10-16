@@ -29,7 +29,7 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	game.development_build = false
 	game.new_game(97)
 	assert_eq(game.world.hero.selected_class, &"Warrior")
-	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"heroic_strike_1"])
+	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
 	assert_eq(game.world.hero.learned_skills.size(), 2)
 	assert_null(game.world.hero.find_skill(&"fireball_1"))
 	assert_eq(GridView.class_sprite(game.world.hero.selected_class), Vector2i(2, 0))
@@ -291,7 +291,7 @@ func test_death_retains_points_passive_and_hotbar_but_resets_rage_and_buffs() ->
 	assert_not_null(game.world.hero.find_skill(&"anger_management_1"))
 	assert_eq([game.world.hero.rage, game.world.hero.rage_credit, game.world.hero.rage_decay_credit], [0, 0.0, 0.0])
 	assert_eq(game.world.hero.buffs, {})
-	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"heroic_strike_1"])
+	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
 	game.new_game(98)
 	assert_eq(game.world.hero.warrior_progress, 0)
 	assert_null(game.world.hero.find_skill(&"anger_management_1"))
@@ -300,7 +300,7 @@ func test_death_retains_points_passive_and_hotbar_but_resets_rage_and_buffs() ->
 func test_default_warrior_hotbar_and_spell_book_use_rage_in_the_live_scene() -> void:
 	var world := _world()
 	world.hotbar[0] = &"mortal_strike_1"
-	world.hotbar[1] = &"heroic_strike_1"
+	world.hotbar[1] = &"whirlwind_1"
 	var enemy := _enemy(world)
 	enemy.relationship = GridActor.Relationship.HOSTILE
 	enemy.stunned_until = 999
@@ -1011,92 +1011,6 @@ func test_leaving_range_retains_target_without_banking_swings_or_retargeting() -
 	assert_eq(ordinary_swings, 2, "Returning to a ready weapon grants one swing, with no backlog.")
 
 
-func test_heroic_strike_reserves_then_escape_refunds_without_time_or_class_xp() -> void:
-	var world := _world()
-	var enemy := _enemy(world)
-	enemy.stunned_until = 999
-	world.hero.rage = 45
-	world.hero.swing.remaining = 2.5
-	world.hero.swing._active = true
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	assert_eq(world.hero.rage, 30)
-	assert_eq(world.turn_count, 1)
-	assert_not_null(world.queued_strike)
-	assert_same(world.pending_melee, enemy)
-	assert_false(world.can_save())
-	assert_eq(world.hero.warrior_progress, 0)
-	world.cancel_melee()
-	assert_eq(world.hero.rage, 45)
-	assert_eq(world.turn_count, 1)
-	assert_null(world.queued_strike)
-	assert_null(world.auto_attack_target)
-	assert_almost_eq(world.hero.swing.remaining, 1.5, 0.00001)
-	world.wait_turn()
-	assert_eq(enemy.health, enemy.max_health, "Cancellation stops automatic attacking too.")
-
-
-func test_heroic_strike_target_loss_refunds_and_never_switches_to_another_enemy() -> void:
-	for target_dies in [false, true]:
-		var world := _world()
-		var enemy := _enemy(world)
-		var other := _enemy(world, Vector2i(4, 5))
-		enemy.stunned_until = 999
-		other.stunned_until = 999
-		world.hero.rage = 45
-		world.hero.swing.remaining = 2.5
-		assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-		if target_dies:
-			enemy.alive = false
-		else:
-			enemy.tile = Vector2i(8, 5)
-		assert_false(world.continue_melee())
-		assert_eq(world.hero.rage, 45)
-		assert_eq(world.turn_count, 1, "Already elapsed time is retained; cancellation adds none.")
-		assert_null(world.queued_strike)
-		assert_eq(other.health, other.max_health)
-		assert_eq(world.hero.warrior_progress, 0)
-
-
-func test_heroic_strike_consumes_a_miss_and_forfeits_ordinary_swing_rage() -> void:
-	var world := _world()
-	var enemy := _enemy(world)
-	enemy.stunned_until = 999
-	world.hero.rage = 45
-	world.hero.melee.hit = -100.0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	assert_eq(world.turn_count, 1)
-	assert_eq(world.hero.rage, 30)
-	assert_eq(world.hero.rage_credit, 0.0)
-	assert_eq(enemy.health, enemy.max_health)
-	assert_null(world.queued_strike)
-	assert_null(world.pending_melee)
-	assert_eq(world.hero.warrior_progress, 1, "A completed miss still counts as an ability use.")
-	assert_string_contains("\n".join(world.messages), "Heroic Strike (miss)")
-
-
-func test_fast_weapon_replaces_only_first_due_swing_with_heroic_strike() -> void:
-	var world := _world()
-	var enemy := _enemy(world)
-	enemy.stunned_until = 999
-	world.hero.rage = 50
-	world.hero.melee.interval = 0.25
-	world.hero.swing.remaining = 0.2
-	world.hero.swing._active = true
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	var replacements := 0
-	var ordinary := 0
-	for message in world.messages:
-		if message.begins_with("Heroic Strike (hit)"):
-			replacements += 1
-		if message.begins_with("You ->"):
-			ordinary += 1
-	assert_eq([replacements, ordinary], [1, 3])
-	assert_eq(world.hero.rage, 40)
-	assert_almost_eq(world.hero.rage_credit, 0.25, 0.00001)
-	assert_eq(world.hero.warrior_progress, 1)
-	assert_eq(world.turn_count, 1, "Fast weapons grant swings, never extra player actions.")
-
-
 func test_multiple_due_swings_stop_on_target_death_without_inventing_rage() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
@@ -1109,15 +1023,14 @@ func test_multiple_due_swings_stop_on_target_death_without_inventing_rage() -> v
 	world.hero.melee.interval = 0.25
 	world.hero.swing.remaining = 0.2
 	world.hero.swing._active = true
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(world.request_melee(enemy))
 	assert_false(enemy.alive)
-	assert_eq(world.hero.rage, 35, "Later due swings stop rather than granting rage.")
+	assert_eq(world.hero.rage, 51, "Only the first ordinary swing generates rage.")
 	assert_eq(other.health, other.max_health)
-	assert_null(world.queued_strike)
 	assert_null(world.pending_melee)
 
 
-func test_queue_death_resets_reservation_resources_and_target_on_new_loop() -> void:
+func test_committed_attack_death_resets_resources_and_target_on_new_loop() -> void:
 	var game := GameSession.new()
 	game.development_build = false
 	game.world = _world()
@@ -1129,12 +1042,11 @@ func test_queue_death_resets_reservation_resources_and_target_on_new_loop() -> v
 	enemy.swing._active = true
 	game.world.hero.rage = 45
 	game.world.hero.swing.remaining = 3.0
-	assert_true(game.world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(game.world.request_melee(enemy))
 	assert_eq(game.world.attempt_state, GridWorld.AttemptState.PLAYER_DIED)
 	assert_eq(game.world.hero.warrior_progress, 0)
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.rage, 0)
-	assert_null(game.world.queued_strike)
 	assert_null(game.world.pending_melee)
 	assert_null(game.world.auto_attack_target)
 	assert_eq(game.world.hero.swing.remaining, 0.0)
@@ -1161,29 +1073,6 @@ func test_fractional_weapon_timer_save_restores_same_next_swing_and_rage() -> vo
 	assert_eq(restored.hero.rage, game.world.hero.rage)
 	assert_eq(restored.actors[0].health, game.world.actors[0].health)
 	assert_eq(restored.combat_random.state, game.world.combat_random.state)
-
-
-func test_live_heroic_queue_indicator_and_escape_refund() -> void:
-	var world := _world()
-	world.hotbar[1] = &"heroic_strike_1"
-	var enemy := _enemy(world)
-	enemy.stunned_until = 999
-	world.hero.rage = 45
-	world.hero.swing.remaining = 2.5
-	var gameplay := _live_gameplay(world)
-	gameplay._hotbar_slot_pressed(1)
-	gameplay.combat_panel.confirm()
-	var indicator := gameplay.hotbar_panel.slots[1].get_node("Cooldown") as Label
-	assert_true(indicator.visible)
-	assert_eq(indicator.text, "Q")
-	assert_string_contains((gameplay.get_node("HUD/Bottom/Rows/Feedback") as Label).text, "Heroic Strike queued")
-	var escape := InputEventKey.new()
-	escape.keycode = KEY_ESCAPE
-	escape.pressed = true
-	gameplay._input(escape)
-	assert_null(world.queued_strike)
-	assert_eq(world.hero.rage, 45)
-	assert_false(indicator.visible)
 
 
 func _ordinary_swing_count(world: GridWorld) -> int:
@@ -1235,15 +1124,89 @@ func test_long_active_ability_advances_weapon_on_each_elapsed_turn() -> void:
 	assert_eq(world.turn_count, 3)
 
 
-func test_heroic_strike_uses_critical_damage() -> void:
+func test_whirlwind_spends_rage_on_consecutive_turns_without_waiting_for_a_swing() -> void:
 	var world := _world()
 	var enemy := _enemy(world)
 	enemy.stunned_until = 999
-	world.hero.rage = 45
+	world.hero.rage = 30
+	world.hero.swing.remaining = 3.0
+	world.hero.swing._active = true
+	world.auto_attack_target = enemy
+	world.last_attacked_enemy = enemy
+	for use in range(2):
+		var health := enemy.health
+		assert_true(world.cast_skill(&"whirlwind_1"))
+		assert_lt(enemy.health, health)
+		assert_eq(world.hero.rage, 15 * (1 - use))
+		assert_null(world.pending_skill)
+		assert_null(world.pending_melee)
+	assert_eq(world.turn_count, 2)
+	assert_eq(world.hero.warrior_progress, 2)
+	assert_almost_eq(world.hero.swing.remaining, 1.0, 0.00001)
+	assert_false(world.cast_skill(&"whirlwind_1"), "Insufficient rage rejects without a turn.")
+	assert_eq(world.turn_count, 2)
+	assert_eq(world.hero.warrior_progress, 2)
+
+
+func test_whirlwind_keeps_due_ordinary_swing_damage_and_rage_after_its_own_hit() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	enemy.stunned_until = 999
+	world.hero.rage = 15
+	world.hero.melee.damage_min = 20.0
+	world.hero.melee.damage_max = 20.0
+	world.hero.melee.attack_power = 0
+	world.hero.melee.interval = 2.0
+	world.auto_attack_target = enemy
+	world.last_attacked_enemy = enemy
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(enemy.health, enemy.max_health - 40)
+	assert_eq(world.hero.rage, 14)
+	assert_string_contains(world.messages[0], "Whirlwind (hit)")
+	assert_string_contains(world.messages[1], "You ->")
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hero.warrior_progress, 1)
+
+
+func test_whirlwind_miss_spends_rage_and_counts_one_use() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	enemy.stunned_until = 999
+	world.hero.rage = 15
+	world.hero.melee.hit = -1000.0
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(world.hero.rage, 0)
+	assert_eq(enemy.health, enemy.max_health)
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hero.warrior_progress, 1)
+
+
+func test_whirlwind_crit_doubles_weapon_damage() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	enemy.stunned_until = 999
+	world.hero.rage = 15
 	world.hero.melee.critical = 100.0
 	world.hero.melee.damage_min = 20.0
 	world.hero.melee.damage_max = 20.0
 	world.hero.melee.attack_power = 0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	assert_eq(enemy.health, enemy.max_health - 70, "(150% of 20 + 5) * 2.")
-	assert_eq(world.hero.rage, 30)
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(enemy.health, enemy.max_health - 40)
+
+
+func test_live_whirlwind_hotbar_casts_without_target_picker_or_attack_commitment() -> void:
+	var world := _world()
+	world.hotbar[1] = &"whirlwind_1"
+	var enemy := _enemy(world)
+	enemy.stunned_until = 999
+	world.hero.rage = 30
+	world.hero.swing.remaining = 3.0
+	var gameplay := _live_gameplay(world)
+	gameplay._hotbar_slot_pressed(1)
+	assert_false(gameplay.combat_panel.visible)
+	assert_null(world.pending_melee)
+	assert_null(world.pending_skill)
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hero.rage, 15)
+	assert_lt(enemy.health, enemy.max_health)
+	assert_false((gameplay.hotbar_panel.slots[1].get_node("Cooldown") as Label).visible)

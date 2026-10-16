@@ -1391,14 +1391,14 @@ func test_hotbar_drop_validates_skill_lock_and_world() -> void:
 	_game._toggle_hotbar_lock()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 1))
 	bar._drop(Vector2.ZERO, data, 1)
-	assert_eq(_game.world.hotbar[1], &"heroic_strike_1")
+	assert_eq(_game.world.hotbar[1], &"whirlwind_1")
 	assert_eq(_game.world.turn_count, 0)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_game.start_new_game()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
 	assert_eq(_game.world.hotbar, [
-		&"mortal_strike_1", &"heroic_strike_1", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
 	])
 

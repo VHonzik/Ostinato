@@ -82,8 +82,7 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			remaining = maxi(0, int(world.hero.cooldowns.get(
 				String(world.cooldown_family(skill)), 0)) - world.turn_count)
 		var cooldown := _cooldown_labels[index]
-		var queued := skill != null and world.queued_strike != null and skill.id == world.queued_strike.id
-		var insufficient_rage := (skill != null and not queued
+		var insufficient_rage := (skill != null
 			and skill.available_resource(world.hero) < skill.cost(world.hero))
 		var execute_unavailable := (skill != null and skill.effect == SkillDefinition.Effect.EXECUTE
 			and not world.hero.buffs.has(&"sudden_death_1")
@@ -94,10 +93,8 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 				button.add_theme_color_override(color_state, INSUFFICIENT_RAGE_COLOR)
 			else:
 				button.remove_theme_color_override(color_state)
-		cooldown.text = "Q" if queued else (str(remaining) if remaining > 0 else "")
-		cooldown.visible = queued or remaining > 0
-		if queued:
-			button.tooltip_text += "\nQueued: rage reserved. Esc cancels and refunds it."
+		cooldown.text = str(remaining) if remaining > 0 else ""
+		cooldown.visible = remaining > 0
 		if skill == null:
 			button.tooltip_text = "Slot %d (%s): empty. Assign a skill from the spell book." % [index + 1, key]
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"

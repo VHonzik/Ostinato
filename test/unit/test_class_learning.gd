@@ -20,12 +20,12 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(6, 5)) -> GridActor:
 	return enemy
 
 
-func test_retained_direct_and_queued_attacks_award_neither_class_xp_track() -> void:
+func test_retained_direct_and_area_attacks_award_neither_class_xp_track() -> void:
 	var world := _world(&"Shaman")
 	var enemy := _enemy(world)
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(world.cast_skill(&"whirlwind_1"))
 	while world.pending_melee != null:
 		world.continue_melee()
 	assert_lt(enemy.health, enemy.max_health, "Retained attacks still work.")
@@ -43,12 +43,13 @@ func test_selected_class_counts_misses_but_rejected_and_cancelled_uses_award_non
 	assert_eq(world.hero.warrior_progress, 1)
 	assert_false(world.cast_skill(&"mortal_strike_1", enemy), "Cooldown rejects the use.")
 	assert_eq(world.hero.warrior_progress, 1)
-	world.hero.swing.remaining = 3.0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
-	world.cancel_melee()
-	assert_eq(world.hero.warrior_progress, 1, "Cancelled queue is not a use.")
-	world.hero.swing.remaining = 0.0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	var whirlwind := world.hero.find_skill(&"whirlwind_1")
+	whirlwind.cast_seconds = 2.0
+	assert_true(world.cast_skill(whirlwind.id))
+	world.cancel_cast()
+	assert_eq(world.hero.warrior_progress, 1, "Cancelled cast is not a use.")
+	whirlwind.cast_seconds = 1.0
+	assert_true(world.cast_skill(whirlwind.id))
 	assert_eq(world.hero.warrior_progress, 2, "A resolved miss counts once.")
 	assert_eq(enemy.health, enemy.max_health)
 
@@ -122,7 +123,7 @@ func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_trai
 		assert_eq(game.world.hero.progression_points(category), 0)
 		assert_null(game.world.hero.find_skill(&"holy_light_1"))
 		assert_null(game.world.hero.find_skill(&"lightning_bolt_1"))
-		assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"heroic_strike_1"])
+		assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
 		assert_false(game.select_class(&"Warrior", _marshal(game)), "Only one choice per Loop.")
 
 
@@ -245,8 +246,8 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 	assert_eq(world.hero.combo_points, 2)
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.0
-	assert_true(world.cast_skill(&"heroic_strike_1", second))
-	assert_eq(world.hero.combo_points, 3, "Queued active counts once, across targets.")
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(world.hero.combo_points, 3, "Area hits share one base point, across targets.")
 	world.cancel_melee()
 	first.engaged = false
 	second.engaged = false
@@ -255,7 +256,7 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 	for use in range(5):
 		world.hero.rage = 100
 		world.hero.swing.remaining = 0.0
-		assert_true(world.cast_skill(&"heroic_strike_1", first))
+		assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.combo_points, HeroState.MAX_COMBO_POINTS)
 	assert_eq(world.hero.progression_points(&"Rogue"), 0, "Retained attacks do not advance Rogue.")
 	assert_eq(world.hero.warrior_progress, 0)
@@ -517,12 +518,12 @@ func test_misses_do_not_build_combo_points_and_retained_passive_works_as_warrior
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_eq(world.hero.combo_points, 0)
 	world.hero.swing.remaining = 0.0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.combo_points, 0)
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.0
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.combo_points, 1)
 	assert_eq(world.hero.warrior_progress, 3)
 	assert_eq(world.hero.progression_points(&"Rogue"), 0)

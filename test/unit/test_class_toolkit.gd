@@ -43,7 +43,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_are_trainable_free_without_spending_mastery_or_replacing_hotbar() -> void:
-	var counts := {&"Warrior": 17, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
+	var counts := {&"Warrior": 16, &"Shaman": 14, &"Paladin": 15, &"Rogue": 17}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -240,7 +240,7 @@ func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
 func test_bonus_event_cannot_trigger_primary_procs_even_when_dispatched_explicitly() -> void:
 	var world := _world()
 	_learn(world, [&"relentless_assault_1", &"battle_trance_1", &"sudden_death_1",
-		&"warrior_flurry_1", &"vengeance_1", &"windfury_weapon_1", &"seal_of_command_1"])
+		&"shaman_flurry_1", &"vengeance_1", &"windfury_weapon_1", &"seal_of_command_1"])
 	ClassToolkitRules.apply(world, &"windfury_weapon_1",
 		{"weapon_id": world.hero.weapon_id(), "ready": 0})
 	ClassToolkitRules.apply(world, &"seal_of_command_1", {})
@@ -277,7 +277,7 @@ func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execut
 		# Skill, landed, physical, off-hand, eligible.
 		for setup: Array in [
 			[&"mortal_strike_1", true, true, false, true],
-			[&"heroic_strike_1", true, true, false, true],
+			[&"whirlwind_1", true, true, false, true],
 			[&"eviscerate_1", true, true, false, true],
 			[&"execute_1", true, true, false, false],
 			[&"mortal_strike_1", false, true, false, false],
@@ -298,28 +298,9 @@ func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execut
 				"Sudden Death eligibility for %s, off-hand=%s." % [setup[0], setup[3]])
 
 
-func test_natural_heroic_crit_queues_one_guarantee_and_incite_cannot_renew_itself() -> void:
-	var world := _world()
-	_learn(world, [&"incite_1"])
-	var enemy := _enemy(world)
-	var strike := world.hero.find_skill(&"heroic_strike_1")
-	world.hero.melee.critical = 100
-	var natural := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
-	assert_true(natural.critical())
-	assert_true(world.hero.buffs.has(&"incite_1"))
-	for turn in range(50):
-		world.wait_turn()
-	assert_true(world.hero.buffs.has(&"incite_1"), "The guarantee waits until consumed.")
-	world.hero.melee.critical = -100
-	var guaranteed := ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee)
-	assert_true(guaranteed.critical())
-	assert_false(world.hero.buffs.has(&"incite_1"), "Consumed guarantees cannot renew Incite.")
-	assert_false(ClassToolkitRules.weapon_outcome(world, enemy, strike, world.hero.melee).critical())
-
-
 func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> void:
 	var world := _world()
-	var procs: Array[StringName] = [&"incite_1", &"warrior_flurry_1", &"shaman_flurry_1",
+	var procs: Array[StringName] = [&"shaman_flurry_1",
 		&"battle_trance_1", &"sudden_death_1", &"juggernaut_1", &"elemental_assault_1",
 		&"art_of_war_1", &"divine_purpose_1", &"sacred_duty_1"]
 	_learn(world, procs)
@@ -337,13 +318,12 @@ func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> voi
 	assert_false(world.hero.buffs.has(&"bandits_guile_1"))
 
 
-func test_flurry_shares_one_upgrade_and_consumes_swing_charges_without_changing_cooldowns() -> void:
+func test_shaman_flurry_consumes_swing_charges_without_changing_cooldowns() -> void:
 	var world := _world()
-	_learn(world, [&"warrior_flurry_1", &"shaman_flurry_1", &"wrecking_crew_1"])
+	_learn(world, [&"shaman_flurry_1", &"wrecking_crew_1"])
 	var enemy := _enemy(world)
 	world.hero.melee.critical = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
-	assert_false(world.hero.buffs.has(&"warrior_flurry_1"))
 	assert_true(world.hero.buffs.has(&"shaman_flurry_1"))
 	assert_almost_eq(world.hero.attack_haste(), 1.3, 0.001)
 	assert_eq(world.hero.cooldowns.mortal_strike, 5)
@@ -832,24 +812,24 @@ func test_windfury_lasts_sixty_turns_and_expires() -> void:
 	assert_false(world.hero.buffs.has(&"windfury_weapon_1"))
 
 
-func test_whirlwind_hits_the_five_by_five_area_once_and_counts_only_one_class_use() -> void:
+func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -> void:
 	var world := _world()
-	_learn(world, [&"whirlwind_1", &"relentless_assault_1"])
+	_learn(world, [&"relentless_assault_1"])
 	var first := _enemy(world)
-	var second := _enemy(world, Vector2i(10, 10))
+	var second := _enemy(world, Vector2i(9, 9))
 	second.relationship = GridActor.Relationship.NEUTRAL
-	var friendly := _enemy(world, Vector2i(6, 6))
+	var friendly := _enemy(world, Vector2i(7, 7))
 	friendly.relationship = GridActor.Relationship.FRIENDLY
-	var dead := _enemy(world, Vector2i(8, 10))
+	var dead := _enemy(world, Vector2i(8, 9))
 	dead.alive = false
-	var blocked := _enemy(world, Vector2i(8, 6))
-	world.sight_blockers[Vector2i(8, 7)] = true
-	var distant := _enemy(world, Vector2i(11, 8))
+	var blocked := _enemy(world, Vector2i(8, 7))
+	world.sight_blockers[blocked.tile] = true
+	var distant := _enemy(world, Vector2i(10, 8))
 	world.last_attacked_enemy = first
 	world.auto_attack_target = first
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(first.health, 9970)
-	assert_eq(second.health, 9970)
+	assert_eq(first.health, 9980)
+	assert_eq(second.health, 9980)
 	assert_eq(distant.health, 10000)
 	assert_eq(friendly.health, 10000)
 	assert_eq(dead.health, 10000)
@@ -857,20 +837,20 @@ func test_whirlwind_hits_the_five_by_five_area_once_and_counts_only_one_class_us
 	assert_eq(second.relationship, GridActor.Relationship.HOSTILE)
 	assert_true(second.engaged)
 	assert_eq(world.hero.combo_points, 1, "All cleave targets share the base point limit.")
-	assert_eq(world.hero.warrior_progress, 1001)
+	assert_eq(world.hero.warrior_progress, 1)
 	assert_same(world.last_attacked_enemy, first)
 	assert_same(world.auto_attack_target, first)
 
 
-func test_whirlwind_can_cast_at_two_tiles_without_adjacent_targets_but_not_beyond() -> void:
-	for distance in [2, 3]:
+func test_whirlwind_requires_an_adjacent_enemy_and_rejects_without_spending() -> void:
+	for distance in [1, 2, 3]:
 		var world := _world()
-		_learn(world, [&"whirlwind_1"])
+		_learn(world, [])
 		var enemy := _enemy(world, world.player_tile + Vector2i(distance, distance))
-		assert_eq(world.cast_skill(&"whirlwind_1"), distance == 2)
-		assert_eq(world.turn_count, 1 if distance == 2 else 0)
-		assert_eq(enemy.health, 9970 if distance == 2 else 10000)
-		assert_eq(world.hero.rage, 75 if distance == 2 else 100)
+		assert_eq(world.cast_skill(&"whirlwind_1"), distance == 1)
+		assert_eq(world.turn_count, 1 if distance == 1 else 0)
+		assert_eq(enemy.health, 9980 if distance == 1 else 10000)
+		assert_eq(world.hero.rage, 85 if distance == 1 else 100)
 
 
 func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_attack_procs() -> void:
@@ -968,7 +948,7 @@ func test_booming_shout_unlocks_late_and_preserves_learning_and_cooldown_through
 	assert_true(game.world.hero.cooldowns.is_empty())
 
 
-func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stops_remaining_hits() -> void:
+func test_offhand_kill_before_mainhand_swing_stops_remaining_hits_and_rage() -> void:
 	var world := _world()
 	_learn(world, [&"ambidexterity_1", &"relentless_assault_1"])
 	world.hero.equipment.weapons = ItemData.instance(2139)
@@ -979,13 +959,13 @@ func test_offhand_kill_before_queued_mainhand_swing_refunds_reservation_and_stop
 	world.hero.off_hand_swing._active = true
 	var enemy := _enemy(world)
 	enemy.health = 1
-	assert_true(world.cast_skill(&"heroic_strike_1", enemy))
+	assert_true(world.request_melee(enemy))
 	assert_false(enemy.alive)
-	assert_eq(world.hero.rage, 98, "Reservation refunds before the ordinary out-of-combat decay.")
+	assert_eq(world.hero.rage, 98, "No main-hand rage; ordinary out-of-combat decay applies.")
 	assert_eq(world.hero.warrior_progress, 0)
 	assert_eq(world.hero.combo_points, 0)
-	assert_null(world.queued_strike)
-	assert_false("\n".join(world.messages).contains("Heroic Strike ("))
+	assert_null(world.pending_melee)
+	assert_false("\n".join(world.messages).contains("You ->"))
 
 
 func test_poison_coats_both_weapons_and_bonus_damage_never_builds_points_or_rage() -> void:
@@ -1032,7 +1012,7 @@ func test_divine_shield_expires_before_enemy_hits_on_the_expiry_boundary() -> vo
 
 func test_whirlwind_continues_after_nonfinal_boss_death_to_later_actors() -> void:
 	var world := _world()
-	_learn(world, [&"whirlwind_1", &"sweeping_strikes_1"])
+	_learn(world, [&"sweeping_strikes_1"])
 	var boss := _enemy(world)
 	boss.stalker = true
 	boss.health = 1
@@ -1068,7 +1048,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 63)
+	assert_eq(restored.hero.learned_skills.size(), 62)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1084,7 +1064,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 63)
+	assert_eq(game.world.hero.learned_skills.size(), 62)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)
@@ -1094,21 +1074,21 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 
 func test_passive_is_keyboard_focusable_and_inspectable_without_casting_or_assigning() -> void:
 	var world := _world()
-	_learn(world, [&"incite_1"])
+	_learn(world, [&"sudden_death_1"])
 	var panel := HeroPanel.new()
 	add_child_autofree(panel)
 	panel.open(world.hero, true)
 	watch_signals(panel)
 	var passive: SkillButton
 	for button in panel._skill_buttons:
-		if button.get_meta("skill_id") == &"incite_1":
+		if button.get_meta("skill_id") == &"sudden_death_1":
 			passive = button
 	assert_not_null(passive)
 	if passive == null:
 		return
 	passive.grab_focus()
 	assert_same(panel.get_viewport().gui_get_focus_owner(), passive)
-	assert_string_contains(panel._details.text, "cannot renew Incite")
+	assert_string_contains(panel._details.text, "allow one free Execute")
 	assert_true(panel._assign.disabled)
 	passive.pressed.emit()
 	assert_signal_not_emitted(panel, "cast_requested")

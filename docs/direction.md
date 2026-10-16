@@ -32,7 +32,11 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 ## Classes, learning and combat
 
-- Start as warrior. The roster is warrior, shaman, paladin and rogue.
+- Start as warrior with Mortal Strike and Whirlwind. Mortal Strike supplies focused
+  burst; Whirlwind spends spare rage and gains value against adjacent groups. Execute
+  remains a later finisher. Heroic Strike and Incite are removed; further passive
+  development remains open until the revised kit has been playtested. The roster is
+  warrior, shaman, paladin and rogue.
 - Choose which class track to advance at the marshal before accepting any quest.
   Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
   from Loop two. Returning Loops begin in the previous class; confirming a class,
@@ -54,7 +58,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Judgement should cost no rage or world turn, with lower damage and a longer cooldown;
   that rework is postponed. It leaves Seal of Command active. Execute and Judgement
   currently do not spend points; optional empowerment remains a future choice.
-- Warrior supplies physical burst, rage and execution; shaman supplies weapon
+- Warrior supplies physical burst, rage, execution and strength through taking damage.
+  Enrage rewards surviving enemy hits; passive Recklessness trades more incoming damage
+  for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
+  Shaman retains its attack-haste passive. Shaman supplies weapon
   enhancements, reactive damage and tactical procs; paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,
   speed and opportunistic damage. The milestone covers the full v0.1 toolkit.
@@ -75,7 +82,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   and remain learned across death. Character XP comes from kills and quests and resets.
 - Every world turn advances independent, fractional weapon timers, including turns
   spent on active abilities, movement and waiting; abilities must not pause the timer.
-  Deliberate attack bumps and Heroic Strike commit to advancing until the next swing.
+  Deliberate attack bumps commit to advancing until the next swing.
   Keep friendly-bump interaction and the existing second-bump protection for neutral
   enemies; hostile enemies are attacked on the first bump. A fresh weapon is ready.
   Resolve the action's effect, then due player swings, then enemy actions. Continue
@@ -84,18 +91,15 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   due swings in order and stop on death. Playtest this ordering and control rhythm.
 - Main-hand auto-attacks and incoming hits supply rage; rage decays outside combat.
   Ordinary swing rage scales with base weapon speed, independently of haste.
-  Heroic Strike reserves rage and commits until the next main-hand swing, replacing it
-  and forfeiting its ordinary rage. A miss consumes the queue; cancellation or target
-  loss refunds the reservation while preserving elapsed turns.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
   Sanctity of Battle explicitly divides Judgement's cooldown by current attack haste,
   rounding up to a whole turn. Pursuit of Justice adds fractional movement credit,
   occasionally allowing an extra grid step in the chosen direction.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
   Define qualifying events consistently for crits, class XP, combo points and procs.
-  Art of War counts at most one Holy event per attack action; Incite cannot retrigger
-  itself, and Shaman Flurry upgrades the one shared Warrior/Shaman effect. Bonus strikes
-  cannot crit or trigger primary attack hooks. Spirit wolves follow the selected enemy;
+  Art of War counts at most one Holy event per attack action. Shaman Flurry grants
+  attack-haste charges. Bonus strikes cannot crit or trigger primary
+  attack hooks. Spirit wolves follow the selected enemy;
   Spirit Hunt heals from their actual damage taken by the target.
 - Consumable triggered procs persist until used or death. Timed buffs persist between
   encounters until their duration expires. Timed hero buffs expire at
@@ -177,8 +181,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 - First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
-- Next: Heroic Strike versus Mortal Strike rage economy; optional combo empowerment for
-  Execute/Judgement; gear ranges, weapon progression,
+- Next: Whirlwind versus Mortal Strike rage economy and later passive development;
+  optional combo empowerment for Execute/Judgement; gear ranges, weapon progression,
   respawns and healing.
 - During the complete-toolkit playtest: revise provisional passive/proc behavior,
   wolf usefulness, movement credit and the Judgement haste exception as needed.

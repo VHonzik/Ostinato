@@ -85,22 +85,20 @@ snapshot's provisional tables or simulation results into planning documents.
 Implementation is ready for the owner's playtest, deferred at the owner's request.
 Combat tuning remains provisional until that playtest and lives in code/data.
 
-- [x] Start with Mortal Strike and Heroic Strike; remove Slam from the runnable toolkit.
+- [x] Start with Mortal Strike and Whirlwind; remove Slam and Heroic Strike from the runnable toolkit.
   Battle Shout is a trainer unlock; retain existing Anger Management and Charge learning.
 - [x] Advance fractional weapon timers on every world turn, including active abilities,
   movement and waits. Preserve bump commitment, friendly interaction and second-bump
   neutral protection. Implement the owner's chosen effect/swing ordering, readiness,
   targeting, no banking out of range and stopping multiple due swings on death.
-- [x] Reserve Heroic Strike's rage and commit until the next main-hand swing. Replace
-  that swing, forfeit its ordinary rage and consume misses. Cancellation or target
-  loss refunds the reservation; elapsed turns remain spent. Mortal Strike is a direct
-  active attack that leaves weapon timing running.
+- [x] Replace queued Heroic Strike with a direct, repeatable Whirlwind rage spender
+  against adjacent enemies. Both starting actives leave weapon timing running.
 - [x] Add provisional baseline crit tuning and base-speed swing rage, independent of
   haste. Preserve incoming rage, out-of-combat decay and ordinary ability cooldown timing.
-- [x] Show the attack target, queued strike, rage and cooldown state through the existing
+- [x] Show the attack target, rage and cooldown state through the existing
   target highlight, log and hotbar. Preserve fractional timers and learning through saves;
   bump the save revision while leaving incompatible files unchanged.
-- [x] Replace obsolete Slam checks and cover timing, cancellation/refunds, misses,
+- [x] Replace obsolete attack checks and cover timing, cancelled attacks, misses,
   physical/critical damage, multiple due swings, death/save boundaries and UI input.
 - [ ] Owner playtest: compare slow and fast weapons against one enemy, then two;
   interleave movement, waiting and both actives. Judge commitment, target control,
@@ -159,7 +157,7 @@ in code/data; optional combo empowerment remains unresolved for the later finish
   target commitment, ordering, trainer/UI behavior, retained use, death and save loading.
   Keep revision 14: the existing learned-skill format supports Execute without new state.
 - [ ] Owner playtest: learn Execute at Llane, find it on the hotbar and compare it with
-  Mortal Strike and Heroic Strike near an enemy's health threshold. Try different rage
+  Mortal Strike and Whirlwind near an enemy's health threshold. Try different rage
   reserves, then use retained Execute with Relentless Assault in another class.
   Judge the finishing window, rage payoff, trainer pacing and feedback.
 
@@ -173,13 +171,13 @@ live in game data and the spell book. Human balance and readability review remai
   free learning, immediate use, and retained cross-class effects.
 - [x] Retune class unlock paths toward roughly five completed Loops, with early core
   attacks and active/passive milestones spread through each trainer's XP-ordered list.
-- [x] Add shared Flurry, nonrecursive procs, guaranteed crit consumption, defenses,
+- [x] Add Shaman Flurry, nonrecursive procs, guaranteed crit consumption, defenses,
   deliberate finisher spending/refunds, and the Holy-event counting limit.
 - [x] Add independent off-hand attacks and equipment selection, spirit wolves with
   damage-based healing, movement credit and the Judgement haste exception. Keep Charge's
   existing commitment; tune it with the full toolkit during playtesting.
-- [x] Preserve selected targeting during cleave, stop multi-hit effects on terminal death,
-  and refund a queued strike when an earlier off-hand attack kills its target.
+- [x] Preserve selected targeting during cleave and stop multi-hit effects and later
+  due swings when their target dies or the attempt ends.
 - [x] Save off-hand timing, wolves and transient procs in revision 16, retaining learning
   and mastery while clearing temporary effects on death. Leave older save files unchanged.
 - [x] Cover trainer eligibility, retained effects, proc consumption, finishers, defenses,
@@ -221,7 +219,7 @@ live in game data and the spell book. Human balance and readability review remai
 - [ ] Redistribute damage within the developed toolkit while preserving overall strength.
   Postpone the agreed free, off-turn Judgement rework and its Divine Purpose replacement.
   Sudden Death now rewards physical actives without auto-attack triggers or Execute
-  self-procs. Review the resulting damage distribution, Heroic Strike's action/rage
+  self-procs. Review the resulting damage distribution, Whirlwind's action/rage
   tradeoff, Windfury, poison and Eviscerate use. Run further simulations with all four
   developed classes.
 - [x] Integrate the poison prototype: Instant for short encounters, a Rogue
@@ -245,6 +243,25 @@ defensive windows and mixed-class combinations. Adjust code/data from that feedb
 do not treat catalogue completion or automated tests as balance/readability acceptance.
 Optional combo empowerment of Execute/Judgement remains a later design choice; the
 current deliberate spender is Slice and Dice, with a passive Eviscerate attack when learned.
+
+### Current class-identity follow-up — Warrior rage spending
+
+- [x] Replace starter Heroic Strike with Whirlwind and remove Incite and strike-queue
+  mechanics. Keep Execute's later unlock and the existing per-target proc interactions.
+- [x] Replace Warrior Flurry with early Enrage and Recklessness learning. Enrage can
+  trigger from surviving damaging enemy hits at any health; passive Recklessness ramps
+  the physical damage reward and incoming damage risk as health falls, with a modest cap.
+  Keep Shaman Flurry and retained effects across classes. Preserve proc expiry and save
+  boundaries; leave incompatible saves untouched.
+- [ ] Later owner playtests and simulations: compare saving for Mortal Strike with
+  spending on Whirlwind, single enemies versus groups, and retained mixed-class kits.
+  Revisit Sweeping Strikes and per-target proc frequency before adding more area scaling.
+- [ ] Playtest the early health/rage tradeoff, healing and Enrage feedback, then compare
+  developed kits against the stalker. Removing Warrior haste also changes rage income;
+  the capped Recklessness penalty has no boss-specific exception. Revisit tuning from
+  these later playtests and simulations.
+- [ ] Decide later passive development after moving Whirlwind out of trainer progression
+  and adding the early risk/reward passives.
 
 ### Current playable task — Simplified itemization
 

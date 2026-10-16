@@ -2,7 +2,7 @@ class_name SkillDefinition
 extends RefCounted
 
 ## Learned class skills. Current character level never gates retained-skill use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, JUDGEMENT, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, HEROIC_STRIKE, EXECUTE, TOOLKIT }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, JUDGEMENT, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -20,6 +20,9 @@ var execute_health_percent: int = 0
 var execute_rage_cap: int = 0
 var execute_damage_per_rage: int = 0
 var physical_percent: int = 0
+var critical_percent: int = 0
+var damage_taken_percent: int = 0
+var health_cap_percent: int = 0
 var haste_percent: int = 0
 var duration_per_combo: int = 0
 var rage_generated: int = 0
@@ -124,9 +127,6 @@ static func catalog(identifier: StringName) -> SkillDefinition:
 		return skill
 	skill.description = "%s: %d rage, %.1f turns, range %d tiles. " % [
 		skill.title, skill.rage_cost, skill.cast_seconds, skill.range_tiles]
-	if skill.effect == Effect.HEROIC_STRIKE:
-		skill.description = "%s: %d rage, next main-hand swing, range %d tiles. " % [
-			skill.title, skill.rage_cost, skill.range_tiles]
 	if skill.minimum_range_tiles > 0:
 		skill.description += "Minimum range: %d tiles. " % skill.minimum_range_tiles
 	skill.description += skill.detail

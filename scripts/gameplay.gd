@@ -428,9 +428,7 @@ func refresh_view() -> void:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
 		_select_actor(world.pending_melee)
-		hud.feedback.text = "%s on %s. Waiting for swing; Esc cancels." % [
-			"Attack" if world.queued_strike == null else "Heroic Strike queued",
-			world.pending_melee.title]
+		hud.feedback.text = "Attack on %s. Waiting for swing; Esc cancels." % world.pending_melee.title
 	else:
 		_melee_delay_seconds = 0.0
 		if not combat_panel.visible:
@@ -488,7 +486,7 @@ func _cast_skill(identifier: StringName) -> void:
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)
-	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.HEROIC_STRIKE,
+	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
 		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
 		and skill.target == SkillDefinition.Target.ENEMY
 		and world.in_combat()

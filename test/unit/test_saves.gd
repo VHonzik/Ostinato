@@ -268,4 +268,4 @@ func test_release_restore_preserves_saved_development_hotbar_ids_without_learnin
 	assert_null(restored.hero.find_skill(&"practice_1"))
 	assert_false(restored.cast_skill(&"practice_1"))
 	assert_eq(restored.turn_count, 0)
-	assert_true(restored.hotbar.has(&"heroic_strike_1"))
+	assert_true(restored.hotbar.has(&"whirlwind_1"))

@@ -7,16 +7,16 @@ const EARTH_SHOCK_DAMAGE_MULTIPLIER: float = 0.7
 const PASSIVES: Dictionary = {
 	"eviscerate_1": ["Eviscerate", "Rogue", 5, 12, 0.0, 0, "Slice and Dice also attacks your current melee target for 75% weapon damage plus 12 per combo point spent as physical damage. Hit/crit and armor apply. Misses still spend points; finisher refunds happen once after spending. Builds no new attack points. No extra rage or turn. Slice and Dice remains usable without a target."],
 	"cruelty_1": ["Cruelty", "Warrior", 60, 10, 0.0, 0, "+10% weapon critical chance."],
-	"incite_1": ["Incite", "Warrior", 100, 10, 0.0, 0, "+10% Heroic Strike critical chance. A natural Heroic Strike crit guarantees the next queued strike's crit until used; that guaranteed crit cannot renew Incite."],
-	"warrior_flurry_1": ["Flurry", "Warrior", 120, 20, 0.0, 0, "Weapon crits grant 3 charges of +20% attack haste until consumed. Ordinary main/off-hand swings consume charges. Shaman Flurry upgrades this same effect."],
-	"battle_trance_1": ["Battle Trance", "Warrior", 165, 0, 0.0, 0, "Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Queued strikes and finishers cannot trigger it."],
+	"enrage_1": ["Enrage", "Warrior", 10, 10, 0.3, 6, "Surviving enemy hits that deal damage have a 30% chance to grant +10% physical damage and +5 percentage points of attack critical chance for 6 turns, at any health. At most one roll per world turn. Refreshes without stacking; misses, dodges and immune hits cannot trigger it."],
+	"recklessness_1": ["Recklessness", "Warrior", 30, 20, 0.0, 0, "As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned."],
+	"battle_trance_1": ["Battle Trance", "Warrior", 165, 0, 0.0, 0, "Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it."],
 	"sudden_death_1": ["Sudden Death", "Warrior", 270, 0, 0.2, 0, "Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage."],
 	"victory_rush_1": ["Victory Rush", "Warrior", 190, 10, 0.0, 0, "Enemy kills heal 10% of maximum health. Summons and friendly actors do not qualify."],
 	"sweeping_strikes_1": ["Sweeping Strikes", "Warrior", 245, 50, 0.0, 0, "Landed direct physical actives copy 50% of their damage to one other hostile enemy in melee. Copies cannot proc, crit or generate rage/combo points."],
 	"wrecking_crew_1": ["Wrecking Crew", "Warrior", 300, 25, 0.0, 6, "Weapon crits grant +25% physical damage for 6 turns."],
 	"juggernaut_1": ["Juggernaut", "Warrior", 330, 2, 0.0, 0, "Charge cooldown is 2 turns shorter; arrival guarantees the next Mortal Strike crit until used."],
 	"improved_shields_1": ["Improved Shields", "Shaman", 20, 50, 0.0, 0, "Lightning Shield has 6 charges and deals 50% more damage."],
-	"shaman_flurry_1": ["Flurry", "Shaman", 30, 30, 0.0, 0, "Weapon crits grant 3 charges of +30% attack haste until consumed, replacing rather than stacking with Warrior Flurry."],
+	"shaman_flurry_1": ["Flurry", "Shaman", 30, 30, 0.0, 0, "Weapon crits grant 3 charges of +30% attack haste until consumed. Ordinary main/off-hand swings consume charges."],
 	"static_shock_1": ["Static Shock", "Shaman", 60, 0, 0.2, 0, "Landed primary weapon attacks have a 20% chance to discharge a Lightning Shield charge, ignoring its retaliation cooldown."],
 	"elemental_weapons_1": ["Elemental Weapons", "Shaman", 75, 40, 0.0, 0, "Windfury bonus damage increases 40%; Strength of Earth grants 50% more Strength."],
 	"elemental_assault_1": ["Elemental Assault", "Shaman", 90, 20, 0.0, 0, "Earth Shock deals 20% more damage. A weapon crit empowers the next Earth Shock by another 50% until used."],
@@ -48,7 +48,7 @@ const PASSIVES: Dictionary = {
 	"precision_1": ["Precision", "Rogue", 215, 5, 0.0, 0, "+5% weapon and direct Holy/Nature hit chance."],
 }
 const ACTIVES: Dictionary = {
-	"whirlwind_1": {"title": "Whirlwind", "class_tab": "Warrior", "progress_required": 220, "rage_cost": 25, "cooldown_seconds": 8, "weapon_multiplier": 1.5, "family": "whirlwind", "effect": "TOOLKIT", "target": "NONE", "range_tiles": 2, "detail": "150% weapon damage to each neutral or hostile enemy within 2 tiles (5x5 area), in sight, in stable actor order. Each landed hit can crit/proc and build combo points. Stops on terminal death; one class XP use."},
+	"whirlwind_1": {"title": "Whirlwind", "class_tab": "Warrior", "progress_required": 0, "rage_cost": 15, "cast_seconds": 1.0, "weapon_multiplier": 1.0, "family": "whirlwind", "effect": "TOOLKIT", "target": "NONE", "range_tiles": 1, "detail": "100% weapon damage to each adjacent neutral or hostile enemy in sight (3x3 area), in stable actor order. One turn, no cooldown; weapon timing continues. Each landed hit can crit/proc; Relentless Assault grants at most one base point per turn. Keeps your selected attack target. Stops on terminal death; one class XP use."},
 	"booming_shout_1": {"title": "Booming Shout", "class_tab": "Warrior", "progress_required": 315, "rage_cost": 0, "cast_seconds": 1.0, "cooldown_seconds": 30, "range_tiles": 4, "minimum": 1, "family": "booming_shout", "effect": "TOOLKIT", "target": "NONE", "detail": "Deal exactly 1 damage to every neutral or hostile NPC within 4 tiles (9x9 area), in sight, engaging them. Guaranteed hit; no crits, armor reduction, damage bonuses, attack procs or combo points. Keeps your selected attack target. One turn; 30-turn cooldown."},
 	"windfury_weapon_1": {"title": "Windfury Weapon", "class_tab": "Shaman", "progress_required": 45, "rage_cost": 10, "duration": 60, "coefficient": 0.25, "weapon_multiplier": 1.0, "family": "windfury_weapon", "effect": "ARMOR", "target": "SELF", "detail": "Enchant the current main-hand weapon for 60 turns. Landed primary main-hand swings/physical actives have 25% chance for 2 weapon bonus strikes, at most once per 3 turns. Bonuses do not proc or grant rage/combo points."},
 	"earth_shock_1": {"title": "Earth Shock", "class_tab": "Shaman", "progress_required": 10, "rage_cost": 15, "cooldown_seconds": 7, "range_tiles": 3, "weapon_multiplier": 1.0, "minimum": 24, "school": 3, "family": "earth_shock", "effect": "TOOLKIT", "target": "ENEMY", "detail": "70% weapon damage + 16.8 as Nature damage; hit/crit apply, armor does not. Interrupts and delays the enemy's next swing by 1 turn. One turn; a landed attack builds combo points."},
@@ -70,6 +70,8 @@ static func skills() -> Dictionary:
 			"duration": row[5], "detail": "Passive: " + row[6],
 			"family": String(identifier).trim_suffix("_1"), "effect": "PASSIVE", "target": "NONE"}
 	result["eviscerate_1"].merge({"weapon_multiplier": 0.75, "range_tiles": 1})
+	result["enrage_1"]["critical_percent"] = 5
+	result["recklessness_1"].merge({"damage_taken_percent": 10, "health_cap_percent": 25})
 	for row: Dictionary in result.values():
 		row["training_level"] = 1
 	return result
