@@ -1,6 +1,77 @@
 extends GutTest
 
 
+func test_outdoor_enemies_wander_locally_while_mine_and_named_enemies_stay_put() -> void:
+	var world := _session().world
+	for actor in world.actors:
+		if actor.npc_id in [299, 69, 6, 38]:
+			var visited: Dictionary[Vector2i, bool] = {actor.tile: true}
+			for turn in range(40):
+				world.turn_count = turn
+				world._wander(actor)
+				visited[actor.tile] = true
+				assert_true(actor.wander_area.has_point(actor.tile), actor.title)
+			assert_gt(visited.size(), 1, actor.title)
+		else:
+			assert_false(actor.wander_area.has_area(), actor.title)
+	world._spawn_stalker(ValleyRoute.STALKER_ENTRIES[0])
+	assert_false(world.actors[-1].wander_area.has_area())
+	for wolf in ValleyRoute.WOLVES:
+		assert_gt(GridWorld.tile_distance(wolf, ValleyRoute.STALKER_ENTRIES[0]), 10)
+
+
+func test_exploration_credits_mine_entrance_vineyard_approach_and_wolf_area_without_chests() -> void:
+	var world := _session().world
+	var deputy := _actor(world, 823)
+	_beside(world, deputy)
+	assert_true(QuestRules.accept(world, "valley_explore", deputy))
+	world.player_tile = Vector2i(22, 15)
+	QuestRules.visit(world)
+	assert_eq(QuestRules.progress(world, "valley_explore", 0), 0)
+	for index in range(3):
+		world.player_tile = [Vector2i(22, 13), Vector2i(44, 60), Vector2i(19, 48)][index]
+		QuestRules.visit(world)
+		assert_eq(QuestRules.progress(world, "valley_explore", index), 1)
+	assert_true(QuestRules.ready(world, "valley_explore"))
+	assert_true(world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.chest).all(func(chest: GridActor) -> bool: return not chest.loot_assigned))
+
+
+func test_closed_chest_blocks_then_bump_collects_loot_without_stepping_inside() -> void:
+	var session := _session()
+	var world := session.world
+	var chest: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.chest)[0]
+	world.player_tile = chest.tile + Vector2i.DOWN
+	assert_false(world.is_open(chest.tile))
+	var before := world.player_tile
+	assert_false(world.move_player(Vector2i.UP))
+	assert_eq(world.player_tile, before)
+	assert_true(chest.loot_assigned)
+	assert_true(chest.loot.is_empty())
+	assert_eq(chest.loot_copper, 0)
+	assert_gt(world.hero.copper, 0)
+	assert_true(world.is_open(chest.tile))
+	assert_true(world.move_player(Vector2i.UP))
+	assert_eq(world.player_tile, chest.tile)
+
+
+func test_bumping_chest_with_full_bags_preserves_items_for_later() -> void:
+	var world := _session().world
+	var chest: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.chest)[0]
+	world.player_tile = chest.tile + Vector2i.DOWN
+	world.hero.inventory.fill(ItemData.instance(35))
+	assert_false(world.move_player(Vector2i.UP))
+	assert_false(chest.loot.is_empty())
+	assert_true(chest.corpse_visible)
+	var contents := chest.loot.duplicate(true)
+	world.hero.inventory[0] = {}
+	assert_true(world.move_player(Vector2i.UP), "An opened chest is passable.")
+	assert_true(chest.loot.is_empty())
+	assert_eq(world.hero.inventory[0], contents[0])
+
+
 func _session() -> GameSession:
 	var session := GameSession.new()
 	session.new_game(619)
@@ -205,8 +276,8 @@ func test_exploration_credits_destinations_independently_and_never_rolls_chests_
 	var deputy := _actor(world, 823)
 	_beside(world, deputy)
 	assert_true(QuestRules.accept(world, "valley_explore", deputy))
-	for destination in ValleyLandmarks.CHESTS:
-		world.player_tile = ValleyLandmarks.CHESTS[destination].tile + Vector2i.DOWN
+	for destination in ValleyLandmarks.EXPLORATION:
+		world.player_tile = ValleyLandmarks.EXPLORATION[destination].get_center()
 		QuestRules.visit(world)
 		QuestRules.visit(world)
 	assert_true(QuestRules.ready(world, "valley_explore"))
@@ -340,11 +411,11 @@ func test_neutral_wolves_and_kobolds_only_retaliate_after_attack_and_reset_neutr
 		world.actors.assign([enemy])
 		_beside(world, enemy)
 		var player_health := world.hero.health
-		var tile := enemy.tile
 		for turn in range(3):
 			world.wait_turn()
 		assert_eq(world.hero.health, player_health, "Proximity does not provoke " + enemy.title)
-		assert_eq(enemy.tile, tile)
+		assert_true(enemy.wander_area.has_point(enemy.tile))
+		_beside(world, enemy)
 		assert_false(enemy.engaged)
 		assert_true(world.request_melee(enemy))
 		assert_eq(enemy.relationship, GridActor.Relationship.HOSTILE)

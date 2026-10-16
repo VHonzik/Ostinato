@@ -2,7 +2,7 @@ class_name SkillDefinition
 extends RefCounted
 
 ## Learned class skills. Current character level never gates retained-skill use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, EXECUTION_SENTENCE, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, EXECUTE, TOOLKIT }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, EXECUTION_SENTENCE, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CHARGE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -14,7 +14,7 @@ var effect: Effect
 var development_only: bool
 var target: Target = Target.NONE
 var rage_cost: int = 0
-var progress_required: int = 0
+var training_copper: int = 0
 var weapon_multiplier: float = 1.0
 var execute_health_percent: int = 0
 var execute_rage_cap: int = 0
@@ -73,9 +73,9 @@ static func trainer_skills(category: StringName) -> Array[SkillDefinition]:
 				or ClassSkillData.is_playable_skill(StringName(identifier)))):
 			result.append(catalog(StringName(identifier)))
 	result.sort_custom(func(a: SkillDefinition, b: SkillDefinition) -> bool:
-		if a.progress_required == b.progress_required:
+		if a.training_copper == b.training_copper:
 			return a.title < b.title
-		return a.progress_required < b.progress_required)
+		return a.training_copper < b.training_copper)
 	return result
 
 
@@ -147,7 +147,4 @@ static func development_skills() -> Array[SkillDefinition]:
 		SkillDefinition.new(&"kill_stalker_1", "Kill stalker", &"Development", 1,
 			"One turn; 0 rage. Kill the first living stalker anywhere. Defeat all present stalkers to win. "
 			+ "No living stalker: no turn spent.", Effect.KILL_STALKER, true),
-		SkillDefinition.new(&"class_points_1", "Gain 30 class XP", &"Development", 1,
-			"One turn; 0 rage. Awards 30 cumulative class XP to the selected class.",
-			Effect.CLASS_POINTS, true),
 	]

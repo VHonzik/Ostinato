@@ -1,7 +1,12 @@
 class_name ValleyLandmarks
 extends RefCounted
 
-## The same landmarks place chests, credit exploration and describe quest objectives.
+## Treasure positions are independent of the broad exploration destinations.
+const EXPLORATION: Dictionary = {
+	"mine": Rect2i(17, 2, 11, 12),
+	"vineyard": Rect2i(44, 54, 19, 24),
+	"wolf_woods": Rect2i(4, 28, 18, 32),
+}
 static var CHESTS: Dictionary[String, Landmark] = {
 	"mine_chest": Landmark.new(Vector2i(19, 3), "Explore the back of Echo Ridge Mine"),
 	"ridge_chest": Landmark.new(Vector2i(69, 52), "Explore the eastern ridge above the vineyard"),
@@ -10,6 +15,10 @@ static var CHESTS: Dictionary[String, Landmark] = {
 
 
 static func objective_label(identifier: StringName) -> String:
+	match identifier:
+		&"mine": return "Enter Echo Ridge Mine"
+		&"vineyard": return "Approach the vineyard"
+		&"wolf_woods": return "Explore the western wolf woods"
 	if CHESTS.has(String(identifier)):
 		return CHESTS[String(identifier)].description
 	# Historical fixture objective; the playable valley has no overlook trigger.

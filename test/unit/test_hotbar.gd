@@ -6,7 +6,8 @@ func test_training_prefers_its_row_even_when_locked_and_preserves_full_hotbar() 
 	session.development_build = false
 	session.new_game(97)
 	var world := session.world
-	world.hero.warrior_progress = 150
+	world.hero.level = 5
+	world.hero.copper = 10000
 	world.hotbar_locked = true
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	assert_eq(world.hotbar.slice(0, 3),
@@ -41,7 +42,8 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 	]:
 		var skill := SkillDefinition.catalog(identifier)
 		world.hero.selected_class = skill.class_tab
-		world.hero.class_progress[skill.class_tab] = 1000
+		world.hero.level = 5
+		world.hero.copper = 10000
 		assert_true(world.train(skill.class_tab, identifier))
 	assert_eq(world.hotbar.slice(0, 10), [
 		&"whirlwind_1", &"charge_1", &"execute_1", &"booming_shout_1", &"earth_shock_1",
@@ -58,7 +60,8 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 func test_training_uses_other_row_when_preferred_row_is_full() -> void:
 	for setup: Array in [[&"battle_shout_1", 10, 0], [&"charge_1", 0, 10]]:
 		var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-		world.hero.warrior_progress = 1000
+		world.hero.level = 5
+		world.hero.copper = 10000
 		var first_slot: int = setup[1]
 		for slot in range(first_slot, first_slot + 10):
 			assert_true(world.assign_hotbar(slot, &"mortal_strike_1"))
@@ -95,7 +98,8 @@ func test_training_does_not_replace_skill_and_reset_load_new_game_keep_their_con
 	session.new_game(317)
 	var world := session.world
 	assert_true(world.assign_hotbar(0, &"mortal_strike_1"))
-	world.hero.warrior_progress = 40
+	world.hero.level = 5
+	world.hero.copper = 10000
 	assert_true(world.train(&"Warrior", &"anger_management_1"))
 	assert_eq(world.hotbar[0], &"mortal_strike_1")
 	assert_true(world.assign_hotbar(1, &"whirlwind_1"))
@@ -166,7 +170,8 @@ func test_last_slot_survives_save_load_and_death_and_short_arrays_are_rejected()
 
 func test_cooldown_countdown_updates_and_clears_when_ready_or_slot_changes() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	world.hero.warrior_progress = 20
+	world.hero.level = 5
+	world.hero.copper = 10000
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	world.assign_hotbar(0, &"battle_shout_1")
 	world.assign_hotbar(1, &"battle_shout_1")

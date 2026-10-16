@@ -1,6 +1,39 @@
 extends GutTest
 
 
+func test_returning_loops_gate_other_contacts_and_change_class_choice_wording() -> void:
+	var game := _returning_game()
+	for loop_number in range(2, 5):
+		game.loop_count = loop_number
+		game.world.class_selected = false
+		game.world.hero.selected_class = &"Rogue"
+		for actor in game.world.actors:
+			if not actor.alive or actor.npc_id == NpcDefinition.MARSHAL_ID or actor.chest:
+				continue
+			if actor.relationship != GridActor.Relationship.FRIENDLY:
+				continue
+			game.world.player_tile = actor.tile + Vector2i.DOWN
+			var greeting := NpcConversation.build(game, actor)
+			assert_eq(greeting.greeting, "Hello stranger, you should go say hi to Marshal in front of the abbey.")
+			assert_true(greeting.choices.is_empty())
+		var marshal := _marshal(game)
+		game.world.player_tile = marshal.tile + Vector2i.DOWN
+		assert_true(QuestRules.has_marker(game.world, marshal))
+		var conversation := NpcConversation.build(game, marshal)
+		assert_eq(conversation.choices.size(), 4)
+		var expected: String = ["Uhm... I seek rogue teaching", "I am .... rogue", "I am rogue"][loop_number - 2]
+		assert_eq(conversation.choices[3].title, expected)
+		var menu := _menu(game)
+		menu.open_conversation(marshal)
+		assert_eq(get_viewport().gui_get_focus_owner().text, expected)
+		assert_true(game.select_class(&"Rogue", marshal))
+		var trainer: GridActor = game.world.actors.filter(func(actor: GridActor) -> bool:
+			return actor.service == &"Rogue")[0]
+		game.world.player_tile = trainer.tile + Vector2i.DOWN
+		assert_true(NpcConversation.build(game, trainer).choices.any(
+			func(choice: NpcConversation.Choice) -> bool: return choice.action == NpcConversation.Action.TRAIN))
+
+
 func _world(category: StringName = &"Warrior") -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 16, 16), Vector2i(5, 5), 97, false)
 	world.hero.selected_class = category
@@ -20,7 +53,7 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(6, 5)) -> GridActor:
 	return enemy
 
 
-func test_retained_direct_and_area_attacks_award_neither_class_xp_track() -> void:
+func test_retained_direct_and_area_attacks_remain_usable_in_other_classes() -> void:
 	var world := _world(&"Shaman")
 	var enemy := _enemy(world)
 	world.hero.rage = 100
@@ -29,49 +62,6 @@ func test_retained_direct_and_area_attacks_award_neither_class_xp_track() -> voi
 	while world.pending_melee != null:
 		world.continue_melee()
 	assert_lt(enemy.health, enemy.max_health, "Retained attacks still work.")
-	assert_eq(world.hero.progression_points(&"Warrior"), 0)
-	assert_eq(world.hero.progression_points(&"Shaman"), 0)
-
-
-func test_selected_class_counts_misses_but_rejected_and_cancelled_uses_award_none() -> void:
-	var world := _world()
-	var enemy := _enemy(world)
-	world.hero.melee.hit = -1000.0
-	world.hero.rage = 100
-	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
-	assert_eq(enemy.health, enemy.max_health)
-	assert_eq(world.hero.warrior_progress, 1)
-	assert_false(world.cast_skill(&"mortal_strike_1", enemy), "Cooldown rejects the use.")
-	assert_eq(world.hero.warrior_progress, 1)
-	var whirlwind := world.hero.find_skill(&"whirlwind_1")
-	whirlwind.cast_seconds = 2.0
-	assert_true(world.cast_skill(whirlwind.id))
-	world.cancel_cast()
-	assert_eq(world.hero.warrior_progress, 1, "Cancelled cast is not a use.")
-	whirlwind.cast_seconds = 1.0
-	assert_true(world.cast_skill(whirlwind.id))
-	assert_eq(world.hero.warrior_progress, 2, "A resolved miss counts once.")
-	assert_eq(enemy.health, enemy.max_health)
-
-
-func test_selected_class_counts_repeated_buffs_and_learning_keeps_cumulative_xp() -> void:
-	var world := _world()
-	world.add_class_progress(&"Warrior", 40)
-	assert_true(world.train(&"Warrior", &"battle_shout_1"))
-	assert_true(world.train(&"Warrior", &"anger_management_1"))
-	assert_eq(world.hero.warrior_progress, 40)
-	assert_true(world.cast_skill(&"battle_shout_1"), "Unlock is usable immediately.")
-	for turn in range(30):
-		world.wait_turn()
-	assert_true(world.hero.buffs.has(&"battle_shout_1"), "Shout outlasts its cooldown.")
-	assert_true(world.cast_skill(&"battle_shout_1"), "Repeated buff uses count.")
-	assert_eq(world.hero.warrior_progress, 42)
-	world.hero.selected_class = &"Shaman"
-	for turn in range(30):
-		world.wait_turn()
-	assert_true(world.cast_skill(&"battle_shout_1"))
-	assert_eq(world.hero.warrior_progress, 42)
-	assert_eq(world.hero.progression_points(&"Shaman"), 0)
 
 
 func _marshal(game: GameSession) -> GridActor:
@@ -120,7 +110,6 @@ func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_trai
 			assert_not_null(game.world.hero.find_skill(skill.id))
 		assert_eq(game.world.hero.learned_skills.size(), 4)
 		assert_eq(game.world.hero.copper, 0)
-		assert_eq(game.world.hero.progression_points(category), 0)
 		assert_null(game.world.hero.find_skill(&"holy_light_1"))
 		assert_null(game.world.hero.find_skill(&"lightning_bolt_1"))
 		assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
@@ -138,9 +127,9 @@ func test_choice_revalidates_range_combat_and_quest_cutoff_without_mutation() ->
 	enemy.engaged = true
 	assert_false(game.select_class(&"Rogue", marshal))
 	enemy.engaged = false
-	assert_true(QuestRules.accept(game.world, "valley_patrol", marshal))
-	assert_true(QuestRules.abandon(game.world, "valley_patrol"))
-	assert_false(game.select_class(&"Rogue", marshal), "Abandoning does not reopen the choice.")
+	assert_false(QuestRules.accept(game.world, "valley_patrol", marshal))
+	assert_false(QuestRules.abandon(game.world, "valley_patrol"))
+	assert_true(game.can_select_class())
 	assert_eq(game.world.hero.selected_class, &"Warrior")
 	assert_null(game.world.hero.find_skill(&"relentless_assault_1"))
 	assert_eq(game.world.turn_count, 0)
@@ -182,14 +171,13 @@ func test_trainer_exposes_only_runnable_skills_and_cannot_teach_legacy_mana_kit(
 	assert_null(world.hero.find_skill(&"lightning_bolt_1"))
 
 
-func test_lightning_shield_counts_reapplications_but_discharges_grant_no_xp_or_points() -> void:
+func test_lightning_shield_can_be_reapplied_and_discharges_grant_no_points() -> void:
 	var world := _world(&"Shaman")
 	_learn_starters(world, &"Shaman")
 	_learn_starters(world, &"Rogue")
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"lightning_shield_1"))
 	assert_true(world.cast_skill(&"lightning_shield_1"))
-	assert_eq(world.hero.progression_points(&"Shaman"), 2)
 	var enemy := _enemy(world)
 	ClassSpellEffects.retaliate(world, enemy, null, 1)
 	assert_lt(enemy.health, enemy.max_health)
@@ -197,9 +185,7 @@ func test_lightning_shield_counts_reapplications_but_discharges_grant_no_xp_or_p
 	var health := enemy.health
 	ClassSpellEffects.retaliate(world, enemy, null, 1)
 	assert_eq(enemy.health, health, "Discharge cooldown prevents a second proc.")
-	assert_eq(world.hero.progression_points(&"Shaman"), 2)
 	assert_eq(world.hero.combo_points, 0)
-
 
 
 func test_shaman_starters_include_a_direct_attack_without_mastery_requirement() -> void:
@@ -209,9 +195,7 @@ func test_shaman_starters_include_a_direct_attack_without_mastery_requirement() 
 	world.hero.rage = 15
 	world.hero.melee.hit = 100.0
 	assert_true(world.cast_skill(&"earth_shock_1", _enemy(world)))
-	assert_eq(world.hero.progression_points(&"Shaman"), 1)
 	assert_true(world.cast_skill(&"lightning_shield_1"))
-	assert_eq(world.hero.progression_points(&"Shaman"), 2)
 
 
 func test_combo_points_require_passive_persist_between_targets_and_cap_without_proc_credit() -> void:
@@ -243,15 +227,13 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 		world.hero.swing.remaining = 0.0
 		assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.combo_points, HeroState.MAX_COMBO_POINTS)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0, "Retained attacks do not advance Rogue.")
-	assert_eq(world.hero.warrior_progress, 0)
-	assert_eq(world.hero.progression_points(&"Paladin"), 0)
 
 
 func test_eviscerate_requires_points_spends_all_and_leaves_ability_cooldowns_unchanged() -> void:
 	var world := _world(&"Rogue")
 	_learn_starters(world, &"Rogue")
-	world.hero.class_progress[&"Rogue"] = 5
+	world.hero.level = 5
+	world.hero.copper = 10000
 	assert_true(world.train(&"Rogue", &"slice_and_dice_1"))
 	var enemy := _enemy(world)
 	world.hero.swing.remaining = 100.0
@@ -260,7 +242,6 @@ func test_eviscerate_requires_points_spends_all_and_leaves_ability_cooldowns_unc
 	assert_false(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.rage, 100)
 	assert_eq(world.turn_count, 0)
-	assert_eq(world.hero.progression_points(&"Rogue"), 5)
 	assert_false(world.cast_skill(&"relentless_assault_1"), "Passive is always active, never cast.")
 	world.hero.combo_points = 2
 	world.hero.cooldowns["mortal_strike"] = 10
@@ -269,7 +250,6 @@ func test_eviscerate_requires_points_spends_all_and_leaves_ability_cooldowns_unc
 	assert_almost_eq(world.hero.attack_haste(), 1.3, 0.00001)
 	assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].until) - world.turn_count, 11)
 	assert_eq(int(world.hero.cooldowns.mortal_strike), 10)
-	assert_eq(world.hero.progression_points(&"Rogue"), 6)
 	world.hero.combo_points = 1
 	world.hero.rage = 0
 	assert_false(world.cast_skill(&"eviscerate_1", enemy))
@@ -293,7 +273,6 @@ func test_execution_sentence_hits_and_misses_keep_seal_and_only_hits_build_point
 	assert_eq(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 0)
 	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
-	assert_eq(world.hero.progression_points(&"Paladin"), 2, "A miss counts as a use.")
 	for turn in range(6):
 		world.wait_turn()
 	world.hero.melee.hit = 100.0
@@ -305,19 +284,15 @@ func test_execution_sentence_hits_and_misses_keep_seal_and_only_hits_build_point
 	assert_lt(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 1)
 	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
-	assert_eq(world.hero.progression_points(&"Paladin"), 3)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0)
 
 
-func test_learning_class_xp_and_previous_class_survive_death_while_combat_state_resets() -> void:
+func test_learning_and_previous_class_survive_death_while_combat_state_resets() -> void:
 	var game := _returning_game()
-	game.world.add_class_progress(&"Warrior", 40)
-	assert_true(game.world.train(&"Warrior", &"anger_management_1"))
+	game.world.hero.learn_skill(SkillDefinition.catalog(&"anger_management_1"))
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		assert_true(game.select_class(category, _marshal(game)))
 		for skill in SkillDefinition.starting_skills(category):
 			assert_true(game.world.train(category, skill.id))
-		game.world.add_class_progress(category, 7)
 		game.world.hero.rage = 100
 		game.world.hero.combo_points = 2 if category == &"Rogue" else 0
 		game.world.hero.cooldowns["mortal_strike"] = 99
@@ -326,7 +301,6 @@ func test_learning_class_xp_and_previous_class_survive_death_while_combat_state_
 		assert_true(game.restart_after_death())
 		assert_eq(game.world.hero.selected_class, category)
 		assert_eq(game.world.hero.learned_skills, learned)
-		assert_eq(game.world.hero.progression_points(category), 7)
 		assert_eq([game.world.hero.rage, game.world.hero.combo_points], [0, 0])
 		assert_eq(game.world.hero.cooldowns, {})
 		assert_eq(game.world.hero.buffs, {})
@@ -341,7 +315,7 @@ func test_learning_class_xp_and_previous_class_survive_death_while_combat_state_
 	assert_eq(game.world.hero.rage, 9)
 
 
-func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_timing() -> void:
+func test_mixed_class_save_roundtrip_preserves_choice_combo_points_and_buff_timing() -> void:
 	var game := _returning_game()
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		assert_true(game.select_class(category, _marshal(game)))
@@ -355,7 +329,8 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 	assert_true(game.world.cast_skill(&"lightning_shield_1"))
 	assert_true(game.world.cast_skill(&"seal_of_command_1"))
 	game.world.hero.combo_points = 3
-	game.world.hero.class_progress[&"Rogue"] = 5
+	game.world.hero.level = 5
+	game.world.hero.copper = 10000
 	assert_true(game.world.train(&"Rogue", &"slice_and_dice_1"))
 	var enemy := _enemy(game.world, game.world.player_tile + Vector2i.RIGHT)
 	assert_true(game.world.cast_skill(&"eviscerate_1", enemy))
@@ -376,7 +351,6 @@ func test_mixed_class_save_roundtrip_preserves_choice_xp_combo_points_and_buff_t
 	assert_eq(JSON.stringify(SaveCodec.capture(copy)), JSON.stringify(snapshot))
 	assert_false(copy.can_select_class(), "Confirmed choice stays locked after load.")
 	assert_eq(copy.world.hero.combo_points, 2)
-	assert_eq(copy.world.hero.progression_points(&"Rogue"), 6)
 	assert_almost_eq(copy.world.hero.attack_haste(), 1.3, 0.00001)
 	for turn in range(15):
 		game.world.wait_turn()
@@ -410,7 +384,6 @@ func test_save_before_marshal_choice_reopens_it_and_new_game_clears_retained_lea
 	copy.new_game(12)
 	assert_eq(copy.world.hero.selected_class, &"Warrior")
 	assert_eq(copy.world.hero.learned_skills.size(), 2)
-	assert_eq(copy.world.hero.class_progress, {})
 	assert_null(copy.world.hero.find_skill(&"relentless_assault_1"))
 
 
@@ -451,8 +424,7 @@ func test_marshal_dialogue_offers_each_class_directly_and_confirmation_locks_all
 		if choice == null:
 			continue
 		choice.pressed.emit()
-		assert_eq(menu.page, "confirm")
-		menu.handle_key(_key(KEY_ENTER))
+		assert_eq(menu.page, "conversation")
 		assert_eq(game.world.hero.selected_class, category)
 		assert_true(game.world.class_selected)
 		assert_true(game.world.trainer_referral_received)
@@ -462,49 +434,37 @@ func test_marshal_dialogue_offers_each_class_directly_and_confirmation_locks_all
 			assert_null(_class_choice(menu, offered), "The confirmed choice stays locked.")
 
 
-func test_marshal_keyboard_choice_focus_cancel_and_confirmation_spend_no_turns() -> void:
+func test_marshal_preselects_current_class_and_enter_immediately_shows_quests() -> void:
 	var game := _returning_game()
 	var menu := _menu(game)
 	menu.open_conversation(_marshal(game))
 	await get_tree().process_frame
-	assert_eq(menu.page, "conversation")
-	_class_choice(menu, &"Warrior").grab_focus()
+	assert_same(get_viewport().gui_get_focus_owner(), _class_choice(menu, &"Warrior"))
+	assert_false(menu._buttons.any(func(button: Button) -> bool:
+		return button.text.contains("The Western Path")))
 	menu.handle_key(_key(KEY_S))
 	assert_same(get_viewport().gui_get_focus_owner(), _class_choice(menu, &"Shaman"))
 	menu.handle_key(_key(KEY_ENTER))
-	assert_eq(menu.page, "confirm")
-	menu.handle_key(_key(KEY_ESCAPE))
 	assert_eq(menu.page, "conversation")
-	assert_eq(game.world.hero.selected_class, &"Warrior")
-	assert_true(game.can_select_class())
-	_class_choice(menu, &"Warrior").grab_focus()
-	menu.handle_key(_key(KEY_S))
-	menu.handle_key(_key(KEY_ENTER))
-	menu.handle_key(_key(KEY_ENTER))
-	assert_true(menu.visible)
-	assert_eq(menu.page, "class_referral")
-	assert_string_contains((menu._rows.get_child(1) as Label).text, "Farseer Lopaa")
-	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
+	assert_true(game.world.class_selected)
 	assert_eq(game.world.hero.selected_class, &"Shaman")
+	assert_true(menu._buttons.any(func(button: Button) -> bool:
+		return button.text.contains("The Western Path")))
+	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
 	assert_eq(game.world.turn_count, 0)
-	game.world.hero.health = 0
-	assert_true(game.restart_after_death())
-	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
-	menu.open_conversation(_marshal(game))
-	assert_not_null(_class_choice(menu, &"Shaman"), "Death restores the dialogue choices.")
 
 
-func test_stale_class_confirmation_cannot_bypass_quest_lock_or_grant_starters() -> void:
+func test_stale_class_choice_cannot_change_an_already_selected_class() -> void:
 	var game := _returning_game()
 	var menu := _menu(game)
-	menu.open_conversation(_marshal(game))
-	menu._confirm_class(&"Paladin", _marshal(game))
-	assert_true(QuestRules.accept(game.world, "valley_patrol", _marshal(game)))
-	menu.handle_key(_key(KEY_ENTER))
-	assert_eq(menu.page, "notice")
+	var marshal := _marshal(game)
+	menu.open_conversation(marshal)
+	var stale := NpcConversation.build(game, marshal).choices[2]
+	assert_true(game.select_class(&"Warrior", marshal))
+	menu._conversation_choice(stale, marshal)
 	assert_eq(game.world.hero.selected_class, &"Warrior")
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
-	assert_false(game.can_select_class())
+	assert_eq(menu.page, "conversation")
 	assert_eq(game.world.turn_count, 0)
 
 
@@ -524,13 +484,9 @@ func test_misses_do_not_build_combo_points_and_retained_passive_works_as_warrior
 	world.hero.swing.remaining = 0.0
 	assert_true(world.cast_skill(&"whirlwind_1"))
 	assert_eq(world.hero.combo_points, 1)
-	assert_eq(world.hero.warrior_progress, 3)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0)
 	world.hero.swing.remaining = 100.0
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.hero.combo_points, 0)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0)
-	assert_eq(world.hero.warrior_progress, 3)
 
 
 func test_save_rejects_first_loop_other_class_and_legacy_kit_in_runnable_game() -> void:
@@ -566,7 +522,6 @@ func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() 
 	assert_lt(enemy.health, enemy.max_health, "Landed swings trigger the Holy bonus.")
 	assert_eq(world.hero.rage, 14, "Only the ordinary swing supplies rage.")
 	assert_eq(world.hero.combo_points, 1, "Only the ordinary main-hand hit supplies a point.")
-	assert_eq(world.hero.progression_points(&"Paladin"), 1, "Only casting the seal supplied class XP.")
 	world.hero.melee.hit = -1000.0
 	var health := enemy.health
 	world.hero.swing.remaining = 0.0
@@ -623,6 +578,8 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.selected_class, &"Paladin")
 	assert_true(game.can_select_class())
+	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
+	assert_true(game.select_class(&"Paladin", _marshal(game)))
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
 	assert_false(game.world.train(&"Shaman", &"lightning_shield_1"))
 	assert_true(game.world.train(&"Paladin", &"seal_of_command_1"))
@@ -640,15 +597,12 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	assert_eq(game.world.hotbar[2], &"execution_sentence_1")
 	game.world.hero.rage = 100
 	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Learning is usable immediately.")
-	assert_eq(game.world.hero.progression_points(&"Paladin"), 1)
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 	assert_true(game.select_class(&"Warrior", _marshal(game)))
 	game.world.hero.rage = 100
 	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Retained starter needs no relearning.")
-	assert_eq(game.world.hero.progression_points(&"Paladin"), 1)
-	assert_eq(game.world.hero.warrior_progress, 0)
 
 
 func test_matching_trainer_menu_teaches_both_starters_free_and_assigns_only_actives() -> void:
@@ -686,5 +640,4 @@ func test_matching_trainer_menu_teaches_both_starters_free_and_assigns_only_acti
 	assert_eq(game.world.hotbar[2], &"eviscerate_1")
 	assert_false(game.world.hotbar.has(&"relentless_assault_1"))
 	assert_eq(game.world.hero.copper, 0)
-	assert_eq(game.world.hero.progression_points(&"Rogue"), 0)
 	assert_eq(game.world.turn_count, 0)

@@ -28,7 +28,6 @@ static var _effects: Dictionary[int, SkillBehavior] = {
 	SkillDefinition.Effect.SUMMON: Summon.new(),
 	SkillDefinition.Effect.EXECUTION_SENTENCE: ExecutionSentence.new(),
 	SkillDefinition.Effect.PASSIVE: Passive.new(),
-	SkillDefinition.Effect.CLASS_POINTS: Development.new(),
 	SkillDefinition.Effect.PRACTICE: Development.new(),
 	SkillDefinition.Effect.EXPERIENCE: Development.new(),
 	SkillDefinition.Effect.GOLD: Development.new(),
@@ -233,10 +232,6 @@ class LightningShield extends Buff:
 class Development extends SkillBehavior:
 	func resolve(world: GridWorld, cast: Cast) -> void:
 		match cast.skill.effect:
-			SkillDefinition.Effect.CLASS_POINTS:
-				world.add_class_progress(world.hero.selected_class, 30)
-				world.add_message("Gained 30 %s progression points."
-					% String(world.hero.selected_class).to_lower())
 			SkillDefinition.Effect.PRACTICE:
 				world.add_message("%s: cast complete (1 turn, 0 rage)." % cast.skill.title)
 			SkillDefinition.Effect.EXPERIENCE:

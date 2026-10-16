@@ -17,10 +17,6 @@ func watch(targets: Array[GridActor]) -> void:
 
 func _award_ability_use(skill: SkillDefinition) -> void:
 	casts[skill.title] = int(casts.get(skill.title, 0)) + 1
-	# Every selected-class skill is already learned above its final checkpoint.
-	# Preserve XP without rescanning the trainer catalogue for impossible notifications.
-	if skill.class_tab == hero.selected_class:
-		hero.class_progress[skill.class_tab] = hero.progression_points(skill.class_tab) + 1
 
 
 func add_message(message: String) -> void:

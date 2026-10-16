@@ -5,7 +5,6 @@ func _world(weapon: int = 2224) -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(8, 8), 97, false)
 	for identifier in PoisonRules.COATINGS + [&"catalytic_venom_1", &"sudden_death_1", &"relentless_assault_1"]:
 		var skill := SkillDefinition.catalog(identifier)
-		world.hero.class_progress[skill.class_tab] = 1000
 		world.hero.learn_skill(skill)
 	world.hero.equipment.weapons = ItemData.instance(weapon)
 	world.hero.refresh_stats()
@@ -28,26 +27,32 @@ func _enemy(world: GridWorld, tile: Vector2i = Vector2i(9, 8)) -> GridActor:
 	return enemy
 
 
-func test_poison_unlocks_share_checkpoint_and_catalyst_is_later() -> void:
+func test_poison_coatings_share_level_and_price_and_catalyst_is_later() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Rogue"
-	world.hero.class_progress[&"Rogue"] = 114
+	var coating := SkillDefinition.catalog(&"instant_poison_1")
+	var catalyst := SkillDefinition.catalog(&"catalytic_venom_1")
+	assert_gt(catalyst.training_copper, coating.training_copper)
 	for identifier in PoisonRules.COATINGS:
+		var skill := SkillDefinition.catalog(identifier)
+		assert_eq(skill.training_level, coating.training_level)
+		assert_eq(skill.training_copper, coating.training_copper)
 		assert_false(world.train(&"Rogue", identifier))
-	world.hero.class_progress[&"Rogue"] = 115
-	for identifier in PoisonRules.COATINGS:
+		world.hero.level = skill.training_level
+		world.hero.copper = skill.training_copper
 		assert_true(world.train(&"Rogue", identifier))
-	assert_false(world.train(&"Rogue", &"catalytic_venom_1"))
-	world.hero.class_progress[&"Rogue"] = 155
-	assert_true(world.train(&"Rogue", &"catalytic_venom_1"))
-	assert_false(world.assign_hotbar(0, &"catalytic_venom_1"))
+		assert_eq(world.hero.copper, 0)
+	assert_false(world.train(&"Rogue", catalyst.id))
+	world.hero.level = catalyst.training_level
+	world.hero.copper = catalyst.training_copper
+	assert_true(world.train(&"Rogue", catalyst.id))
+	assert_false(world.assign_hotbar(0, catalyst.id))
 
 
 func test_poisons_work_at_zero_rage_take_one_turn_and_preserve_a_free_attack_proc() -> void:
 	for identifier in PoisonRules.COATINGS:
 		var world := _world()
 		var trance := SkillDefinition.catalog(&"battle_trance_1")
-		world.hero.class_progress[&"Warrior"] = 1000
 		assert_true(world.hero.learn_skill(trance))
 		ClassToolkitRules.apply(world, trance.id, {"charges": 1})
 		world.hero.rage = 0
@@ -319,7 +324,6 @@ func test_save_round_trip_preserves_fractional_dot_hand_timers_and_death_retains
 	game.new_game(97)
 	var world := game.world
 	for identifier in PoisonRules.COATINGS + [&"catalytic_venom_1"]:
-		world.hero.class_progress[&"Rogue"] = 1000
 		world.hero.learn_skill(SkillDefinition.catalog(identifier))
 	world.hero.equipment.weapons = ItemData.instance(2224)
 	world.hero.refresh_stats()

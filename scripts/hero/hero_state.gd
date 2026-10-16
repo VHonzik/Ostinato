@@ -20,12 +20,6 @@ var rage_credit: float = 0.0
 var rage_decay_credit: float = 0.0
 var last_hit_rage_turn: int = -1
 var last_enrage_roll_turn: int = -1
-var class_progress: Dictionary[StringName, int] = {}
-var warrior_progress: int:
-	get:
-		return progression_points(&"Warrior")
-	set(value):
-		class_progress[&"Warrior"] = value
 var level: int = 1
 var experience: int = 0
 var strength: int
@@ -81,7 +75,7 @@ func add_experience(amount: int) -> PackedInt32Array:
 
 
 func learn_skill(skill: SkillDefinition) -> bool:
-	if skill == null or level < skill.training_level or find_skill(skill.id) != null:
+	if skill == null or find_skill(skill.id) != null:
 		return false
 	learned_skills.append(skill)
 	refresh_stats()
@@ -223,7 +217,3 @@ func decay_rage() -> void:
 	var whole := floori(rage_decay_credit + 0.000001)
 	rage_decay_credit -= whole
 	rage = maxi(0, rage - whole)
-
-
-func progression_points(category: StringName) -> int:
-	return class_progress.get(category, 0)

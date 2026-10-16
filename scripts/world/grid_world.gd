@@ -16,6 +16,8 @@ const DIRECTIONS: Array[Vector2i] = [
 const HOTBAR_ROW_SIZE: int = 10
 const HOTBAR_SIZE: int = HOTBAR_ROW_SIZE * 2
 const CHAT_LIMIT: int = 100
+const WANDER_MIN_TURNS: int = 3
+const WANDER_MAX_TURNS: int = 10
 const STALKER_DEADLINES: Array[int] = [15, 215, 395, 555, 695]
 const STALKER_ENTRIES: Array[Vector2i] = [
 	Vector2i(54, 14), Vector2i(54, 13), Vector2i(54, 15),
@@ -103,7 +105,7 @@ func is_open(tile: Vector2i) -> bool:
 	if not bounds.has_point(tile) or blocked_tiles.has(tile) or tile == player_tile:
 		return false
 	for actor in actors:
-		if actor.alive and actor.tile == tile:
+		if (actor.alive or (actor.chest and not actor.loot_assigned)) and actor.tile == tile:
 			return false
 	return true
 
@@ -113,6 +115,12 @@ func move_player(direction: Vector2i) -> bool:
 		return false
 	if not DIRECTIONS.has(direction) or movement_speed <= 0.0:
 		return false
+	for actor in actors:
+		if actor.chest and actor.corpse_visible and actor.tile == player_tile + direction:
+			var was_closed := not actor.loot_assigned
+			loot_all(actor)
+			if was_closed or not actor.loot_assigned:
+				return false
 	var occupant := actor_at(player_tile + direction)
 	if occupant != null and occupant.relationship == GridActor.Relationship.FRIENDLY:
 		_neutral_bump_target = null
@@ -345,16 +353,17 @@ func training_failure(category: StringName, skill: SkillDefinition) -> String:
 		return "This attempt has ended."
 	if skill == null or skill.class_tab != category or hero.selected_class != category:
 		return "Requires the matching selected class."
+	if valley_route and not class_selected:
+		return "Choose your class at the marshal first."
 	if (category in ClassSkillData.PLAYABLE_CLASSES
 		and not ClassSkillData.is_playable_skill(skill.id)):
 		return "This ability is not available in the current class slice."
 	if hero.find_skill(skill.id) != null:
 		return "Already learned."
-	if hero.progression_points(category) < skill.progress_required:
-		return "Requires %d %s progression points." % [
-			skill.progress_required, String(category).to_lower()]
 	if hero.level < skill.training_level:
 		return "Requires level %d." % skill.training_level
+	if hero.copper < skill.training_copper:
+		return "Requires %s." % InventoryRules.money(skill.training_copper)
 	return ""
 
 
@@ -366,6 +375,7 @@ func train(category: StringName, identifier: StringName) -> bool:
 		return false
 	if not hero.learn_skill(skill):
 		return false
+	hero.copper -= skill.training_copper
 	if skill.effect != SkillDefinition.Effect.PASSIVE and not hotbar.has(skill.id):
 		var first_slot := HOTBAR_ROW_SIZE if skill.family in ClassSkillData.MAINTENANCE_FAMILIES else 0
 		var empty_slot := -1
@@ -377,9 +387,8 @@ func train(category: StringName, identifier: StringName) -> bool:
 			empty_slot = hotbar.find(&"")
 		if empty_slot >= 0:
 			hotbar[empty_slot] = skill.id
-	if skill.progress_required > 0:
-		add_message("Learned %s. Your %s progression points remain at %d." % [
-			skill.title, String(category).to_lower(), hero.progression_points(category)])
+	if skill.training_copper > 0:
+		add_message("Learned %s for %s." % [skill.title, InventoryRules.money(skill.training_copper)])
 	else:
 		add_message("Learned %s for free." % skill.title)
 	return true
@@ -399,20 +408,8 @@ func _resolve_skill(skill: SkillDefinition, target: GridActor, resource_spent: i
 	check_terminal()
 
 
-func _award_ability_use(skill: SkillDefinition) -> void:
-	if not skill.development_only and skill.class_tab == hero.selected_class:
-		add_class_progress(skill.class_tab, 1)
-
-
-func add_class_progress(category: StringName, amount: int) -> void:
-	var previous := hero.progression_points(category)
-	hero.class_progress[category] = previous + amount
-	for skill in SkillDefinition.trainer_skills(category):
-		if previous < skill.progress_required and hero.progression_points(category) >= skill.progress_required:
-			var trainer := "Llane Beshere, the warrior trainer," if category == &"Warrior" else (
-				"the %s trainer" % String(category).to_lower())
-			add_message("%d %s progression points! Visit %s to learn %s." % [
-				skill.progress_required, String(category).to_lower(), trainer, skill.title])
+func _award_ability_use(_skill: SkillDefinition) -> void:
+	pass
 
 
 func add_message(message: String) -> void:
@@ -710,6 +707,11 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 func _wander(actor: GridActor) -> void:
 	if not actor.wander_area.has_area():
 		return
+	if actor.wander_ready_turn < 0:
+		actor.wander_ready_turn = turn_count + random.randi_range(0, WANDER_MAX_TURNS - 1)
+	if turn_count < actor.wander_ready_turn:
+		return
+	actor.wander_ready_turn = turn_count + random.randi_range(WANDER_MIN_TURNS, WANDER_MAX_TURNS)
 	var candidates: Array[Vector2i] = []
 	for direction in DIRECTIONS:
 		var destination := actor.tile + direction

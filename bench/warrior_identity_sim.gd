@@ -63,7 +63,7 @@ func _run() -> void:
 		"excluded": "No kill XP or level-up heals, kiting, route, reinforcements, food, retained non-Warrior skills or uncommon gear. Normal Victory Rush and end-of-turn regeneration remain.",
 		"damage_accounting": "Pooled actual enemy HP removed over all fights, including losses. Overkill excluded. Sweeping Strikes separated from its parent attack. All passives embedded in affected damage; no counterfactual passive attribution.",
 		"seeds": "Measured: 1600000 + case_index*10000 + fight_index, shared across weapons/entry/potion. Pilot: 1500000 + (10000 for Stalker) + fight_index.",
-		"instrumentation": "First 10 measured seeds per cell replay on plain GridWorld: same outcome, hero HP, enemy HP, turn count, class XP and combat RNG state; every traced fight reconciles damage to enemy HP lost."}
+		"instrumentation": "First 10 measured seeds per cell replay on plain GridWorld: same outcome, hero HP, enemy HP, turn count and combat RNG state; every traced fight reconciles damage to enemy HP lost."}
 	if not BenchIO.write_result({"setup": setup, "pilots": pilots, "rows": rows,
 		"replayed": replayed, "seconds": (Time.get_ticks_msec() - started) / 1000.0}):
 		quit(1)
@@ -112,7 +112,7 @@ func _measure(encounter: Dictionary, case_index: int, weapon: int, prepared: boo
 		var fight := _battle(encounter, weapon, prepared, potion, policy, seed_value, true)
 		if index < mini(samples, 10):
 			var plain := _battle(encounter, weapon, prepared, potion, policy, seed_value, false)
-			for key in ["win", "hp", "enemy_hp", "turns", "rage", "combat_random", "class_xp"]:
+			for key in ["win", "hp", "enemy_hp", "turns", "rage", "combat_random"]:
 				if fight[key] != plain[key]:
 					push_error("Replay mismatch %s %s seed %d field %s" % [encounter.id, STYLES[weapon], seed_value, key])
 					quit(1)
@@ -150,7 +150,6 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		world = GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12), seed_value, false)
 	var hero := world.hero
 	hero.level = int(encounter.hero_level)
-	hero.warrior_progress = 1000
 	for skill in skills:
 		if hero.find_skill(skill.id) == null:
 			hero.learned_skills.append(skill)
@@ -254,7 +253,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	assert(world.turn_count < 300 or enemy_hp == 0 or hero.health == 0)
 	var result := {"seed": seed_value, "win": enemy_hp == 0, "hp": hero.health,
 		"enemy_hp": enemy_hp, "turns": world.turn_count, "rage": hero.rage,
-		"combat_random": str(world.combat_random.state), "class_xp": hero.warrior_progress}
+		"combat_random": str(world.combat_random.state)}
 	if traced:
 		var trace := world as TracedWorld
 		assert(trace.valid_accounting)

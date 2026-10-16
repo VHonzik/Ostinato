@@ -42,7 +42,7 @@ func test_defeating_only_present_stalker_wins_immediately_without_moving() -> vo
 	var world := _world()
 	var tile := world.player_tile
 	assert_true(world.cast_skill(&"kill_stalker_1"))
-	assert_eq(world.turn_count, 16)
+	assert_eq(world.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 	assert_eq(world.player_tile, tile)
 	assert_eq(world.stalkers_arrived, 1, "Future copies do not prevent victory.")
 	_assert_complete(world)
@@ -147,11 +147,12 @@ func test_beeline_witnesses_guard_death_before_passing_the_gate() -> void:
 			if actor.story_guard:
 				guard = actor
 		while world.turn_count < ValleyRoute.STALKER_DEADLINES[0]:
-			var direction := Vector2i(-1, 1) if world.player_tile.y < 64 else Vector2i.LEFT
-			if not world.move_player(direction):
+			var goals: Array[Vector2i] = [guard.tile + Vector2i.UP]
+			var route := world._route(world.player_tile, goals, false, guard.tile)
+			if route.size() < 2 or not world.move_player(route[1] - world.player_tile):
 				world.wait_turn()
 		assert_false(guard.alive)
-		assert_eq(guard.died_on_turn, 15)
+		assert_eq(guard.died_on_turn, ValleyRoute.STALKER_DEADLINES[0])
 		assert_eq(world.stalkers_arrived, 1)
 		assert_lte(world.tile_distance(world.player_tile, guard.tile), 5)
 		assert_true(world.has_sight(world.player_tile, guard.tile))

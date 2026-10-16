@@ -202,10 +202,8 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
 	var equipment := world.hero.equipment.duplicate(true)
 	_button(menu, "Uhm... I seek paladin teaching").pressed.emit()
-	assert_eq(menu.page, "confirm")
-	assert_eq(world.hero.selected_class, &"Warrior")
-	_button(menu, "Confirm").pressed.emit()
-	assert_string_contains(_text(menu), "Speak with Brother Sammuel inside the abbey.")
+	assert_eq(menu.page, "conversation")
+	assert_string_contains("\n".join(world.messages), "Speak with Brother Sammuel inside the abbey.")
 	assert_eq(world.hero.selected_class, &"Paladin")
 	assert_eq(world.hero.equipment, equipment)
 	assert_eq(world.turn_count, 0)
@@ -226,7 +224,6 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 		assert_not_null(world.hero.find_skill(identifier))
 		assert_true(world.hotbar.has(identifier))
 	assert_eq(world.hero.copper, 0)
-	assert_eq(world.hero.progression_points(&"Paladin"), 0)
 
 func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> void:
 	var session := _session()

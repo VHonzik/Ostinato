@@ -26,7 +26,6 @@ func before_each() -> void:
 	_game.menu.options = GlobalOptions.new(_options_path)
 	_game.start_new_game()
 	_game.world.hero.rage = 100
-	_game.world.hero.warrior_progress = 100
 	_game.world.hero.learn_skill(SkillDefinition.catalog(&"battle_shout_1"))
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -186,19 +185,19 @@ func test_key_echo_does_not_advance_time() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_held_movement_waits_one_second_then_repeats_each_half_second_until_release() -> void:
+func test_held_movement_waits_half_second_then_repeats_each_quarter_second_until_release() -> void:
 	_prepare_held_movement()
 	_send_key(KEY_D, true)
 	_game._process(0.0)
 	assert_eq(_game.world.player_tile, Vector2i(21, 14))
-	_game._process(0.9)
+	_game._process(0.45)
 	assert_eq(_game.world.turn_count, 1)
 	_send_key(KEY_D, true, true)
-	_game._process(0.1)
+	_game._process(0.05)
 	assert_eq(_game.world.player_tile, Vector2i(22, 14))
-	_game._process(0.4)
+	_game._process(0.2)
 	assert_eq(_game.world.turn_count, 2)
-	_game._process(0.1)
+	_game._process(0.05)
 	assert_eq(_game.world.turn_count, 3)
 	_send_key(KEY_D, false)
 	_game._process(10.0)
@@ -784,7 +783,6 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	for skill in SkillDefinition.starting_skills():
 		world.hero.learn_skill(skill)
 	world.player_tile = Vector2i(30, 33)
-	world.hero.warrior_progress = 39
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
@@ -800,7 +798,8 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	assert_true(_game.menu._preview.text.contains("Passive"))
 	await _tap_key(KEY_ENTER)
 	assert_null(world.hero.find_skill(&"anger_management_1"))
-	world.hero.warrior_progress = 40
+	world.hero.level = SkillDefinition.catalog(&"anger_management_1").training_level
+	world.hero.copper = SkillDefinition.catalog(&"anger_management_1").training_copper
 	_game.menu.open_trainer(&"Warrior")
 	for button in _game.menu._buttons:
 		if button.text.begins_with("Anger Management"):

@@ -119,6 +119,7 @@ func test_wait_grants_ten_npcs_one_shared_turn_without_movement_credit() -> void
 		_world.actors.append(GridActor.new(Vector2i(index + 1, 2), _world.bounds))
 	var previous: Array[Vector2i] = []
 	for actor in _world.actors:
+		actor.wander_ready_turn = 1
 		previous.append(actor.tile)
 	_world.movement_credit = 0.5
 	_world.wait_turn()
@@ -132,6 +133,7 @@ func test_wait_grants_ten_npcs_one_shared_turn_without_movement_credit() -> void
 
 func test_player_destination_is_claimed_before_npc_movement() -> void:
 	var actor := GridActor.new(Vector2i(12, 10), Rect2i(11, 10, 2, 1))
+	actor.wander_ready_turn = 1
 	_world.actors.append(actor)
 	_world.move_player(Vector2i.RIGHT)
 	assert_eq(_world.player_tile, Vector2i(11, 10))
@@ -141,6 +143,8 @@ func test_player_destination_is_claimed_before_npc_movement() -> void:
 func test_earlier_npc_claims_the_only_free_tile_and_later_npc_waits() -> void:
 	var first := GridActor.new(Vector2i(1, 1), Rect2i(1, 1, 3, 1))
 	var second := GridActor.new(Vector2i(3, 1), Rect2i(1, 1, 3, 1))
+	first.wander_ready_turn = 1
+	second.wander_ready_turn = 1
 	_world.actors.assign([first, second])
 	_world.wait_turn()
 	assert_eq(first.tile, Vector2i(2, 1))
@@ -151,6 +155,7 @@ func test_trapped_fixed_and_dead_npcs_stay_put() -> void:
 	var trapped := GridActor.new(Vector2i(1, 1), Rect2i(1, 1, 1, 1))
 	var fixed := GridActor.new(Vector2i(3, 3))
 	var corpse := GridActor.new(Vector2i(5, 5), _world.bounds)
+	trapped.wander_ready_turn = 1
 	corpse.alive = false
 	_world.actors.assign([trapped, fixed, corpse])
 	for count in range(10):
@@ -168,6 +173,62 @@ func test_wandering_respects_area_obstacles_and_occupancy_over_repeated_waits() 
 		visited[_world.actors[2].tile] = true
 		_assert_legal_occupancy(_world)
 	assert_gt(visited.size(), 1, "A designated wanderer actually changes tiles.")
+
+
+func test_idle_wandering_steps_are_three_to_ten_turns_apart() -> void:
+	var actor := GridActor.new(Vector2i(3, 3), Rect2i(1, 1, 5, 5))
+	_world.actors.append(actor)
+	var last_step := -1
+	var intervals: Dictionary[int, bool] = {}
+	for turn in range(1, 201):
+		var previous := actor.tile
+		_world.wait_turn()
+		if actor.tile != previous:
+			if last_step < 0:
+				assert_between(turn, 1, 10, "Initial movement is staggered.")
+			else:
+				var interval := turn - last_step
+				assert_between(interval, 3, 10)
+				intervals[interval] = true
+			last_step = turn
+	assert_gt(intervals.size(), 1, "Wandering uses varying intervals.")
+
+
+func test_initial_wander_start_varies_with_the_seed() -> void:
+	var starts: Dictionary[int, bool] = {}
+	for seed_value in range(10):
+		var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 10), seed_value)
+		var actor := GridActor.new(Vector2i(3, 3), Rect2i(1, 1, 5, 5))
+		world.actors.append(actor)
+		for turn in range(1, 11):
+			world.wait_turn()
+			if actor.tile != actor.home_tile:
+				starts[turn] = true
+				break
+		assert_ne(actor.tile, actor.home_tile)
+	assert_gt(starts.size(), 1)
+
+
+func test_blocked_wander_attempt_schedules_a_pause_and_waiting_does_not_draw_randomness() -> void:
+	var actor := GridActor.new(Vector2i(3, 3), Rect2i(3, 3, 1, 1))
+	actor.wander_ready_turn = 0
+	_world.actors.append(actor)
+	_world.wait_turn()
+	assert_eq(actor.tile, actor.home_tile)
+	assert_between(actor.wander_ready_turn - _world.turn_count, 3, 10)
+	var random_state := _world.random.state
+	_world.wait_turn()
+	assert_eq(_world.random.state, random_state)
+
+
+func test_idle_wander_deadline_does_not_delay_hostile_pursuit() -> void:
+	var actor := GridActor.new(Vector2i(7, 10), Rect2i(6, 9, 3, 3))
+	actor.relationship = GridActor.Relationship.HOSTILE
+	actor.wander_ready_turn = 10
+	_world.actors.append(actor)
+	_world.wait_turn()
+	assert_true(actor.engaged)
+	assert_eq(GridWorld.tile_distance(actor.tile, _world.player_tile), 2)
 
 
 func test_same_seed_and_actions_reproduce_npc_decisions() -> void:

@@ -49,7 +49,7 @@ func _run() -> void:
 		"policies": "Choose Holy-first, physical-first or Holy-first without ground on %d independent pilot seeds per policy. Maintain buffs, use defenses below 50%% HP, summon allies and spend combo points at 3+. Holy-first: Sentence, ground, Shock, Mortal Strike. Physical-first: Mortal Strike, Shock, Sentence, ground. Follow targets without kiting." % pilot_samples,
 		"potions": "One Minor Healing Potion in Stalker fights, used at 40+ missing HP.",
 		"seeds": "Same as warrior bench: pilot 1500000 (+10000 for Stalker); measured 1600000 + encounter_index*10000 + fight_index. Shared across builds and weapon/entry states.",
-		"accounting": "Pooled effective enemy HP removed, overkill excluded. Passives embedded. First up to 10 seeds per cell replayed on plain GridWorld, checking outcomes, HP, turns, rage, class XP and RNG.",
+		"accounting": "Pooled effective enemy HP removed, overkill excluded. Passives embedded. First up to 10 seeds per cell replayed on plain GridWorld, checking outcomes, HP, turns, rage and RNG.",
 		"limitations": "Fixed stationary bot policies; isolated fights, no reinforcement schedule, route, kill XP, level-up heals or uncommon gear. Prepared entry constructed. Exploratory comparisons, not balance acceptance."}
 	if not BenchIO.write_result({"setup": setup, "pilots": pilots, "rows": rows,
 		"replayed": replayed, "seconds": (Time.get_ticks_msec() - started) / 1000.0}):
@@ -92,7 +92,6 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	for category in ClassSkillData.PLAYABLE_CLASSES:
 		if build != "All" and String(category) not in build.split("+"):
 			continue
-		hero.class_progress[category] = 1000
 		for skill in kit_skills[category]:
 			hero.learned_skills.append(skill)
 	hero.equipment.clear()
@@ -204,7 +203,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	assert(world.turn_count < 300 or enemy_hp == 0 or hero.health == 0)
 	var result := {"seed": seed_value, "win": enemy_hp == 0, "hp": hero.health,
 		"enemy_hp": enemy_hp, "turns": world.turn_count, "rage": hero.rage,
-		"combat_random": str(world.combat_random.state), "class_xp": hero.progression_points(selected_class)}
+		"combat_random": str(world.combat_random.state)}
 	if traced:
 		var trace := world as PaladinWorld
 		assert(trace.valid_accounting and trace.damage_total == initial_hp - enemy_hp)

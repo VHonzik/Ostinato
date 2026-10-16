@@ -18,7 +18,7 @@ static var CONTACTS: Array[NpcDefinition] = [
 	NpcDefinition.new(9296, {"title": "Milly Osworth", "tile": Vector2i(35, 32),
 		"sprite": &"milly",
 		"greeting": "A gang of brigands, the Defias, moved into the Northshire Vineyards while I was harvesting!"}),
-	NpcDefinition.new(1642, {"title": "Northshire Guard", "tile": Vector2i(12, 63),
+	NpcDefinition.new(1642, {"title": "Northshire Guard", "tile": Vector2i(12, 73),
 		"sprite": &"gate_guard", "story_guard": true,
 		"greeting": "This is the road out of the valley. Stay alert; I heard something beyond the gate."}),
 	NpcDefinition.new(911, {"title": "Llane Beshere", "tile": Vector2i(31, 34),

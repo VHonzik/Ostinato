@@ -28,17 +28,25 @@ func _run() -> void:
 	var examples: Dictionary = {}
 	var patterns: Dictionary = {}
 	var total_greens := 0
+	var route_income: Array[int] = []
 	for seed_value in range(seed_count):
 		world.seed_value = seed_value
 		var greens: Array[int] = []
+		var copper := 0
+		for identifier in ValleyRoute.QUESTS:
+			copper += int(QuestData.QUESTS[identifier].copper)
 		for source in sources:
 			source.loot_assigned = false
 			source.loot.clear()
 			source.loot_copper = 0
 			LootData.assign(world, source)
+			copper += source.loot_copper
 			for item in source.loot:
+				# Upper budget: sell every world drop; retain quest gear and buy no supplies.
+				copper += int(ItemData.get_item(int(item.id)).sell) * int(item.quantity)
 				if ItemData.get_item(int(item.id)).quality == 2:
 					greens.append(int(item.id))
+		route_income.append(copper)
 		total_greens += greens.size()
 		histogram[greens.size()] = int(histogram.get(greens.size(), 0)) + 1
 		var coverage := _coverage(greens)
@@ -97,6 +105,17 @@ func _run() -> void:
 		"sample_seeds": examples, "starter": starter, "best_common": baseline,
 		"best_theoretical_uncommon": theoretical, "attainable_average": totals,
 		"best_observed": best_examples, "single_upgrades": single_upgrades}
+	route_income.sort()
+	result["route_income_copper"] = {"minimum": route_income[0],
+		"median": route_income[route_income.size() / 2], "maximum": route_income[-1],
+		"assumption": "All ordinary enemies and chests looted; all world drops sold; all quests turned in; quest gear kept; no purchases or stalker loot."}
+	var training_costs := {}
+	for category in ClassSkillData.PLAYABLE_CLASSES:
+		var total := 0
+		for skill in SkillDefinition.trainer_skills(category):
+			total += skill.training_copper
+		training_costs[String(category)] = total
+	result["complete_training_copper"] = training_costs
 	if not BenchIO.write_result(result):
 		world.discard()
 		quit(1)

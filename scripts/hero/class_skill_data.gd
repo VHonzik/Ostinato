@@ -30,7 +30,7 @@ const STARTER_SKILLS: Dictionary = {
 		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
 		"weapon_multiplier": 0.25, "family": "seal_of_command", "school": 1,
 		"effect": "ARMOR", "target": "SELF",
-		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Execution Sentence leaves the seal active."
+		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, combo points. Execution Sentence leaves the seal active."
 	},
 	"execution_sentence_1": {
 		"title": "Execution Sentence", "class_tab": "Paladin", "training_level": 1,
@@ -42,9 +42,9 @@ const STARTER_SKILLS: Dictionary = {
 	"eviscerate_1": {
 		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,
 		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
-		"weapon_multiplier": 0.75, "minimum": 12, "family": "eviscerate",
+		"weapon_multiplier": 0.5, "minimum": 4, "family": "eviscerate",
 		"effect": "TOOLKIT", "target": "ENEMY",
-		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 75% weapon damage plus 12 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. Finisher refunds happen once after spending. Builds no attack points. One turn, no cooldown; weapon timing continues."
+		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 50% weapon damage plus 4 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. Finisher refunds happen once after spending. Builds no attack points. One turn, no cooldown; weapon timing continues."
 	},
 	"relentless_assault_1": {
 		"title": "Relentless Assault", "class_tab": "Rogue", "training_level": 1,
@@ -63,20 +63,20 @@ const SKILLS: Dictionary = {
 	},
 	"battle_shout_1": {
 		"title": "Battle Shout", "class_tab": "Warrior", "training_level": 1,
-		"progress_required": 20, "cast_seconds": 1.0, "duration": 60, "cooldown_seconds": 30,
+		"training_copper": 30, "cast_seconds": 1.0, "duration": 60, "cooldown_seconds": 30,
 		"family": "battle_shout", "effect": "BATTLE_SHOUT", "target": "SELF",
 		"physical_percent": 10, "rage_generated": 10,
 		"detail": "Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown."
 	},
 	"anger_management_1": {
 		"title": "Anger Management", "class_tab": "Warrior",
-		"training_level": 1, "progress_required": 40,
+		"training_level": 2, "training_copper": 60,
 		"family": "anger_management", "effect": "PASSIVE", "target": "NONE",
 		"detail": "Passive: out-of-combat rage decay becomes 0.5 per turn. Retained across Loops."
 	},
 	"charge_1": {
-		"title": "Charge", "class_tab": "Warrior", "training_level": 1,
-		"progress_required": 80, "cast_seconds": 1.0, "range_tiles": 9,
+		"title": "Charge", "class_tab": "Warrior", "training_level": 3,
+		"training_copper": 120, "cast_seconds": 1.0, "range_tiles": 9,
 		"minimum_range_tiles": 2, "cooldown_seconds": 10,
 		"family": "charge", "effect": "CHARGE", "target": "ENEMY",
 		"travel_speed": 4, "rage_generated": 10,
@@ -84,8 +84,8 @@ const SKILLS: Dictionary = {
 	},
 	# Execute tuning is provisional until combat playtesting.
 	"execute_1": {
-		"title": "Execute", "class_tab": "Warrior", "training_level": 1,
-		"progress_required": 140, "rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
+		"title": "Execute", "class_tab": "Warrior", "training_level": 3,
+		"training_copper": 210, "rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
 		"family": "execute", "effect": "EXECUTE", "target": "ENEMY",
 		"weapon_multiplier": 1.5, "minimum": 25, "execute_health_percent": 20,
 		"execute_rage_cap": 30, "execute_damage_per_rage": 2,

@@ -5,7 +5,6 @@ func test_active_eviscerate_and_passive_slice_and_dice_roundtrip_and_loop_reset(
 	var game := GameSession.new()
 	game.new_game(79)
 	var world := game.world
-	world.hero.class_progress[&"Rogue"] = 1000
 	for identifier: StringName in [&"slice_and_dice_1", &"eviscerate_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(identifier)))
 	assert_false(world.assign_hotbar(0, &"slice_and_dice_1"))
@@ -45,7 +44,6 @@ func test_waiting_proc_roundtrip_preserves_consumption_and_loop_reset() -> void:
 	var game := GameSession.new()
 	game.new_game(79)
 	var world := game.world
-	world.hero.warrior_progress = 330
 	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"juggernaut_1")))
 	ClassToolkitRules.apply(world, &"juggernaut_1", {"charges": 1})
 	for turn in range(25):
@@ -73,7 +71,8 @@ func test_save_round_trip_restores_equipment_loot_stock_cooldowns_and_buff_expir
 	world.hero.level = 10
 	world.hero._apply_level_stats()
 	world.hero.copper = 3000
-	world.hero.warrior_progress = 20
+	world.hero.level = 5
+	world.hero.copper = 10000
 	assert_true(world.train(&"Warrior", &"battle_shout_1"))
 	world.hero.inventory[0] = ItemData.instance(2572)
 	assert_true(world.equip_item(0))

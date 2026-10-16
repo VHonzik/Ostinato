@@ -38,13 +38,12 @@ func restart_after_death() -> bool:
 	var fresh := ValleyRoute.create_world(seed_value, development_build)
 	if world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES:
 		fresh.hero.selected_class = world.hero.selected_class
-	fresh.hero.class_progress = world.hero.class_progress.duplicate()
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar
 	fresh.hotbar_locked = locked
 	_replace_world(fresh)
-	world.add_message("You died. Loop %d begins as %s. Learning and class XP remain; choose once at the marshal before accepting any quest." % [loop_count, world.hero.selected_class])
+	world.add_message("You died. Loop %d begins as %s. Learning remains; choose your class at the marshal before taking quests." % [loop_count, world.hero.selected_class])
 	return true
 
 
@@ -61,7 +60,7 @@ func select_class(category: StringName, marshal: GridActor = null) -> bool:
 	world.hero.selected_class = category
 	world.class_selected = true
 	world.hero.refresh_stats()
-	world.add_message("%s selected for Loop %d. Only its ability uses award class XP; learned skills remain usable." % [category, loop_count])
+	world.add_message("%s selected for Loop %d. Visit its trainer; learned skills remain usable." % [category, loop_count])
 	world.add_message("Marshal: " + NpcDefinition.trainer_referral(category))
 	world.resolving_turn = false
 	return true

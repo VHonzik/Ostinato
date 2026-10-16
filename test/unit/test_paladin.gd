@@ -4,7 +4,6 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Paladin"
-	world.hero.class_progress[&"Paladin"] = 1000
 	for id in [&"seal_of_command_1", &"execution_sentence_1", &"consecration_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
 	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
@@ -39,7 +38,6 @@ func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_
 	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
 	var damage := int(enemy.debuffs[&"execution_sentence_1"].damage)
 	assert_eq(enemy.health, 10000)
-	assert_eq(world.hero.progression_points(&"Paladin"), 1001)
 	world.auto_attack_target = other
 	world.last_attacked_enemy = other
 	enemy.tile = Vector2i(20, 20)
@@ -55,7 +53,6 @@ func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_
 	assert_same(world.last_attacked_enemy, other)
 	world.wait_turn()
 	assert_eq(enemy.health, 10000 - damage)
-	assert_eq(world.hero.progression_points(&"Paladin"), 1001, "Impact awards no second use.")
 
 
 func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
@@ -77,8 +74,6 @@ func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
 
 func test_sentence_reserves_guaranteed_crit_and_grants_retained_rewards_only_on_impact() -> void:
 	var world := _world()
-	world.hero.class_progress[&"Warrior"] = 1000
-	world.hero.class_progress[&"Rogue"] = 1000
 	for id in [&"art_of_war_1", &"sacred_duty_1", &"divine_purpose_1",
 		&"battle_trance_1", &"relentless_assault_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
@@ -132,7 +127,6 @@ func test_verdict_precedes_due_swings_and_enemy_actions_and_stops_on_victory() -
 func test_consecration_stays_put_ticks_six_times_and_never_triggers_attack_rewards() -> void:
 	var world := _world()
 	for id in [&"relentless_assault_1", &"art_of_war_1", &"battle_trance_1"]:
-		world.hero.class_progress[SkillDefinition.catalog(id).class_tab] = 1000
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
 	world.hero.melee.critical = 100
 	var skill := world.hero.find_skill(&"consecration_1")
@@ -156,12 +150,10 @@ func test_consecration_stays_put_ticks_six_times_and_never_triggers_attack_rewar
 	assert_eq(world.hero.combo_points, 0)
 	assert_false(world.hero.buffs.has(&"art_of_war_1"))
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
-	assert_eq(world.hero.progression_points(&"Paladin"), 1001)
 
 
 func test_ground_and_poison_tick_once_at_the_same_boundary_in_stable_order() -> void:
 	var world := _world()
-	world.hero.class_progress[&"Rogue"] = 1000
 	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"deadly_poison_1")))
 	var enemy := _enemy(world, Vector2i(9, 8))
 	enemy.title = "Target"

@@ -13,7 +13,7 @@ exit. Keep the sense of a familiar human starting zone threatened by an invasion
 WoW supplies flavor and ideas, not binding formulas or content inventories.
 
 Death is the only Loop reset. It restores the physical world while preserving learned
-class abilities, passives, cumulative class mastery and player knowledge. Character
+class abilities, passives and player knowledge. Character
 level, character XP, equipment, gold, quests and world state belong to the current
 Loop and reset on death. There is no permanent equipment.
 
@@ -37,12 +37,13 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   groups. Execute remains a later finisher. Heroic Strike and Incite are removed;
   further passive development remains open until the revised kit has been playtested.
   The roster is warrior, shaman, paladin and rogue.
-- Choose which class track to advance at the marshal before accepting any quest.
+- Choose the class to train at the marshal before accepting any quest.
   Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
-  from Loop two. Returning Loops begin in the previous class; confirming a class,
-  including that same class, locks the choice until death. Selection keeps gear and
+  from Loop two. Returning Loops offer class selection first, focusing the previous class; choosing
+  once locks the class until death and immediately reveals quests. Other contacts
+  redirect the player to the marshal until that choice. Selection keeps gear and
   refers the player to the matching trainer. Keep the initial Warrior pair at New Game;
-  learn other classes' starter skills free at their trainers, with no class XP requirement.
+  learn other classes' starter skills free at their trainers, with no level requirement.
   Once learned, skills stay usable across classes and death without relearning;
   selection does not lock out the retained toolkit.
 - All classes use rage, with no mana or energy. Learned Relentless Assault builds
@@ -81,16 +82,13 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   on the faster weapon and Deadly on the slower. Its extra stack is a deliberate
   interaction; poison damage does not trigger further attack procs. Keep finishers
   from bypassing Deadly's buildup for free.
-- Only abilities belonging to the selected class advance that class's XP. Retained
-  abilities from other classes remain usable but award no class XP. Count all uses
-  of the selected class's abilities for now, without meaningful-use or anti-spam
-  restrictions. Class XP accumulates toward thresholds and is not spent on unlocks.
-  Aim for roughly five completed Loops to learn a class through ordinary selected-class
-  play. Introduce its core attack early, then spread active and passive unlocks through
-  the path; do not require learning earlier skills to train a later eligible skill.
-  Keep the current trainer structure: visit
-  the matching trainer to learn eligible abilities, which become usable immediately
-  and remain learned across death. Character XP comes from kills and quests and resets.
+- Training requires the current Loop's character level and charges gold per skill;
+  player XP is not spent. Starter skills are free. Learning remains permanent across
+  death and classes, and retained skills work below their original training level.
+  Ability use grants no separate class XP. Aim for roughly five completed Loops to
+  learn a class, preserving early core tools and spreading later purchases through
+  rising prices. Do not require earlier skills to buy an eligible later skill.
+  Character XP comes from kills and quests and resets with gold and level on death.
 - Every world turn advances independent, fractional weapon timers, including turns
   spent on active abilities, movement and waiting; abilities must not pause the timer.
   Deliberate attack bumps commit to advancing until the next swing.
@@ -107,7 +105,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   rounding up to a whole turn. Pursuit of Justice adds fractional movement credit,
   occasionally allowing an extra grid step in the chosen direction.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
-  Define qualifying events consistently for crits, class XP, combo points and procs.
+  Define qualifying events consistently for crits, combo points and procs.
   Art of War counts at most one Holy event per attack action. Shaman Flurry grants
   attack-haste charges. Bonus strikes cannot crit or trigger primary
   attack hooks. Spirit wolves follow the selected enemy;

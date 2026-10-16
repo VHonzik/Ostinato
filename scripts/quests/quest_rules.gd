@@ -36,7 +36,7 @@ static func in_range(world: GridWorld, actor: GridActor, identity: int) -> bool:
 
 
 static func accept(world: GridWorld, identifier: String, actor: GridActor) -> bool:
-	if not available(world, identifier):
+	if (world.valley_route and not world.class_selected) or not available(world, identifier):
 		return false
 	var quest: Dictionary = QuestData.QUESTS[identifier]
 	if not in_range(world, actor, int(quest.giver)):
@@ -87,8 +87,8 @@ static func record_location(world: GridWorld, location_id: StringName) -> void:
 
 static func visit(world: GridWorld) -> void:
 	if world.valley_route:
-		for destination in ValleyLandmarks.CHESTS:
-			if world.tile_distance(world.player_tile, ValleyLandmarks.CHESTS[destination].tile) <= 1:
+		for destination in ValleyLandmarks.EXPLORATION:
+			if ValleyLandmarks.EXPLORATION[destination].has_point(world.player_tile):
 				record_location(world, StringName(destination))
 		return
 

@@ -84,6 +84,8 @@ func test_abandonment_does_not_reopen_class_choice_or_reroll_loot() -> void:
 	game.world.hero.health = 0
 	game.restart_after_death()
 	var world := game.world
+	world.player_tile = _npc(world, 197).tile + Vector2i.DOWN
+	assert_true(game.select_class(&"Warrior", _npc(world, 197)))
 	_accept(world, "valley_patrol")
 	var wolf := _npc(world, 299)
 	wolf.health = 0

@@ -4,10 +4,10 @@ extends RefCounted
 ## Fixed encounters and landmarks, following the valley sketch's proportions.
 const BOUNDS := Rect2i(0, 0, 84, 82)
 const SPAWN := Vector2i(30, 57)
-const STALKER_DEADLINES: Array[int] = [15, 800, 980, 1140, 1280]
+const STALKER_DEADLINES: Array[int] = [25, 800, 980, 1140, 1280]
 const STALKER_ENTRIES: Array[Vector2i] = [
-	Vector2i(12, 63), Vector2i(11, 63), Vector2i(13, 63),
-	Vector2i(12, 64), Vector2i(13, 64),
+	Vector2i(12, 73), Vector2i(11, 73), Vector2i(13, 73),
+	Vector2i(12, 74), Vector2i(13, 74),
 ]
 const OUTLINE: Array[Vector2] = [
 	Vector2(16, 1), Vector2(29, 1), Vector2(29, 11), Vector2(33, 14),
@@ -159,6 +159,8 @@ static func build_terrain(world: GridWorld) -> void:
 
 static func _creature(world: GridWorld, identity: int, tile: Vector2i, spawn_id: String) -> void:
 	var creature := GridActor.new(tile)
+	if identity in [299, 69, 6, 38]:
+		creature.wander_area = Rect2i(tile - Vector2i(2, 2), Vector2i(5, 5))
 	var data: Dictionary = NorthshireData.CREATURES[str(identity)]
 	creature.npc_id = identity
 	creature.title = String(data.title)

@@ -24,7 +24,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `paladin` | Full Paladin, Warrior + Paladin and all four kits; single enemies, groups and Stalker, three weapons and cold/prepared entry. Independent pilots select Holy-first, physical-first or Holy-first without ground. Damage reconciles to enemy HP and sample fights replay on plain `GridWorld`. |
 | `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `accessories` | Expected auto-attack damage and physical effective HP for common gear, upgrades and primary stats. No active rotation; `-Smoke` runs the same calculation. |
-| `loot` | Seeded valley loot, obtainable loadouts and estimated auto-attack gains. |
+| `loot` | Seeded valley loot, obtainable loadouts, estimated auto-attack gains, and a full-route gold budget beside total training costs. |
 | `loot-rates` | Compare candidate uncommon drop rates on copied loot tables. These are experimental rates, not live tuning. |
 
 `-Smoke` reduces combat/loot samples for a wiring check, not a design conclusion.

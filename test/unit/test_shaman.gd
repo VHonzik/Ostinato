@@ -4,7 +4,6 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Shaman"
-	world.hero.class_progress[&"Shaman"] = 1000
 	for identifier: StringName in [&"earth_elemental_1", &"lightning_shield_1", &"windfury_weapon_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(identifier)))
 	world.hero.rage = 100
@@ -33,7 +32,6 @@ func test_free_preparation_costs_turns_but_preserves_battle_trance() -> void:
 	assert_eq(world.hero.rage, 0)
 	assert_eq(world.turn_count, start + 2)
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
-	assert_eq(world.hero.progression_points(&"Shaman"), 1002)
 
 
 func test_elemental_has_no_expiration_follows_player_and_cannot_be_replaced_alive() -> void:
@@ -51,11 +49,9 @@ func test_elemental_has_no_expiration_follows_player_and_cannot_be_replaced_aliv
 	assert_lte(GridWorld.tile_distance(elemental.tile, world.player_tile), 1)
 	world.hero.rage = 100
 	var before := world.turn_count
-	var mastery := world.hero.progression_points(&"Shaman")
 	assert_false(world.cast_skill(&"earth_elemental_1"), "An active elemental cannot be healed by resummoning.")
 	assert_eq(world.hero.rage, 100)
 	assert_eq(world.turn_count, before)
-	assert_eq(world.hero.progression_points(&"Shaman"), mastery)
 	SummonRules.remove(world, elemental)
 	assert_true(world.cast_skill(&"earth_elemental_1"))
 	assert_ne(SummonRules.active(world, "earth_elemental"), elemental)
@@ -69,7 +65,6 @@ func test_blocked_elemental_placement_is_free_and_dead_elemental_does_not_reset_
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 100)
 	assert_false(world.hero.cooldowns.has(&"earth_elemental"))
-	assert_eq(world.hero.progression_points(&"Shaman"), 1000)
 	world.blocked_tiles.clear()
 	assert_true(world.cast_skill(&"earth_elemental_1"))
 	SummonRules.remove(world, SummonRules.active(world, "earth_elemental"))
@@ -111,7 +106,6 @@ func test_elemental_attacks_only_engaged_enemies_and_does_not_award_player_resou
 	enemy.melee.dodge = 0.0
 	world.auto_attack_target = enemy
 	elemental.melee.hit = 100.0
-	var mastery := world.hero.progression_points(&"Shaman")
 	SummonRules.act(world, elemental)
 	assert_eq(enemy.health, enemy.max_health)
 	enemy.engaged = true
@@ -121,7 +115,6 @@ func test_elemental_attacks_only_engaged_enemies_and_does_not_award_player_resou
 	assert_lt(enemy.health, enemy.max_health)
 	assert_eq(world.hero.rage, 0)
 	assert_eq(world.hero.combo_points, 0)
-	assert_eq(world.hero.progression_points(&"Shaman"), mastery)
 
 
 func test_elemental_takes_a_few_stalker_turns_then_attacks_return_to_player() -> void:
@@ -157,7 +150,6 @@ func test_elemental_save_roundtrip_keeps_health_cooldown_and_singleton_then_loop
 	game.development_build = false
 	game.new_game(97)
 	var world := game.world
-	world.hero.class_progress[&"Shaman"] = 110
 	world.hero.learn_skill(SkillDefinition.catalog(&"earth_elemental_1"))
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"earth_elemental_1"))

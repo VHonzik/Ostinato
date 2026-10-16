@@ -22,6 +22,13 @@ static func build(session: GameSession, actor: GridActor) -> NpcConversation:
 		return null
 	var conversation := NpcConversation.new()
 	conversation.greeting = NpcDefinition.greeting_for(actor.npc_id)
+	if world.valley_route and not world.class_selected:
+		conversation.keep_open = true
+		if actor.npc_id == NpcDefinition.MARSHAL_ID:
+			_services[&"Marshal"].append_choices(conversation, session, actor)
+		else:
+			conversation.greeting = "Hello stranger, you should go say hi to Marshal in front of the abbey."
+		return conversation
 	for identifier in QuestData.QUESTS:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
 		var prefix := ""
@@ -87,14 +94,17 @@ class Marshal extends Service:
 			conversation.lines.append("Return outside combat to choose your class before accepting a quest.")
 		if session.can_select_class():
 			for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
-				var choice := Choice.new("Uhm... I seek %s teaching" % String(category).to_lower(),
-					Action.SELECT_CLASS)
+				var title := "Uhm... I seek %s teaching" % String(category).to_lower()
+				if session.loop_count >= 4:
+					title = "I am %s" % String(category).to_lower()
+				elif session.loop_count == 3:
+					title = "I am .... %s" % String(category).to_lower()
+				var choice := Choice.new(title, Action.SELECT_CLASS)
 				choice.category = category
 				var titles: PackedStringArray = []
 				for skill in SkillDefinition.starting_skills(category):
 					titles.append(skill.title)
-				choice.tooltip = "%d class XP. Learn %s for free at the trainer. Gear and learned skills remain." % [
-					world.hero.progression_points(category), " + ".join(titles)]
+				choice.tooltip = "Learn %s for free at the trainer. Gear and learned skills remain." % " + ".join(titles)
 				conversation.choices.append(choice)
 		elif (not world.class_selected and not world.ever_accepted_quest
 			and world.hero.selected_class == &"Warrior" and not world.trainer_referral_received):

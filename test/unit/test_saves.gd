@@ -19,6 +19,68 @@ func after_each() -> void:
 		DirAccess.remove_absolute(_directory)
 
 
+func test_save_slot_buttons_save_and_load_their_selected_slot() -> void:
+	var menu := MenuPanel.new()
+	menu.session = _session
+	menu.saves = _saves
+	menu.active_game = true
+	add_child_autofree(menu)
+	menu.open_slots()
+	assert_eq(menu._buttons[0].text, "Save 1")
+	assert_eq(menu._buttons[1].text, "Load 1")
+	assert_true(menu._buttons[1].disabled)
+	menu._buttons[0].pressed.emit()
+	assert_eq(menu.page, "notice")
+	assert_eq(_saves.metadata(1).status, "Occupied")
+	assert_eq(_saves.metadata(2).status, "Empty")
+	menu._buttons[0].pressed.emit()
+	assert_eq(menu.page, "slots")
+	assert_false(menu._buttons[1].disabled)
+	_session.world.wait_turn()
+	menu._buttons[1].pressed.emit()
+	assert_eq(menu.page, "confirm")
+	menu._buttons[0].pressed.emit()
+	assert_false(menu.visible)
+	assert_eq(_session.world.turn_count, 0)
+
+
+func test_wander_deadlines_roundtrip_and_continue_identically() -> void:
+	for turn in range(4):
+		_session.world.wait_turn()
+	var saved := SaveCodec.capture(_session)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(saved)), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	for turn in range(30):
+		_session.world.wait_turn()
+		restored.wait_turn()
+		for index in range(restored.actors.size()):
+			assert_eq(restored.actors[index].tile, _session.world.actors[index].tile)
+			assert_eq(restored.actors[index].wander_ready_turn,
+				_session.world.actors[index].wander_ready_turn)
+	assert_eq(restored.random.state, _session.world.random.state)
+	for invalid: Variant in [-2, 1.5, "3", null, _session.world.turn_count + 11]:
+		var damaged := SaveCodec.capture(_session)
+		damaged.actors[0].wander_ready_turn = invalid
+		assert_null(SaveCodec.restore(damaged, false))
+
+
+func test_saves_without_wander_deadlines_still_load_and_start_staggered_wandering() -> void:
+	var saved := SaveCodec.capture(_session)
+	for actor: Dictionary in saved.actors:
+		actor.erase("wander_ready_turn")
+	var restored := SaveCodec.restore(saved, false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	var wolf := restored.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 299)[0] as GridActor
+	assert_eq(wolf.wander_ready_turn, -1)
+	restored.wait_turn()
+	assert_gte(wolf.wander_ready_turn, restored.turn_count)
+
+
 func test_five_slots_save_copy_overwrite_confirmation_and_seed_preservation() -> void:
 	for slot in range(1, 6):
 		assert_eq(_saves.metadata(slot).status, "Empty")
@@ -41,6 +103,7 @@ func test_full_round_trip_restores_random_streams_effects_outfit_and_future_arri
 	_session.world.hero.health = 0
 	_session.restart_after_death()
 	StarterGear.exchange(_session.world.hero, &"Shaman")
+	_session.world.class_selected = true
 	_session.world.train(&"Shaman", &"lightning_shield_1")
 	_session.world.train(&"Shaman", &"earth_shock_1")
 	_session.world.hero.rage = 100

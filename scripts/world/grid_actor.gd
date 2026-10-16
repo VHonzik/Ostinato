@@ -10,6 +10,7 @@ var tile: Vector2i
 var home_tile: Vector2i
 var alive: bool = true
 var wander_area: Rect2i
+var wander_ready_turn: int = -1
 var title: String = "Groundskeeper"
 var relationship: Relationship = Relationship.FRIENDLY
 var engaged: bool = false

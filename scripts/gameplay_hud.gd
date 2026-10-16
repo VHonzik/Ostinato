@@ -43,7 +43,7 @@ func refresh(world: GridWorld, loop_count: int, options: GlobalOptions) -> void:
 	]
 	if hero.find_skill(&"relentless_assault_1") != null:
 		_hero_status.text += "   CP %d/%d" % [hero.combo_points, HeroState.MAX_COMBO_POINTS]
-	_status.text = "Turn %d  ·  Loop %d  ·  %s: %d class XP" % [world.turn_count, loop_count, hero.selected_class, hero.progression_points(hero.selected_class)]
+	_status.text = "Turn %d  ·  Loop %d  ·  %s" % [world.turn_count, loop_count, hero.selected_class]
 	_refresh_auras(world)
 
 

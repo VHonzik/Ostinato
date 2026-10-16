@@ -43,6 +43,7 @@ func _ready() -> void:
 	scroll.follow_focus = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var content := VBoxContainer.new()
+	content.custom_minimum_size.x = 696
 	_panel.add_child(content)
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	content.add_child(scroll)
@@ -50,6 +51,7 @@ func _ready() -> void:
 	_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_rows)
 	_preview_panel = PanelContainer.new()
+	_preview_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_preview_panel.custom_minimum_size.x = 680
 	var preview_style := StyleBoxFlat.new()
 	preview_style.bg_color = Color("182a26")
@@ -62,9 +64,8 @@ func _ready() -> void:
 	_preview.custom_minimum_size = Vector2(668, 46)
 	_preview.size.x = 668
 	_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_preview.max_lines_visible = 2
-	_preview.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_preview.clip_text = true
+	_preview.max_lines_visible = -1
+	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_preview_panel.add_child(_preview)
 	_preview_panel.hide()
 	_footer = HBoxContainer.new()
@@ -192,11 +193,6 @@ func open_marshal() -> void:
 	_finish()
 
 
-func _confirm_class(category: StringName, marshal: GridActor) -> void:
-	confirm("Advance %s for Loop %d? This locks your choice until death. Visit its trainer to learn starter skills." % [category, session.loop_count],
-		_select_class.bind(category, marshal), _show_conversation.bind(marshal))
-
-
 func _request_spare_gear(actor: GridActor) -> void:
 	if not QuestRules.in_range(session.world, actor, NpcDefinition.JANOS_ID):
 		close()
@@ -227,15 +223,12 @@ func open_trainer(category: StringName, selected_skill: StringName = &"") -> voi
 	elif session.world.hero.selected_class != category:
 		_label("Select %s before learning here. Retained skills remain usable." % category)
 	else:
-		_label("%s class XP: %d (cumulative; learning does not spend XP)" % [
-			category, session.world.hero.progression_points(category)])
-		if category != &"Warrior":
-			_label("Learn these starter skills for free, with no class XP requirement. Further abilities unlock with class XP.")
+		_label("Level %d / %s. Learning is permanent; starter skills are free." % [
+			session.world.hero.level, InventoryRules.money(session.world.hero.copper)])
 		for skill in SkillDefinition.trainer_skills(category):
 			var known := session.world.hero.find_skill(skill.id) != null
-			var price := "Free"
-			var status := "Learned" if known else ("Unlock at %d class XP" % skill.progress_required
-				if skill.progress_required > 0 else price)
+			var price := "Free" if skill.training_copper == 0 else InventoryRules.money(skill.training_copper)
+			var status := "Learned" if known else price
 			var button := _button("%s / %s" % [skill.title, status],
 				_train.bind(skill.id))
 			button.set_meta("skill_id", skill.id)
@@ -245,9 +238,9 @@ func open_trainer(category: StringName, selected_skill: StringName = &"") -> voi
 			button.text += " / Lv %d" % skill.training_level
 			button.set_meta("preview", skill.description + " " + failure)
 			# Locked skills stay focusable so keyboard players can inspect them.
-			if failure != "" and not known:
+			if known or failure != "":
 				for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
-					button.add_theme_color_override(state, Color("ff7777"))
+					button.add_theme_color_override(state, Color.GRAY if known else Color("ff7777"))
 	_button("Leave (Esc)", close)
 	if selected_button != null:
 		selected_button.grab_focus()
@@ -591,9 +584,9 @@ func _begin(next_page: String, title: String, back: Callable) -> void:
 	_preview.text = ""
 	_preview_panel.hide()
 	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
-	_preview.max_lines_visible = 2
-	_preview.clip_text = true
-	_preview.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_preview.max_lines_visible = -1
+	_preview.clip_text = false
+	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
 	_buttons.clear()
@@ -619,6 +612,8 @@ func _label(text: String) -> Label:
 func _button(text: String, action: Callable, parent: Node = null) -> Button:
 	var button := Button.new()
 	button.text = text
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.pressed.connect(func() -> void:
 		if _buttons.has(button):
 			action.call())
@@ -696,12 +691,7 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 	if session.select_class(category, marshal):
 		session.world.trainer_referral_received = true
 		refreshed.emit()
-		_begin("class_referral", marshal.title, _show_conversation.bind(marshal))
-		_label(NpcDefinition.trainer_referral(category))
-		_label("Visit your trainer to learn skills. Everything you already learned remains usable.")
-		_button("Back (Esc)", _show_conversation.bind(marshal))
-		_button("Leave", close)
-		_finish()
+		_show_conversation(marshal)
 	else:
 		notice("Class choice is unavailable. Speak to the marshal outside combat before accepting a quest.",
 			_show_conversation.bind(marshal))
@@ -748,6 +738,7 @@ func _show_conversation(actor: GridActor) -> void:
 		close()
 	else:
 		_begin("conversation", actor.title, close)
+		var selected_button: Button
 		_label(conversation.greeting)
 		for line in conversation.lines:
 			_label(line)
@@ -758,8 +749,14 @@ func _show_conversation(actor: GridActor) -> void:
 			else:
 				var button := _button(choice.title, callback)
 				button.tooltip_text = choice.tooltip
+				if (choice.action == NpcConversation.Action.SELECT_CLASS
+					and choice.category == session.world.hero.selected_class):
+					selected_button = button
 		_button("Leave (Esc)", close)
-		_finish()
+		if selected_button != null:
+			selected_button.grab_focus()
+		else:
+			_finish()
 	refreshed.emit()
 
 
@@ -775,7 +772,7 @@ func _conversation_choice(choice: NpcConversation.Choice, actor: GridActor) -> v
 		NpcConversation.Action.QUEST:
 			_quest_detail(choice.quest_id, actor)
 		NpcConversation.Action.SELECT_CLASS:
-			_confirm_class(choice.category, actor)
+			_select_class(choice.category, actor)
 		NpcConversation.Action.REFERRAL:
 			open_marshal()
 		NpcConversation.Action.SPARE_GEAR:

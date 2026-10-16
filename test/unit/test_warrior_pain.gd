@@ -63,13 +63,12 @@ func test_pain_passives_unlock_early_without_becoming_castable() -> void:
 	var world := _world()
 	for identifier: StringName in [&"enrage_1", &"recklessness_1"]:
 		var skill := SkillDefinition.catalog(identifier)
-		world.hero.warrior_progress = skill.progress_required - 1
+		world.hero.copper = 0
 		assert_false(world.train(&"Warrior", identifier))
-		world.add_class_progress(&"Warrior", 1)
-		assert_string_contains("\n".join(world.messages), "learn " + skill.title)
+		world.hero.level = skill.training_level
+		world.hero.copper = skill.training_copper
 		assert_true(world.train(&"Warrior", identifier))
-		assert_eq(world.hero.warrior_progress, skill.progress_required)
-		assert_lt(skill.progress_required, SkillDefinition.catalog(&"cruelty_1").progress_required)
+		assert_lt(skill.training_copper, SkillDefinition.catalog(&"cruelty_1").training_copper)
 		assert_false(world.cast_skill(identifier))
 		assert_false(world.assign_hotbar(0, identifier))
 	assert_null(SkillDefinition.catalog(&"warrior_flurry_1"))
@@ -253,8 +252,6 @@ func test_pain_passives_work_in_retained_classes_while_shaman_keeps_flurry() -> 
 	assert_true(world.hero.buffs.has(&"shaman_flurry_1"))
 	assert_true(world.hero.buffs.has(&"enrage_1"), "Shaman haste and Warrior Enrage coexist.")
 	assert_almost_eq(world.hero.attack_haste(), 1.3, 0.001)
-	assert_eq(world.hero.warrior_progress, 0)
-	assert_eq(world.hero.progression_points(&"Rogue"), 0)
 
 
 func test_enrage_save_preserves_expiry_stats_and_roll_boundary_and_death_clears_state() -> void:
@@ -262,7 +259,6 @@ func test_enrage_save_preserves_expiry_stats_and_roll_boundary_and_death_clears_
 	game.development_build = false
 	game.world = _world()
 	var world := game.world
-	world.hero.warrior_progress = 30
 	_learn(world, [&"enrage_1", &"recklessness_1"])
 	var enemy := _enemy(world)
 	world.hero.find_skill(&"enrage_1").coefficient = 1.0

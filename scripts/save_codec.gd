@@ -9,7 +9,7 @@ const WORLD_FIELDS: Array[String] = [
 ]
 const HERO_FIELDS: Array[String] = [
 	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn",
-	"last_enrage_roll_turn", "warrior_progress",
+	"last_enrage_roll_turn",
 	"level", "experience", "health", "selected_class", "copper",
 	"casting_credit", "facing", "potion_ready_turn",
 ]
@@ -41,7 +41,6 @@ static func capture(session: GameSession) -> Dictionary:
 		"equipment": world.hero.equipment.duplicate(true),
 		"inventory": world.hero.inventory.duplicate(true),
 		"buffs": world.hero.buffs.duplicate(true), "hotbar": [],
-		"class_progress": {},
 		"messages": Array(world.messages),
 		"hero_swing": [world.hero.swing.remaining, world.hero.swing._active],
 		"off_hand_swing": [world.hero.off_hand_swing.remaining, world.hero.off_hand_swing._active],
@@ -60,8 +59,6 @@ static func capture(session: GameSession) -> Dictionary:
 		var ground := world.consecration
 		data.consecration = {"center": [ground.center.x, ground.center.y],
 			"until": ground.until, "next_tick": ground.next_tick, "damage": ground.damage}
-	for category in world.hero.class_progress:
-		data.class_progress[String(category)] = world.hero.class_progress[category]
 	for tile in world.indoor_tiles:
 		data.indoors.append([tile.x, tile.y])
 	for identifier in world.hotbar:
@@ -75,6 +72,7 @@ static func capture(session: GameSession) -> Dictionary:
 	for actor in world.actors:
 		data.actors.append({
 			"state": _fields(actor, ACTOR_FIELDS), "melee": _fields(actor.melee, MELEE_FIELDS),
+			"wander_ready_turn": actor.wander_ready_turn,
 			"swing": [actor.swing.remaining, actor.swing._active],
 			"buffs": actor.buffs.duplicate(true), "loot": actor.loot.duplicate(true),
 			"threat": actor.threat.duplicate(true), "debuffs": actor.debuffs.duplicate(true),
@@ -169,7 +167,6 @@ static func _restore_hero_state(world: GridWorld, data: Dictionary) -> bool:
 		or world.hero.rage_decay_credit < 0.0 or world.hero.rage_decay_credit >= 1.0
 		or world.hero.last_hit_rage_turn < -1 or world.hero.last_hit_rage_turn > world.turn_count
 		or world.hero.last_enrage_roll_turn < -1 or world.hero.last_enrage_roll_turn > world.turn_count
-		or world.hero.warrior_progress < 0
 		or world.hero.level < 1
 		or world.hero.experience < 0 or world.hero.copper < 0
 		or world.hero.potion_ready_turn < 0
@@ -179,18 +176,6 @@ static func _restore_hero_state(world: GridWorld, data: Dictionary) -> bool:
 	if (world.hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
 		and int(data.loop) == 1 and world.hero.selected_class != &"Warrior"):
 		return false
-	if data.has("class_progress"):
-		if not data.class_progress is Dictionary:
-			return false
-		for category in data.class_progress:
-			if (not category is String or StringName(category) not in ClassSkillData.CLASSES
-				or not _integer(data.class_progress[category], 0)):
-				return false
-		if int(data.class_progress.get("Warrior", 0)) != world.hero.warrior_progress:
-			return false
-		world.hero.class_progress.clear()
-		for category in data.class_progress:
-			world.hero.class_progress[StringName(category)] = int(data.class_progress[category])
 	world.hero._apply_level_stats()
 	if world.hero.experience >= world.hero.experience_to_next_level():
 		return false
@@ -218,6 +203,12 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 		var actor := GridActor.new(Vector2i.ZERO)
 		if not _restore_fields(actor, record.state, ACTOR_FIELDS):
 			return false
+		# Saves from before idle pacing have no deadline yet; stagger on the first idle turn.
+		var wander_ready: Variant = record.get("wander_ready_turn", -1)
+		if (not _integer(wander_ready, -1)
+			or int(wander_ready) > world.turn_count + GridWorld.WANDER_MAX_TURNS):
+			return false
+		actor.wander_ready_turn = int(wander_ready)
 		var contact := NpcDefinition.find(actor.npc_id)
 		if world.valley_route and contact != null and contact.refresh_saved_name:
 			actor.title = contact.title
@@ -297,10 +288,6 @@ static func _restore_learning(world: GridWorld, data: Dictionary,
 			return false
 	if world.hero.combo_points > 0 and not learned.has("relentless_assault_1"):
 		return false
-	for identifier in learned:
-		var skill := SkillDefinition.catalog(StringName(identifier))
-		if world.hero.progression_points(skill.class_tab) < skill.progress_required:
-			return false
 	return true
 
 

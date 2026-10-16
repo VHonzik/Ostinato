@@ -46,6 +46,7 @@ func test_new_game_resets_learning_hotbar_class_and_seed() -> void:
 	game.world.hero.health = 0
 	game.restart_after_death()
 	game.world.hero.selected_class = &"Shaman"
+	game.world.class_selected = true
 	assert_true(game.world.train(&"Shaman", &"lightning_shield_1"))
 	game.world.hotbar[0] = &"lightning_shield_1"
 	game.new_game(29)

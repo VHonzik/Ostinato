@@ -73,7 +73,7 @@ current priority is itemization following completion of all four class toolkits.
 Keep intermediate changes runnable; deferred playtests
 do not gate completion of the catalogue. Tuning still needs human playtesting.
 
-The milestone should let a weak first-Loop warrior die, retain mastery and learning,
+The milestone should let a weak first-Loop warrior die, retain learning,
 develop the other classes, combine the full toolkit, rebuild temporary level and gear,
 and eventually defeat the exit boss and escape under pressure from timed clones.
 Reuse the valley and selected art. Art refinement and a larger story pass remain paused.
@@ -336,7 +336,23 @@ current deliberate spender is Eviscerate, with passive Slice and Dice haste when
 - [ ] Owner playtest: rebuild gear through quests, compare all three weapon setups,
   try selling mob loot for a vendor upgrade, and judge the impact of small stat bonuses.
 
-### Current playtest follow-up — Menus and encounter feedback
+### Current playtest follow-up — Route, training and returning Loops
+
+- [x] Move the guard/stalker scene south, restore local outdoor wandering, credit broad
+  exploration areas, and make closed chests block movement and collect loot on bumps.
+- [x] Add random idle pauses and staggered wandering starts, preserve pending pauses
+  through saves, and give horizontal save/load buttons space alongside wrapped menus.
+- [x] Speed up held movement, wrap item previews without truncation, gray learned
+  training entries, and reduce Eviscerate's noncritical burst against wolves.
+- [x] Replace class XP with current-Loop level requirements and gold purchases, retaining
+  free starters and permanent learning. This supersedes the older class-XP slices below.
+- [x] Put class selection before returning-Loop quests, preselect the previous class,
+  redirect other NPCs until selection, and advance the choice wording across Loops.
+- [ ] Owner playtest: judge training purchases against gear/food spending and roughly
+  five Loops per class; check tooltip readability, wandering, wolf finishers and the
+  relocated guard scene. Costs and combat tuning remain provisional.
+
+### Implemented playtest follow-up — Menus and encounter feedback
 
 The October playtest adjustments are implemented: separate Equipment/Bags pages,
 slot replacement lists and selection previews, inspectable training, compact auras,
@@ -365,7 +381,7 @@ for owner review.
   patterns, HP/damage and clone pressure
   against finite route XP/gear and roughly three developed classes. Keep exceptional
   earlier wins possible rather than enforcing class or level victory gates.
-- [ ] **Integration, saves and playtesting:** keep learning/mastery and the seed while
+- [ ] **Integration, saves and playtesting:** keep learning and the seed while
   clearing temporary levels/XP, gear, gold, quests, buffs, combat resources and clones
   on death. Check mid-Loop saves at the existing out-of-combat action boundaries,
   class selection, trainer eligibility/learning, fractional timers, proc consumption,

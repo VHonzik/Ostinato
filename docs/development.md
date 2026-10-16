@@ -23,12 +23,15 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 
 **New Game** launches the sketch-based valley, the sole playable game map.
 The marshal offers the western patrol, northern camp and mine objectives; Willem
-points to exploration caches, and Milly offers the vineyard encounter. The marshal
+asks you to enter the mine, approach the vineyard and explore the wolf woods, and Milly offers the vineyard encounter. The marshal
 also gives the stronger-wolf follow-up after the western patrol. Trees, walls
 and vine trellises block movement; flowers, small stones and sparse grass tufts are
 decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
 wolf types and outdoor kobold vermin are neutral until attacked; all mine kobolds and
-bandits are hostile. The southwestern gate admits timed stalkers at the guard's position.
+bandits are hostile. The road south of the southwestern gate admits timed stalkers at the guard's position.
+Outdoor enemies wander locally with random pauses and staggered starts; mine kobolds,
+Garrick and stalkers stay put when idle. Saves retain pending wandering deadlines.
+Closed chests block movement; bumping a chest collects its loot, retaining items when bags are full.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
 A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
@@ -38,20 +41,21 @@ finished objectives and ready quests completed. Handed-in or abandoned quests di
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting; the story guard's corpse remains.
 Death rebuilds the
-map, contacts, enemies and chests, preserving learned abilities, class progression and hotbar.
+map, contacts, enemies and chests, preserving learned abilities and hotbar.
 Janos Hammerknuckle supplies warrior gear and trades. Llane teaches Warrior unlocks;
 Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
-and Rogue kits. Each trainer exposes the complete v0.1 catalogue, with free learning
-at cumulative class XP checkpoints. Tuning remains provisional.
+and Rogue kits. Trainers show current level requirements and gold prices, with free
+starter skills and gray learned entries. Learning is permanent; prices remain provisional.
 
 New Game starts a warrior with rage, Mortal Strike and Whirlwind, wearing travel clothes.
 Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
 warrior referrals, with "Uhm... I seek ... teaching" choices for each class from the second Loop. Speak
-to the marshal before accepting any quest to choose the class whose ability uses grant
-class XP. Each returning Loop starts in the previous class; confirmation locks one choice
-until death, including keeping that same class. Class choice keeps gear and names the
+to the marshal before accepting any quest. Returning Loops show class selection first,
+focusing the previous class; choosing immediately reveals quests and locks the class until death.
+Other NPCs redirect you to the marshal until you choose. Loop three choices begin
+"I am ...."; from Loop four they begin "I am". Class choice keeps gear and names the
 matching trainer. Visit that trainer to learn the class's starter skills for free, with
-no class XP requirement; new actives prefer empty slots in the upper row for maintenance
+no level requirement; new actives prefer empty slots in the upper row for maintenance
 buffs and the lower row for rotation and situational abilities, using the other row
 when needed. Existing assignments are preserved. Learning is permanent and needs
 no relearning in later Loops. The initial Warrior pair remains known at New Game.
@@ -73,14 +77,13 @@ The action effect resolves before player swings, followed by enemy actions. No a
 are banked out of range and target changes keep the weapon's remaining delay.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
-XP, gold, class XP, Death trigger, and Kill stalker for quick experiments. The stalker
+XP, gold, Death trigger, and Kill stalker for quick experiments. The stalker
 arrival schedule lives in the valley data. The first arrival kills the gate guard early
 enough for a direct route to witness it. Defeating every present stalker immediately wins;
 escape beyond the valley is the story outcome, with no gate lock or crossing action.
 Death resets the attempt, preserving
-learned abilities, class progression and hotbar. Visit Llane inside the abbey after a
-progression log notification to unlock Battle Shout, Anger Management, Charge or Execute;
-unlocking keeps your points. Use the spell book to rearrange learned actives.
+learned abilities and hotbar. Visit Llane inside the abbey to buy Battle Shout,
+Anger Management, Charge or Execute once your level and gold meet their requirements. Use the spell book to rearrange learned actives.
 Execute uses the committed melee target, requires low target health, and shows current rage spending
 in its tooltip and target picker. Its one-turn attack keeps weapon timing running; optional combo
 empowerment remains for a later slice. Charge's wind-up and automatic
@@ -93,8 +96,8 @@ selected attack target.
 
 Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
 Command and Execution Sentence; Rogue with Eviscerate and the Relentless Assault passive.
-All use rage. Retained abilities/passives work in every class, but only selected-class
-uses grant class XP; learning does not spend it. Relentless Assault builds player-held
+All use rage. Retained abilities/passives work in every class. Training spends gold,
+requires the current Loop's level, and does not spend player XP. Relentless Assault builds player-held
 combo points from landed direct active attacks and ordinary main-hand hits, across
 classes and targets, with one base point per world turn. Seal Fate can add an extra point
 on an active crit; off-hand hits and bonus damage grant none. Eviscerate needs points
@@ -159,9 +162,9 @@ a target dying early loses its sentence. Existing Holy/critical rewards happen o
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 27, with gear stats rebuilt from equipment on load.
-Revision 26 and older saves are incompatible and left unchanged; start a fresh game.
-This revision swaps the Rogue active/passive finisher roles and removes Opportunity.
+Current saves are `demo` revision 28, with gear stats rebuilt from equipment on load.
+Revision 27 and older saves are incompatible and left unchanged; start a fresh game.
+This revision removes class XP and introduces level/gold training and independent exploration areas.
 Committed Execution Sentence verdicts and Consecration ground persist across saves;
 both clear with the physical world on death.
 Victory requires defeating all present stalkers.

@@ -38,9 +38,9 @@ static var QUESTS: Dictionary = {
 	"valley_explore": {
 		"title": "Around the Valley", "level": 3, "minimum": 1, "previous": [],
 		"giver": 823, "receiver": 823, "category": "",
-		"objectives": [QuestObjective.location(&"mine_chest", 1),
-			QuestObjective.location(&"ridge_chest", 1),
-			QuestObjective.location(&"vineyard_chest", 1)],
+		"objectives": [QuestObjective.location(&"mine", 1),
+			QuestObjective.location(&"vineyard", 1),
+			QuestObjective.location(&"wolf_woods", 1)],
 		"xp": 1100, "copper": 0, "rewards": [70003], "choices": [], "source_item": 0,
 	},
 	"6": {

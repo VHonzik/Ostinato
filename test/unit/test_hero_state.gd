@@ -67,13 +67,10 @@ func test_split_and_single_rewards_produce_identical_progression() -> void:
 	assert_eq(_attributes(split), _attributes(single))
 
 
-func test_learning_rejects_insufficient_level_and_duplicate_skill() -> void:
+func test_learning_records_skills_and_rejects_duplicates() -> void:
 	var hero := HeroState.new()
 	var skill := SkillDefinition.new(&"test_rank_2", "Test", &"Shaman", 2,
 		"Test fixture.", SkillDefinition.Effect.PRACTICE)
-	assert_false(hero.learn_skill(skill))
-	assert_null(hero.find_skill(skill.id))
-	hero.add_experience(400)
 	assert_true(hero.learn_skill(skill))
 	assert_false(hero.learn_skill(skill))
 	var duplicate := SkillDefinition.new(skill.id, "Duplicate", &"Shaman", 1,

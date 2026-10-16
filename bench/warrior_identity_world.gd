@@ -17,9 +17,6 @@ func watch(targets: Array[GridActor]) -> void:
 
 func _award_ability_use(skill: SkillDefinition) -> void:
 	casts[skill.title] = int(casts.get(skill.title, 0)) + 1
-	# All Warrior skills are already learned above the last checkpoint. Avoid repeated
-	# catalogue scans for notifications that cannot fire; preserve the actual XP total.
-	hero.class_progress[&"Warrior"] = hero.progression_points(&"Warrior") + 1
 
 
 func add_message(message: String) -> void:

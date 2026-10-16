@@ -8,8 +8,8 @@ const MOVE_ACTIONS: Array[StringName] = [
 
 ## Brief presentation gap makes cancellation possible without another confirmation.
 const MELEE_BOUNDARY_SECONDS: float = 0.18
-const MOVE_REPEAT_DELAY_SECONDS: float = 1.0
-const MOVE_REPEAT_INTERVAL_SECONDS: float = 0.5
+const MOVE_REPEAT_DELAY_SECONDS: float = 0.5
+const MOVE_REPEAT_INTERVAL_SECONDS: float = 0.25
 
 var world: GridWorld
 var session := GameSession.new()
