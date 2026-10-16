@@ -67,6 +67,7 @@ var indoor_tiles: Dictionary[Vector2i, bool] = {}
 var valley_route: bool = false
 var ground_tiles: Dictionary[Vector2i, StringName] = {}
 var scenery_tiles: Dictionary[Vector2i, StringName] = {}
+var consecration: Dictionary = {}
 
 var _neutral_bump_target: GridActor
 var _neutral_bump_tile: Vector2i
@@ -614,6 +615,13 @@ func _finish_turn() -> void:
 		resolving_turn = false
 		return
 	_expire_hero_buffs()
+	# Delayed verdicts and ground ticks resolve at the boundary before due swings.
+	PaladinRules.tick(self)
+	if check_terminal():
+		pending_melee = null
+		cancel_cast(true)
+		resolving_turn = false
+		return
 	# The action effect precedes player swings; enemies respond after those swings.
 	_advance_player_weapon()
 	if check_terminal():
@@ -686,6 +694,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			add_message(target.title + " dies.")
 			return
 		target.alive = false
+		target.debuffs.erase(&"execution_sentence_1")
 		target.engaged = false
 		target.returning_home = false
 		if check_terminal():

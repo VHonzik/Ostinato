@@ -214,7 +214,7 @@ func test_recklessness_incoming_penalty_uses_health_before_each_hit_and_respects
 
 func test_recklessness_boosts_physical_attacks_but_not_holy_or_nature_damage() -> void:
 	var world := _world()
-	_learn(world, [&"recklessness_1", &"earth_shock_1", &"judgement_1"])
+	_learn(world, [&"recklessness_1", &"earth_shock_1", &"execution_sentence_1"])
 	var enemy := _enemy(world)
 	_fixed_weapon(world.hero)
 	world.hero.health = 18
@@ -235,7 +235,7 @@ func test_recklessness_boosts_physical_attacks_but_not_holy_or_nature_damage() -
 	ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"earth_shock_1"))
 	assert_eq(before - enemy.health, 24, "Physical bonus does not amplify Nature damage.")
 	before = enemy.health
-	ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1"))
+	ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"execution_sentence_1"))
 	assert_eq(before - enemy.health, 150, "Physical bonus does not amplify Holy damage.")
 
 

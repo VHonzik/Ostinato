@@ -77,7 +77,7 @@ func test_absorbed_hit_shows_zero_instead_of_miss() -> void:
 
 
 func test_display_labels_do_not_choose_attack_type_or_rewrite_log_format() -> void:
-	var holy := AttackEvent.new(_enemy, SkillDefinition.catalog(&"judgement_1"),
+	var holy := AttackEvent.new(_enemy, SkillDefinition.catalog(&"execution_sentence_1"),
 		&"hit", 11, AttackEvent.School.HOLY)
 	SpellEffects.attack(_world, holy, "You (custom label)")
 	assert_eq(_world.messages[-1], "You (custom label) -> Enemy: 11 damage.")

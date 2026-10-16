@@ -17,8 +17,8 @@ static func on_attack(world: GridWorld, event: AttackEvent) -> void:
 		return
 	if event.school == AttackEvent.School.PHYSICAL:
 		_physical_hit(world, event)
-	if event.is_direct() and event.is_family(&"judgement") and not world.is_terminal():
-		_judgement(world, event.target)
+	if event.is_direct() and event.is_family(&"execution_sentence") and not world.is_terminal():
+		_execution_sentence(world, event.target)
 
 
 static func weapon_procs(world: GridWorld, event: AttackEvent) -> void:
@@ -101,7 +101,7 @@ static func _sweeping_strikes(world: GridWorld, event: AttackEvent) -> void:
 			break
 
 
-static func _judgement(world: GridWorld, target: GridActor) -> void:
+static func _execution_sentence(world: GridWorld, target: GridActor) -> void:
 	if target.alive and ClassToolkitRules.has(world.hero, &"heart_of_the_crusader_1"):
 		target.debuffs["crusader_crit"] = {"until": world.turn_count + 11,
 			"bonus": ClassToolkitRules.magnitude(world.hero, &"heart_of_the_crusader_1")}

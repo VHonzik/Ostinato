@@ -10,7 +10,7 @@ const MAINTENANCE_FAMILIES: Array[StringName] = [
 const STARTERS: Dictionary = {
 	&"Warrior": [&"mortal_strike_1", &"whirlwind_1"],
 	&"Shaman": [&"lightning_shield_1", &"earth_shock_1"],
-	&"Paladin": [&"seal_of_command_1", &"judgement_1"],
+	&"Paladin": [&"seal_of_command_1", &"execution_sentence_1"],
 	&"Rogue": [&"slice_and_dice_1", &"relentless_assault_1"],
 }
 const WARRIOR_SKILLS: Array[StringName] = [
@@ -30,14 +30,14 @@ const STARTER_SKILLS: Dictionary = {
 		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
 		"weapon_multiplier": 0.25, "family": "seal_of_command", "school": 1,
 		"effect": "ARMOR", "target": "SELF",
-		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Judgement leaves the seal active."
+		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, class XP or combo points. Execution Sentence leaves the seal active."
 	},
-	"judgement_1": {
-		"title": "Judgement", "class_tab": "Paladin", "training_level": 1,
+	"execution_sentence_1": {
+		"title": "Execution Sentence", "class_tab": "Paladin", "training_level": 1,
 		"rage_cost": 20, "cast_seconds": 1.0, "range_tiles": 2, "cooldown_seconds": 6,
-		"weapon_multiplier": 1.5, "family": "judgement", "school": 1,
-		"effect": "JUDGEMENT", "target": "ENEMY",
-		"detail": "Requires Seal of Command. Deal 150% weapon damage as Holy damage; hit chance and crit apply, armor does not. One turn; seal remains active."
+		"weapon_multiplier": 1.5, "delay_turns": 1, "family": "execution_sentence", "school": 1,
+		"effect": "EXECUTION_SENTENCE", "target": "ENEMY",
+		"detail": "Requires Seal of Command. Sentence the target to 150% weapon damage as Holy damage after 1 further turn. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; seal remains active."
 	},
 	"slice_and_dice_1": {
 		"title": "Slice and Dice", "class_tab": "Rogue", "training_level": 1,

@@ -118,7 +118,7 @@ deferred. The Execute slice is implemented below.
   names its trainer; learn other classes' starters free at the matching trainer, with
   no class XP requirement. Learning is permanent and fills empty hotbar slots for actives
   without replacing assignments. Implement Lightning Shield and Strength of Earth Totem,
-  Seal of Command and Judgement, Slice and Dice and Relentless Assault. Use rage;
+  Seal of Command and Execution Sentence, Slice and Dice and Relentless Assault. Use rage;
   trainers expose only implemented skills, leaving legacy mana kits unavailable.
 - [x] Retain learned abilities/passives and cumulative class XP across death and class
   choice. Only uses belonging to the selected class grant XP; retained abilities grant
@@ -127,7 +127,7 @@ deferred. The Execute slice is implemented below.
 - [x] Build player-held combo points from landed direct active attacks and ordinary
   main-hand hits after learning Relentless Assault, across classes and targets, with
   one base point per turn. Exclude off-hand hits, procs, buffs and misses.
-  Slice and Dice requires points and spends all held points; Judgement leaves
+  Slice and Dice requires points and spends all held points; Execution Sentence leaves
   Seal of Command active. Clear combat resources and effects on death.
 - [x] Save class choice, learning, class XP, combo points, buffs and totems in revision 14;
   leave older files incompatible and unchanged. Cover selection confirmation, quest and
@@ -174,7 +174,7 @@ live in game data and the spell book. Human balance and readability review remai
 - [x] Add Shaman Flurry, nonrecursive procs, guaranteed crit consumption, defenses,
   deliberate finisher spending/refunds, and the Holy-event counting limit.
 - [x] Add independent off-hand attacks and equipment selection, spirit wolves with
-  damage-based healing, movement credit and the Judgement haste exception. Keep Charge's
+  damage-based healing, movement credit and the Execution Sentence haste exception. Keep Charge's
   existing commitment; tune it with the full toolkit during playtesting.
 - [x] Preserve selected targeting during cleave and stop multi-hit effects and later
   due swings when their target dies or the attempt ends.
@@ -217,7 +217,8 @@ live in game data and the spell book. Human balance and readability review remai
   stacked damage and cooldown effects, and strengthen developed Warrior and Paladin
   payoffs. Numerical tuning lives in data and the spell book.
 - [ ] Redistribute damage within the developed toolkit while preserving overall strength.
-  Postpone the agreed free, off-turn Judgement rework and its Divine Purpose replacement.
+  Explore Execution Sentence and Consecration for Paladin's distinct role, redistributing
+  its existing damage contribution rather than simply adding more damage.
   Sudden Death now rewards physical actives without auto-attack triggers or Execute
   self-procs. Review the resulting damage distribution, Whirlwind's action/rage
   tradeoff, Windfury, poison and Eviscerate use. Run further simulations with all four
@@ -241,7 +242,7 @@ Try the complete learned toolkit over returning Loops alongside the new itemizat
 Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,
 defensive windows and mixed-class combinations. Adjust code/data from that feedback;
 do not treat catalogue completion or automated tests as balance/readability acceptance.
-Optional combo empowerment of Execute/Judgement remains a later design choice; the
+Optional combo empowerment of Execute/Execution Sentence remains a later design choice; the
 current deliberate spender is Slice and Dice, with a passive Eviscerate attack when learned.
 
 ### Current class-identity follow-up — Warrior rage spending
@@ -276,6 +277,22 @@ current deliberate spender is Slice and Dice, with a passive Eviscerate attack w
 - [ ] Owner playtest: compare Earth Shock across weapon setups, summon the elemental
   during a Stalker fight and against a group, then compare wolves' damage/healing.
   Judge whether the elemental buys useful time without making ordinary pulls trivial.
+
+### Current class-identity follow-up — Paladin
+
+- [x] Remove Benediction and make Blessing of Might free maintenance. Keep Seal of
+  Command's rage cost.
+- [x] Replace Judgement with a fixed delayed Execution Sentence, retaining its
+  Holy/critical synergies. Keep damage and critical results fixed at cast; no stacks
+  or damage accumulation. Add fixed Consecration ground without extra mitigation,
+  preserve both effects through saves, and clear them on Loop reset.
+- [x] Compare the reworked damage contribution against a fresh current-kit baseline
+  in ordinary and Stalker fights, alone and with retained class abilities. Tune the
+  delay and ground's damage/rage budget against the mixed-kit comparisons.
+- [ ] Owner playtest: judge the short verdict delay, targets dying before impact,
+  and staying on or leaving the consecrated ground. Cold Paladin-only group fights
+  remain less forgiving, especially with a two-hander; revisit that timing tradeoff
+  from play. Simulations do not settle feel or balance.
 
 ### Current playable task — Simplified itemization
 

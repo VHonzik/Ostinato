@@ -92,7 +92,7 @@ and hostile NPCs in sight. It grants no combo points or attack procs and keeps t
 selected attack target.
 
 Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
-Command and Judgement; Rogue with Slice and Dice and the Relentless Assault passive.
+Command and Execution Sentence; Rogue with Slice and Dice and the Relentless Assault passive.
 All use rage. Retained abilities/passives work in every class, but only selected-class
 uses grant class XP; learning does not spend it. Relentless Assault builds player-held
 combo points from landed direct active attacks and ordinary main-hand hits, across
@@ -100,7 +100,7 @@ classes and targets, with one base point per world turn. Seal Fate can add an ex
 on an active crit; off-hand hits and bonus damage grant none. Slice and Dice needs points
 and spends them all for attack haste. Learned Eviscerate passively adds its attack
 against the current melee target, using those same spent points. Slice and Dice can
-still be used without a target. Judgement leaves the seal active.
+still be used without a target. Execution Sentence leaves the seal active.
 All four class kits are available, including their actives and passives. The spell book
 describes their provisional mechanics; passives can be focused and inspected but cannot
 be cast or assigned. New catalogue data lives in
@@ -123,7 +123,7 @@ Single-weapon setups coat the main hand directly. Catalytic Venom rewards Instan
 on the faster base-speed weapon and Deadly on the slower; equal-speed pairs do not
 catalyze. Deadly stacks belong to each enemy and tick after enemy actions, retaining
 fractional damage across ticks. Saves retain coatings, stacks and pending tick damage.
-Finishers spend all held points before refunds; Execute and Judgement do not spend points.
+Finishers spend all held points before refunds; Execute and Execution Sentence do not spend points.
 Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
 boundary before player swings and enemy attacks.
 
@@ -149,11 +149,17 @@ profiles; saved actors keep their recorded stats. The saved
 [October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
 simulation setup and two-handed/dual-wield comparisons for future class tuning.
 
-Current saves are `demo` revision 24, with gear stats rebuilt from equipment on load.
-Revision 23 and older saves are incompatible and left unchanged; start a fresh game.
-This revision replaces Strength of Earth Totem and Elemental Warding with the lasting
-Earth Elemental and starts Shaman with Earth Shock. Enrage's roll boundary and summon
-state remain preserved across saves.
+Execution Sentence replaces Judgement. It fixes damage and hit/critical results when
+cast, shows a countdown on its target, and delivers the verdict before due weapon swings
+and enemy actions. Impact ignores current range and never changes the selected target;
+a target dying early loses its sentence. Existing Holy/critical rewards happen on impact.
+Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
+Its periodic damage grants no attack procs or combo points and supplies no mitigation.
+
+Current saves are `demo` revision 26, with gear stats rebuilt from equipment on load.
+Revision 25 and older saves are incompatible and left unchanged; start a fresh game.
+This revision replaces Judgement with Execution Sentence and preserves committed
+verdicts and Consecration ground across saves. Both clear with the physical world on death.
 Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user

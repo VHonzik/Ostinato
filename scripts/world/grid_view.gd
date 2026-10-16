@@ -205,6 +205,7 @@ func _draw() -> void:
 		return
 	var occupants := _sprite_occupants()
 	_draw_valley_ground(occupants)
+	_draw_consecration()
 	for actor: GridActor in occupants.values():
 		if not actor.alive and actor.corpse_visible:
 			var sprite := &"animal_corpse" if actor.creature_type == "beast" else &"humanoid_corpse"
@@ -229,6 +230,27 @@ func _draw_actor(actor: GridActor) -> void:
 		faction = _quest_marker_sprite
 	_draw_sprite_layers(actor.tile, sprites.base_sprite, faction,
 		health_tint(actor.health, actor.max_health), _actor_color(actor))
+	if actor.debuffs.has(&"execution_sentence_1"):
+		var remaining := int(actor.debuffs[&"execution_sentence_1"].until) - world.turn_count
+		var position := Vector2(actor.tile * TILE_SIZE)
+		draw_rect(Rect2(position + Vector2(18, 0), Vector2(14, 15)), Color("#382b15"))
+		draw_string(ThemeDB.fallback_font, position + Vector2(21, 12), str(remaining),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#ffe187"))
+
+
+func _draw_consecration() -> void:
+	if world.consecration.is_empty():
+		return
+	var center: Vector2i = world.consecration.center
+	var radius := world.hero.find_skill(&"consecration_1").range_tiles
+	for y in range(center.y - radius, center.y + radius + 1):
+		for x in range(center.x - radius, center.x + radius + 1):
+			var tile := Vector2i(x, y)
+			if not world.bounds.has_point(tile) or world.blocked_tiles.has(tile) or not PaladinRules.covers(world, tile):
+				continue
+			var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
+			draw_rect(rectangle.grow(-2), Color(1.0, 0.76, 0.22, 0.16))
+			draw_rect(rectangle.grow(-3), Color(1.0, 0.82, 0.35, 0.65), false, 1.0)
 
 
 func _draw_player() -> void:

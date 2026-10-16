@@ -39,7 +39,7 @@ static func cooldown(hero: HeroState, skill: SkillDefinition) -> int:
 		&"charge": turns -= magnitude(hero, &"juggernaut_1")
 		&"earth_shock": turns -= magnitude(hero, &"improved_earth_shock_1")
 		&"divine_shield": turns -= magnitude(hero, &"guardians_favor_1")
-		&"judgement":
+		&"execution_sentence":
 			if has(hero, &"sanctity_of_battle_1"):
 				turns = maxi(1, ceili(turns / hero.attack_haste()))
 	return maxi(0, turns)
@@ -143,6 +143,14 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 	extra: float = 1.0) -> AttackEvent:
 	world.last_attacked_enemy = target
 	world.auto_attack_target = target
+	var event := magic_outcome(world, target, skill, extra)
+	if event.landed():
+		resolve_magic(world, event)
+	return event
+
+
+static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
+	extra: float = 1.0) -> AttackEvent:
 	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
 	if world.combat_random.randf() * 100.0 >= hit_chance:
 		world.npc_combat_text.emit(target.tile, 0, &"miss")
@@ -152,7 +160,7 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 	var chance := MeleeRules.critical_chance(world.hero.melee, target.melee)
 	chance += int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
 	critical = world.combat_random.randf() * 100.0 < chance
-	if skill.family == &"judgement":
+	if skill.family == &"execution_sentence":
 		for key: StringName in [&"art_of_war_1", &"sacred_duty_1"]:
 			if int(effect(world.hero, key).get("critical_ready", 0)) > 0:
 				critical = true
@@ -161,7 +169,7 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 	var raw := (MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
 		if skill.weapon_multiplier != 0.0 else 0.0)
 	var flat_bonus := skill.minimum
-	if skill.family == &"judgement":
+	if skill.family == &"execution_sentence":
 		flat_bonus += magnitude(world.hero, &"sanctity_of_battle_1")
 	var amount := (raw * skill.weapon_multiplier + flat_bonus) * extra * damage_multiplier(world.hero)
 	amount *= MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level)
@@ -171,13 +179,15 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 		MeleeRules.round_weapon_damage(amount, world.hero.melee, weapon_roll))
 	if critical:
 		value *= 2
-	var event := AttackEvent.new(target, skill, &"critical" if critical else &"hit",
+	return AttackEvent.new(target, skill, &"critical" if critical else &"hit",
 		value, skill.school as AttackEvent.School)
-	SpellEffects.attack(world, event, skill.title)
+
+
+static func resolve_magic(world: GridWorld, event: AttackEvent, death_turn: int = -1) -> void:
+	SpellEffects.attack(world, event, event.skill.title, death_turn)
 	AttackProcs.on_attack(world, event)
-	if not world.is_terminal() and skill.school == 1:
+	if not world.is_terminal() and event.school == AttackEvent.School.HOLY:
 		holy_event(world)
-	return event
 
 
 static func consume_flurry(hero: HeroState) -> void:

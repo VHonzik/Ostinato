@@ -12,7 +12,8 @@ static var _families: Dictionary[StringName, SkillBehavior] = {
 	&"windfury_weapon": Windfury.new(),
 	&"instant_poison": Poison.new(),
 	&"deadly_poison": Poison.new(),
-	&"judgement": Judgement.new(),
+	&"execution_sentence": ExecutionSentence.new(),
+	&"consecration": Consecration.new(),
 	&"blessing_of_might": BlessingOfMight.new(),
 	&"divine_shield": DivineShield.new(),
 	&"slice_and_dice": SliceAndDice.new(),
@@ -25,7 +26,7 @@ static var _effects: Dictionary[int, SkillBehavior] = {
 	SkillDefinition.Effect.CHARGE: Charge.new(),
 	SkillDefinition.Effect.ARMOR: Buff.new(),
 	SkillDefinition.Effect.SUMMON: Summon.new(),
-	SkillDefinition.Effect.JUDGEMENT: Judgement.new(),
+	SkillDefinition.Effect.EXECUTION_SENTENCE: ExecutionSentence.new(),
 	SkillDefinition.Effect.PASSIVE: Passive.new(),
 	SkillDefinition.Effect.CLASS_POINTS: Development.new(),
 	SkillDefinition.Effect.PRACTICE: Development.new(),
@@ -147,12 +148,18 @@ class Summon extends SkillBehavior:
 		SummonRules.summon(world, cast.skill)
 
 
-class Judgement extends SkillBehavior:
-	func can_apply(world: GridWorld, _skill: SkillDefinition, _target: GridActor) -> bool:
-		return world.hero.buffs.has(&"seal_of_command_1") and world.hero.equipment.has("weapons")
+class ExecutionSentence extends SkillBehavior:
+	func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
+		return (world.hero.buffs.has(&"seal_of_command_1")
+			and world.hero.equipment.has("weapons") and not target.debuffs.has(skill.id))
 
 	func resolve(world: GridWorld, cast: Cast) -> void:
-		ClassToolkitRules.magic_attack(world, cast.target, cast.skill)
+		PaladinRules.sentence(world, cast.target, cast.skill)
+
+
+class Consecration extends SkillBehavior:
+	func resolve(world: GridWorld, cast: Cast) -> void:
+		PaladinRules.consecrate(world, cast.skill)
 
 
 class Poison extends SkillBehavior:

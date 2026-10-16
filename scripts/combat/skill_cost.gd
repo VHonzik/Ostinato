@@ -12,7 +12,7 @@ static func quote(hero: HeroState, skill: SkillDefinition) -> SkillCost:
 		return payment
 	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
 		payment.consumed_proc = &"sudden_death_1"
-	elif skill.family == &"judgement" and hero.buffs.has(&"divine_purpose_1"):
+	elif skill.family == &"execution_sentence" and hero.buffs.has(&"divine_purpose_1"):
 		payment.consumed_proc = &"divine_purpose_1"
 	elif skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1"):
 		payment.consumed_proc = &"battle_trance_1"
@@ -20,9 +20,6 @@ static func quote(hero: HeroState, skill: SkillDefinition) -> SkillCost:
 		payment.rage_cost = skill.rage_cost
 		if skill.effect == SkillDefinition.Effect.EXECUTE:
 			payment.rage_cost = clampi(hero.rage, skill.rage_cost, skill.execute_rage_cap)
-		if skill.class_tab == &"Paladin":
-			payment.rage_cost = ceili(payment.rage_cost * (1.0
-				- ClassToolkitRules.magnitude(hero, &"benediction_1") / 100.0))
 	return payment
 
 

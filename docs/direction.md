@@ -55,9 +55,13 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Learned Eviscerate passively adds its attack to Slice and Dice against the current
   melee target. Slice and Dice remains usable without a target; finisher refunds
   happen once after spending.
-  Judgement should cost no rage or world turn, with lower damage and a longer cooldown;
-  that rework is postponed. It leaves Seal of Command active. Execute and Judgement
-  currently do not spend points; optional empowerment remains a future choice.
+  Execution Sentence replaces Judgement with a delayed verdict, without stacks or
+  damage accumulation. It commits damage and hit/critical results on casting and
+  delivers its attack rewards on impact, without retargeting. Consecration adds fixed
+  Holy ground for positional play; its periodic damage has no attack procs or defense bonus.
+  Preserve roughly the current overall damage contribution by redistributing damage
+  rather than adding both abilities at full strength. Execution Sentence leaves Seal
+  of Command active. Execute and Execution Sentence do not spend combo points.
 - Warrior supplies physical burst, rage, execution and strength through taking damage.
   Enrage rewards surviving enemy hits; passive Recklessness trades more incoming damage
   for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
@@ -68,7 +72,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   away from the player; only one may be alive. Spirit wolves supply damage and healing.
   Strength of Earth Totem and Elemental Warding are removed.
   Paladin supplies Holy damage,
-  buffs and guaranteed-critical payoffs; rogue supplies combo points, dual wielding,
+  buffs and guaranteed-critical payoffs. Blessing of Might is free maintenance;
+  Seal of Command retains its rage cost for rotational flavor. Benediction is removed.
+  Rogue supplies combo points, dual wielding,
   speed and opportunistic damage. The milestone covers the full v0.1 toolkit.
 - Poisons offer a preparation choice: Instant rewards short fights, while Deadly
   builds sustained damage. A later Rogue passive rewards mixed coatings with Instant
@@ -97,7 +103,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - Main-hand auto-attacks and incoming hits supply rage; rage decays outside combat.
   Ordinary swing rage scales with base weapon speed, independently of haste.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
-  Sanctity of Battle explicitly divides Judgement's cooldown by current attack haste,
+  Sanctity of Battle explicitly divides Execution Sentence's cooldown by current attack haste,
   rounding up to a whole turn. Pursuit of Justice adds fractional movement credit,
   occasionally allowing an extra grid step in the chosen direction.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
@@ -188,10 +194,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
 - Next: Whirlwind versus Mortal Strike rage economy and later passive development;
-  optional combo empowerment for Execute/Judgement; gear ranges, weapon progression,
+  optional combo empowerment for Execute/Execution Sentence; gear ranges, weapon progression,
   respawns and healing.
 - During the complete-toolkit playtest: revise provisional passive/proc behavior,
-  wolf usefulness, movement credit and the Judgement haste exception as needed.
+  wolf usefulness, movement credit and the Execution Sentence haste exception as needed.
 - Later: additional talents/synergies and leaderboard categories or achievements.
 
 Keep answers brief here when they become durable direction. Keep tuning values and

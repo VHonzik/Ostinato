@@ -222,6 +222,9 @@ func _update_selection() -> void:
 		var poison: Dictionary = selected.debuffs[&"deadly_poison_1"]
 		_detail.text += "\nDeadly Poison: %d stacks / %d turns." % [
 			poison.stacks, maxi(0, int(poison.until) - _world.turn_count)]
+	if selected.debuffs.has(&"execution_sentence_1"):
+		_detail.text += "\nExecution Sentence: verdict in %d turns." % maxi(0,
+			int(selected.debuffs[&"execution_sentence_1"].until) - _world.turn_count)
 	_configure_buttons(_candidates.size() > 1,
 		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)

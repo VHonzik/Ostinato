@@ -274,17 +274,17 @@ func test_slice_and_dice_requires_points_spends_all_and_leaves_ability_cooldowns
 	assert_almost_eq(world.hero.attack_haste(), 1.0, 0.00001)
 
 
-func test_judgement_hits_and_misses_keep_seal_and_only_hits_build_points() -> void:
+func test_execution_sentence_hits_and_misses_keep_seal_and_only_hits_build_points() -> void:
 	var world := _world(&"Paladin")
 	_learn_starters(world, &"Paladin")
 	_learn_starters(world, &"Rogue")
 	var enemy := _enemy(world, Vector2i(7, 5))
 	world.hero.rage = 100
-	assert_false(world.cast_skill(&"judgement_1", enemy), "Requires the seal.")
+	assert_false(world.cast_skill(&"execution_sentence_1", enemy), "Requires the seal.")
 	assert_eq(world.turn_count, 0)
 	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.melee.hit = -1000.0
-	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
 	assert_eq(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 0)
 	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
@@ -293,7 +293,10 @@ func test_judgement_hits_and_misses_keep_seal_and_only_hits_build_points() -> vo
 		world.wait_turn()
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_eq(enemy.health, enemy.max_health, "A landed sentence waits for its verdict.")
+	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+		world.wait_turn()
 	assert_lt(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 1)
 	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
@@ -570,7 +573,7 @@ func test_class_selection_blocks_saving_until_locked_and_then_saves_without_new_
 	assert_not_null(SaveCodec.restore(SaveCodec.capture(game), false))
 
 
-func test_judgement_retargets_without_banking_swings_or_attacking_the_previous_enemy() -> void:
+func test_execution_sentence_retargets_without_banking_swings_or_attacking_the_previous_enemy() -> void:
 	var world := _world(&"Paladin")
 	_learn_starters(world, &"Paladin")
 	world.hero.rage = 100
@@ -582,7 +585,7 @@ func test_judgement_retargets_without_banking_swings_or_attacking_the_previous_e
 	var health := previous.health
 	world.hero.swing.remaining = 1.0
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"judgement_1", chosen))
+	assert_true(world.cast_skill(&"execution_sentence_1", chosen))
 	assert_same(world.auto_attack_target, chosen)
 	assert_same(world.last_attacked_enemy, chosen)
 	assert_eq(previous.health, health, "The previous target receives no due swing.")
@@ -599,7 +602,7 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	game.restore(restored, game.seed_value, game.loop_count)
 	assert_false(game.can_select_class())
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
-	assert_null(game.world.hero.find_skill(&"judgement_1"))
+	assert_null(game.world.hero.find_skill(&"execution_sentence_1"))
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.selected_class, &"Paladin")
@@ -616,9 +619,9 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 		return
 	game.restore(partial, game.seed_value, game.loop_count)
 	assert_not_null(game.world.hero.find_skill(&"seal_of_command_1"))
-	assert_null(game.world.hero.find_skill(&"judgement_1"))
-	assert_true(game.world.train(&"Paladin", &"judgement_1"))
-	assert_eq(game.world.hotbar[2], &"judgement_1")
+	assert_null(game.world.hero.find_skill(&"execution_sentence_1"))
+	assert_true(game.world.train(&"Paladin", &"execution_sentence_1"))
+	assert_eq(game.world.hotbar[2], &"execution_sentence_1")
 	game.world.hero.rage = 100
 	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Learning is usable immediately.")
 	assert_eq(game.world.hero.progression_points(&"Paladin"), 1)

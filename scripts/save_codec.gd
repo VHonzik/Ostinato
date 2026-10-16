@@ -54,7 +54,12 @@ static func capture(session: GameSession) -> Dictionary:
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
 		"starter_gear_received": world.starter_gear_received,
+		"consecration": {},
 	}
+	if not world.consecration.is_empty():
+		var ground := world.consecration
+		data.consecration = {"center": [ground.center.x, ground.center.y],
+			"until": ground.until, "next_tick": ground.next_tick, "damage": ground.damage}
 	for category in world.hero.class_progress:
 		data.class_progress[String(category)] = world.hero.class_progress[category]
 	for tile in world.indoor_tiles:
@@ -117,7 +122,7 @@ static func _valid_envelope(data: Variant) -> bool:
 	var keys := ["seed", "loop", "world", "hero", "random", "combat_random",
 		"blocked", "sight", "actors", "learned", "equipment", "inventory",
 		"buffs", "hotbar", "messages", "hero_swing", "indoors",
-		"vendor_stock", "loot_quests", "cooldowns", "restoration", "quests", "population", "debuffs", "off_hand_swing"]
+		"vendor_stock", "loot_quests", "cooldowns", "restoration", "quests", "population", "debuffs", "off_hand_swing", "consecration"]
 	for key in keys:
 		if not data.has(key):
 			return false
@@ -334,7 +339,16 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 			return false
 		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
 			return false
+		if actor.debuffs.has(&"execution_sentence_1"):
+			var sentence := world.hero.find_skill(&"execution_sentence_1")
+			var effect: Dictionary = actor.debuffs[&"execution_sentence_1"]
+			if (sentence == null or not actor.alive or actor.relationship == GridActor.Relationship.FRIENDLY
+				or int(effect.until) <= world.turn_count
+				or int(effect.until) > world.turn_count + sentence.delay_turns):
+				return false
 	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
+		return false
+	if data.debuffs.has("execution_sentence_1") or not _restore_consecration(world, data.consecration):
 		return false
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
 	world.hero.refresh_stats()
@@ -607,6 +621,31 @@ static func _normalized_numbers(data: Dictionary) -> Dictionary:
 	return result
 
 
+static func _restore_consecration(world: GridWorld, data: Variant) -> bool:
+	if not data is Dictionary:
+		return false
+	if data.is_empty():
+		return true
+	var skill := world.hero.find_skill(&"consecration_1")
+	if (skill == null or data.size() != 4
+		or not data.has_all(["center", "until", "next_tick", "damage"])
+		or not data.center is Array or data.center.size() != 2
+		or not _integer(data.center[0], -2147483648) or not _integer(data.center[1], -2147483648)
+		or not _integer(data.until, world.turn_count + 1)
+		or int(data.until) > world.turn_count + skill.duration
+		or not _integer(data.next_tick, world.turn_count + 1)
+		or int(data.next_tick) != world.turn_count + 1
+		or not (data.damage is float or data.damage is int)
+		or not is_finite(float(data.damage)) or data.damage < 0):
+		return false
+	var center := Vector2i(int(data.center[0]), int(data.center[1]))
+	if not world.bounds.has_point(center) or world.blocked_tiles.has(center):
+		return false
+	world.consecration = {"center": center, "until": int(data.until),
+		"next_tick": int(data.next_tick), "damage": float(data.damage)}
+	return true
+
+
 static func _debuffs(data: Variant) -> bool:
 	if not data is Dictionary or data.size() > 100:
 		return false
@@ -614,6 +653,12 @@ static func _debuffs(data: Variant) -> bool:
 		if not key is String or not data[key] is Dictionary or not data[key].has("until"):
 			return false
 		var effect: Dictionary = data[key].duplicate()
+		if key == "execution_sentence_1":
+			if (effect.size() != 3 or not effect.has_all(["until", "damage", "critical"])
+				or not _integer(effect.until, 1) or not _integer(effect.damage, 0)
+				or not _integer(effect.critical, 0) or effect.critical > 1):
+				return false
+			continue
 		if key == "deadly_poison_1":
 			if not effect.has_all(["stacks", "next_tick", "damage_credit"]):
 				return false

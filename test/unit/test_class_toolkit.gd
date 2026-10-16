@@ -126,15 +126,18 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 
 
 func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() -> void:
-	for identifier: StringName in [&"judgement_1", &"earth_shock_1"]:
+	for identifier: StringName in [&"execution_sentence_1", &"earth_shock_1"]:
 		var world := _world()
-		_learn(world, [&"judgement_1", &"earth_shock_1"])
+		_learn(world, [&"execution_sentence_1", &"earth_shock_1"])
 		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
 		var expected := 18 if identifier == &"earth_shock_1" else 23
 		assert_true(world.cast_skill(identifier, enemy))
+		if identifier == &"execution_sentence_1":
+			for turn in range(world.hero.find_skill(identifier).delay_turns):
+				world.wait_turn()
 		assert_eq(enemy.max_health - enemy.health, expected,
 			"A +2 target reduces spell damage once, without physical armor mitigation.")
 
@@ -179,17 +182,19 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 	world.discard()
 
 
-func test_sanctity_adds_holy_damage_without_changing_the_base_judgement() -> void:
+func test_sanctity_adds_holy_damage_without_changing_the_base_execution_sentence() -> void:
 	for developed in [false, true]:
 		var world := _world()
-		var learned: Array[StringName] = [&"judgement_1"]
+		var learned: Array[StringName] = [&"execution_sentence_1"]
 		if developed:
 			learned.append(&"sanctity_of_battle_1")
 		_learn(world, learned)
 		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		var enemy := _enemy(world)
 		enemy.melee.armor = 100000
-		assert_true(world.cast_skill(&"judgement_1", enemy))
+		assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+		for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+			world.wait_turn()
 		assert_eq(enemy.max_health - enemy.health, 65 if developed else 30)
 
 
@@ -216,13 +221,16 @@ func test_main_hand_and_active_points_share_one_turn_even_with_many_due_swings()
 
 
 func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
-	for id: StringName in [&"judgement_1", &"earth_shock_1"]:
+	for id: StringName in [&"execution_sentence_1", &"earth_shock_1"]:
 		var world := _world()
 		_learn(world, [&"battle_trance_1", &"seal_of_command_1", id])
 		var enemy := _enemy(world)
 		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		world.hero.melee.critical = 100
 		assert_true(world.cast_skill(id, enemy))
+		if id == &"execution_sentence_1":
+			for turn in range(world.hero.find_skill(id).delay_turns):
+				world.wait_turn()
 		assert_true(world.hero.buffs.has(&"battle_trance_1"))
 		var rage := world.hero.rage
 		assert_true(world.cast_skill(&"seal_of_command_1"))
@@ -527,14 +535,16 @@ func test_wolf_pair_placement_is_atomic_replaces_expires_and_spirit_hunt_heals_a
 	assert_eq(blocked.turn_count, 0)
 
 
-func test_blessing_strength_and_benediction_work_when_retained_as_warrior() -> void:
+func test_blessing_is_free_and_grants_strength_when_retained_as_warrior() -> void:
 	var world := _world()
-	_learn(world, [&"blessing_of_might_1", &"benediction_1"])
+	_learn(world, [&"blessing_of_might_1"])
 	world.hero.refresh_stats()
 	var strength := world.hero.strength
+	world.hero.rage = 0
 	assert_true(world.cast_skill(&"blessing_of_might_1"))
 	assert_eq(world.hero.strength, strength + 6)
-	assert_eq(world.hero.rage, 90, "8 spent plus 2 out-of-combat decay.")
+	assert_eq(world.hero.rage, 0)
+	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.progression_points(&"Paladin"), 1000)
 
 
@@ -554,9 +564,9 @@ func test_shield_protects_both_schools_penalizes_damage_and_guardians_favor_exte
 	assert_false(world.hero.buffs.has(&"divine_shield_1"))
 
 
-func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_judgement_once() -> void:
+func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_execution_sentence_once() -> void:
 	var world := _world()
-	_learn(world, [&"art_of_war_1", &"seal_of_command_1", &"judgement_1"])
+	_learn(world, [&"art_of_war_1", &"seal_of_command_1", &"execution_sentence_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
 	for index in range(3):
 		world.holy_event_counted = false
@@ -565,22 +575,25 @@ func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_judgement_o
 		assert_eq(int(world.hero.buffs[&"art_of_war_1"].get("critical_ready", 0)), 1 if index == 2 else 0)
 	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.melee.critical = -100
-	var result := ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1"))
+	var result := ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"execution_sentence_1"))
 	assert_true(result.critical())
 	assert_eq(int(world.hero.buffs[&"art_of_war_1"].get("critical_ready", 0)), 0)
-	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1")).critical())
+	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"execution_sentence_1")).critical())
 
 
-func test_judgement_procs_apply_after_consumption_keep_seal_and_haste_shortens_only_judgement() -> void:
+func test_execution_sentence_procs_apply_after_consumption_keep_seal_and_haste_shortens_only_execution_sentence() -> void:
 	var world := _world(&"Paladin")
-	_learn(world, [&"seal_of_command_1", &"judgement_1", &"divine_purpose_1", &"sacred_duty_1", &"heart_of_the_crusader_1", &"sanctity_of_battle_1"])
+	_learn(world, [&"seal_of_command_1", &"execution_sentence_1", &"divine_purpose_1", &"sacred_duty_1", &"heart_of_the_crusader_1", &"sanctity_of_battle_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
 	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.find_skill(&"divine_purpose_1").coefficient = 1
 	world.hero.find_skill(&"sacred_duty_1").coefficient = 1
 	world.hero.haste = 2
-	assert_true(world.cast_skill(&"judgement_1", enemy))
-	assert_eq(world.hero.cooldowns.judgement - world.turn_count, 3)
+	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_eq(world.hero.cooldowns.execution_sentence - world.turn_count, 3)
+	assert_false(world.hero.buffs.has(&"divine_purpose_1"), "Rewards wait for the verdict.")
+	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_true(world.hero.buffs.has(&"sacred_duty_1"))
 	assert_eq(int(enemy.debuffs.crusader_crit.bonus), 3)
@@ -588,7 +601,7 @@ func test_judgement_procs_apply_after_consumption_keep_seal_and_haste_shortens_o
 	world.hero.find_skill(&"sacred_duty_1").coefficient = 0
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
-	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
 	assert_eq(world.hero.rage, 0)
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_false(world.hero.buffs.has(&"sacred_duty_1"))

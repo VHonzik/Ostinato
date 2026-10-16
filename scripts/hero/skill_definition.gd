@@ -2,7 +2,7 @@ class_name SkillDefinition
 extends RefCounted
 
 ## Learned class skills. Current character level never gates retained-skill use.
-enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, JUDGEMENT, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, EXECUTE, TOOLKIT }
+enum Effect { PRACTICE, EXPERIENCE, DEATH_NOTICE, ARMOR, GOLD, SUMMON, EXECUTION_SENTENCE, PASSIVE, KILL_STALKER, MORTAL_STRIKE, BATTLE_SHOUT, CLASS_POINTS, CHARGE, EXECUTE, TOOLKIT }
 enum Target { NONE, ENEMY, ALLY, SELF }
 
 var id: StringName
@@ -38,6 +38,7 @@ var periodic_duration: int = 0
 var family: StringName = &""
 var school: int = 0
 var cooldown_seconds: int = 0
+var delay_turns: int = 0
 var coefficient: float = 0.0
 var detail: String = ""
 
