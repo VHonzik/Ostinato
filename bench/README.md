@@ -68,6 +68,6 @@ instrumentation does not change outcomes. Run a smoke case and the normal projec
 validation after code changes. Do not turn historical policies into gameplay contracts.
 
 Older one-off experiments remain in ignored `reports/` and may use removed APIs.
-The committed [October balance snapshot](../balance/2026-10-14/results.md) is historical;
-its source copies describe that run, not the current bench. Human playtests still decide
-feel, readability and balance.
+The obsolete October 14 balance snapshot and frozen scripts have been removed;
+use this bench with the current game model. Human playtests still decide feel,
+readability and balance.

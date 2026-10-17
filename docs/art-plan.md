@@ -48,8 +48,8 @@ needed to start that work.
 32×32 cells, transparent actor/prop backgrounds, nearest-neighbor sampling. Start
 with one facing/pose per actor; animation is optional later. Buildings assemble from
 tiles and props. Keep the atlas layout flexible until these shapes have been tried
-in game. The [local ComfyUI pipeline](../art/README.md) generates individual candidates;
-pack the selected sprites into a sheet as a separate final step, without a fixed capacity.
+in game. Keep [editable Aseprite sources and runtime sheets](../art/README.md) aligned
+when replacing art or moving atlas cells.
 
 Favor minimal solid silhouettes, sparse interior details, and very little shading,
 close to the existing reference sheets. Friends should read as resolute adults;
@@ -80,7 +80,7 @@ The old mage and other retiring classes keep their placeholder art during the tr
 
 ## UI and effects
 
-Deferred from the current generation pass, which covers world and static sprites only.
+Ability icons can follow the chosen toolkit as the world art is refined.
 
 Keep panel frames, text, player bars, slot borders and selection markers drawn by Godot.
 Friendly contacts are green. Available quests and ready turn-ins blink between the

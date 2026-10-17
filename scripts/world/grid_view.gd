@@ -30,7 +30,6 @@ const ENEMY_ABILITIES: Dictionary[StringName, Vector2i] = {
 	&"whirlwind": Vector2i(0, 2),
 }
 const ABILITY_BLINK_SECONDS: float = 1.5
-const CONSECRATION_BLINK_PHASE_SECONDS: float = 0.125
 const CONSECRATION_CELL := Vector2i(1, 2)
 # Source NPC identity keeps species silhouettes independent of relationship colors.
 const ENEMY_SPRITES: Dictionary[int, Vector2i] = {
@@ -265,7 +264,6 @@ func _blink_sprite(effect: Dictionary) -> Texture2D:
 
 func _consecration_visible(tile: Vector2i) -> bool:
 	return (not _consecration_blink.is_empty()
-		and floori(float(_consecration_blink.elapsed) / CONSECRATION_BLINK_PHASE_SECONDS) % 2 == 0
 		and _consecration_blink.tiles.has(tile))
 
 

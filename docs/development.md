@@ -156,9 +156,9 @@ are removed, along with parry, block, glancing, crushing and spell resistance.
 Ordinary enemy and stalker tuning lives in
 [northshire_data.gd](../scripts/world/northshire_data.gd); level-gap modifiers live in
 [melee_rules.gd](../scripts/combat/melee_rules.gd). New spawns and Loops use the current
-profiles; saved actors keep their recorded stats. The saved
-[October balance comparisons](../balance/2026-10-14/results.md) include the raw results,
-simulation setup and two-handed/dual-wield comparisons for future class tuning.
+profiles; saved actors keep their recorded stats. The current
+[simulation bench](../bench/README.md) compares kits, weapon setups and encounters
+using the live game model; generated results stay under ignored `reports/bench/`.
 
 Execution Sentence replaces Judgement. It fixes damage and hit/critical results when
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings
@@ -221,8 +221,8 @@ successful run for debugging. No written validation report is required.
 - `scripts/world/`, `combat/`, `hero/`, `items/`, `quests/`: simulation, UI, and game data.
 - `scripts/game_session.gd`, `save_codec.gd`, `save_store.gd`: Loops and persistence.
 - `test/unit/`: behavioral GUT tests; `tools/`: setup, launch, and checks.
-- `art/`: [sprite generation and packing](../art/README.md); selected PNGs in
-  `assets/sprites/valley/`, maintained atlas in `assets/spritesheets/valley/`.
+- `art/`: [editable Aseprite sources and sprite workflow](../art/README.md).
+  Runtime sheets live in `assets/spritesheets/`; temporary SVGs in `assets/sprites/dev/`.
 - `docs/direction.md`: durable intent; `docs/backlog.md`: local work, separate from design.
 
 Follow [coding-style.md](coding-style.md); preserve `.gd.uid` and asset `.import` files.

@@ -1,6 +1,0 @@
-param([ValidateRange(0,2)][int]$Shard = 0)
-. "$PSScriptRoot/../tools/common.ps1"
-$balanceConsole = Join-Path $ProjectRoot $ToolVersions.godot.console_executable
-Assert-FileHash $balanceConsole $ToolVersions.godot.console_sha256
-& $balanceConsole --headless --path $ProjectRoot --script res://reports/balance_matrix.gd -- $Shard
-exit $LASTEXITCODE

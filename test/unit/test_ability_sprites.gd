@@ -148,7 +148,7 @@ func test_whirlwind_shows_on_each_landed_enemy_and_never_the_player() -> void:
 		assert_eq((_view.base as AtlasTexture).region, Rect2(0, 32, 16, 16))
 
 
-func test_consecration_blinks_open_tiles_for_one_and_a_half_seconds_then_restores_them() -> void:
+func test_consecration_shows_open_tiles_for_one_and_a_half_seconds_then_restores_them() -> void:
 	var flowers := Vector2i(7, 8)
 	var wall := Vector2i(7, 7)
 	_world.scenery_tiles[flowers] = &"flowers"
@@ -166,14 +166,16 @@ func test_consecration_blinks_open_tiles_for_one_and_a_half_seconds_then_restore
 	_view._draw_consecration()
 	assert_eq(_view.effect_tiles.size(), 8)
 	_view._process(0.125)
-	assert_false(_view._consecration_visible(flowers))
-	assert_eq(_view._terrain_sprite(flowers, occupants), &"flowers")
+	assert_true(_view._consecration_visible(flowers))
+	assert_eq(_view._terrain_sprite(flowers, occupants), &"")
 	_view._process(0.125)
 	assert_true(_view._consecration_visible(flowers))
 	_world.player_tile = Vector2i(15, 15)
 	assert_true(_view._consecration_visible(Vector2i(8, 8)), "The animation stays at the cast site.")
 	assert_false(_view._consecration_visible(_world.player_tile))
-	_view._process(1.25)
+	_view._process(1.125)
+	assert_true(_view._consecration_visible(flowers))
+	_view._process(0.125)
 	assert_true(_view._consecration_blink.is_empty())
 	assert_eq(_view._terrain_sprite(flowers, occupants), &"flowers")
 	assert_false(_world.consecration.is_empty(), "Visual expiry does not end the damaging ground.")

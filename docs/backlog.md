@@ -20,9 +20,8 @@ and how to try it; the final chat carries temporary playtest instructions.
   menu behavior, hotbar and save checks; visual acceptance belongs to human review.
 - [x] Draft the [reduced valley and sprite list](art-plan.md). World population changes
   belong to the later world milestone; the owner’s [map sketch](map.svg) supplies the layout.
-- [x] Establish the [local art pipeline](../art/README.md): ComfyUI world/static
-  generation, selected individual PNGs, and separate atlas packing. The prototype
-  is accepted; rejected experiments are removed.
+- [x] Establish the prototype's selected art. Generation tooling and unused sprites
+  are now removed; keep [editable sources and runtime sheets](../art/README.md).
 - [x] Play the screen prototype. The owner's quick playtest found it satisfactory;
   the valley sketch and sprite plan are ready for the first playable map prototype.
 
@@ -209,8 +208,8 @@ live in game data and the spell book. Human balance and readability review remai
 - [x] Explore starter, partial Warrior and retained mixed-class matchups with temporary
   seeded simulations under ignored `reports/`; keep experiments out of game code.
 - [x] Adopt the simulated stalker combat profile for every arrival and reinforcement;
-  preserve the earlier [balance comparisons](../balance/2026-10-14/results.md) for later
-  class tuning. Early guard death, reinforcements and victory over all present stalkers are implemented;
+  use the current [simulation bench](../bench/README.md) for further class tuning.
+  Early guard death, reinforcements and victory over all present stalkers are implemented;
   their feel remains for playtesting.
 - [x] Implement the potion, stalker, class-kit and weapon-and-shield tuning pass.
   Give Rogue independent main-hand combo building through Relentless Assault, temper
