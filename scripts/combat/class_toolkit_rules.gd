@@ -201,7 +201,7 @@ static func holy_event(world: GridWorld) -> void:
 
 
 static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
-	multiplier: float, title: String) -> void:
+	multiplier: float, title: String, skill: SkillDefinition = null) -> void:
 	if world.is_terminal() or not target.alive:
 		return
 	var weapon := world.hero.off_hand_melee() if off_hand else world.hero.melee
@@ -212,7 +212,7 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 		result = &"hit"
 	var value := MeleeRules.damage(weapon, target.melee, result,
 		world.combat_random.randf(), multiplier, 0, recklessness_damage_multiplier(world.hero))
-	var event := AttackEvent.new(target, null, result,
+	var event := AttackEvent.new(target, skill, result,
 		floori(value * damage_multiplier(world.hero)))
 	event.origin = AttackEvent.Origin.BONUS
 	event.hand = AttackEvent.Hand.OFF if off_hand else AttackEvent.Hand.MAIN

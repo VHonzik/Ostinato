@@ -619,8 +619,8 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 		assert_not_null(sprites.base_sprite, category)
 		assert_null(sprites.faction_sprite, category)
 	var warrior := view.player_sprite_layers(&"Warrior").base_sprite as AtlasTexture
-	assert_same(warrior.atlas, GridView.CHARACTERS)
-	assert_eq(warrior.region, Rect2(32, 0, 16, 16), "The current player art becomes its base layer.")
+	assert_same(warrior.atlas, GridView.ABILITY_CHARACTERS)
+	assert_eq(warrior.region, Rect2(0, 0, 16, 16), "The new class art becomes its base layer.")
 
 
 func test_health_changes_reach_npc_and_player_base_layers_without_changing_faction() -> void:

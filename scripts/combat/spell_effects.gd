@@ -12,10 +12,15 @@ static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor,
 		return
 	var cast := SkillBehavior.Cast.new(skill, target, resource_spent, poison_hands)
 	SkillBehaviors.for_skill(skill).resolve(world, cast)
+	world.ability_used.emit(skill)
 
 
 static func attack(world: GridWorld, event: AttackEvent, title: String,
 	death_turn: int = -1) -> void:
+	if world.is_terminal() or not event.target.alive:
+		return
+	if event.skill != null and event.landed():
+		world.npc_ability_hit.emit(event.target, event.skill.family)
 	var label := title
 	if event.is_primary() and event.school == AttackEvent.School.PHYSICAL:
 		label = "%s (%s)" % [title, event.result]

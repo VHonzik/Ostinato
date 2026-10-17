@@ -32,7 +32,7 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
 	assert_eq(game.world.hero.learned_skills.size(), 2)
 	assert_null(game.world.hero.find_skill(&"fireball_1"))
-	assert_eq(GridView.class_sprite(game.world.hero.selected_class), Vector2i(2, 0))
+	assert_eq(GridView.class_sprite(game.world.hero.selected_class), Vector2i(0, 0))
 	assert_eq(game.world.actor_at(Vector2i(31, 34)).service, &"Warrior")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())

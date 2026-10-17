@@ -121,4 +121,4 @@ static func _windfury(world: GridWorld, event: AttackEvent) -> void:
 		for index in range(2):
 			ClassToolkitRules.bonus_strike(world, event.target, false,
 				1.0 + ClassToolkitRules.magnitude(world.hero, &"elemental_weapons_1") / 100.0,
-				"Windfury")
+				"Windfury", SkillDefinition.catalog(&"windfury_weapon_1"))

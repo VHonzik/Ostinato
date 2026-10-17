@@ -4,6 +4,8 @@ extends RefCounted
 signal message_added(message: String)
 signal friendly_interaction_requested(actor: GridActor)
 signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
+signal ability_used(skill: SkillDefinition)
+signal npc_ability_hit(actor: GridActor, family: StringName)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
 

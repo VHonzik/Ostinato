@@ -10,6 +10,7 @@ static func sentence(world: GridWorld, target: GridActor, skill: SkillDefinition
 		return
 	target.debuffs[skill.id] = {"until": world.turn_count + 1 + skill.delay_turns,
 		"damage": event.amount, "critical": int(event.critical())}
+	world.npc_ability_hit.emit(target, skill.family)
 	world.add_message("Execution Sentence on %s: verdict in %d turns." % [
 		target.title, skill.delay_turns])
 

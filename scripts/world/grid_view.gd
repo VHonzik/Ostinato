@@ -4,18 +4,41 @@ extends Node2D
 const TILE_SIZE: int = 32
 # Shared by the player and trainer NPCs.
 const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
-	&"Shaman": Vector2i(6, 0),
-	&"Paladin": Vector2i(2, 2),
-	&"Warrior": Vector2i(2, 0),
-	&"Rogue": Vector2i(4, 0),
+	&"Shaman": Vector2i(3, 0),
+	&"Paladin": Vector2i(1, 0),
+	&"Warrior": Vector2i(0, 0),
+	&"Rogue": Vector2i(2, 0),
 }
+const ABILITY_CHARACTERS: Texture2D = preload("res://assets/spritesheets/characters.png")
+const CLASS_ART: Dictionary[StringName, Vector2i] = {
+	&"warrior": Vector2i(0, 0), &"llane": Vector2i(0, 0),
+	&"paladin": Vector2i(1, 0), &"sammuel": Vector2i(1, 0),
+	&"rogue": Vector2i(2, 0), &"jorrick": Vector2i(2, 0),
+	&"shaman": Vector2i(3, 0), &"shaman_mentor": Vector2i(3, 0),
+}
+const PLAYER_ABILITIES: Dictionary[StringName, Vector2i] = {
+	&"charge": Vector2i(0, 3),
+	&"battle_shout": Vector2i(0, 4), &"seal_of_command": Vector2i(1, 3),
+	&"divine_shield": Vector2i(1, 4), &"instant_poison": Vector2i(2, 2),
+	&"deadly_poison": Vector2i(2, 2), &"evasion": Vector2i(2, 3),
+	&"lightning_shield": Vector2i(3, 2),
+}
+const ENEMY_ABILITIES: Dictionary[StringName, Vector2i] = {
+	&"mortal_strike": Vector2i(0, 1), &"execution_sentence": Vector2i(1, 1),
+	&"eviscerate": Vector2i(2, 1), &"windfury_weapon": Vector2i(3, 1),
+	&"earth_shock": Vector2i(3, 3),
+	&"whirlwind": Vector2i(0, 2),
+}
+const ABILITY_BLINK_SECONDS: float = 1.5
+const CONSECRATION_BLINK_PHASE_SECONDS: float = 0.125
+const CONSECRATION_CELL := Vector2i(1, 2)
 # Source NPC identity keeps species silhouettes independent of relationship colors.
 const ENEMY_SPRITES: Dictionary[int, Vector2i] = {
 	299: Vector2i(7, 4), # Young Wolf
-	69: Vector2i(7, 4), # Timber Wolf
+	69: Vector2i(8, 4), # Timber Wolf
 	6: Vector2i(0, 5), # Kobold Vermin
 	257: Vector2i(1, 5), # Kobold Worker
-	80: Vector2i(1, 5), # Kobold Laborer
+	80: Vector2i(6, 5), # Kobold Laborer
 	38: Vector2i(1, 2), # Defias Thug
 	103: Vector2i(5, 2), # Garrick Padfoot
 }
@@ -41,11 +64,8 @@ const VALLEY_CLASSES: Dictionary[StringName, StringName] = {
 # Owner-selected cells from the original sheets; remaining art uses the valley atlas.
 const REFERENCE_CHARACTERS: Dictionary[StringName, Vector2i] = {
 	&"willem": Vector2i(1, 0),
-	&"warrior": Vector2i(2, 0), &"llane": Vector2i(2, 0),
-	&"rogue": Vector2i(4, 0), &"jorrick": Vector2i(4, 0),
-	&"shaman": Vector2i(6, 0), &"shaman_mentor": Vector2i(6, 0),
 	&"milly": Vector2i(0, 1), &"bandit": Vector2i(1, 2),
-	&"paladin": Vector2i(2, 2), &"sammuel": Vector2i(2, 2), &"gate_guard": Vector2i(2, 2),
+	&"gate_guard": Vector2i(2, 2),
 	&"garrick": Vector2i(5, 2), &"wolf": Vector2i(7, 4),
 	&"kobold_miner": Vector2i(0, 5),
 	&"kobold_worker": Vector2i(1, 5), &"kobold_foreman": Vector2i(1, 5),
@@ -75,10 +95,17 @@ var world: GridWorld:
 			return
 		if world != null:
 			world.npc_combat_text.disconnect(combat_text.spawn)
+			world.ability_used.disconnect(_show_player_ability)
+			world.npc_ability_hit.disconnect(_show_npc_ability)
 		world = value
 		combat_text.clear()
+		_player_blink.clear()
+		_npc_blinks.clear()
+		_consecration_blink.clear()
 		if world != null:
 			world.npc_combat_text.connect(combat_text.spawn)
+			world.ability_used.connect(_show_player_ability)
+			world.npc_ability_hit.connect(_show_npc_ability)
 var selected: GridActor
 var alternate_palette: bool = false
 var combat_text := FloatingCombatText.new()
@@ -87,6 +114,10 @@ var _valley_regions: Dictionary = {}
 var _blink_elapsed: float = 0.0
 var _blink_alternate_visible: bool = false
 var _quest_marker_sprite: AtlasTexture
+var _player_blink: Dictionary = {}
+var _npc_blinks: Dictionary[GridActor, Dictionary] = {}
+var _consecration_blink: Dictionary = {}
+var _ability_sprites: Dictionary[Vector2i, AtlasTexture] = {}
 
 
 func _init() -> void:
@@ -149,7 +180,7 @@ func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 func player_sprite_layers(category: StringName) -> ActorSpriteLayers:
 	if not player_sprites.has(category):
 		var base := (_valley_sprite_texture(VALLEY_CLASSES[category])
-			if VALLEY_CLASSES.has(category) else _character_sprite(class_sprite(category)))
+			if VALLEY_CLASSES.has(category) else _ability_sprite(class_sprite(category)))
 		player_sprites[category] = ActorSpriteLayers.new(base)
 	return player_sprites[category]
 
@@ -164,6 +195,15 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if (not _player_blink.is_empty() or not _npc_blinks.is_empty()
+		or not _consecration_blink.is_empty()):
+		_advance_ability_blink(_player_blink, delta)
+		_advance_ability_blink(_consecration_blink, delta)
+		for actor: GridActor in _npc_blinks.keys():
+			_advance_ability_blink(_npc_blinks[actor], delta)
+			if not actor.alive or _npc_blinks[actor].is_empty():
+				_npc_blinks.erase(actor)
+		queue_redraw()
 	_blink_elapsed += delta
 	if _blink_elapsed >= BLINK_SECONDS:
 		var phases := floori(_blink_elapsed / BLINK_SECONDS)
@@ -171,6 +211,69 @@ func _process(delta: float) -> void:
 		if phases % 2 == 1:
 			_blink_alternate_visible = not _blink_alternate_visible
 		queue_redraw()
+
+
+func _show_player_ability(skill: SkillDefinition) -> void:
+	if skill.family == &"consecration":
+		var tiles: Array[Vector2i] = []
+		var center: Vector2i = world.consecration.center
+		for y in range(center.y - skill.range_tiles, center.y + skill.range_tiles + 1):
+			for x in range(center.x - skill.range_tiles, center.x + skill.range_tiles + 1):
+				var tile := Vector2i(x, y)
+				if (world.bounds.has_point(tile) and not world.blocked_tiles.has(tile)
+					and PaladinRules.covers(world, tile)):
+					tiles.append(tile)
+		_consecration_blink = {"tiles": tiles, "elapsed": 0.0}
+		if tiles.has(world.player_tile):
+			_player_blink.clear()
+		for actor: GridActor in _npc_blinks.keys():
+			if tiles.has(actor.tile):
+				_npc_blinks.erase(actor)
+		queue_redraw()
+	if PLAYER_ABILITIES.has(skill.family):
+		_replace_consecration_tile(world.player_tile)
+		_player_blink = {"sprite": _ability_sprite(PLAYER_ABILITIES[skill.family]),
+			"elapsed": 0.0}
+		queue_redraw()
+
+
+func _show_npc_ability(actor: GridActor, family: StringName) -> void:
+	if ENEMY_ABILITIES.has(family):
+		_replace_consecration_tile(actor.tile)
+		_npc_blinks[actor] = {"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0}
+		queue_redraw()
+
+
+func _replace_consecration_tile(tile: Vector2i) -> void:
+	if not _consecration_blink.is_empty():
+		_consecration_blink.tiles.erase(tile)
+
+
+func _advance_ability_blink(effect: Dictionary, delta: float) -> void:
+	if effect.is_empty():
+		return
+	effect.elapsed += delta
+	if float(effect.elapsed) >= ABILITY_BLINK_SECONDS:
+		effect.clear()
+
+
+func _blink_sprite(effect: Dictionary) -> Texture2D:
+	if effect.is_empty():
+		return null
+	return effect.sprite
+
+
+func _consecration_visible(tile: Vector2i) -> bool:
+	return (not _consecration_blink.is_empty()
+		and floori(float(_consecration_blink.elapsed) / CONSECRATION_BLINK_PHASE_SECONDS) % 2 == 0
+		and _consecration_blink.tiles.has(tile))
+
+
+func _ability_sprite(cell: Vector2i) -> AtlasTexture:
+	if not _ability_sprites.has(cell):
+		_ability_sprites[cell] = _atlas_sprite(ABILITY_CHARACTERS,
+			Rect2(Vector2(cell * 16), Vector2(16, 16)))
+	return _ability_sprites[cell]
 
 
 # Living occupants hide corpses/chests; the player hides every other sprite on its tile.
@@ -185,7 +288,7 @@ func _sprite_occupants() -> Dictionary[Vector2i, GridActor]:
 
 
 func _terrain_sprite(tile: Vector2i, occupants: Dictionary[Vector2i, GridActor]) -> StringName:
-	if tile == world.player_tile or occupants.has(tile):
+	if tile == world.player_tile or occupants.has(tile) or _consecration_visible(tile):
 		return &""
 	return world.scenery_tiles.get(tile, world.ground_tiles.get(tile, &""))
 
@@ -205,9 +308,8 @@ func _draw() -> void:
 		return
 	var occupants := _sprite_occupants()
 	_draw_valley_ground(occupants)
-	_draw_consecration()
 	for actor: GridActor in occupants.values():
-		if not actor.alive and actor.corpse_visible:
+		if not actor.alive and actor.corpse_visible and not _consecration_visible(actor.tile):
 			var sprite := &"animal_corpse" if actor.creature_type == "beast" else &"humanoid_corpse"
 			if actor.chest:
 				sprite = &"chest_open" if actor.loot_assigned else &"chest_closed"
@@ -221,14 +323,19 @@ func _draw() -> void:
 	var player_rect := Rect2(Vector2(world.player_tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_player()
+	_draw_consecration()
 
 
 func _draw_actor(actor: GridActor) -> void:
+	if _consecration_visible(actor.tile):
+		return
 	var sprites := npc_sprite_layers(actor)
+	var effect := _blink_sprite(_npc_blinks.get(actor, {}))
 	var faction := sprites.faction_sprite
 	if _blink_alternate_visible and QuestRules.has_marker(world, actor):
 		faction = _quest_marker_sprite
-	_draw_sprite_layers(actor.tile, sprites.base_sprite, faction,
+	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
+		faction if effect == null else null,
 		health_tint(actor.health, actor.max_health), _actor_color(actor))
 	if actor.debuffs.has(&"execution_sentence_1"):
 		var remaining := int(actor.debuffs[&"execution_sentence_1"].until) - world.turn_count
@@ -239,23 +346,27 @@ func _draw_actor(actor: GridActor) -> void:
 
 
 func _draw_consecration() -> void:
-	if world.consecration.is_empty():
+	if _consecration_blink.is_empty():
 		return
-	var center: Vector2i = world.consecration.center
-	var radius := world.hero.find_skill(&"consecration_1").range_tiles
-	for y in range(center.y - radius, center.y + radius + 1):
-		for x in range(center.x - radius, center.x + radius + 1):
-			var tile := Vector2i(x, y)
-			if not world.bounds.has_point(tile) or world.blocked_tiles.has(tile) or not PaladinRules.covers(world, tile):
-				continue
-			var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
-			draw_rect(rectangle.grow(-2), Color(1.0, 0.76, 0.22, 0.16))
-			draw_rect(rectangle.grow(-3), Color(1.0, 0.82, 0.35, 0.65), false, 1.0)
+	for tile: Vector2i in _consecration_blink.tiles:
+		if not _consecration_visible(tile):
+			continue
+		var color := Color.WHITE
+		var actor := world.actor_at(tile)
+		if tile == world.player_tile:
+			color = health_tint(world.hero.health, world.hero.max_health)
+		elif actor != null:
+			color = health_tint(actor.health, actor.max_health)
+		_draw_sprite_layers(tile, _ability_sprite(CONSECRATION_CELL), null, color, Color.WHITE)
 
 
 func _draw_player() -> void:
+	if _consecration_visible(world.player_tile):
+		return
 	var sprites := player_sprite_layers(world.hero.selected_class)
-	_draw_sprite_layers(world.player_tile, sprites.base_sprite, sprites.faction_sprite,
+	var effect := _blink_sprite(_player_blink)
+	_draw_sprite_layers(world.player_tile, sprites.base_sprite if effect == null else effect,
+		sprites.faction_sprite if effect == null else null,
 		health_tint(world.hero.health, world.hero.max_health), Color.WHITE)
 
 
@@ -274,6 +385,8 @@ func _character_sprite(source: Vector2i) -> AtlasTexture:
 
 
 func _valley_sprite_texture(key: StringName) -> AtlasTexture:
+	if CLASS_ART.has(key):
+		return _ability_sprite(CLASS_ART[key])
 	if REFERENCE_CHARACTERS.has(key):
 		return _character_sprite(REFERENCE_CHARACTERS[key])
 	return _atlas_sprite(VALLEY_ATLAS, _valley_regions[key])
@@ -305,7 +418,9 @@ func _draw_valley_ground(occupants: Dictionary[Vector2i, GridActor]) -> void:
 
 func _draw_valley_sprite(tile: Vector2i, sprite: StringName, color: Color = Color.WHITE) -> void:
 	var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
-	if REFERENCE_CHARACTERS.has(sprite):
+	if CLASS_ART.has(sprite):
+		draw_texture_rect(_ability_sprite(CLASS_ART[sprite]), rectangle, false, color)
+	elif REFERENCE_CHARACTERS.has(sprite):
 		var source: Vector2i = REFERENCE_CHARACTERS[sprite]
 		draw_texture_rect_region(CHARACTERS, rectangle,
 			Rect2(Vector2(source * 16), Vector2(16, 16)), color)
