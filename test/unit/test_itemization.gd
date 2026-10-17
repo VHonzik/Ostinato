@@ -232,3 +232,26 @@ func _beside(world: GridWorld, actor: GridActor) -> void:
 			world.player_tile = actor.tile + direction
 			return
 	fail_test("Contact has no adjacent open tile.")
+
+
+func test_item_comparison_reports_shared_improvements_and_added_or_lost_stats() -> void:
+	var upgrade := ItemData.describe_rich(70012, 70002)
+	assert_string_contains(upgrade, "+2 strength [color=#66ee88](+1)[/color]")
+	assert_string_contains(upgrade, "+2.00% crit [color=#66ee88](+1.00%)[/color]")
+	var swap := ItemData.describe_rich(70003, 70002)
+	assert_string_contains(swap, "[color=#66ee88](+1 agility)[/color]")
+	assert_string_contains(swap, "[color=#ff6464](-1 strength)[/color]")
+	assert_string_contains(swap, "[color=#ff6464](-1.00% crit)[/color]")
+	assert_string_contains(swap, "[color=#66ee88](+2.00% haste)[/color]")
+	var downgrade := ItemData.describe_rich(70002, 70012)
+	assert_string_contains(downgrade, "[color=#ff6464](-1)[/color]")
+	assert_false(ItemData.describe_rich(70002, 70002).contains("(+"))
+	assert_false(ItemData.describe_rich(70002, 70001).contains("(-"))
+
+
+func test_item_quality_markup_only_wraps_the_name() -> void:
+	var description := ItemData.describe_rich(2572)
+	assert_true(description.begins_with("[color=#1eff00]Runed Linen Armor[/color] /"))
+	assert_eq(description.count("[color="), 1)
+	assert_eq(ItemData.color_name("Slot 1: Runed Linen Armor x2", 2572),
+		"Slot 1: [color=#1eff00]Runed Linen Armor[/color] x2")

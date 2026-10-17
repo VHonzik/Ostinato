@@ -41,6 +41,8 @@ func restart_after_death() -> bool:
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar
+	if fresh.hotbar[GridWorld.HOTBAR_SIZE - 1] == &"":
+		fresh.hotbar[GridWorld.HOTBAR_SIZE - 1] = GridWorld.FOOD_HOTBAR_ID
 	fresh.hotbar_locked = locked
 	_replace_world(fresh)
 	world.add_message("You died. Loop %d begins as %s. Learning remains; choose your class at the marshal before taking quests." % [loop_count, world.hero.selected_class])

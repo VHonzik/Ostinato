@@ -127,8 +127,8 @@ func test_choice_revalidates_range_combat_and_quest_cutoff_without_mutation() ->
 	enemy.engaged = true
 	assert_false(game.select_class(&"Rogue", marshal))
 	enemy.engaged = false
-	assert_false(QuestRules.accept(game.world, "valley_patrol", marshal))
-	assert_false(QuestRules.abandon(game.world, "valley_patrol"))
+	assert_false(QuestRules.accept(game.world, "valley_wolves", marshal))
+	assert_false(QuestRules.abandon(game.world, "valley_wolves"))
 	assert_true(game.can_select_class())
 	assert_eq(game.world.hero.selected_class, &"Warrior")
 	assert_null(game.world.hero.find_skill(&"relentless_assault_1"))
@@ -403,7 +403,8 @@ func _key(key: Key) -> InputEventKey:
 
 
 func _class_choice(menu: MenuPanel, category: StringName) -> Button:
-	var title := "Uhm... I seek %s teaching" % String(category).to_lower()
+	var title := ("I am warrior" if category == &"Warrior"
+		else "Uhm... I seek %s teaching" % String(category).to_lower())
 	for button in menu._buttons:
 		if button.text == title:
 			return button
@@ -441,7 +442,7 @@ func test_marshal_preselects_current_class_and_enter_immediately_shows_quests() 
 	await get_tree().process_frame
 	assert_same(get_viewport().gui_get_focus_owner(), _class_choice(menu, &"Warrior"))
 	assert_false(menu._buttons.any(func(button: Button) -> bool:
-		return button.text.contains("The Western Path")))
+		return button.text.contains("Wolves of the Western Woods")))
 	menu.handle_key(_key(KEY_S))
 	assert_same(get_viewport().gui_get_focus_owner(), _class_choice(menu, &"Shaman"))
 	menu.handle_key(_key(KEY_ENTER))
@@ -449,7 +450,7 @@ func test_marshal_preselects_current_class_and_enter_immediately_shows_quests() 
 	assert_true(game.world.class_selected)
 	assert_eq(game.world.hero.selected_class, &"Shaman")
 	assert_true(menu._buttons.any(func(button: Button) -> bool:
-		return button.text.contains("The Western Path")))
+		return button.text.contains("Wolves of the Western Woods")))
 	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
 	assert_eq(game.world.turn_count, 0)
 

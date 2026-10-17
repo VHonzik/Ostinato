@@ -88,8 +88,11 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			and not world.hero.buffs.has(&"sudden_death_1")
 			and (not world.valid_spell_target(skill, world.last_attacked_enemy) if world.in_combat()
 				else world.spell_candidates(skill).is_empty()))
+		var sentence_unavailable := (skill != null
+			and skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
+			and not world.hero.buffs.has(&"seal_of_command_1"))
 		for color_state in LABEL_COLOR_STATES:
-			if insufficient_rage or execute_unavailable:
+			if insufficient_rage or execute_unavailable or sentence_unavailable:
 				button.add_theme_color_override(color_state, INSUFFICIENT_RAGE_COLOR)
 			else:
 				button.remove_theme_color_override(color_state)
@@ -97,6 +100,15 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		cooldown.visible = remaining > 0
 		if skill == null:
 			button.tooltip_text = "Slot %d (%s): empty. Assign a skill from the spell book." % [index + 1, key]
+		if world.hotbar[index] == GridWorld.FOOD_HOTBAR_ID:
+			var quantity := 0
+			for item in world.hero.inventory:
+				if not item.is_empty() and item.id == GridWorld.SPAWN_FOOD_ID:
+					quantity += int(item.quantity)
+			var food := ItemData.get_item(GridWorld.SPAWN_FOOD_ID)
+			button.text = "%s\nFood x%d" % [key, quantity]
+			button.tooltip_text = "%s x%d\nHeals %d HP over %d turns. Movement or combat ends eating." % [
+				food.title, quantity, food.restore, food.duration]
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"
 	lock_button.tooltip_text = "Lock layout edits; assigned skills can still be activated."
 	lock_button.disabled = not can_edit

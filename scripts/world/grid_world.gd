@@ -15,6 +15,9 @@ const DIRECTIONS: Array[Vector2i] = [
 
 const HOTBAR_ROW_SIZE: int = 10
 const HOTBAR_SIZE: int = HOTBAR_ROW_SIZE * 2
+const FOOD_HOTBAR_ID: StringName = &"food_117"
+const SPAWN_FOOD_ID: int = 117
+const SPAWN_FOOD_QUANTITY: int = 5
 const CHAT_LIMIT: int = 100
 const WANDER_MIN_TURNS: int = 3
 const WANDER_MAX_TURNS: int = 10
@@ -93,12 +96,28 @@ func assign_hotbar(slot: int, identifier: StringName) -> bool:
 	# Store an explicit learned skill; layout editing never spends time.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
-	if identifier != &"":
+	if identifier != &"" and identifier != FOOD_HOTBAR_ID:
 		var skill := hero.find_skill(identifier)
 		if skill == null or skill.effect == SkillDefinition.Effect.PASSIVE:
 			return false
 	hotbar[slot] = identifier
 	return true
+
+
+func consume_hotbar_food() -> bool:
+	for index in range(hero.inventory.size()):
+		if not hero.inventory[index].is_empty() and hero.inventory[index].id == SPAWN_FOOD_ID:
+			return consume_item(index)
+	add_message("No Tough Jerky left.")
+	return false
+
+
+func committed_enemy() -> GridActor:
+	for target in [auto_attack_target, last_attacked_enemy]:
+		if (target != null and actors.has(target) and target.alive and target.engaged
+			and target.relationship != GridActor.Relationship.FRIENDLY):
+			return target
+	return null
 
 
 func is_open(tile: Vector2i) -> bool:
@@ -172,9 +191,11 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
 		return false
 	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
-		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
+		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
+		SkillDefinition.Effect.EXECUTION_SENTENCE]
 		and skill.target == SkillDefinition.Target.ENEMY and target == null and in_combat()):
-		target = last_attacked_enemy
+		target = (committed_enemy() if skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
+			else last_attacked_enemy)
 	if skill.effect == SkillDefinition.Effect.PASSIVE:
 		return false
 	if PoisonRules.is_poison(skill) and (poison_hands not in [1, 2, 3]
@@ -974,12 +995,14 @@ func can_receive_starter_gear(merchant: GridActor) -> bool:
 		return false
 	var contact := NpcDefinition.find(merchant.npc_id)
 	return (contact != null and contact.offers_starter_gear and valley_route
-		and not starter_gear_received and hero.selected_class == &"Warrior"
+		and not starter_gear_received and hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
+		and class_selected
 		and QuestRules.in_range(self, merchant, contact.npc_id) and trader_in_range(merchant))
 
 
 func receive_starter_gear(merchant: GridActor) -> bool:
-	if not can_receive_starter_gear(merchant) or not StarterGear.exchange(hero, &"Warrior"):
+	if (not can_receive_starter_gear(merchant)
+		or not StarterGear.exchange(hero, hero.selected_class)):
 		return false
 	starter_gear_received = true
 	return true

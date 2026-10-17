@@ -46,7 +46,8 @@ const ENCOUNTERS: Array = [
 	[80, Vector2i(25, 3), "mine"],
 ]
 const QUESTS: Array[String] = [
-	"valley_patrol", "valley_timber_wolves", "valley_camp", "valley_mine", "valley_vineyard", "valley_explore",
+	"valley_wolves", "valley_patrol", "valley_timber_wolves", "valley_camp",
+	"valley_mine", "valley_vineyard", "valley_explore",
 ]
 
 
@@ -56,6 +57,9 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	world.valley_route = true
 	world.stalker_schedule = true
 	world.stalker_deadlines = STALKER_DEADLINES.duplicate()
+	InventoryRules.add(world.hero.inventory,
+		ItemData.instance(GridWorld.SPAWN_FOOD_ID, GridWorld.SPAWN_FOOD_QUANTITY))
+	world.hotbar[GridWorld.HOTBAR_SIZE - 1] = GridWorld.FOOD_HOTBAR_ID
 	build_terrain(world)
 	for contact in NpcDefinition.CONTACTS:
 		world.actors.append(contact.create_actor())
@@ -142,6 +146,8 @@ static func build_terrain(world: GridWorld) -> void:
 	for tile in [Vector2i(13, 30), Vector2i(20, 21), Vector2i(36, 28),
 		Vector2i(45, 55), Vector2i(66, 51), Vector2i(49, 77)]:
 		world.scenery_tiles[tile] = &"small_rock"
+	for tile in [Vector2i(6, 46), Vector2i(15, 41), Vector2i(19, 55)]:
+		world.scenery_tiles[tile] = &"bush"
 	# Sparse, passable tufts; the western woods have fewer than the open routes.
 	for tile in [Vector2i(5, 47), Vector2i(13, 40), Vector2i(20, 55),
 		Vector2i(27, 55), Vector2i(33, 59), Vector2i(36, 56), Vector2i(30, 30),

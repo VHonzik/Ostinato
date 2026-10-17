@@ -764,7 +764,8 @@ func test_retained_holy_and_nature_crits_build_seal_fate_and_bandits_guile() -> 
 			world.hero.rage = 100
 			assert_true(world.cast_skill(identifier, enemy))
 			if identifier == &"execution_sentence_1":
-				world.wait_turn()
+				for turn in range(world.hero.find_skill(identifier).delay_turns):
+					world.wait_turn()
 			if index == 0:
 				assert_eq(world.hero.combo_points, 2, "Base point plus retained Seal Fate.")
 			if index < 3:

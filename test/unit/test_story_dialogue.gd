@@ -87,7 +87,7 @@ func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.vendor_stock, stock)
 	assert_false(world.receive_starter_gear(janos), "Reopening must not replenish free gear.")
-	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
+	assert_eq(world.hero.inventory[0], ItemData.instance(117, 5))
 
 
 func test_janos_exchange_is_atomic_and_keeps_acquired_two_handed_weapon() -> void:
@@ -121,8 +121,8 @@ func test_janos_requires_living_nearby_trader_matching_class_and_no_pending_acti
 	janos.alive = false
 	assert_false(world.receive_starter_gear(janos))
 	janos.alive = true
-	world.hero.selected_class = &"Paladin"
-	assert_false(world.receive_starter_gear(janos), "Paladin has only a story referral in this slice.")
+	world.hero.selected_class = &"Unknown"
+	assert_false(world.receive_starter_gear(janos))
 	world.hero.selected_class = &"Warrior"
 	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
 	assert_false(world.receive_starter_gear(janos))
@@ -153,9 +153,54 @@ func test_gear_grant_survives_save_load_and_resets_after_death() -> void:
 	assert_false(session.world.starter_gear_received)
 	assert_eq(session.world.hero.equipment.weapons.id, 35)
 	assert_eq(session.world.hero.equipment.armor.id, 44)
+	var marshal := _contact(session.world, NpcDefinition.MARSHAL_ID)
+	_beside(session.world, marshal)
+	assert_true(session.select_class(&"Warrior", marshal))
 	janos = _contact(session.world, 900003)
 	_beside(session.world, janos)
 	assert_true(session.world.receive_starter_gear(janos))
+
+
+func test_every_class_gets_its_starter_gear_once_in_any_returning_loop() -> void:
+	var session := _session()
+	for category: StringName in [&"Paladin", &"Rogue", &"Shaman", &"Warrior", &"Paladin"]:
+		session.world.hero.health = 0
+		assert_true(session.restart_after_death())
+		var world := session.world
+		var marshal := _contact(world, NpcDefinition.MARSHAL_ID)
+		_beside(world, marshal)
+		assert_true(session.select_class(category, marshal))
+		var janos := _contact(world, NpcDefinition.JANOS_ID)
+		_beside(world, janos)
+		var conversation := NpcConversation.build(session, janos)
+		assert_true(conversation.choices.any(func(choice: NpcConversation.Choice) -> bool:
+			return (choice.action == NpcConversation.Action.SPARE_GEAR
+				and choice.title.contains(String(category).to_lower()))))
+		assert_true(world.receive_starter_gear(janos))
+		for identifier in StarterGear.outfit(category):
+			assert_eq(world.hero.equipment[ItemData.get_item(identifier).slot].id, identifier)
+		assert_false(world.receive_starter_gear(janos))
+		assert_eq(world.hero.copper, 0)
+		assert_eq(world.turn_count, 0)
+
+
+func test_warrior_choice_is_confident_in_every_returning_loop() -> void:
+	var session := _session()
+	for loop in range(2, 6):
+		session.world.hero.health = 0
+		assert_true(session.restart_after_death())
+		var marshal := _contact(session.world, NpcDefinition.MARSHAL_ID)
+		_beside(session.world, marshal)
+		var conversation := NpcConversation.build(session, marshal)
+		for choice in conversation.choices:
+			if choice.action != NpcConversation.Action.SELECT_CLASS:
+				continue
+			if choice.category == &"Warrior":
+				assert_eq(choice.title, "I am warrior")
+			elif loop == 2:
+				assert_true(choice.title.begins_with("Uhm..."))
+			elif loop == 3:
+				assert_true(choice.title.begins_with("I am ...."))
 
 
 func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected() -> void:
@@ -198,7 +243,7 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	marshal = _contact(world, 197)
 	_beside(world, marshal)
 	menu.open_conversation(marshal)
-	assert_not_null(_button(menu, "Uhm... I seek warrior teaching"))
+	assert_not_null(_button(menu, "I am warrior"))
 	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
 	var equipment := world.hero.equipment.duplicate(true)
 	_button(menu, "Uhm... I seek paladin teaching").pressed.emit()

@@ -24,7 +24,7 @@ var _loot_source: GridActor
 var _merchant: GridActor
 var _quantity: int = 1
 var _preview_panel: PanelContainer
-var _preview: Label
+var _preview: RichTextLabel
 
 
 func _ready() -> void:
@@ -60,12 +60,14 @@ func _ready() -> void:
 	preview_style.set_content_margin_all(6)
 	_preview_panel.add_theme_stylebox_override("panel", preview_style)
 	content.add_child(_preview_panel)
-	_preview = Label.new()
+	_preview = RichTextLabel.new()
+	_preview.bbcode_enabled = true
+	_preview.add_theme_color_override("default_color", Color.WHITE)
+	_preview.fit_content = true
+	_preview.scroll_active = false
 	_preview.custom_minimum_size = Vector2(668, 46)
 	_preview.size.x = 668
 	_preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_preview.max_lines_visible = -1
-	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_preview_panel.add_child(_preview)
 	_preview_panel.hide()
 	_footer = HBoxContainer.new()
@@ -214,9 +216,6 @@ func _request_spare_gear(actor: GridActor) -> void:
 func open_trainer(category: StringName, selected_skill: StringName = &"") -> void:
 	_trainer = category
 	_begin("trainer", "%s training" % category, close)
-	_preview.max_lines_visible = -1
-	_preview.clip_text = false
-	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	var selected_button: Button
 	if category not in ClassSkillData.PLAYABLE_CLASSES:
 		_label("Training for this class is not available yet.")
@@ -295,7 +294,7 @@ func _equipped_detail(slot: String) -> void:
 	if item.is_empty():
 		_label("Nothing equipped.")
 	else:
-		_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
+		_item_label(int(item.id))
 		_button("Unequip (1 turn)", _transaction.bind(session.world.unequip_item.bind(slot),
 			_equipped_detail.bind(slot)))
 	_label("Equip from bags:")
@@ -311,6 +310,8 @@ func _equipped_detail(slot: String) -> void:
 		var button := _button(data.title + " (1 turn)", _transaction.bind(
 			session.world.equip_item.bind(index, slot), _equipped_detail.bind(slot)))
 		_item_color(button, int(candidate.id))
+		button.set_meta("preview", ItemData.describe_rich(int(candidate.id),
+			0 if item.is_empty() else int(item.id)))
 	if not eligible:
 		_label("No matching items in bags.")
 	_button("Back (Esc)", open_equipment)
@@ -321,7 +322,7 @@ func _item_detail(index: int) -> void:
 	var item := session.world.hero.inventory[index]
 	var data := ItemData.get_item(int(item.id))
 	_begin("item", "%s x%d" % [data.title, item.quantity], open_bags)
-	_item_color(_label(ItemData.describe(int(item.id))), int(item.id))
+	_item_label(int(item.id))
 	if data.slot != "":
 		if data.slot == "ring":
 			for suffix in ["_1", "_2"]:
@@ -454,7 +455,7 @@ func _buy_options(identifier: int) -> void:
 	var merchant := _merchant
 	var data := ItemData.get_item(identifier)
 	_begin("buy", "Buy " + String(data.title), open_buy.bind(merchant))
-	_item_color(_label(ItemData.describe(identifier)), identifier)
+	_item_label(identifier)
 	var unit_price := MerchantData.unit_price(merchant.npc_id, identifier)
 	var amounts: Array[int] = [1]
 	if int(data.stack) > 10:
@@ -584,9 +585,6 @@ func _begin(next_page: String, title: String, back: Callable) -> void:
 	_preview.text = ""
 	_preview_panel.hide()
 	_panel.position = size * 0.5 + Vector2(-360, -230 if active_game else -200)
-	_preview.max_lines_visible = -1
-	_preview.clip_text = false
-	_preview.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	_panel.size = Vector2(720, 460 if active_game else 400)
 	_back = back
 	_buttons.clear()
@@ -841,30 +839,49 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 				_quest_detail.bind(identifier, actor)))
 	if not quest.choices.is_empty():
 		for item in quest.choices:
-			_item_color(_label(ItemData.describe(int(item))), int(item))
+			_item_label(int(item))
 	for item in quest.get("rewards", []):
-		_item_color(_label(ItemData.describe(int(item))), int(item))
+		_item_label(int(item))
 	_button("Back (Esc)", back)
 	_finish()
 
 
-func _item_color(control: Control, identifier: int) -> void:
-	if control is Button:
-		_item_preview(control, identifier)
-	var color := ItemData.quality_color(int(ItemData.get_item(identifier).quality))
-	if control is Label:
-		control.add_theme_color_override("font_color", color)
-	else:
-		for state in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
-			control.add_theme_color_override(state, color)
+func _item_label(identifier: int) -> void:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.add_theme_color_override("default_color", Color.WHITE)
+	label.fit_content = true
+	label.scroll_active = false
+	label.custom_minimum_size.x = 680
+	label.text = ItemData.describe_rich(identifier)
+	_rows.add_child(label)
+
+
+func _item_color(button: Button, identifier: int) -> void:
+	_item_preview(button, identifier)
+	# Keep the native button text for its sizing and accessible name.
+	for state in HotbarPanel.LABEL_COLOR_STATES:
+		button.add_theme_color_override(state, Color.TRANSPARENT)
+	var text := RichTextLabel.new()
+	text.name = "ItemText"
+	text.bbcode_enabled = true
+	text.add_theme_color_override("default_color", Color.WHITE)
+	text.scroll_active = false
+	text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	text.offset_left = 6
+	text.offset_right = -6
+	text.offset_top = 4
+	text.offset_bottom = -4
+	text.text = "[center]" + ItemData.color_name(button.text, identifier) + "[/center]"
+	text.modulate.a = 0.5 if button.disabled else 1.0
+	button.add_child(text)
 
 
 func _item_preview(button: Button, identifier: int) -> void:
-	button.set_meta("preview", ItemData.describe(identifier))
-	button.set_meta("preview_color", ItemData.quality_color(int(ItemData.get_item(identifier).quality)))
+	button.set_meta("preview", ItemData.describe_rich(identifier))
 
 
 func _show_preview(button: Button) -> void:
 	_preview.text = button.get_meta("preview", "")
-	_preview.add_theme_color_override("font_color", button.get_meta("preview_color", Color.WHITE))
 	_preview_panel.visible = _preview.text != ""

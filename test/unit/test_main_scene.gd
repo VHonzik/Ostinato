@@ -968,6 +968,7 @@ func test_lone_neutral_keeps_spell_picker_when_another_actor_is_in_melee() -> vo
 
 
 func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time() -> void:
+	_game.world.hero.inventory.fill({})
 	_game.world.player_tile = _test_merchant(900003).tile + Vector2i.DOWN
 	_game.world.hero.copper = 200
 	_game.refresh_view()
@@ -1081,7 +1082,7 @@ func test_quest_tracker_restores_progress_follows_hud_visibility_and_clears_on_d
 	var world := _game.world
 	var marshal := world.actors[0]
 	world.player_tile = marshal.tile + Vector2i.DOWN
-	assert_true(QuestRules.accept(world, "valley_patrol", marshal))
+	assert_true(QuestRules.accept(world, "valley_wolves", marshal))
 	QuestRules.record_kill(world, 299)
 	QuestRules.record_kill(world, 299)
 	var restored := SaveCodec.restore(SaveCodec.capture(_game.session), true)
@@ -1115,7 +1116,7 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quest_detail")
 	await _tap_key(KEY_ENTER)
-	assert_true(_game.world.quests.has("valley_patrol"))
+	assert_true(_game.world.quests.has("valley_wolves"))
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_J)
 	assert_eq(_game.menu.page, "quests")
@@ -1126,11 +1127,13 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	await _tap_key(KEY_ESCAPE)
 	for count in range(8):
 		QuestRules.record_kill(_game.world, 299)
+	for count in range(5):
+		QuestRules.record_kill(_game.world, 69)
 	await _tap_key(KEY_F)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "quest_detail")
 	await _tap_key(KEY_ENTER)
-	assert_true(_game.world.quests["valley_patrol"].handed_in)
+	assert_true(_game.world.quests["valley_wolves"].handed_in)
 	_game.world.hero.level = 10
 	_game.menu._quest_detail("valley_camp", marshal)
 	await _tap_key(KEY_ENTER)
@@ -1207,6 +1210,7 @@ func test_completion_keyboard_navigation_cannot_resume_and_main_menu_works() -> 
 
 
 func test_last_boss_death_during_item_turn_preserves_completion_menu() -> void:
+	_game.world.hero.inventory.fill({})
 	var world := _game.world
 	var stalker := GridActor.new(world.player_tile + Vector2i.RIGHT)
 	stalker.stalker = true
@@ -1406,7 +1410,7 @@ func test_hotbar_drop_validates_skill_lock_and_world() -> void:
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
 	assert_eq(_game.world.hotbar, [
 		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", GridWorld.FOOD_HOTBAR_ID,
 	])
 
 
@@ -1475,6 +1479,7 @@ func test_tab_to_assign_keeps_first_skill_and_details_can_scroll_with_keyboard()
 
 
 func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mouse_sell() -> void:
+	_game.world.hero.inventory.fill({})
 	var danil := _test_merchant(152)
 	_game.world.player_tile = danil.tile + Vector2i.DOWN
 	_game.world.hero.copper = 100
@@ -1583,6 +1588,7 @@ func test_trade_stack_options_respect_money_and_stock() -> void:
 
 
 func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
+	_game.world.hero.inventory.fill({})
 	var chest := _game.world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.chest and actor.loot_table == 2843)[0] as GridActor
 	_game.world.player_tile = chest.tile
@@ -1809,3 +1815,111 @@ func _test_merchant(identity: int) -> GridActor:
 	_game.world.actors.append(merchant)
 	_game.world.vendor_stock.merge(MerchantData.initial_stock([merchant]))
 	return merchant
+
+
+func test_food_shortcut_displays_eating_healing_and_stops_on_movement() -> void:
+	var world := _game.world
+	world.stalker_schedule = false
+	world.hero.health = 1
+	await _tap_key(KEY_V | KEY_MASK_SHIFT)
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hero.inventory[0].quantity, 4)
+	var auras := _game.get_node("HUD/Auras")
+	var eating: Control
+	for aura in auras.get_children():
+		if aura.tooltip_text.begins_with("Eating"):
+			eating = aura
+	assert_not_null(eating)
+	if eating == null:
+		return
+	assert_string_contains(eating.tooltip_text, "HP next turn")
+	assert_string_contains((eating.get_node("Healing") as Label).text, "+")
+	await _tap_key(KEY_PERIOD)
+	assert_gt(int(world.hero.restoration.food.delivered), 0)
+	await _tap_key(KEY_S)
+	assert_true(world.hero.restoration.is_empty())
+	for aura in auras.get_children():
+		assert_false(aura.tooltip_text.begins_with("Eating"))
+
+
+func test_engaged_enemy_frame_tracks_target_health_and_unfinished_quest_objectives() -> void:
+	var world := _game.world
+	var marshal := world.actors[0]
+	world.player_tile = marshal.tile + Vector2i.DOWN
+	assert_true(QuestRules.accept(world, "valley_wolves", marshal))
+	var wolf: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 299)[0]
+	var timber: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
+		return actor.npc_id == 69)[0]
+	wolf.engaged = true
+	timber.engaged = true
+	world.auto_attack_target = wolf
+	_game.refresh_view()
+	var frame := _game.get_node("HUD/Enemy") as Control
+	var marker := frame.get_node("Rows/Heading/Objective") as Label
+	assert_true(frame.visible)
+	assert_eq((frame.get_node("Rows/Heading/Name") as Label).text, wolf.title)
+	assert_true(marker.visible)
+	wolf.health -= 5
+	_game.refresh_view()
+	assert_eq((frame.get_node("Rows/Health") as ProgressBar).value, float(wolf.health))
+	for count in range(8):
+		QuestRules.record_kill(world, 299)
+	_game.refresh_view()
+	assert_false(marker.visible)
+	world.auto_attack_target = timber
+	_game.refresh_view()
+	assert_eq((frame.get_node("Rows/Heading/Name") as Label).text, timber.title)
+	assert_true(marker.visible)
+	assert_true(QuestRules.abandon(world, "valley_wolves"))
+	_game.refresh_view()
+	assert_false(marker.visible)
+	timber.alive = false
+	_game.refresh_view()
+	assert_false(frame.visible)
+
+
+func test_equipment_preview_compares_against_the_exact_selected_ring_slot() -> void:
+	var hero := _game.world.hero
+	hero.equipment.ring_1 = ItemData.instance(70002)
+	hero.equipment.ring_2 = ItemData.instance(70003)
+	hero.inventory[1] = ItemData.instance(70012)
+	_game.menu._equipped_detail("ring_1")
+	var candidate: Button = _game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Wolfstone Ring"))[0]
+	candidate.grab_focus()
+	assert_string_contains(_game.menu._preview.text, "(+1)")
+	assert_false(_game.menu._preview.text.contains("haste"))
+	assert_string_contains((candidate.get_node("ItemText") as RichTextLabel).text,
+		"[color=#1eff00]Wolfstone Ring[/color] (1 turn)")
+	_game.menu._equipped_detail("ring_2")
+	candidate = _game.menu._buttons.filter(func(button: Button) -> bool:
+		return button.text.begins_with("Wolfstone Ring"))[0]
+	candidate.grab_focus()
+	assert_string_contains(_game.menu._preview.text, "(-2.00% haste)")
+	assert_string_contains(_game.menu._preview.text, "(+2 strength)")
+	assert_eq(_game.world.turn_count, 0)
+
+
+func test_sentence_hotkey_casts_on_engaged_enemy_without_opening_target_picker() -> void:
+	var enemy := _prepare_melee(GridActor.Relationship.HOSTILE)
+	var world := _game.world
+	enemy.engaged = true
+	enemy.health = 10000
+	enemy.max_health = 10000
+	enemy.melee.dodge = 0
+	enemy.stunned_until = 999
+	world.hero.melee.hit = 100
+	world.hero.swing.remaining = 100
+	world.hero.swing._active = true
+	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"execution_sentence_1"))
+	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+	world.auto_attack_target = enemy
+	world.last_attacked_enemy = enemy
+	assert_true(world.assign_hotbar(0, &"execution_sentence_1"))
+	await _tap_key(KEY_1)
+	assert_eq(world.turn_count, 1)
+	assert_false(_game.combat_panel.visible)
+	assert_true(enemy.debuffs.has(&"execution_sentence_1"))
+	assert_eq(enemy.health, 10000)

@@ -6,7 +6,7 @@ extends RefCounted
 
 static func outfit(category: StringName) -> Array[int]:
 	var outfits := {"Warrior": [2361, 2379], "Shaman": [36, 44],
-		"Paladin": [2361, 44], "Rogue": [35, 44]}
+		"Paladin": [2361, 2379], "Rogue": [2092, 44]}
 	var result: Array[int] = []
 	result.assign(outfits.get(String(category), []))
 	return result

@@ -348,6 +348,10 @@ current deliberate spender is Eviscerate, with passive Slice and Dice haste when
   free starters and permanent learning. This supersedes the older class-XP slices below.
 - [x] Put class selection before returning-Loop quests, preselect the previous class,
   redirect other NPCs until selection, and advance the choice wording across Loops.
+- [x] Apply the next playtest feedback: confident Warrior wording, starter gear for every
+  class each Loop, starting food and Eating feedback, passable flowers/bushes, combined
+  wolf objectives, gated exploration, an engaged-enemy frame, item comparison previews,
+  and Execution Sentence targeting, seal feedback and delayed impact. Preserve revision 28.
 - [ ] Owner playtest: judge training purchases against gear/food spending and roughly
   five Loops per class; check tooltip readability, wandering, wolf finishers and the
   relocated guard scene. Costs and combat tuning remain provisional.

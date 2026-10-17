@@ -24,6 +24,7 @@ func test_exploration_credits_mine_entrance_vineyard_approach_and_wolf_area_with
 	var world := _session().world
 	var deputy := _actor(world, 823)
 	_beside(world, deputy)
+	world.hero.level = 2
 	assert_true(QuestRules.accept(world, "valley_explore", deputy))
 	world.player_tile = Vector2i(22, 15)
 	QuestRules.visit(world)
@@ -129,25 +130,27 @@ func test_spawn_can_reach_contacts_encounters_and_connected_abbey_rooms() -> voi
 func test_patrol_can_be_completed_and_handed_in_once() -> void:
 	var world := _session().world
 	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
-	assert_true(QuestRules.available(world, "valley_patrol"))
+	assert_true(QuestRules.available(world, "valley_wolves"))
 	assert_false(QuestRules.available(world, "783"), "Do not offer quests into unbuilt branches.")
-	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
+	assert_true(QuestRules.accept(world, "valley_wolves", _marshal(world)))
 	for actor in world.actors:
 		if actor.npc_id == 299:
 			actor.health = 0
 			world._check_npc_death(actor, world.turn_count)
 			world._check_npc_death(actor, world.turn_count)
-	assert_eq(QuestRules.progress(world, "valley_patrol", 0), 8)
-	assert_true(QuestRules.ready(world, "valley_patrol"))
-	assert_true(QuestRules.hand_in(world, "valley_patrol", _marshal(world)))
-	assert_false(QuestRules.hand_in(world, "valley_patrol", _marshal(world)))
+	assert_eq(QuestRules.progress(world, "valley_wolves", 0), 8)
+	for count in range(5):
+		QuestRules.record_kill(world, 69)
+	assert_true(QuestRules.ready(world, "valley_wolves"))
+	assert_true(QuestRules.hand_in(world, "valley_wolves", _marshal(world)))
+	assert_false(QuestRules.hand_in(world, "valley_wolves", _marshal(world)))
 
 
 func test_route_save_preserves_art_dead_wolves_quest_and_seeded_continuation() -> void:
 	var session := _session()
 	var world := session.world
 	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
-	QuestRules.accept(world, "valley_patrol", _marshal(world))
+	QuestRules.accept(world, "valley_wolves", _marshal(world))
 	var wolf := _actor(world, 299)
 	wolf.health = 0
 	world._check_npc_death(wolf, 0)
@@ -175,7 +178,7 @@ func test_death_rebuilds_the_same_route_with_learning_and_fresh_encounters() -> 
 	var session := _session()
 	var before := session.world
 	before.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
-	QuestRules.accept(before, "valley_patrol", _marshal(before))
+	QuestRules.accept(before, "valley_wolves", _marshal(before))
 	_actor(before, 299).health = 0
 	before._check_npc_death(_actor(before, 299), 0)
 	before.actors[1].health = 0
@@ -221,11 +224,11 @@ func test_patrol_ignores_wolves_cleared_before_the_first_conversation() -> void:
 			actor.health = 0
 			world._check_npc_death(actor, 0)
 	world.player_tile = NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile + Vector2i.DOWN
-	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
-	assert_false(QuestRules.ready(world, "valley_patrol"))
-	assert_true(QuestRules.abandon(world, "valley_patrol"))
-	assert_true(QuestRules.accept(world, "valley_patrol", _marshal(world)))
-	assert_false(QuestRules.hand_in(world, "valley_patrol", _marshal(world)))
+	assert_true(QuestRules.accept(world, "valley_wolves", _marshal(world)))
+	assert_false(QuestRules.ready(world, "valley_wolves"))
+	assert_true(QuestRules.abandon(world, "valley_wolves"))
+	assert_true(QuestRules.accept(world, "valley_wolves", _marshal(world)))
+	assert_false(QuestRules.hand_in(world, "valley_wolves", _marshal(world)))
 
 
 func test_all_landmarks_and_loot_sources_are_reachable_without_overlapping_live_spawns() -> void:
@@ -275,6 +278,7 @@ func test_exploration_credits_destinations_independently_and_never_rolls_chests_
 	var world := _session().world
 	var deputy := _actor(world, 823)
 	_beside(world, deputy)
+	world.hero.level = 2
 	assert_true(QuestRules.accept(world, "valley_explore", deputy))
 	for destination in ValleyLandmarks.EXPLORATION:
 		world.player_tile = ValleyLandmarks.EXPLORATION[destination].get_center()
@@ -351,14 +355,14 @@ func test_blocked_gate_retries_an_overdue_arrival_without_moving_its_deadline() 
 	assert_eq(world.stalker_deadlines[0], due)
 
 
-func test_encounters_have_spare_wolves_for_both_quests_and_fourteen_kobolds() -> void:
+func test_encounters_have_spare_wolves_for_both_objectives_and_fourteen_kobolds() -> void:
 	var world := _session().world
 	assert_eq(world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 299).size(),
-		int(QuestData.QUESTS.valley_patrol.objectives[0].count) + 3)
+		int(QuestData.QUESTS.valley_wolves.objectives[0].count) + 3)
 	assert_eq(world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id == 69).size(),
-		int(QuestData.QUESTS.valley_timber_wolves.objectives[0].count) + 3)
+		int(QuestData.QUESTS.valley_wolves.objectives[1].count) + 3)
 	assert_eq(world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.npc_id in [6, 257, 80]).size(), 14)
 
@@ -458,57 +462,58 @@ func test_save_preserves_unprovoked_and_provoked_wolf_relationships() -> void:
 		assert_true(_actor(restored, 299).engaged)
 
 
-func test_wolf_chain_uses_separate_species_same_contact_and_survives_save_and_abandonment() -> void:
+func test_combined_wolf_quest_tracks_both_species_and_survives_save_and_abandonment() -> void:
 	var session := _session()
 	var world := session.world
 	var marshal := _marshal(world)
 	_beside(world, marshal)
+	assert_false(QuestRules.available(world, "valley_patrol"))
 	assert_false(QuestRules.available(world, "valley_timber_wolves"))
-	assert_false(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	# Only kills after accepting the follow-up count.
-	var timber := _actor(world, 69)
-	timber.health = 0
-	world._check_npc_death(timber, 0)
-	assert_true(QuestRules.accept(world, "valley_patrol", marshal))
-	assert_eq(QuestRules.progress(world, "valley_patrol", 0), 0)
+	QuestRules.record_kill(world, 69)
+	assert_true(QuestRules.accept(world, "valley_wolves", marshal))
+	assert_eq(QuestRules.progress(world, "valley_wolves", 1), 0)
 	for count in range(8):
-		var young: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.npc_id == 299 and actor.alive)[0]
-		young.health = 0
-		world._check_npc_death(young, 0)
-	assert_true(QuestRules.ready(world, "valley_patrol"))
-	assert_false(QuestRules.available(world, "valley_timber_wolves"), "Hand in the first step.")
-	assert_true(QuestRules.hand_in(world, "valley_patrol", marshal))
-	assert_true(QuestRules.available(world, "valley_timber_wolves"))
-	assert_true(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 0)
-	assert_false(QuestRules.ready(world, "valley_timber_wolves"), "Young wolves do not count twice.")
+		QuestRules.record_kill(world, 299)
+	assert_false(QuestRules.ready(world, "valley_wolves"))
 	for count in range(4):
-		timber = world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.npc_id == 69 and actor.alive)[0]
-		timber.health = 0
-		world._check_npc_death(timber, 0)
-		world._check_npc_death(timber, 0)
+		QuestRules.record_kill(world, 69)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), true)
 	assert_not_null(restored)
 	if restored == null:
 		return
 	world = restored
 	marshal = _marshal(world)
-	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 4)
-	assert_true(QuestRules.abandon(world, "valley_timber_wolves"))
+	assert_eq(QuestRules.progress(world, "valley_wolves", 1), 4)
+	assert_false(QuestRules.ready(world, "valley_wolves"))
+	QuestRules.record_kill(world, 69)
+	assert_true(QuestRules.ready(world, "valley_wolves"))
+	assert_true(QuestRules.hand_in(world, "valley_wolves", marshal))
+	assert_true(world.hero.inventory.any(func(item: Dictionary) -> bool:
+		return not item.is_empty() and item.id == 85))
+	assert_eq(world.hero.equipment.neck.id, 70001)
+	assert_false(QuestRules.hand_in(world, "valley_wolves", marshal))
+
+
+func test_old_wolf_quest_records_remain_finishable_without_duplicate_rewards() -> void:
+	var session := _session()
+	var world := session.world
+	world.quests["valley_patrol"] = {"handed_in": false, "counts": [8]}
+	world.loot_quests.append("valley_patrol")
+	world.ever_accepted_quest = true
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), true)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	world = restored
+	var marshal := _marshal(world)
+	_beside(world, marshal)
+	assert_false(QuestRules.available(world, "valley_wolves"))
+	assert_true(QuestRules.hand_in(world, "valley_patrol", marshal))
 	assert_true(QuestRules.accept(world, "valley_timber_wolves", marshal))
-	assert_eq(QuestRules.progress(world, "valley_timber_wolves", 0), 0)
-	# Abandoning discards kill credit; this finite encounter can no longer be completed.
-	timber = world.actors.filter(func(actor: GridActor) -> bool:
-		return actor.npc_id == 69 and actor.alive)[0]
-	timber.health = 0
-	world._check_npc_death(timber, 0)
-	assert_false(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
-	assert_false(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
-	for identity in [299, 69]:
-		assert_eq(world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.npc_id == identity and actor.alive).size(), 3 if identity == 299 else 2)
+	for count in range(5):
+		QuestRules.record_kill(world, 69)
+	assert_true(QuestRules.hand_in(world, "valley_timber_wolves", marshal))
+	assert_false(QuestRules.available(world, "valley_wolves"))
 
 
 func test_tile_sprite_priority_hides_terrain_and_corpses_without_removing_them() -> void:
@@ -685,3 +690,27 @@ class RecordingGridView:
 		drawn_faction = faction
 		drawn_base_color = base_color
 		drawn_faction_color = faction_color
+
+
+func test_flowers_and_bushes_allow_movement_without_blocking_sight() -> void:
+	var world := _session().world
+	world.actors.clear()
+	world.stalker_schedule = false
+	for tile: Vector2i in world.scenery_tiles:
+		if world.scenery_tiles[tile] not in [&"flowers", &"bush"]:
+			continue
+		world.player_tile = tile + Vector2i.LEFT
+		assert_true(world.has_sight(world.player_tile, tile))
+		assert_true(world.move_player(Vector2i.RIGHT))
+		assert_eq(world.player_tile, tile)
+
+
+func test_exploration_is_offered_only_from_level_two() -> void:
+	var world := _session().world
+	var deputy := _actor(world, 823)
+	_beside(world, deputy)
+	assert_false(QuestRules.available(world, "valley_explore"))
+	assert_false(QuestRules.accept(world, "valley_explore", deputy))
+	assert_eq(world.turn_count, 0)
+	world.hero.add_experience(world.hero.experience_to_next_level())
+	assert_true(QuestRules.accept(world, "valley_explore", deputy))

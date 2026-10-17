@@ -240,6 +240,60 @@ static func slot_name(slot: String) -> String:
 	return "Outfit" if slot == "armor" else slot.replace("_", " ").capitalize()
 
 
+static func color_name(text: String, identifier: int) -> String:
+	var item := get_item(identifier)
+	return text.replace(String(item.title), "[color=#%s]%s[/color]" % [
+		quality_color(int(item.quality)).to_html(false), item.title])
+
+
+static func describe_rich(identifier: int, equipped_id: int = 0) -> String:
+	var item := get_item(identifier)
+	var parts := describe(identifier).split(" / ")
+	parts[0] = color_name(parts[0], identifier)
+	if equipped_id == 0:
+		return " / ".join(parts)
+	var equipped := get_item(equipped_id)
+	if item.slot != equipped.slot or item.slot == "":
+		return " / ".join(parts)
+	var stats: Dictionary = item.stats.duplicate()
+	for stat in equipped.stats:
+		if not stats.has(stat):
+			stats[stat] = 0
+	for stat in stats:
+		var value := float(item.stats.get(stat, 0))
+		var baseline := float(equipped.stats.get(stat, 0))
+		var delta := value - baseline
+		if is_zero_approx(delta):
+			continue
+		var percentage: bool = stat in ["crit", "haste"]
+		var difference := _difference(delta, percentage,
+			String(stat) if is_zero_approx(value) or is_zero_approx(baseline) else "")
+		var found := false
+		for index in range(2, parts.size()):
+			if parts[index].ends_with(" " + String(stat)):
+				parts[index] += " " + difference
+				found = true
+				break
+		if not found:
+			parts.append(difference)
+	var armor_delta := int(item.armor) - int(equipped.armor)
+	if armor_delta != 0:
+		var difference := _difference(armor_delta, false,
+			"armor" if item.armor == 0 or equipped.armor == 0 else "")
+		if item.armor == 0:
+			parts.append(difference)
+		else:
+			parts[2] += " " + difference
+	return " / ".join(parts)
+
+
+static func _difference(value: float, percentage: bool, stat: String) -> String:
+	var amount := "%+.2f%%" % value if percentage else "%+d" % int(value)
+	if stat != "":
+		amount += " " + stat
+	return "[color=#%s](%s)[/color]" % ["66ee88" if value > 0 else "ff6464", amount]
+
+
 static func quality_name(quality: int) -> String:
 	return ["Poor (gray)", "Common (white)", "Uncommon (green)"][quality]
 

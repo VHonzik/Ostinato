@@ -16,7 +16,7 @@ func show_game() -> void:
 
 func hide_game() -> void:
 	for path in ["Top", "Bottom", "PlayerMenu", "Auras", "RageBar", "HealthBar",
-		"ComboPointBar", "QuestTracker"]:
+		"ComboPointBar", "QuestTracker", "Enemy"]:
 		(get_node(path) as Control).hide()
 
 
@@ -61,7 +61,20 @@ func refresh_resources(world: GridWorld, show_resources: bool) -> void:
 	$ComboPointBar.visible = ($Auras.visible
 		and world.hero.find_skill(&"relentless_assault_1") != null)
 	$ComboPointBar.refresh(world.hero)
+	_refresh_enemy(world, show_resources)
 	_refresh_quest_tracker(world)
+
+
+func _refresh_enemy(world: GridWorld, show_resources: bool) -> void:
+	var target := world.committed_enemy()
+	$Enemy.visible = show_resources and target != null
+	if target == null:
+		return
+	$Enemy/Rows/Heading/Name.text = target.title
+	$Enemy/Rows/Heading/Objective.visible = QuestRules.is_objective(world, target)
+	$Enemy/Rows/Health.max_value = target.max_health
+	$Enemy/Rows/Health.value = target.health
+	$Enemy/Rows/HealthText.text = "HP %d/%d" % [target.health, target.max_health]
 
 
 func _refresh_auras(world: GridWorld) -> void:
@@ -84,6 +97,15 @@ func _refresh_auras(world: GridWorld) -> void:
 		_add_aura(world, title, hero.buffs[identifier], false)
 	for identifier in hero.debuffs:
 		_add_aura(world, String(identifier).capitalize(), hero.debuffs[identifier], true)
+	if hero.restoration.has("food"):
+		var food: Dictionary = hero.restoration.food
+		var elapsed := mini(world.turn_count - int(food.started), int(food.duration))
+		var next_heal := floori(float(food.total) * mini(elapsed + 1, int(food.duration))
+			/ int(food.duration)) - int(food.delivered)
+		_add_aura(world, "Eating", {"until": int(food.started) + int(food.duration),
+			"healing": next_heal,
+			"detail": "%d HP next turn / %d of %d HP delivered" % [
+				next_heal, food.delivered, food.total]}, false, "Eat")
 	var reckless_damage := (ClassToolkitRules.recklessness_damage_multiplier(hero) - 1.0) * 100.0
 	if reckless_damage > 0.0:
 		var reckless_taken := (ClassToolkitRules.recklessness_taken_multiplier(hero) - 1.0) * 100.0
@@ -143,6 +165,16 @@ func _add_aura(world: GridWorld, title: String, effect: Dictionary, harmful: boo
 		square.tooltip_text += "\n+%d percentage points attack crit" % effect.critical_percent
 	if effect.has("detail"):
 		square.tooltip_text += "\n" + String(effect.detail)
+	if effect.has("healing"):
+		var healing := Label.new()
+		healing.name = "Healing"
+		healing.text = "+%d" % effect.healing
+		healing.add_theme_font_size_override("font_size", 10)
+		healing.add_theme_color_override("font_color", Color("66ee88"))
+		healing.add_theme_color_override("font_outline_color", Color.BLACK)
+		healing.add_theme_constant_override("outline_size", 2)
+		healing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		square.add_child(healing)
 	if int(effect.get("charges", 0)) > 0:
 		square.tooltip_text += " / %d charges" % effect.charges
 		var charges := Label.new()

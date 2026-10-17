@@ -22,10 +22,10 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 ## Current build
 
 **New Game** launches the sketch-based valley, the sole playable game map.
-The marshal offers the western patrol, northern camp and mine objectives; Willem
+The marshal offers the western woods, northern camp and mine objectives; Willem
 asks you to enter the mine, approach the vineyard and explore the wolf woods, and Milly offers the vineyard encounter. The marshal
-also gives the stronger-wolf follow-up after the western patrol. Trees, walls
-and vine trellises block movement; flowers, small stones and sparse grass tufts are
+includes both young and timber wolves in one western-woods quest. Trees, walls
+and vine trellises block movement; flowers, bushes, small stones and sparse grass tufts are
 decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
 wolf types and outdoor kobold vermin are neutral until attacked; all mine kobolds and
 bandits are hostile. The road south of the southwestern gate admits timed stalkers at the guard's position.
@@ -38,22 +38,25 @@ A separate base layer shows health. NPCs temporarily use a corner heart; the pla
 its current class artwork with an empty faction layer.
 The upper-right quest tracker lists accepted quests and objective progress, marking
 finished objectives and ready quests completed. Handed-in or abandoned quests disappear.
+The engaged enemy frame shows its name, health and a yellow marker while it is needed
+for an accepted quest objective. Fresh Loops include food with an upper-right hotbar
+shortcut; Eating shows the next healing tick and remaining duration.
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting; the story guard's corpse remains.
 Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities and hotbar.
-Janos Hammerknuckle supplies warrior gear and trades. Llane teaches Warrior unlocks;
+Janos Hammerknuckle supplies starter gear for the selected class and trades. Llane teaches Warrior unlocks;
 Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
 and Rogue kits. Trainers show current level requirements and gold prices, with free
 starter skills and gray learned entries. Learning is permanent; prices remain provisional.
 
 New Game starts a warrior with rage, Mortal Strike and Whirlwind, wearing travel clothes.
-Ask Janos inside the abbey for spare warrior gear once each Loop. The marshal offers
-warrior referrals, with "Uhm... I seek ... teaching" choices for each class from the second Loop. Speak
+Ask Janos inside the abbey for spare class gear once each Loop. The marshal offers
+warrior referrals, with "Uhm... I seek ... teaching" choices for the other classes from the second Loop. Speak
 to the marshal before accepting any quest. Returning Loops show class selection first,
 focusing the previous class; choosing immediately reveals quests and locks the class until death.
-Other NPCs redirect you to the marshal until you choose. Loop three choices begin
-"I am ...."; from Loop four they begin "I am". Class choice keeps gear and names the
+Other NPCs redirect you to the marshal until you choose. Warrior always uses "I am warrior";
+other Loop three choices begin "I am ...." and from Loop four begin "I am". Class choice keeps gear and names the
 matching trainer. Visit that trainer to learn the class's starter skills for free, with
 no level requirement; new actives prefer empty slots in the upper row for maintenance
 buffs and the lower row for rotation and situational abilities, using the other row
@@ -140,7 +143,9 @@ weapon-and-shield and dual-wield pairs each occupy one inventory/equipment slot.
 Janos sells common gear, finite healing potions and unlimited food. Quest rewards cover
 the common loadout; the mine and vineyard award final weapons. Mobs can drop poor gear
 or rare uncommon upgrades; each chest guarantees common or uncommon equipment.
-Poor/common/uncommon names appear gray/white/green. Shields contribute armor.
+Poor/common/uncommon names appear gray/white/green; other item text stays white.
+Selecting a replacement for an equipment slot previews stat gains and losses against
+that exact slot, including either ring. Shields contribute armor.
 Common and uncommon accessories have primary and secondary bonuses. Crit and haste
 use direct percentage bonuses. Strength increases weapon power; Agility adds crit and
 dodge. Weapon-based physical, Holy and Nature damage keeps fractional power until the
@@ -158,13 +163,15 @@ simulation setup and two-handed/dual-wield comparisons for future class tuning.
 Execution Sentence replaces Judgement. It fixes damage and hit/critical results when
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings
 and enemy actions. Impact ignores current range and never changes the selected target;
-a target dying early loses its sentence. Existing Holy/critical rewards happen on impact.
+a target dying early loses its sentence. It casts on the engaged target and its hotbar
+label turns red without Seal of Command. Existing Holy/critical rewards happen on impact.
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
 Current saves are `demo` revision 28, with gear stats rebuilt from equipment on load.
 Revision 27 and older saves are incompatible and left unchanged; start a fresh game.
 This revision removes class XP and introduces level/gold training and independent exploration areas.
+Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.
 Committed Execution Sentence verdicts and Consecration ground persist across saves;
 both clear with the physical world on death.
 Victory requires defeating all present stalkers.

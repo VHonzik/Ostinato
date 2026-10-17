@@ -54,7 +54,7 @@ func test_new_game_resets_learning_hotbar_class_and_seed() -> void:
 	assert_eq(game.loop_count, 1)
 	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
 	assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
-	assert_eq(game.world.hotbar.count(&""), 18)
+	assert_eq(game.world.hotbar.count(&""), 17)
 	assert_eq(game.world.hero.selected_class, &"Warrior")
 
 
@@ -86,7 +86,7 @@ func test_outfit_exchange_preserves_acquired_gear_and_is_atomic_when_full() -> v
 	assert_true(StarterGear.exchange(hero, &"Paladin"))
 	assert_eq(hero.equipment.armor.id, 2379)
 	assert_false(hero.equipment.armor.starter)
-	assert_eq(hero.inventory[7].id, 44)
+	assert_eq(hero.inventory[7].id, 2379)
 
 
 func test_obsolete_classes_and_abilities_are_unavailable() -> void:

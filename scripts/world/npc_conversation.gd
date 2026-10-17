@@ -95,7 +95,7 @@ class Marshal extends Service:
 		if session.can_select_class():
 			for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
 				var title := "Uhm... I seek %s teaching" % String(category).to_lower()
-				if session.loop_count >= 4:
+				if category == &"Warrior" or session.loop_count >= 4:
 					title = "I am %s" % String(category).to_lower()
 				elif session.loop_count == 3:
 					title = "I am .... %s" % String(category).to_lower()
@@ -116,7 +116,8 @@ class Trader extends Service:
 	func append_choices(conversation: NpcConversation, session: GameSession,
 		actor: GridActor) -> void:
 		if session.world.can_receive_starter_gear(actor):
-			conversation.choices.append(Choice.new("Do you have any spare gear for warrior?",
+			conversation.choices.append(Choice.new("Do you have any spare gear for %s?" %
+				String(session.world.hero.selected_class).to_lower(),
 				Action.SPARE_GEAR))
 		conversation.choices.append(Choice.new("Trade", Action.TRADE))
 

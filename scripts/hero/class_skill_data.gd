@@ -35,9 +35,9 @@ const STARTER_SKILLS: Dictionary = {
 	"execution_sentence_1": {
 		"title": "Execution Sentence", "class_tab": "Paladin", "training_level": 1,
 		"rage_cost": 20, "cast_seconds": 1.0, "range_tiles": 2, "cooldown_seconds": 6,
-		"weapon_multiplier": 1.5, "delay_turns": 1, "family": "execution_sentence", "school": 1,
+		"weapon_multiplier": 1.5, "delay_turns": 3, "family": "execution_sentence", "school": 1,
 		"effect": "EXECUTION_SENTENCE", "target": "ENEMY",
-		"detail": "Requires Seal of Command. Sentence the target to 150% weapon damage as Holy damage after 1 further turn. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; seal remains active."
+		"detail": "Requires Seal of Command. Sentence the engaged target to 150% weapon damage as Holy damage after 3 further turns. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; seal remains active."
 	},
 	"eviscerate_1": {
 		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,

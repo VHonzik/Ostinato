@@ -37,15 +37,17 @@ func _talk_and_hand_in(world: GridWorld, identifier: String, choice: int = 0) ->
 
 func test_conversation_acceptance_and_rewards_are_free_and_once() -> void:
 	var world := _game().world
-	_accept(world, "valley_patrol")
+	_accept(world, "valley_wolves")
 	assert_true(world.ever_accepted_quest)
-	assert_false(QuestRules.ready(world, "valley_patrol"))
+	assert_false(QuestRules.ready(world, "valley_wolves"))
 	for count in range(8):
 		QuestRules.record_kill(world, 299)
-	_talk_and_hand_in(world, "valley_patrol")
+	for count in range(5):
+		QuestRules.record_kill(world, 69)
+	_talk_and_hand_in(world, "valley_wolves")
 	assert_gt(world.hero.experience, 0)
-	assert_false(QuestRules.hand_in(world, "valley_patrol", _npc(world, 197)))
-	assert_false(QuestRules.available(world, "valley_patrol"))
+	assert_false(QuestRules.hand_in(world, "valley_wolves", _npc(world, 197)))
+	assert_false(QuestRules.available(world, "valley_wolves"))
 	assert_eq(world.turn_count, 0)
 
 func test_kill_objectives_ignore_prior_kills_and_match_identity() -> void:
@@ -86,15 +88,15 @@ func test_abandonment_does_not_reopen_class_choice_or_reroll_loot() -> void:
 	var world := game.world
 	world.player_tile = _npc(world, 197).tile + Vector2i.DOWN
 	assert_true(game.select_class(&"Warrior", _npc(world, 197)))
-	_accept(world, "valley_patrol")
+	_accept(world, "valley_wolves")
 	var wolf := _npc(world, 299)
 	wolf.health = 0
 	world._check_npc_death(wolf, 0)
 	var remaining := wolf.loot.duplicate(true)
-	assert_true(QuestRules.abandon(world, "valley_patrol"))
+	assert_true(QuestRules.abandon(world, "valley_wolves"))
 	assert_false(game.can_select_class())
-	_accept(world, "valley_patrol")
-	assert_eq(QuestRules.progress(world, "valley_patrol", 0), 0)
+	_accept(world, "valley_wolves")
+	assert_eq(QuestRules.progress(world, "valley_wolves", 0), 0)
 	LootData.assign(world, wolf)
 	assert_eq(wolf.loot, remaining)
 
@@ -183,10 +185,10 @@ func test_save_roundtrip_preserves_quests_population_and_reproducible_continuati
 
 func test_malformed_quest_and_population_state_is_rejected() -> void:
 	var game := _game()
-	_accept(game.world, "valley_patrol")
+	_accept(game.world, "valley_wolves")
 	var state := SaveCodec.capture(game)
 	var bad := state.duplicate(true)
-	bad.quests["valley_patrol"].counts[0] = 9
+	bad.quests["valley_wolves"].counts[0] = 9
 	assert_null(SaveCodec.restore(bad, true))
 	bad = state.duplicate(true)
 	bad.population.append({"area": "unknown"})

@@ -3,6 +3,13 @@ extends RefCounted
 
 ## Valley objectives and fixed common gear rewards; historical fixture quests below.
 static var QUESTS: Dictionary = {
+	"valley_wolves": {
+		"title": "Wolves of the Western Woods", "level": 2, "minimum": 1, "previous": [],
+		"giver": 197, "receiver": 197, "category": "",
+		"objectives": [QuestObjective.kill(299, 8), QuestObjective.kill(69, 5)],
+		"xp": 800, "copper": 0, "rewards": [85, 70001], "choices": [], "source_item": 0,
+	},
+	# Keep existing revision-28 quest records finishable without converting their progress.
 	"valley_patrol": {
 		"title": "The Western Path", "level": 1, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",
@@ -36,7 +43,7 @@ static var QUESTS: Dictionary = {
 		"xp": 800, "copper": 100, "rewards": [5580], "choices": [], "source_item": 0,
 	},
 	"valley_explore": {
-		"title": "Around the Valley", "level": 3, "minimum": 1, "previous": [],
+		"title": "Around the Valley", "level": 3, "minimum": 2, "previous": [],
 		"giver": 823, "receiver": 823, "category": "",
 		"objectives": [QuestObjective.location(&"mine", 1),
 			QuestObjective.location(&"vineyard", 1),

@@ -480,17 +480,24 @@ func _cast_skill(identifier: StringName) -> void:
 	if not active_game or world.is_terminal():
 		return
 	_pending_action = false
+	if identifier == GridWorld.FOOD_HOTBAR_ID:
+		world.consume_hotbar_food()
+		refresh_view()
+		return
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
 		return
+	var target := (world.committed_enemy() if skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
+		else world.last_attacked_enemy)
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)
 	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
-		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]
+		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
+		SkillDefinition.Effect.EXECUTION_SENTENCE]
 		and skill.target == SkillDefinition.Target.ENEMY
 		and world.in_combat()
-		and world.last_attacked_enemy != null):
+		and target != null):
 		hero_panel.close()
 		combat_panel.close()
 		world.cast_skill(identifier)

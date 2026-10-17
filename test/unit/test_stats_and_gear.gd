@@ -87,6 +87,7 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 
 func test_janos_sells_common_gear_and_finite_health_supplies() -> void:
 	var world := ValleyRoute.create_world(79, false)
+	world.hero.inventory.fill({})
 	var janos: GridActor
 	for actor in world.actors:
 		if actor.npc_id == 900003:

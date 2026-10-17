@@ -55,6 +55,24 @@ func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_
 	assert_eq(enemy.health, 10000 - damage)
 
 
+func test_sentence_uses_committed_enemy_and_needs_seal_without_spending_a_failed_turn() -> void:
+	var world := _world()
+	var enemy := _enemy(world, Vector2i(10, 8))
+	var previous := _enemy(world, Vector2i(8, 10))
+	world.last_attacked_enemy = previous
+	world.auto_attack_target = enemy
+	world.hero.buffs.clear()
+	var rage := world.hero.rage
+	assert_false(world.cast_skill(&"execution_sentence_1"))
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.hero.rage, rage)
+	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+	assert_true(world.cast_skill(&"execution_sentence_1"))
+	assert_true(enemy.debuffs.has(&"execution_sentence_1"))
+	assert_false(previous.debuffs.has(&"execution_sentence_1"))
+	assert_eq(int(enemy.debuffs[&"execution_sentence_1"].until) - world.turn_count, 3)
+
+
 func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
 	var world := _world()
 	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"divine_purpose_1")))

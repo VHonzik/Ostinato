@@ -121,7 +121,7 @@ func test_training_does_not_replace_skill_and_reset_load_new_game_keep_their_con
 	session.new_game(318)
 	assert_eq(session.world.hotbar, [
 		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", GridWorld.FOOD_HOTBAR_ID,
 	])
 	assert_false(session.world.hotbar_locked)
 
@@ -131,7 +131,7 @@ func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death()
 	session.new_game(318)
 	assert_eq(session.world.hotbar, [
 		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", GridWorld.FOOD_HOTBAR_ID,
 	])
 	for index in [0, 1]:
 		assert_not_null(session.world.hero.find_skill(session.world.hotbar[index]))
@@ -140,14 +140,14 @@ func test_new_game_defaults_are_known_and_cleared_slots_survive_save_and_death()
 	assert_not_null(restored)
 	assert_eq(restored.hotbar, [
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", GridWorld.FOOD_HOTBAR_ID,
 	])
 	session.restore(restored, 318, 1)
 	session.world.hero.health = 0
 	assert_true(session.restart_after_death())
 	assert_eq(session.world.hotbar, [
 		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
-		&"", &"", &"", &"", &"", &"", &"", &"", &"", &"",
+		&"", &"", &"", &"", &"", &"", &"", &"", &"", GridWorld.FOOD_HOTBAR_ID,
 	])
 
 
@@ -205,3 +205,66 @@ func test_cooldown_countdown_updates_and_clears_when_ready_or_slot_changes() -> 
 	panel.refresh(world, options, true, true, false)
 	assert_false(cooldown.visible)
 	assert_eq(cooldown.text, "")
+
+
+func test_spawn_food_shortcut_survives_save_and_refills_on_death() -> void:
+	var session := GameSession.new()
+	session.new_game(317)
+	var world := session.world
+	world.stalker_schedule = false
+	world.hero.health = 1
+	assert_eq(world.hotbar[19], GridWorld.FOOD_HOTBAR_ID)
+	assert_eq(world.hero.inventory[0], ItemData.instance(117, 5))
+	assert_true(world.consume_hotbar_food())
+	assert_eq(world.hero.inventory[0].quantity, 4)
+	assert_eq(world.turn_count, 1)
+	world.wait_turn()
+	assert_gt(int(world.hero.restoration.food.delivered), 0)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_eq(restored.hero.restoration, world.hero.restoration)
+	assert_eq(restored.hotbar[19], GridWorld.FOOD_HOTBAR_ID)
+	# A revision-28 save from before food shortcuts still gets the default next Loop.
+	restored.hotbar[19] = &""
+	session.restore(restored, session.seed_value, 1)
+	assert_true(restored.move_player(Vector2i.DOWN))
+	assert_true(restored.hero.restoration.is_empty())
+	restored.hero.health = 0
+	assert_true(session.restart_after_death())
+	assert_eq(session.world.hero.inventory[0], ItemData.instance(117, 5))
+	assert_true(session.world.hero.restoration.is_empty())
+	assert_eq(session.world.hotbar[19], GridWorld.FOOD_HOTBAR_ID)
+
+
+func test_food_shortcut_rejects_empty_bags_and_combat_without_spending_a_turn() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	assert_false(world.consume_hotbar_food())
+	assert_eq(world.turn_count, 0)
+	world.hero.inventory[7] = ItemData.instance(117)
+	var enemy := GridActor.new(Vector2i(6, 5))
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	enemy.engaged = true
+	world.actors.append(enemy)
+	assert_false(world.consume_hotbar_food())
+	assert_eq(world.hero.inventory[7], ItemData.instance(117))
+	assert_eq(world.turn_count, 0)
+
+
+func test_sentence_hotbar_is_red_until_seal_is_active_and_turns_red_on_expiry() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	world.hero.learn_skill(SkillDefinition.catalog(&"execution_sentence_1"))
+	world.hero.rage = 100
+	world.assign_hotbar(0, &"execution_sentence_1")
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	var options := GlobalOptions.new()
+	panel.refresh(world, options, true, true, false)
+	assert_eq(panel.slots[0].get_theme_color("font_color"), HotbarPanel.INSUFFICIENT_RAGE_COLOR)
+	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 1}
+	panel.refresh(world, options, true, true, false)
+	assert_false(panel.slots[0].has_theme_color_override("font_color"))
+	world.wait_turn()
+	panel.refresh(world, options, true, true, false)
+	assert_eq(panel.slots[0].get_theme_color("font_color"), HotbarPanel.INSUFFICIENT_RAGE_COLOR)

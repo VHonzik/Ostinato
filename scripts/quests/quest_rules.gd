@@ -3,6 +3,14 @@ extends RefCounted
 
 ## Concrete quest transactions and objective updates.
 static func available(world: GridWorld, identifier: String) -> bool:
+	if world.valley_route:
+		if identifier == "valley_patrol":
+			return false
+		if identifier == "valley_timber_wolves" and not world.quests.has("valley_patrol"):
+			return false
+		if identifier == "valley_wolves" and (world.quests.has("valley_patrol")
+			or world.quests.has("valley_timber_wolves")):
+			return false
 	if world.valley_route != ValleyRoute.QUESTS.has(identifier):
 		return false
 	if not QuestData.QUESTS.has(identifier) or world.quests.has(identifier):
@@ -26,6 +34,26 @@ static func has_marker(world: GridWorld, actor: GridActor) -> bool:
 		if (int(quest.giver) == actor.npc_id and available(world, identifier)
 			or int(quest.receiver) == actor.npc_id and ready(world, identifier)):
 			return true
+	return false
+
+
+static func is_objective(world: GridWorld, actor: GridActor) -> bool:
+	if actor == null or not actor.alive or actor.relationship == GridActor.Relationship.FRIENDLY:
+		return false
+	for identifier in world.quests:
+		if world.quests[identifier].handed_in:
+			continue
+		var objectives: Array = QuestData.QUESTS[identifier].objectives
+		for index in range(objectives.size()):
+			var objective: QuestObjective = objectives[index]
+			if progress(world, identifier, index) >= objective.count:
+				continue
+			if objective.kind == QuestObjective.Kind.KILL and objective.npc_id == actor.npc_id:
+				return true
+			if objective.kind == QuestObjective.Kind.LOOT:
+				for row in NorthshireLoot.TABLES.get(str(actor.loot_table), []):
+					if int(row[0]) == objective.item_id:
+						return true
 	return false
 
 
