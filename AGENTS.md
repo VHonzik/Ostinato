@@ -12,9 +12,17 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
   choices, with a recommendation; proceed independently on routine implementation details.
 - Keep unresolved gameplay choices explicit. Do not treat old code or tests as a binding
   design contract. Update affected tests when intended behavior changes, explaining why.
-- Put numeric tuning and implemented behavior in the game data/code. Keep only durable
-  direction and current tasks in docs. No requirement IDs, mandatory source audits,
-  duplicated data tables, design reports, or acceptance paperwork.
+- Keep numeric tuning and implemented behavior in game data/code, with
+  [docs/class-mechanics.md](docs/class-mechanics.md) as the authoritative human-readable
+  reference for current class mechanics, taglines and ability tables. Read it when
+  changing class abilities and update it in the same change for additions, removals,
+  renames, tuning, training requirements/prices, proc interactions or effect art/placement.
+  Keep both active and passive abilities, one table per class, the existing columns and
+  `-`/`*` notation, sorted by learning level, learning cost, then name. Update affected
+  shared rules and class summaries/taglines too; document implemented behavior, not plans.
+  Other docs should hold durable direction and current tasks. No requirement IDs,
+  mandatory source audits, additional duplicated ability tables, design reports or
+  acceptance paperwork.
 - Research only when it resolves a concrete uncertainty. Vanilla accuracy is optional.
 
 ## Implementation and checks
