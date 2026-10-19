@@ -16,6 +16,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-passives -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -BaselineOnly
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario priorities -Shard 0
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario pulls -Shard 0
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario pull-tuning -Confirm -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario accessories
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot -Smoke
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
@@ -30,6 +32,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `stalker-passives` | All 15 retained-kit combinations against Stalker, then one-passive removals in its own kit and all four kits. Records actual player healing/losses as well as boss damage. 200 baseline seeds, 100 matched removal seeds, independent 40-seed policy pilots; three weapons and cold/prepared entry. Use shards 0/1/2 sequentially. |
 | `stalker-full` | Current coordinated rotation with all four kits fully learned, against Stalker only. 200 baseline seeds with and without trainer gifts; 100 paired seeds per passive removal with gifts. Three weapons, cold/live prepared entry; use shards 0/1/2 sequentially. |
 | `priorities` | Live requested priorities on starter Shaman, full Shaman/Paladin, all four three-kit combinations and all kits. Five priority alternatives on all kits; ordinary groups, Stalker, ranged pulls and durable-group/banked-stack stress cases. Cold/live prepared entry, 30 seeds per cell, three weapons; sample fights replay against plain `GridWorld`. |
+| `pulls` | Prepared fully retained kits against 1-32 same-level regular thugs, with common/uncommon gear and usual/AoE priorities. Controls cover kobolds, banked entry, Warrior alone and removing Victory Rush. 20 seeds per cell; per-turn incoming damage/healing and plain-world replays. Shards select weapons. |
+| `pull-tuning` | Prepared pulls only. Pilot alternate Wrecking Crew/Consecration tuning and shared Victory Rush trigger cooldowns, then use `-Confirm` for actual game data on fresh seeds, with defensive skills disabled, emergency use or proactive use. Includes a 64-enemy two-hand stress case. |
 | `accessories` | Expected auto-attack damage and physical effective HP for common gear, upgrades and primary stats. No active rotation; `-Smoke` runs the same calculation. |
 | `loot` | Seeded valley loot, obtainable loadouts, estimated auto-attack gains, and a full-route gold budget beside total training costs. |
 | `loot-rates` | Compare candidate uncommon drop rates on copied loot tables. These are experimental rates, not live tuning. |
@@ -184,3 +188,55 @@ Summarize one run or nonoverlapping weapon shards with Python's standard library
 ```powershell
 python bench/analyze_priorities.py <result.json> ...
 ```
+
+## Same-level pulls
+
+`pulls` uses real level-4 thugs against a level-4 hero with all four kits retained;
+the worker control uses level 3 on both sides. There is no level-5 regular enemy
+profile in the current data. Enemies occupy concentric rings in an open arena:
+eight can be adjacent, and larger packs queue behind them. All begin engaged with
+fresh swing timers. The bot focuses wounded adjacent targets and never kites.
+
+Complete common and uncommon loadouts each use one Strength ring and one Agility
+ring. Uncommon is an equipment ceiling, not a guaranteed route. Preparation uses
+live zero-rage actions; no points/stacks/procs are assigned except in the explicitly
+banked momentum control. No trainer gifts, potions, XP or level-up healing.
+The AoE policy moves Whirlwind and uncovered Consecration ahead of single-target
+actions at three adjacent targets, retaining emergency defenses. Policies are fixed,
+not optimized. The no-Victory-Rush control measures one passive's contribution under
+that policy, not an alternative build optimized after removing it.
+
+Each fight checks enemy damage and player HP conservation; three seeds per cell
+replay against plain `GridWorld`, including combat RNG. Sample timelines record real
+world turns, including turns advanced by attack bumps. Thirty-two enemies is a tested
+bound, not a theoretical maximum; gathering costs, terrain and player decisions can
+change the practical result. Raw results stay in ignored `reports/bench/pulls/`.
+
+Summarize a run or nonoverlapping weapon shards with:
+
+```powershell
+python -B bench/analyze_pulls.py <result.json> ...
+```
+
+Incoming damage is post-mitigation and includes fatal overkill; effective healing
+excludes overheal. Read throughput alongside wins: early deaths shorten fights.
+
+### Pull tuning and confirmation
+
+`pull-tuning` uses ten pilot seeds per cell with candidate values on experiment-local
+learned skill instances; game data is not changed by the launcher. `-Confirm` uses
+forty fresh seeds per cell and the actual current game data. Both modes use the same
+prepared setup and accounting as `pulls`; no cold starts are considered. Shards select
+weapons, and launchers must run sequentially. Smoke uses two seeds per cell.
+
+Candidates change only Wrecking Crew's extra Whirlwind damage while its buff is active,
+Consecration's flat damage and Victory Rush's shared internal cooldown. Whirlwind never
+triggers Sweeping Strikes. Confirmation compares disabled Divine Shield/Evasion,
+the original emergency policy, and proactive Evasion with low-health Divine Shield
+without overlap. The two-hand shard also tests 64 enemies with the proactive policy.
+Other offensive choices and healing sources remain available in every policy.
+
+Use `analyze_pulls.py` for either mode. Results identify the candidate and defensive
+policy, report effective healing and damage, and retain sample decision/turn traces.
+Pilot choices are exploratory; confirmation measures fixed policies rather than
+optimal play or a universal safe pack size. Trainer gifts and consumables are excluded.

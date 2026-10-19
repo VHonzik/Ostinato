@@ -20,6 +20,7 @@ var execute_health_percent: int = 0
 var execute_rage_cap: int = 0
 var execute_damage_per_rage: int = 0
 var physical_percent: int = 0
+var whirlwind_percent: int = 0
 var critical_percent: int = 0
 var critical_damage_percent: int = 200
 var healing_percent: int = 0

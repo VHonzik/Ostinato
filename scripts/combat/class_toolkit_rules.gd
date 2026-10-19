@@ -11,6 +11,17 @@ static func magnitude(hero: HeroState, identifier: StringName) -> int:
 	return 0 if skill == null else skill.minimum
 
 
+static func victory_rush(world: GridWorld, death_turn: int) -> void:
+	var skill := world.hero.find_skill(&"victory_rush_1")
+	if skill == null or death_turn < int(effect(world.hero, skill.id).get("ready", 0)):
+		return
+	if skill.cooldown_seconds > 0:
+		var ready := death_turn + skill.cooldown_seconds
+		world.hero.buffs[skill.id] = {"armor": 0, "until": ready, "ready": ready}
+	SpellEffects.heal(world, null, floori(world.hero.max_health * skill.minimum / 100.0),
+		skill.title)
+
+
 static func proc(world: GridWorld, identifier: StringName, multiplier: float = 1.0) -> bool:
 	var skill := world.hero.find_skill(identifier)
 	return skill != null and world.combat_random.randf() < skill.coefficient * multiplier
@@ -128,6 +139,10 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 		world.last_attacked_enemy = target
 	var event := weapon_outcome(world, target, skill, world.hero.melee)
 	var multiplier := skill.weapon_multiplier
+	if skill.family == &"whirlwind" and world.hero.buffs.has(&"wrecking_crew_1"):
+		var wrecking := world.hero.find_skill(&"wrecking_crew_1")
+		if wrecking != null:
+			multiplier *= 1.0 + wrecking.whirlwind_percent / 100.0
 	var value := MeleeRules.damage(world.hero.melee, target.melee, event.result,
 		world.combat_random.randf(), multiplier, flat_bonus,
 		recklessness_damage_multiplier(world.hero))

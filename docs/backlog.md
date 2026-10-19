@@ -316,7 +316,8 @@ provisional. The [bench](../bench/README.md) now compares production rules.
   boundaries; leave incompatible saves untouched.
 - [ ] Later owner playtests and simulations: compare saving for Mortal Strike with
   spending on Whirlwind, single enemies versus groups, and retained mixed-class kits.
-  Revisit Sweeping Strikes and per-target proc frequency before adding more area scaling.
+  Playtest prepared large pulls after removing Whirlwind's Sweeping Strikes copies,
+  redistributing damage and limiting kill-heal frequency; review remaining per-target procs.
 - [ ] Playtest the early health/rage tradeoff, healing and Enrage feedback, then compare
   developed kits against the stalker. Removing Warrior haste also changes rage income;
   the capped Recklessness penalty has no boss-specific exception. Revisit tuning from

@@ -911,11 +911,12 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 		if check_terminal():
 			_hide_empty_corpse(target)
 			return
-		if target.relationship != GridActor.Relationship.FRIENDLY and ClassToolkitRules.has(hero, &"victory_rush_1"):
-			SpellEffects.heal(self, null, floori(hero.max_health * ClassToolkitRules.magnitude(hero, &"victory_rush_1") / 100.0), "Victory Rush")
+		var resolved_death_turn := turn_count + 1 if death_turn == -1 else death_turn
+		if target.relationship != GridActor.Relationship.FRIENDLY:
+			ClassToolkitRules.victory_rush(self, resolved_death_turn)
 		LootData.assign(self, target)
 		_hide_empty_corpse(target)
-		target.died_on_turn = turn_count + 1 if death_turn == -1 else death_turn
+		target.died_on_turn = resolved_death_turn
 		if target.relationship != GridActor.Relationship.FRIENDLY:
 			QuestRules.record_kill(self, target.npc_id)
 		var xp := MeleeRules.kill_experience(hero.level, target.melee.level)

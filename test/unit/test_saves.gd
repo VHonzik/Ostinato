@@ -44,6 +44,29 @@ func test_save_slot_buttons_save_and_load_their_selected_slot() -> void:
 	assert_eq(_session.world.turn_count, 0)
 
 
+func test_victory_rush_cooldown_survives_save_and_clears_on_loop_reset() -> void:
+	var world := _session.world
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"victory_rush_1")))
+	world.hero.health = 1
+	ClassToolkitRules.victory_rush(world, world.turn_count)
+	var ready := int(world.hero.buffs[&"victory_rush_1"].ready)
+	var snapshot := SaveCodec.capture(_session)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_eq(int(restored.hero.buffs[&"victory_rush_1"].ready), ready)
+	var health := restored.hero.health
+	ClassToolkitRules.victory_rush(restored, ready - 1)
+	assert_eq(restored.hero.health, health, "Loading cannot reset the proc cooldown.")
+	ClassToolkitRules.victory_rush(restored, ready)
+	assert_gt(restored.hero.health, health)
+	world.hero.health = 0
+	assert_true(_session.restart_after_death())
+	assert_not_null(_session.world.hero.find_skill(&"victory_rush_1"))
+	assert_false(_session.world.hero.buffs.has(&"victory_rush_1"))
+
+
 func test_wander_deadlines_roundtrip_and_continue_identically() -> void:
 	for turn in range(4):
 		_session.world.wait_turn()

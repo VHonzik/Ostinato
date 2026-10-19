@@ -463,11 +463,66 @@ func test_victory_rush_heals_enemy_kills_but_not_friendly_deaths() -> void:
 	var enemy := _enemy(world)
 	SpellEffects.damage(world, enemy, 10000, "Test hit")
 	assert_eq(world.hero.health, 1 + floori(world.hero.max_health * 0.1))
+	world.turn_count += world.hero.find_skill(&"victory_rush_1").cooldown_seconds + 1
 	var friend := _enemy(world, Vector2i(8, 9))
 	friend.relationship = GridActor.Relationship.FRIENDLY
 	var health := world.hero.health
 	SpellEffects.damage(world, friend, 10000, "Test hit")
 	assert_eq(world.hero.health, health)
+	var summon := _enemy(world, Vector2i(7, 8))
+	summon.summon_kind = "wolf"
+	SpellEffects.damage(world, summon, 10000, "Test hit")
+	assert_eq(world.hero.health, health, "A summon dying cannot trigger a ready heal.")
+
+
+func test_victory_rush_overhealing_starts_its_cooldown() -> void:
+	var world := _world()
+	_learn(world, [&"victory_rush_1"])
+	world.hero.health = world.hero.max_health
+	SpellEffects.damage(world, _enemy(world), 10000, "Full-health kill")
+	world.hero.health = 1
+	SpellEffects.damage(world, _enemy(world), 10000, "Second kill")
+	assert_eq(world.hero.health, 1, "A fully overhealed proc still consumes its cooldown.")
+
+
+func test_final_stalker_victory_stops_victory_rush_and_its_cooldown() -> void:
+	var world := _world()
+	_learn(world, [&"victory_rush_1"])
+	world.hero.health = 1
+	var enemy := _enemy(world)
+	enemy.stalker = true
+	SpellEffects.damage(world, enemy, 10000, "Final kill")
+	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_eq(world.hero.health, 1)
+	assert_false(world.hero.buffs.has(&"victory_rush_1"))
+
+
+func test_victory_rush_shares_a_cooldown_across_kills_and_damage_phases() -> void:
+	var world := _world()
+	_learn(world, [&"victory_rush_1", &"restless_blades_1", &"eviscerate_1"])
+	world.hero.health = 1
+	var heal := floori(world.hero.max_health * 0.1)
+	SpellEffects.damage(world, _enemy(world), 10000, "Active kill")
+	var ready := int(world.hero.buffs[&"victory_rush_1"].ready)
+	SpellEffects.damage(world, _enemy(world), 10000, "Another active kill")
+	world.turn_count = 1
+	SpellEffects.damage(world, _enemy(world), 10000, "Same-turn periodic kill", 1)
+	assert_eq(world.hero.health, 1 + heal, "Mass kills and later phases share one heal.")
+	world.hero.cooldowns["mortal_strike"] = 20
+	ClassToolkitRules.finish(world, 5, world.hero.find_skill(&"eviscerate_1"))
+	assert_lt(int(world.hero.cooldowns.mortal_strike), 20)
+	assert_eq(int(world.hero.buffs[&"victory_rush_1"].ready), ready,
+		"Finisher cooldown reduction cannot accelerate the healing proc.")
+	world.turn_count = ready - 2
+	SpellEffects.damage(world, _enemy(world), 10000, "Early active kill")
+	assert_eq(world.hero.health, 1 + heal)
+	world.turn_count = ready - 1
+	SpellEffects.damage(world, _enemy(world), 10000, "Boundary active kill")
+	assert_eq(world.hero.health, 1 + heal * 2,
+		"An action resolving on the ready boundary can heal before buff expiry runs.")
+	world.turn_count = ready
+	SpellEffects.damage(world, _enemy(world), 10000, "Boundary periodic kill", ready)
+	assert_eq(world.hero.health, 1 + heal * 2)
 
 
 func test_sweeping_strikes_copies_one_hit_without_extra_points() -> void:
@@ -481,6 +536,39 @@ func test_sweeping_strikes_copies_one_hit_without_extra_points() -> void:
 	assert_eq(second.health, 9980)
 	assert_eq(third.health, 10000)
 	assert_eq(world.hero.combo_points, 1)
+
+
+func test_whirlwind_does_not_copy_hits_through_sweeping_strikes() -> void:
+	var world := _world()
+	_learn(world, [&"sweeping_strikes_1", &"relentless_assault_1"])
+	var targets := [_enemy(world), _enemy(world, Vector2i(8, 9)),
+		_enemy(world, Vector2i(7, 8))]
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	for enemy: GridActor in targets:
+		assert_eq(enemy.health, 9986, "Each enemy takes only its own Whirlwind hit.")
+	assert_eq(world.hero.combo_points, 1)
+	for message in world.messages:
+		assert_false(message.begins_with("Sweeping Strikes"))
+
+
+func test_wrecking_crew_whirlwind_bonus_lasts_through_its_expiry_action_only() -> void:
+	var world := _world()
+	_learn(world, [&"wrecking_crew_1"])
+	var enemy := _enemy(world)
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	var baseline := enemy.max_health - enemy.health
+	AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"critical", 0))
+	_learn(world, [])
+	world.hero.buffs[&"wrecking_crew_1"].until = world.turn_count + 1
+	var before := enemy.health
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_gt(before - enemy.health, ceili(baseline * 1.25),
+		"The developed Whirlwind bonus adds to Wrecking Crew's ordinary physical buff.")
+	assert_false(world.hero.buffs.has(&"wrecking_crew_1"))
+	_learn(world, [])
+	before = enemy.health
+	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(before - enemy.health, baseline, "Both bonuses end with the buff.")
 
 
 func test_juggernaut_changes_charge_cooldown_and_guarantees_only_one_mortal_strike() -> void:

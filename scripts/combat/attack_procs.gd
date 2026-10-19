@@ -87,7 +87,8 @@ static func _physical_hit(world: GridWorld, event: AttackEvent) -> void:
 		world.hero.gain_rage(ClassToolkitRules.magnitude(world.hero, &"combat_potency_1"))
 	if event.target.alive:
 		weapon_procs(world, event)
-	if event.is_direct() and event.amount > 0 and ClassToolkitRules.has(world.hero, &"sweeping_strikes_1"):
+	if (event.is_direct() and not event.is_family(&"whirlwind") and event.amount > 0
+		and ClassToolkitRules.has(world.hero, &"sweeping_strikes_1")):
 		_sweeping_strikes(world, event)
 
 

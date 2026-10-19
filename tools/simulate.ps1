@@ -1,10 +1,11 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'accessories', 'loot', 'loot-rates')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
+  [switch]$Confirm,
   [ValidateRange(-1, 2)][int]$Shard = -1,
   [string]$Baseline = '',
   [ValidateRange(1, 600)][int]$TimeoutSeconds = 600
@@ -18,6 +19,8 @@ $scriptsByScenario = @{
   'stalker-passives' = 'stalker_passive_sim.gd'
   'stalker-full' = 'stalker_full_sim.gd'
   priorities = 'priority_sim.gd'
+  pulls = 'pull_sim.gd'
+  'pull-tuning' = 'pull_tuning.gd'
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
 }
@@ -28,7 +31,8 @@ $metadata = $null
 $passed = $false
 try {
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities')) { throw '-Shard is only for combat simulations.' }
+  if ($Confirm -and $Scenario -ne 'pull-tuning') { throw '-Confirm is only for pull-tuning.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -56,6 +60,7 @@ try {
   $metadata = [ordered]@{
     scenario = $Scenario; smoke = [bool]$Smoke; shard = $Shard
     baseline_only = [bool]$BaselineOnly
+    confirm = [bool]$Confirm
     revision = $revision; dirty = $dirty; godot = $ToolVersions.godot.version
     started_utc = [DateTime]::UtcNow.ToString('o'); timeout_seconds = $TimeoutSeconds
     status = 'running'
@@ -93,6 +98,7 @@ try {
   $simulationArguments = @('--script', ('res://bench/' + $scriptsByScenario[$Scenario]), '--', "shard=$Shard")
   if ($Smoke) { $simulationArguments += 'smoke' }
   if ($BaselineOnly) { $simulationArguments += 'baseline_only' }
+  if ($Confirm) { $simulationArguments += 'confirm' }
   $result = Invoke-ToolProcess 'simulation' $engine ($baseArguments + $simulationArguments) $runDirectory $TimeoutSeconds
   Assert-NoUnexpectedDiagnostics $result
   $data = Get-Content -LiteralPath (Join-Path $runDirectory 'result.json') -Raw | ConvertFrom-Json
@@ -131,6 +137,22 @@ try {
     if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete priority matrix.' }
     foreach ($row in $data.rows) {
       if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete priority sample.' }
+    }
+  }
+  if ($Scenario -eq 'pulls') {
+    $weaponCount = if ($Shard -eq -1) { 3 } else { 1 }
+    if ($data.rows.Count -ne 56 * $weaponCount) { throw 'Incomplete pull matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete pull sample.' }
+    }
+  }
+  if ($Scenario -eq 'pull-tuning') {
+    $weaponCount = if ($Shard -eq -1) { 3 } else { 1 }
+    $expectedCells = if ($Confirm) { 18 * $weaponCount } else { 48 * $weaponCount }
+    if ($Confirm -and $Shard -in @(-1, 0)) { $expectedCells += 2 }
+    if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete pull tuning matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete pull tuning sample.' }
     }
   }
   if ($Scenario -eq 'stalker-full') {

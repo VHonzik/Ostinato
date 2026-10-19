@@ -118,6 +118,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   attacking the selected enemy in melee range; never silently retarget or bank swings
   while out of range. Retargeting retains remaining weapon delay. Resolve multiple
   due swings in order and stop on death. Playtest this ordering and control rhythm.
+- Developed characters should gain efficient large-pull clearing through area damage.
+  Evaluate these fights with normal maintenance buffs prepared. Roughly sixteen
+  same-level regular enemies should be a serious pull that rewards defensive cooldowns;
+  kill healing should not sustain arbitrarily large melee packs.
 - Main-hand auto-attacks and incoming hits supply rage; rage decays outside combat.
   Ordinary swing rage scales with base weapon speed, independently of haste.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
