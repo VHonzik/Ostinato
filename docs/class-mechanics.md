@@ -96,6 +96,18 @@ execution. Enrage rewards taking hits; Recklessness raises damage and risk as he
 falls. Mortal Strike is the larger single-target spender; Whirlwind gains value against
 groups.
 
+Completing all Warrior training unlocks Llane's War Horn gift dialogue once each Loop,
+regardless of the currently selected class. Booming Shout is removed. War Horn is a
+reusable bag item, automatically placed in an empty hotbar slot when available; Bags
+also allows use and hotbar assignment. Its free two-turn cast deals exactly 1 guaranteed
+damage to each living neutral/hostile NPC whose tile is on the current screen and in
+line of sight, engaging them. Chests and friendly actors are excluded. It preserves the
+attack target, grants no attack procs or combo points, and ignores armor and damage
+bonuses. Weapon timers and enemy actions continue during casting; cancellation gives
+no effect or cooldown. Its 30-turn cooldown starts on completion and is not reduced by
+Restless Blades. The item and claim reset on death, so retained Warrior learning allows
+a new gift next Loop. The horn, claim and cooldown persist through mid-Loop saves.
+
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Mortal Strike | 30 | 1 | 4 | - | 1 | 1 | 0 | C(0,1) | Target | Active physical attack. Deals 200% weapon damage. A learned Juggernaut charge guarantees the next landed Mortal Strike crit and is then consumed. |
@@ -112,7 +124,6 @@ groups.
 | Sweeping Strikes | - | - | - | - | 1 (secondary target) | 5 | 370c | - | - | Passive. Landed direct physical actives copy 50% of their damage to one other hostile enemy in melee. Copies cannot proc, crit or generate rage/combo points. |
 | Sudden Death | - | - | - | * | - | 5 | 405c | - | - | Passive. Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage. |
 | Wrecking Crew | - | - | - | 10 | - | 5 | 450c | - | - | Passive. Primary physical crits grant +25% physical damage for 10 turns. Refreshes without stacking. |
-| Booming Shout | 0 | 1 | 30 | - | 4 | 5 | 470c | - | - | Active. Deal exactly 1 damage to every neutral or hostile NPC within 4 tiles (9x9 area), in sight, engaging them. Guaranteed hit; no crits, armor reduction, damage bonuses, attack procs or combo points. Keeps your selected attack target. One turn; 30-turn cooldown. |
 | Juggernaut | - | - | - | * | - | 5 | 495c | - | - | Passive. Charge cooldown falls from 10 to 8 turns; arrival guarantees the next landed Mortal Strike crit until consumed or death. A miss/dodge does not consume it. |
 
 ## Shaman
@@ -120,9 +131,22 @@ groups.
 **Tagline: Prepare the storm, shock your foes, and let spirits share the fight.**
 
 Free shield/weapon preparation, flat Nature damage, reactive charges and weapon-
-triggered attacks. A lasting elemental redirects engaged enemies; temporary wolves add
+triggered attacks. The Ancestral totem item supplies a lasting elemental that redirects
+engaged enemies; temporary wolves add
 damage and, with Spirit Hunt, healing. Earth Shock does not scale with weapons or
 Strength.
+
+Earth Elemental is removed from training. After learning all remaining Shaman actives
+and passives, Farseer Lopaa offers Ancestral totem through the shared trainer farewell
+dialogue once per Loop, in any selected class. Use it from Bags or its hotbar shortcut:
+it costs no rage, takes one turn, and consumes the item only on a successful summon.
+There is no cooldown. Blocked adjacent placement or a living elemental rejects use
+without spending the item or a turn. The elemental keeps the former ability's behavior:
+40 health, no expiration, follows you or an engaged hostile, taunts already engaged
+hostiles within 4 tiles and sight of itself, and attacks for 2-4 physical damage every
+2.5 turns. Its actor uses [earth_elemental.svg](../assets/sprites/dev/earth_elemental.svg).
+Saves retain the unspent item, gift claim, and summoned actor independently of learned
+skills. Death clears the item, summon and claim; retained learning allows a new gift.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -134,7 +158,6 @@ Strength.
 | Static Shock | - | - | - | - | - | 3 | 180c | - | - | Passive. Landed primary physical attacks, including main/off-hand swings and direct physical actives, have a 20% chance to discharge an active Lightning Shield charge, ignoring its retaliation cooldown. |
 | Elemental Weapons | - | - | - | - | - | 3 | 225c | - | - | Passive. Windfury bonus damage increases 40%. |
 | Elemental Assault | - | - | - | * | - | 3 | 270c | - | - | Passive. Earth Shock deals +20% damage. A primary physical crit empowers the next Earth Shock by another additive +50% (70% total), until used or death. A miss still consumes the empowerment. |
-| Earth Elemental | 25 | 1 | 60 | * | * | 4 | 330c | [earth_elemental.svg](../assets/sprites/dev/earth_elemental.svg) | Area (summoned actor)* | Active summon. Requires a free adjacent tile and no living elemental. Summons one mobile elemental with 40 health until killed or Loop reset; its 60-turn cooldown remains after death. Follows the selected engaged hostile or another nearby engaged foe, otherwise returns to you. Already engaged hostiles within 4 tiles and sight of the elemental prioritize it. Melee attacks deal 2-4 base physical damage every 2.5 turns. Sprite is the summoned actor. |
 | Feral Spirit | 25 | 1 | 30 | 12* | 1 (placement)* | 4 | 390c | R(7,4), wolf | Area (summoned actors)* | Active summon. Requires 2 free or replaceable adjacent tiles. Replaces existing wolves with 2 wolves for 12 turns or until killed. Each has 50 health, attacks every 2 turns and snapshots 75% of weapon damage/power at summoning. Follows the selected enemy, otherwise returns to you; can be attacked and grants no XP/rage/points. Spirit Hunt heals from actual damage. Sprites are the summoned actors. |
 | Spirit Hunt | - | - | - | - | - | 4 | 435c | - | - | Passive. Spirit wolves heal you for 50% of their actual damage dealt. |
 | Toughness | - | - | - | - | - | 5 | 480c | - | - | Passive. +20% armor. |
@@ -147,6 +170,21 @@ Strength.
 Holy damage on main-hand swings, a committed delayed verdict and fixed damaging ground.
 Holy-event and critical rewards improve later sentences. Blessing of Might supplies
 Strength; Divine Shield trades outgoing damage for immunity.
+
+Completing all Paladin training unlocks Brother Sammuel's Wartorn Banner gift through
+the shared trainer farewell dialogue, once each Loop in any selected class. This
+single-use item costs no rage and takes one turn from Bags or the hotbar. It plants on
+the first free adjacent tile in the normal clockwise placement order; blocked placement
+preserves the item and turn. The banner is a nonblocking, untargetable ground marker
+with a visible range outline. For 10 turns, including its placement turn, the player and
+living friendly summons within 3 tiles (square distance) take 10% less incoming damage.
+Range is checked at each hit without a sight requirement. Protection combines with
+existing mitigation, rounds the final damage up, and never turns a positive hit into
+immunity. Leaving range removes protection immediately; entering restores it. Town NPCs
+and enemies receive no protection. The HUD shows remaining time and whether the player
+is in range. The banner expires before attacks on its expiry boundary. Saves retain
+the unspent item, planted position, expiry and claim; death clears all and permits a
+new gift with retained learning. It does not change any learned Paladin ability.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -174,6 +212,16 @@ Player-held combo points, Eviscerate, passive finisher haste, dual-wield rewards
 poisons. Instant Poison supplies immediate damage; Deadly builds stacks. Catalytic Venom
 rewards mixed coatings on unequal-speed weapons. Retained class attacks can also build
 momentum.
+
+Completing all Rogue training unlocks Jorik's Lucky charm gift through the same farewell
+dialogue as Llane's War Horn, once each Loop and regardless of the selected class.
+It works passively from Bags: a hit that would kill the living player instead leaves
+them at 1 HP and replaces the charm in its bag slot with Broken lucky charm, which has
+no effect. No cast, hotbar assignment or cooldown is involved. The charm prevents only
+that hit; another hit, including later in the same turn, can kill the player. Absorbed,
+missed and nonlethal hits do not break it, and it does not prevent the Development Death
+trigger. Saves retain the intact/broken item and claimed gift. Both item forms and the
+claim clear on death, allowing another gift with retained Rogue learning next Loop.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |

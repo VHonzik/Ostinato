@@ -58,6 +58,12 @@ var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
 var starter_gear_received: bool = false
+var war_horn_received: bool = false
+var lucky_charm_received: bool = false
+var ancestral_totem_received: bool = false
+var war_banner_received: bool = false
+# Presentation supplies the current viewport size, in world tiles; headless default is 1280x720.
+var screen_size_tiles := Vector2(40.0, 22.5)
 var trainer_referral_received: bool = false
 var ever_accepted_quest: bool = false
 var hotbar: Array[StringName] = []
@@ -75,6 +81,7 @@ var valley_route: bool = false
 var ground_tiles: Dictionary[Vector2i, StringName] = {}
 var scenery_tiles: Dictionary[Vector2i, StringName] = {}
 var consecration: Dictionary = {}
+var war_banner: Dictionary = {}
 
 var _neutral_bump_target: GridActor
 var _neutral_bump_tile: Vector2i
@@ -98,7 +105,16 @@ func assign_hotbar(slot: int, identifier: StringName) -> bool:
 	# Store an explicit learned skill; layout editing never spends time.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
-	if identifier != &"" and identifier != FOOD_HOTBAR_ID:
+	if identifier == ItemData.WAR_HORN_HOTBAR_ID:
+		if not has_war_horn():
+			return false
+	elif identifier == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+		if not has_ancestral_totem():
+			return false
+	elif identifier == ItemData.WAR_BANNER_HOTBAR_ID:
+		if not has_war_banner():
+			return false
+	elif identifier != &"" and identifier != FOOD_HOTBAR_ID:
 		var skill := hero.find_skill(identifier)
 		if skill == null or skill.effect == SkillDefinition.Effect.PASSIVE:
 			return false
@@ -112,6 +128,175 @@ func consume_hotbar_food() -> bool:
 			return consume_item(index)
 	add_message("No Tough Jerky left.")
 	return false
+
+
+func has_war_horn() -> bool:
+	for item in hero.inventory:
+		if not item.is_empty() and item.id == ItemData.WAR_HORN_ID:
+			return true
+	return false
+
+
+func use_war_horn() -> bool:
+	var action := ItemData.war_horn_action()
+	if (not item_action_ready() or not has_war_horn()
+		or global_cooldown_until > turn_count
+		or int(hero.cooldowns.get("war_horn", 0)) > turn_count):
+		add_message("Cannot use War Horn: missing item, busy, or on cooldown.")
+		return false
+	_begin_cast(action, null)
+	return true
+
+
+func can_receive_war_horn(trainer: GridActor) -> bool:
+	return (not war_horn_received and not has_war_horn()
+		and _trainer_gift_ready(trainer, 911, &"Warrior"))
+
+
+func _trainer_gift_ready(trainer: GridActor, identity: int, category: StringName) -> bool:
+	if (not item_action_ready() or in_combat()
+		or (valley_route and not class_selected)
+		or not QuestRules.in_range(self, trainer, identity) or trainer.service != category):
+		return false
+	for skill in SkillDefinition.trainer_skills(category):
+		if hero.find_skill(skill.id) == null:
+			return false
+	return true
+
+
+func receive_war_horn(trainer: GridActor) -> bool:
+	if not can_receive_war_horn(trainer):
+		return false
+	if not InventoryRules.receive(hero, ItemData.instance(ItemData.WAR_HORN_ID)):
+		add_message("Make room in your bags for War Horn.")
+		return false
+	war_horn_received = true
+	if not hotbar.has(ItemData.WAR_HORN_HOTBAR_ID):
+		var slot := hotbar.find(&"")
+		if slot >= 0:
+			hotbar[slot] = ItemData.WAR_HORN_HOTBAR_ID
+	add_message("%s: %s" % [trainer.title, NpcConversation.TRAINER_GIFT_DIALOGUE])
+	add_message("Received War Horn.")
+	return true
+
+
+func can_receive_lucky_charm(trainer: GridActor) -> bool:
+	if lucky_charm_received or not _trainer_gift_ready(trainer, 915, &"Rogue"):
+		return false
+	for item in hero.inventory:
+		if (not item.is_empty()
+			and item.id in [ItemData.LUCKY_CHARM_ID, ItemData.BROKEN_LUCKY_CHARM_ID]):
+			return false
+	return true
+
+
+func receive_lucky_charm(trainer: GridActor) -> bool:
+	if not can_receive_lucky_charm(trainer):
+		return false
+	if not InventoryRules.receive(hero, ItemData.instance(ItemData.LUCKY_CHARM_ID)):
+		add_message("Make room in your bags for Lucky charm.")
+		return false
+	lucky_charm_received = true
+	add_message("%s: %s" % [trainer.title, NpcConversation.TRAINER_GIFT_DIALOGUE])
+	add_message("Received Lucky charm.")
+	return true
+
+
+func has_ancestral_totem() -> bool:
+	for item in hero.inventory:
+		if not item.is_empty() and item.id == ItemData.ANCESTRAL_TOTEM_ID:
+			return true
+	return false
+
+
+func can_receive_ancestral_totem(trainer: GridActor) -> bool:
+	return (not ancestral_totem_received and not has_ancestral_totem()
+		and _trainer_gift_ready(trainer, 900002, &"Shaman"))
+
+
+func receive_ancestral_totem(trainer: GridActor) -> bool:
+	if not can_receive_ancestral_totem(trainer):
+		return false
+	if not InventoryRules.receive(hero, ItemData.instance(ItemData.ANCESTRAL_TOTEM_ID)):
+		add_message("Make room in your bags for Ancestral totem.")
+		return false
+	ancestral_totem_received = true
+	if not hotbar.has(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID):
+		var slot := hotbar.find(&"")
+		if slot >= 0:
+			hotbar[slot] = ItemData.ANCESTRAL_TOTEM_HOTBAR_ID
+	add_message("%s: %s" % [trainer.title, NpcConversation.TRAINER_GIFT_DIALOGUE])
+	add_message("Received Ancestral totem.")
+	return true
+
+
+func use_ancestral_totem() -> bool:
+	var action := ItemData.ancestral_totem_action()
+	if (not item_action_ready() or not has_ancestral_totem()
+		or not SpellEffects.can_apply(self, action, null)):
+		add_message("Cannot use Ancestral totem: missing item, busy, no free adjacent tile, or an elemental is alive.")
+		return false
+	hero.restoration.clear()
+	holy_event_counted = false
+	resolving_turn = true
+	for index in range(hero.inventory.size()):
+		if not hero.inventory[index].is_empty() and hero.inventory[index].id == ItemData.ANCESTRAL_TOTEM_ID:
+			hero.inventory[index] = {}
+			break
+	_resolve_skill(action, null)
+	_finish_turn()
+	return true
+
+
+func has_war_banner() -> bool:
+	for item in hero.inventory:
+		if not item.is_empty() and item.id == ItemData.WAR_BANNER_ID:
+			return true
+	return false
+
+
+func can_receive_war_banner(trainer: GridActor) -> bool:
+	return (not war_banner_received and not has_war_banner()
+		and _trainer_gift_ready(trainer, 925, &"Paladin"))
+
+
+func receive_war_banner(trainer: GridActor) -> bool:
+	if not can_receive_war_banner(trainer):
+		return false
+	if not InventoryRules.receive(hero, ItemData.instance(ItemData.WAR_BANNER_ID)):
+		add_message("Make room in your bags for Wartorn Banner.")
+		return false
+	war_banner_received = true
+	if not hotbar.has(ItemData.WAR_BANNER_HOTBAR_ID):
+		var slot := hotbar.find(&"")
+		if slot >= 0:
+			hotbar[slot] = ItemData.WAR_BANNER_HOTBAR_ID
+	add_message("%s: %s" % [trainer.title, NpcConversation.TRAINER_GIFT_DIALOGUE])
+	add_message("Received Wartorn Banner.")
+	return true
+
+
+func use_war_banner() -> bool:
+	if not item_action_ready() or not has_war_banner() or WarBannerRules.active(self):
+		add_message("Cannot use Wartorn Banner: missing item, busy, or a banner is already active.")
+		return false
+	var tile := WarBannerRules.placement(self)
+	if tile == Vector2i(-1, -1):
+		add_message("Cannot place Wartorn Banner: no free adjacent tile.")
+		return false
+	hero.restoration.clear()
+	holy_event_counted = false
+	resolving_turn = true
+	for index in range(hero.inventory.size()):
+		if not hero.inventory[index].is_empty() and hero.inventory[index].id == ItemData.WAR_BANNER_ID:
+			hero.inventory[index] = {}
+			break
+	var item := ItemData.get_item(ItemData.WAR_BANNER_ID)
+	war_banner = {"tile": tile, "until": turn_count + 1 + int(item.duration)}
+	add_message("Wartorn Banner planted: nearby allies take %d%% less damage for %d turns."
+		% [item.reduction_percent, item.duration])
+	_finish_turn()
+	return true
 
 
 func committed_enemy() -> GridActor:
@@ -222,6 +407,12 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 	if skill.effect == SkillDefinition.Effect.CHARGE and charge_route(target).is_empty():
 		add_message("Cannot Charge: no reachable empty melee tile.")
 		return false
+	_begin_cast(skill, target, poison_hands)
+	return true
+
+
+func _begin_cast(skill: SkillDefinition, target: GridActor,
+	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
 	hero.restoration.clear()
 	pending_skill = skill
 	pending_target = target
@@ -239,7 +430,6 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 	if target != null:
 		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
 	continue_cast()
-	return true
 
 
 func continue_cast() -> bool:
@@ -259,7 +449,8 @@ func continue_cast() -> bool:
 		var payment := SkillCost.quote(hero, skill)
 		if (skill.available_resource(hero) >= payment.rage_cost and valid_spell_target(skill, target)
 			and SpellEffects.can_apply(self, skill, target)):
-			hero.casting_credit += cast_turns - cast_duration
+			if skill.family != &"war_horn":
+				hero.casting_credit += cast_turns - cast_duration
 			payment.pay(hero)
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
@@ -835,6 +1026,9 @@ func _distance_to_goals(tile: Vector2i, goals: Array[Vector2i]) -> int:
 
 
 func _tick_effects() -> void:
+	if not war_banner.is_empty() and int(war_banner.until) <= turn_count:
+		war_banner.clear()
+		add_message("Wartorn Banner expires.")
 	_expire_hero_buffs()
 	for actor in actors:
 		if actor.alive and actor.expires_turn > 0 and turn_count >= actor.expires_turn:
@@ -1080,6 +1274,12 @@ func consume_item(index: int) -> bool:
 		return false
 	var item := hero.inventory[index]
 	var data := ItemData.get_item(int(item.id))
+	if data.use == "war_horn":
+		return use_war_horn()
+	if data.use == "ancestral_totem":
+		return use_ancestral_totem()
+	if data.use == "war_banner":
+		return use_war_banner()
 	if data.use == "" or hero.level < int(data.level):
 		add_message("Cannot use that item at this level.")
 		return false

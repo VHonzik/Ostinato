@@ -1,7 +1,9 @@
 class_name NpcConversation
 extends RefCounted
 
-enum Action { QUEST, SELECT_CLASS, REFERRAL, SPARE_GEAR, TRADE, TRAIN }
+enum Action { QUEST, SELECT_CLASS, REFERRAL, SPARE_GEAR, TRADE, TRAIN, WAR_HORN, LUCKY_CHARM, ANCESTRAL_TOTEM, WAR_BANNER }
+
+const TRAINER_GIFT_DIALOGUE: String = "I have nothing to teach you anymore you have to venture forth. Here is a small something for your journey..."
 
 static var _services: Dictionary[StringName, Service] = {
 	&"Marshal": Marshal.new(),
@@ -123,8 +125,16 @@ class Trader extends Service:
 
 
 class Trainer extends Service:
-	func append_choices(conversation: NpcConversation, _session: GameSession,
+	func append_choices(conversation: NpcConversation, session: GameSession,
 		actor: GridActor) -> void:
+		if session.world.can_receive_war_horn(actor):
+			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.WAR_HORN))
+		elif session.world.can_receive_lucky_charm(actor):
+			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.LUCKY_CHARM))
+		elif session.world.can_receive_ancestral_totem(actor):
+			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.ANCESTRAL_TOTEM))
+		elif session.world.can_receive_war_banner(actor):
+			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.WAR_BANNER))
 		var choice := Choice.new("Train", Action.TRAIN)
 		choice.category = actor.service
 		conversation.choices.append(choice)

@@ -586,7 +586,7 @@ func test_charge_hold_allows_target_to_attack_adjacent_elemental() -> void:
 	var enemy := _enemy(world, Vector2i(11, 10))
 	var totem := GridActor.new(Vector2i(11, 9))
 	totem.summon_kind = "earth_elemental"
-	totem.summon_skill = &"earth_elemental_1"
+	totem.summon_skill = ItemData.ANCESTRAL_TOTEM_HOTBAR_ID
 	totem.expires_turn = 0
 	totem.awards_experience = false
 	totem.max_health = 100

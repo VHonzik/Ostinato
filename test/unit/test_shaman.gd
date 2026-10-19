@@ -4,9 +4,10 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Shaman"
-	for identifier: StringName in [&"earth_elemental_1", &"lightning_shield_1", &"windfury_weapon_1"]:
+	for identifier: StringName in [&"lightning_shield_1", &"windfury_weapon_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(identifier)))
 	world.hero.rage = 100
+	InventoryRules.receive(world.hero, ItemData.instance(ItemData.ANCESTRAL_TOTEM_ID))
 	return world
 
 
@@ -36,7 +37,7 @@ func test_free_preparation_costs_turns_but_preserves_battle_trance() -> void:
 
 func test_elemental_has_no_expiration_follows_player_and_cannot_be_replaced_alive() -> void:
 	var world := _world()
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	var elemental := SummonRules.active(world, "earth_elemental")
 	assert_not_null(elemental)
 	assert_eq(elemental.expires_turn, 0)
@@ -49,32 +50,33 @@ func test_elemental_has_no_expiration_follows_player_and_cannot_be_replaced_aliv
 	assert_lte(GridWorld.tile_distance(elemental.tile, world.player_tile), 1)
 	world.hero.rage = 100
 	var before := world.turn_count
-	assert_false(world.cast_skill(&"earth_elemental_1"), "An active elemental cannot be healed by resummoning.")
+	InventoryRules.receive(world.hero, ItemData.instance(ItemData.ANCESTRAL_TOTEM_ID))
+	assert_false(world.use_ancestral_totem(), "An active elemental cannot be healed by resummoning.")
 	assert_eq(world.hero.rage, 100)
 	assert_eq(world.turn_count, before)
 	SummonRules.remove(world, elemental)
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	assert_ne(SummonRules.active(world, "earth_elemental"), elemental)
 
 
-func test_blocked_elemental_placement_is_free_and_dead_elemental_does_not_reset_cooldown() -> void:
+func test_blocked_placement_keeps_totem_and_used_totem_cannot_be_reused_after_elemental_dies() -> void:
 	var world := _world()
 	for direction in GridWorld.DIRECTIONS:
 		world.blocked_tiles[world.player_tile + direction] = true
-	assert_false(world.cast_skill(&"earth_elemental_1"))
+	assert_false(world.use_ancestral_totem())
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, 100)
 	assert_false(world.hero.cooldowns.has(&"earth_elemental"))
 	world.blocked_tiles.clear()
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	SummonRules.remove(world, SummonRules.active(world, "earth_elemental"))
-	assert_false(world.cast_skill(&"earth_elemental_1"), "Death leaves the long cooldown running.")
+	assert_false(world.use_ancestral_totem(), "The single-use item is gone even after the elemental dies.")
 	assert_eq(world.turn_count, 1)
 
 
 func test_elemental_taunts_all_nearby_engaged_hostiles_without_threat_race_or_idle_pulls() -> void:
 	var world := _world()
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	var elemental := SummonRules.active(world, "earth_elemental")
 	var first := _enemy(world, elemental.tile + Vector2i.RIGHT)
 	var second := _enemy(world, elemental.tile + Vector2i.LEFT)
@@ -100,7 +102,7 @@ func test_elemental_taunts_all_nearby_engaged_hostiles_without_threat_race_or_id
 
 func test_elemental_attacks_only_engaged_enemies_and_does_not_award_player_resources() -> void:
 	var world := _world()
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	var elemental := SummonRules.active(world, "earth_elemental")
 	var enemy := _enemy(world, elemental.tile + Vector2i.RIGHT, false)
 	enemy.melee.dodge = 0.0
@@ -122,7 +124,7 @@ func test_elemental_takes_a_few_stalker_turns_then_attacks_return_to_player() ->
 	world.hero.level = 5
 	world.hero.refresh_stats()
 	world.hero.health = world.hero.max_health
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	var elemental := SummonRules.active(world, "earth_elemental")
 	world._spawn_stalker(elemental.tile + Vector2i.RIGHT)
 	var boss: GridActor = world.actors.back()
@@ -145,14 +147,15 @@ func test_elemental_takes_a_few_stalker_turns_then_attacks_return_to_player() ->
 	assert_lt(world.hero.health, health)
 
 
-func test_elemental_save_roundtrip_keeps_health_cooldown_and_singleton_then_loop_clears_it() -> void:
+func test_totem_summon_save_keeps_health_and_singleton_without_learning_then_loop_clears_it() -> void:
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
 	var world := game.world
-	world.hero.learn_skill(SkillDefinition.catalog(&"earth_elemental_1"))
+	InventoryRules.receive(world.hero, ItemData.instance(ItemData.ANCESTRAL_TOTEM_ID))
+	world.ancestral_totem_received = true
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"earth_elemental_1"))
+	assert_true(world.use_ancestral_totem())
 	var elemental := SummonRules.active(world, "earth_elemental")
 	elemental.health -= 7
 	var snapshot := SaveCodec.capture(game)
@@ -179,13 +182,15 @@ func test_elemental_save_roundtrip_keeps_health_cooldown_and_singleton_then_loop
 	var expiring := snapshot.duplicate(true)
 	expiring.actors[elemental_index].state.expires_turn = 100
 	assert_null(SaveCodec.restore(expiring, false))
-	var unlearned := snapshot.duplicate(true)
-	unlearned.learned.erase("earth_elemental_1")
-	assert_null(SaveCodec.restore(unlearned, false))
+	var invalid_source := snapshot.duplicate(true)
+	invalid_source.actors[elemental_index].state.summon_skill = "earth_elemental_1"
+	assert_null(SaveCodec.restore(invalid_source, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_null(SummonRules.active(game.world, "earth_elemental"))
-	assert_not_null(game.world.hero.find_skill(&"earth_elemental_1"))
+	assert_null(game.world.hero.find_skill(&"earth_elemental_1"))
+	assert_false(game.world.has_ancestral_totem())
+	assert_false(game.world.ancestral_totem_received)
 	assert_false(game.world.hero.cooldowns.has(&"earth_elemental"))
 
 

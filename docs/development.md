@@ -93,9 +93,21 @@ empowerment remains for a later slice. Charge's wind-up and automatic
 travel keep the player casting until arrival, blocking other actions and cancellation.
 Charge arrival also allows the ready weapon to attack its target. These are current
 mechanics; tuning and remaining v0.1 mechanics still need playtesting.
-Late Warrior training adds Booming Shout, a guaranteed area hit for pulling neutral
-and hostile NPCs in sight. It grants no combo points or attack procs and keeps the
-selected attack target.
+After all Warrior training is learned, Llane offers a reusable War Horn once each Loop.
+Use it from Bags or the hotbar: a two-turn cast pulls neutral and hostile NPCs across
+the current screen, requiring sight, with a 30-turn cooldown after completion. It
+grants no combo points or attack procs and keeps the selected attack target. Death
+removes the horn; retained learning lets you claim another in the next Loop.
+After all Rogue training is learned, Jorik offers Lucky charm through the same farewell
+dialogue once each Loop. Carrying it in Bags passively prevents one lethal hit, leaving
+1 HP and replacing it with an inert Broken lucky charm. A later hit can still kill you.
+Both forms are lost on death; saves retain the item and gift claim.
+After all Paladin training is learned, Brother Sammuel offers Wartorn Banner through
+the same once-per-Loop farewell dialogue. Its free one-turn use plants a nonblocking
+banner beside you for 10 turns, giving you and friendly summons within 3 tiles 10% less
+damage taken. Bags and hotbar support use; the ground outline and HUD show protection.
+Saves retain the item, planted banner and claim. Death clears them and permits a new
+gift with retained learning. This additive item keeps revision-30 saves compatible.
 
 Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
 Command and Execution Sentence; Rogue with Eviscerate and the Relentless Assault passive.
@@ -117,9 +129,13 @@ Every class can equip any gear without level or learning requirements.
 Ambidexterity improves off-hand damage when learned.
 Lightning Shield and Windfury cost no rage but still use a world turn. Earth Shock
 deals flat Nature damage independent of weapon damage and Strength. Strength of Earth
-Totem and Elemental Warding are removed. Earth Elemental follows the player or an
+Totem and Elemental Warding are removed. Earth Elemental is now summoned by the
+single-use Ancestral totem item, Farseer Lopaa's farewell gift after all Shaman training.
+Use it free in one turn from Bags or the hotbar; failed placement preserves the item.
+The elemental follows the player or an
 engaged target and repeatedly taunts nearby engaged hostiles in sight. It lasts until
-killed or Loop reset, blocks resummoning while alive and keeps its cooldown after death.
+killed or Loop reset and blocks resummoning while alive. The gift is once per Loop;
+death removes the item and summon and permits another gift with retained learning.
 Hands have independent timers; due swings resolve in time order, with main-hand first
 on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
 Instant and Deadly Poison cost no rage and become available together at the Rogue trainer; Catalytic
@@ -168,9 +184,10 @@ label turns red without Seal of Command. Existing Holy/critical rewards happen o
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 28, with gear stats rebuilt from equipment on load.
-Revision 27 and older saves are incompatible and left unchanged; start a fresh game.
-This revision removes class XP and introduces level/gold training and independent exploration areas.
+Current saves are `demo` revision 30, with gear stats rebuilt from equipment on load.
+Revision 29 and older saves are incompatible and left unchanged; start a fresh game.
+This revision replaces learned Earth Elemental with the single-use Ancestral totem
+trainer reward and saves its summoned actor without a learned-skill requirement.
 Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.
 Committed Execution Sentence verdicts and Consecration ground persist across saves;
 both clear with the physical world on death.

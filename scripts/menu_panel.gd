@@ -332,12 +332,50 @@ func _item_detail(index: int) -> void:
 			_button("Equip (1 turn)",
 				_transaction.bind(session.world.equip_item.bind(index), open_bags))
 	if data.use != "":
-		_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_bags))
+		if data.use in ["war_horn", "ancestral_totem", "war_banner"]:
+			var remaining := maxi(0, int(session.world.hero.cooldowns.get("war_horn", 0))
+				- session.world.turn_count)
+			if data.use == "war_horn" and remaining > 0:
+				_label("Ready in %d turns." % remaining)
+			var use_text := "Use (2-turn cast)" if data.use == "war_horn" else "Use once (1 turn)"
+			_button(use_text, _transaction.bind(
+				session.world.consume_item.bind(index), close))
+			var assign := _button("Assign to hotbar", _assign_active_item.bind(index))
+			assign.disabled = session.world.hotbar_locked
+		else:
+			_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_bags))
 	_button("Move / split stack", func() -> void:
 		_quantity = 1
 		_quantity_menu("Move quantity", int(item.quantity), _move_destination.bind(index),
 			_item_detail.bind(index)))
 	_button("Back (Esc)", open_bags)
+	_finish()
+
+
+func _assign_active_item(index: int) -> void:
+	var item_id := int(session.world.hero.inventory[index].id)
+	var item_identifier := (ItemData.WAR_HORN_HOTBAR_ID if item_id == ItemData.WAR_HORN_ID
+		else ItemData.ANCESTRAL_TOTEM_HOTBAR_ID)
+	if item_id == ItemData.WAR_BANNER_ID:
+		item_identifier = ItemData.WAR_BANNER_HOTBAR_ID
+	_begin("item_hotbar", "Assign " + ItemData.get_item(item_id).title, _item_detail.bind(index))
+	for slot in range(session.world.hotbar.size()):
+		var identifier := session.world.hotbar[slot]
+		var skill := session.world.hero.find_skill(identifier)
+		var title := "Empty" if skill == null else skill.title
+		if identifier == GridWorld.FOOD_HOTBAR_ID:
+			title = "Food"
+		elif identifier == ItemData.WAR_HORN_HOTBAR_ID:
+			title = "War Horn"
+		elif identifier == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+			title = "Ancestral totem"
+		elif identifier == ItemData.WAR_BANNER_HOTBAR_ID:
+			title = "Wartorn Banner"
+		var key := options.key_label(StringName("hotbar_%d" % (slot + 1)))
+		_button("%s: %s" % [key, title], _transaction.bind(
+			session.world.assign_hotbar.bind(slot, item_identifier),
+			_item_detail.bind(index)))
+	_button("Back (Esc)", _item_detail.bind(index))
 	_finish()
 
 
@@ -779,6 +817,18 @@ func _conversation_choice(choice: NpcConversation.Choice, actor: GridActor) -> v
 			open_trade(actor)
 		NpcConversation.Action.TRAIN:
 			open_trainer(choice.category)
+		NpcConversation.Action.WAR_HORN:
+			_transaction(session.world.receive_war_horn.bind(actor),
+				_show_conversation.bind(actor))
+		NpcConversation.Action.LUCKY_CHARM:
+			_transaction(session.world.receive_lucky_charm.bind(actor),
+				_show_conversation.bind(actor))
+		NpcConversation.Action.ANCESTRAL_TOTEM:
+			_transaction(session.world.receive_ancestral_totem.bind(actor),
+				_show_conversation.bind(actor))
+		NpcConversation.Action.WAR_BANNER:
+			_transaction(session.world.receive_war_banner.bind(actor),
+				_show_conversation.bind(actor))
 
 
 func open_quest_log() -> void:

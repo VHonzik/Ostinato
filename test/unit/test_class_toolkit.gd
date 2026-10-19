@@ -59,7 +59,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_require_level_and_gold_preserving_full_hotbar() -> void:
-	var counts := {&"Warrior": 16, &"Shaman": 13, &"Paladin": 15, &"Rogue": 16}
+	var counts := {&"Warrior": 15, &"Shaman": 12, &"Paladin": 15, &"Rogue": 16}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -915,9 +915,9 @@ func test_whirlwind_requires_an_adjacent_enemy_and_rejects_without_spending() ->
 		assert_eq(world.hero.rage, 85 if distance == 1 else 100)
 
 
-func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_attack_procs() -> void:
+func test_war_horn_hits_the_screen_for_one_and_engages_without_attack_procs() -> void:
 	var world := _world()
-	_learn(world, [&"booming_shout_1", &"relentless_assault_1", &"sudden_death_1",
+	_learn(world, [&"relentless_assault_1", &"sudden_death_1",
 		&"battle_trance_1", &"seal_fate_1", &"sweeping_strikes_1"])
 	world.hero.find_skill(&"sudden_death_1").coefficient = 1.0
 	world.hero.melee.hit = -1000
@@ -927,7 +927,8 @@ func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_a
 	var selected := _enemy(world)
 	world.last_attacked_enemy = selected
 	world.auto_attack_target = selected
-	var neutral := _enemy(world, Vector2i(12, 12))
+	world.bounds = Rect2i(0, 0, 50, 30)
+	var neutral := _enemy(world, Vector2i(26, 18))
 	neutral.relationship = GridActor.Relationship.NEUTRAL
 	neutral.returning_home = true
 	var armored := _enemy(world, Vector2i(4, 8))
@@ -941,15 +942,21 @@ func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_a
 	var chest := _enemy(world, Vector2i(7, 8))
 	chest.relationship = GridActor.Relationship.NEUTRAL
 	chest.chest = true
-	var distant := _enemy(world, Vector2i(13, 8))
+	var distant := _enemy(world, Vector2i(29, 8))
 	var blocked := _enemy(world, Vector2i(8, 4))
 	world.sight_blockers[Vector2i(8, 6)] = true
-	assert_true(world.cast_skill(&"booming_shout_1"))
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(ItemData.WAR_HORN_ID)))
+	assert_true(world.consume_item(0))
+	assert_eq(neutral.health, 10000, "The horn resolves only on the second turn.")
+	var initial_threat: Array[int] = []
+	for enemy in [selected, neutral, armored]:
+		initial_threat.append(int(enemy.threat.get("-1", 0)))
+	assert_true(world.continue_cast())
 	for enemy in [selected, neutral, armored]:
 		assert_eq(enemy.health, 9999)
 		assert_true(enemy.engaged)
 		assert_eq(enemy.relationship, GridActor.Relationship.HOSTILE)
-		assert_eq(int(enemy.threat.get("-1", 0)), 1)
+		assert_eq(int(enemy.threat.get("-1", 0)), initial_threat.pop_front() + 1)
 	for untouched in [friendly, dead, chest, distant, blocked]:
 		assert_eq(untouched.health, 10000)
 	assert_false(neutral.returning_home)
@@ -960,50 +967,7 @@ func test_booming_shout_hits_the_nine_by_nine_area_for_one_and_engages_without_a
 	assert_eq(world.hero.rage, 42)
 	assert_false(world.hero.buffs.has(&"sudden_death_1"))
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
-	assert_eq(world.turn_count, 1)
-
-
-func test_booming_shout_costs_no_rage_takes_one_turn_and_has_thirty_turn_cooldown() -> void:
-	var world := _world()
-	_learn(world, [&"booming_shout_1"])
-	world.hero.rage = 0
-	assert_true(world.cast_skill(&"booming_shout_1"), "Can shout without a target.")
-	assert_eq(world.turn_count, 1)
-	assert_eq(world.hero.rage, 0)
-	for index in range(29):
-		world.wait_turn()
-	assert_false(world.cast_skill(&"booming_shout_1"))
-	assert_eq(world.turn_count, 30)
-	world.wait_turn()
-	assert_true(world.cast_skill(&"booming_shout_1"))
-	assert_eq(world.turn_count, 32)
-
-
-func test_booming_shout_unlocks_late_and_preserves_learning_and_cooldown_through_saves() -> void:
-	var game := GameSession.new()
-	game.loop_count = 2
-	game.world = _world()
-	var world := game.world
-	assert_false(world.train(&"Warrior", &"booming_shout_1"))
-	world.hero.level = 5
-	world.hero.copper = 10000
-	assert_true(world.train(&"Warrior", &"booming_shout_1"))
-	assert_eq(world.hotbar[0], &"booming_shout_1")
-	world.hero.selected_class = &"Shaman"
-	assert_true(world.cast_skill(&"booming_shout_1"))
-	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), false)
-	assert_not_null(restored)
-	if restored == null:
-		return
-	assert_not_null(restored.hero.find_skill(&"booming_shout_1"))
-	assert_eq(int(restored.hero.cooldowns.booming_shout) - restored.turn_count, 30)
-	assert_eq(restored.hotbar[0], &"booming_shout_1")
-	game.restore(restored, game.seed_value, game.loop_count)
-	restored.hero.health = 0
-	assert_true(game.restart_after_death())
-	assert_not_null(game.world.hero.find_skill(&"booming_shout_1"))
-	assert_eq(game.world.hotbar[0], &"booming_shout_1")
-	assert_true(game.world.hero.cooldowns.is_empty())
+	assert_eq(world.turn_count, 2)
 
 
 func test_offhand_kill_before_mainhand_swing_stops_remaining_hits_and_rage() -> void:
@@ -1104,7 +1068,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 60)
+	assert_eq(restored.hero.learned_skills.size(), 58)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1120,7 +1084,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 60)
+	assert_eq(game.world.hero.learned_skills.size(), 58)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

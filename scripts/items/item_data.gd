@@ -1,8 +1,63 @@
 class_name ItemData
 extends RefCounted
 
+const WAR_HORN_ID: int = 71001
+const WAR_HORN_HOTBAR_ID: StringName = &"item_war_horn"
+const LUCKY_CHARM_ID: int = 71002
+const BROKEN_LUCKY_CHARM_ID: int = 71003
+const ANCESTRAL_TOTEM_ID: int = 71004
+const ANCESTRAL_TOTEM_HOTBAR_ID: StringName = &"item_ancestral_totem"
+const WAR_BANNER_ID: int = 71005
+const WAR_BANNER_HOTBAR_ID: StringName = &"item_war_banner"
+const ELEMENTAL_DAMAGE_MIN: float = 2.0
+const ELEMENTAL_DAMAGE_MAX: float = 4.0
+const ELEMENTAL_SWING_TURNS: float = 2.5
+
 ## Compact equipment setups and valley supplies.
 const ITEMS: Dictionary = {
+	"71005": {
+		"title": "Wartorn Banner", "quality": 1, "slot": "",
+		"level": 1, "stack": 1, "buy": 0, "sell": 0, "armor": 0,
+		"two_handed": false, "unique": true, "weapon": false, "shield": false,
+		"minimum": 0, "maximum": 0, "interval": 0.0,
+		"stats": {}, "use": "war_banner", "quest": "", "tradable": false,
+		"duration": 10, "radius": 3, "reduction_percent": 10,
+		"note": "Single use. No rage cost; one turn. Place a nonblocking banner on a free adjacent tile for 10 turns. You and friendly summons within 3 tiles take 10% less damage. Leaving range immediately removes protection. Lost on Loop reset.",
+	},
+	"71004": {
+		"title": "Ancestral totem", "quality": 1, "slot": "",
+		"level": 1, "stack": 1, "buy": 0, "sell": 0, "armor": 0,
+		"two_handed": false, "unique": true, "weapon": false, "shield": false,
+		"minimum": 0, "maximum": 0, "interval": 0.0,
+		"stats": {}, "use": "ancestral_totem", "quest": "", "tradable": false,
+		"summon_health": 40, "taunt_range": 4, "summon_title": "Earth Elemental",
+		"note": "Single use. No rage cost; one turn. Summons a mobile Earth Elemental with 40 health until killed or Loop reset. It follows you or an engaged foe and taunts already engaged hostiles within 4 tiles and sight of itself. Attacks for 2-4 physical damage every 2.5 turns. Requires a free adjacent tile and no living elemental. Lost on Loop reset.",
+	},
+	"71002": {
+		"title": "Lucky charm", "quality": 1, "slot": "",
+		"level": 1, "stack": 1, "buy": 0, "sell": 0, "armor": 0,
+		"two_handed": false, "unique": true, "weapon": false, "shield": false,
+		"minimum": 0, "maximum": 0, "interval": 0.0,
+		"stats": {}, "use": "", "quest": "", "tradable": false,
+		"note": "Passive while in Bags. When a hit would kill you, leaves you at 1 HP and becomes a Broken lucky charm. Protects against one hit only. Lost on Loop reset.",
+	},
+	"71003": {
+		"title": "Broken lucky charm", "quality": 0, "slot": "",
+		"level": 1, "stack": 1, "buy": 0, "sell": 0, "armor": 0,
+		"two_handed": false, "unique": false, "weapon": false, "shield": false,
+		"minimum": 0, "maximum": 0, "interval": 0.0,
+		"stats": {}, "use": "", "quest": "", "tradable": false,
+		"note": "Broken. Has no effect. Lost on Loop reset.",
+	},
+	"71001": {
+		"title": "War Horn", "quality": 1, "slot": "",
+		"level": 1, "stack": 1, "buy": 0, "sell": 0, "armor": 0,
+		"two_handed": false, "unique": true, "weapon": false, "shield": false,
+		"minimum": 0, "maximum": 0, "interval": 0.0,
+		"stats": {}, "use": "war_horn", "quest": "", "tradable": false,
+		"cast_turns": 2, "cooldown": 30,
+		"note": "Reusable. Deal exactly 1 damage to every neutral or hostile NPC on screen and in sight, engaging them. No attack procs or combo points; keeps your attack target. 2-turn cast; 30-turn cooldown after completion. Lost on Loop reset.",
+	},
 	"35": {
 		"title": "Bent Staff", "quality": 0, "slot": "weapons",
 		"level": 1, "stack": 1, "buy": 10,
@@ -198,6 +253,27 @@ const ITEMS: Dictionary = {
 }
 
 
+static func ancestral_totem_action() -> SkillDefinition:
+	var item := get_item(ANCESTRAL_TOTEM_ID)
+	var action := SkillDefinition.new(ANCESTRAL_TOTEM_HOTBAR_ID, item.title, &"", 1,
+		item.note, SkillDefinition.Effect.SUMMON)
+	action.family = &"ancestral_totem"
+	action.minimum = item.summon_health
+	action.range_tiles = item.taunt_range
+	return action
+
+
+static func war_horn_action() -> SkillDefinition:
+	var item := get_item(WAR_HORN_ID)
+	var action := SkillDefinition.new(WAR_HORN_HOTBAR_ID, item.title, &"", 1,
+		item.note, SkillDefinition.Effect.TOOLKIT)
+	action.family = &"war_horn"
+	action.cast_seconds = item.cast_turns
+	action.cooldown_seconds = item.cooldown
+	action.minimum = 1
+	return action
+
+
 static func get_item(identifier: int) -> Dictionary:
 	return ITEMS.get(str(identifier), NorthshireItems.ITEMS.get(str(identifier),
 		ClassItems.ITEMS.get(str(identifier), MerchantItems.ITEMS.get(str(identifier),
@@ -229,7 +305,7 @@ static func describe(identifier: int) -> String:
 			detail += " / +%d %s" % [item.stats[stat], stat]
 	if item.two_handed:
 		detail += " / two hands"
-	if item.use != "":
+	if item.use != "" and item.use not in ["war_horn", "ancestral_totem", "war_banner"]:
 		detail += " / restores " + String(item.use)
 	if item.has("note"):
 		detail += " / " + String(item.note)

@@ -97,6 +97,12 @@ func _refresh_auras(world: GridWorld) -> void:
 		_add_aura(world, title, hero.buffs[identifier], false)
 	for identifier in hero.debuffs:
 		_add_aura(world, String(identifier).capitalize(), hero.debuffs[identifier], true)
+	if WarBannerRules.active(world):
+		var banner := ItemData.get_item(ItemData.WAR_BANNER_ID)
+		var detail := ("%d%% less damage taken" % banner.reduction_percent
+			if WarBannerRules.protects(world) else "Outside protection range")
+		_add_aura(world, "Wartorn Banner", {"until": world.war_banner.until,
+			"detail": detail + " / stay within %d tiles of the banner" % banner.radius}, false, "WB")
 	if hero.restoration.has("food"):
 		var food: Dictionary = hero.restoration.food
 		var elapsed := mini(world.turn_count - int(food.started), int(food.duration))

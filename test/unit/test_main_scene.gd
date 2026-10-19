@@ -37,6 +37,114 @@ func after_each() -> void:
 		DirAccess.remove_absolute(_options_path)
 
 
+func test_war_horn_hotbar_and_bags_start_casts_and_resume_until_completion() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.actors.clear()
+	world.stalker_schedule = false
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(ItemData.WAR_HORN_ID)))
+	assert_true(world.assign_hotbar(0, ItemData.WAR_HORN_HOTBAR_ID))
+	_game.refresh_view()
+	assert_string_contains(_game.hotbar_panel.slots[0].tooltip_text, "War Horn")
+	_game._cast_skill(ItemData.WAR_HORN_HOTBAR_ID)
+	assert_eq(world.turn_count, 1)
+	assert_not_null(world.pending_skill)
+	world.cancel_cast()
+	_game.refresh_view()
+	_game.menu.open_bags()
+	var index := -1
+	for slot in range(world.hero.inventory.size()):
+		var item := world.hero.inventory[slot]
+		if not item.is_empty() and item.id == ItemData.WAR_HORN_ID:
+			index = slot
+	assert_gte(index, 0)
+	if index < 0:
+		return
+	_game.menu._item_detail(index)
+	var use_button: Button
+	for button in _game.menu._buttons:
+		if button.text == "Use (2-turn cast)":
+			use_button = button
+	assert_not_null(use_button)
+	if use_button == null:
+		return
+	use_button.pressed.emit()
+	assert_false(_game.menu.visible, "Bags close so the pending cast can continue.")
+	assert_not_null(world.pending_skill)
+	assert_eq(world.turn_count, 2)
+	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
+	assert_null(world.pending_skill)
+	assert_eq(world.turn_count, 3)
+	assert_true(world.has_war_horn())
+	assert_eq(_game.hotbar_panel._cooldown_labels[0].text, "30")
+
+
+func test_ancestral_totem_bags_use_summons_and_disables_consumed_hotbar_item() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.actors.clear()
+	world.stalker_schedule = false
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(ItemData.ANCESTRAL_TOTEM_ID)))
+	assert_true(world.assign_hotbar(0, ItemData.ANCESTRAL_TOTEM_HOTBAR_ID))
+	_game.refresh_view()
+	assert_string_contains(_game.hotbar_panel.slots[0].tooltip_text, "Ancestral totem")
+	var index := -1
+	for slot in range(world.hero.inventory.size()):
+		if not world.hero.inventory[slot].is_empty() and world.hero.inventory[slot].id == ItemData.ANCESTRAL_TOTEM_ID:
+			index = slot
+	assert_gte(index, 0)
+	if index < 0:
+		return
+	_game.menu.open_bags()
+	_game.menu._item_detail(index)
+	var use_button: Button
+	for button in _game.menu._buttons:
+		if button.text == "Use once (1 turn)":
+			use_button = button
+	assert_not_null(use_button)
+	if use_button == null:
+		return
+	use_button.pressed.emit()
+	assert_false(_game.menu.visible)
+	assert_eq(world.turn_count, 1)
+	assert_not_null(SummonRules.active(world, "earth_elemental"))
+	assert_false(world.has_ancestral_totem())
+	assert_true(_game.hotbar_panel.slots[0].disabled)
+	_game._cast_skill(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID)
+	assert_eq(world.turn_count, 1, "Consumed hotbar shortcuts cannot summon again.")
+
+
+func test_banner_hotbar_use_and_hud_follow_protection_range() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.actors.clear()
+	world.stalker_schedule = false
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(ItemData.WAR_BANNER_ID)))
+	assert_true(world.assign_hotbar(0, ItemData.WAR_BANNER_HOTBAR_ID))
+	_game.refresh_view()
+	assert_string_contains(_game.hotbar_panel.slots[0].tooltip_text, "Wartorn Banner")
+	_game._cast_skill(ItemData.WAR_BANNER_HOTBAR_ID)
+	assert_eq(world.turn_count, 1)
+	assert_true(WarBannerRules.active(world))
+	assert_true(_game.hotbar_panel.slots[0].disabled)
+	var aura: Control
+	for entry in _game.get_node("HUD/Auras").get_children():
+		if entry.tooltip_text.begins_with("Wartorn Banner"):
+			aura = entry
+	assert_not_null(aura)
+	if aura != null:
+		assert_string_contains(aura.tooltip_text, "10% less damage taken")
+	world.player_tile = world.war_banner.tile + Vector2i(4, 0)
+	_game.refresh_view()
+	for entry in _game.get_node("HUD/Auras").get_children():
+		if entry.tooltip_text.begins_with("Wartorn Banner"):
+			assert_string_contains(entry.tooltip_text, "Outside protection range")
+	_game._cast_skill(ItemData.WAR_BANNER_HOTBAR_ID)
+	assert_eq(world.turn_count, 1)
+	# Let the normal draw path run; visual quality remains for human playtesting.
+	await get_tree().process_frame
+
+
 func test_startup_creates_the_playable_world() -> void:
 	assert_true(_main.is_node_ready())
 	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)

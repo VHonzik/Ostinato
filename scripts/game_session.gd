@@ -41,6 +41,10 @@ func restart_after_death() -> bool:
 	fresh.hero.learned_skills.assign(learned)
 	fresh.hero.refresh_stats()
 	fresh.hotbar = hotbar
+	for slot in range(fresh.hotbar.size()):
+		if fresh.hotbar[slot] in [ItemData.WAR_HORN_HOTBAR_ID, ItemData.ANCESTRAL_TOTEM_HOTBAR_ID,
+			ItemData.WAR_BANNER_HOTBAR_ID]:
+			fresh.hotbar[slot] = &""
 	if fresh.hotbar[GridWorld.HOTBAR_SIZE - 1] == &"":
 		fresh.hotbar[GridWorld.HOTBAR_SIZE - 1] = GridWorld.FOOD_HOTBAR_ID
 	fresh.hotbar_locked = locked

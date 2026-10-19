@@ -5,7 +5,7 @@ extends RefCounted
 static var _families: Dictionary[StringName, SkillBehavior] = {
 	&"execute": Execute.new(),
 	&"whirlwind": Whirlwind.new(),
-	&"booming_shout": BoomingShout.new(),
+	&"war_horn": WarHorn.new(),
 	&"earth_shock": EarthShock.new(),
 	&"feral_spirit": FeralSpirit.new(),
 	&"seal_of_command": WeaponBuff.new(),
@@ -100,12 +100,20 @@ class Whirlwind extends SkillBehavior:
 					cast.skill.minimum, true, false)
 
 
-class BoomingShout extends SkillBehavior:
+class WarHorn extends SkillBehavior:
+	func can_apply(world: GridWorld, _skill: SkillDefinition, _target: GridActor) -> bool:
+		return world.has_war_horn()
+
 	func resolve(world: GridWorld, cast: Cast) -> void:
+		var screen := Rect2(Vector2(world.player_tile) + Vector2.ONE * 0.5
+			- world.screen_size_tiles * 0.5, world.screen_size_tiles)
 		for enemy in world.actors.duplicate():
 			if world.is_terminal():
 				break
-			if not enemy.chest and ClassToolkitRules.eligible(world, enemy, cast.skill.range_tiles):
+			if (enemy.alive and not enemy.chest
+				and enemy.relationship != GridActor.Relationship.FRIENDLY
+				and screen.intersects(Rect2(Vector2(enemy.tile), Vector2.ONE))
+				and world.has_sight(world.player_tile, enemy.tile)):
 				enemy.relationship = GridActor.Relationship.HOSTILE
 				enemy.engaged = true
 				enemy.returning_home = false

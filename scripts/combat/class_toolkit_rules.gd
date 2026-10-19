@@ -242,6 +242,8 @@ static func finish(world: GridWorld, points: int) -> void:
 	if has(world.hero, &"restless_blades_1"):
 		var reduction := ceili(points * magnitude(world.hero, &"restless_blades_1") / 2.0)
 		for key in world.hero.cooldowns:
+			if key == "war_horn":
+				continue
 			world.hero.cooldowns[key] = maxi(world.turn_count, int(world.hero.cooldowns[key]) - reduction)
 	if has(world.hero, &"relentless_assault_1") and proc(world, &"ruthlessness_1"):
 		world.hero.combo_points = mini(5, world.hero.combo_points + magnitude(world.hero, &"ruthlessness_1"))

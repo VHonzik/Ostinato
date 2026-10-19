@@ -8,6 +8,10 @@ static func absorb(world: GridWorld, target: GridActor, amount: int, _physical: 
 		return 0
 	if target == null:
 		amount = floori(amount * ClassToolkitRules.recklessness_taken_multiplier(world.hero))
+	if WarBannerRules.protects(world, target):
+		var percent := int(ItemData.get_item(ItemData.WAR_BANNER_ID).reduction_percent)
+		# Whole damage rounds up so a small hit never becomes immunity.
+		amount = ceili(amount * (100 - percent) / 100.0)
 	return amount
 
 

@@ -62,6 +62,268 @@ func _text(menu: MenuPanel) -> String:
 	return text
 
 
+func test_warrior_farewell_requires_all_training_and_awards_horn_once() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 911)
+	_beside(world, trainer)
+	assert_false(world.can_receive_war_horn(trainer))
+	for skill in SkillDefinition.trainer_skills(&"Warrior"):
+		if skill.id != &"juggernaut_1":
+			world.hero.learn_skill(skill)
+	assert_false(world.can_receive_war_horn(trainer), "Missing even one passive blocks the gift.")
+	world.hero.learn_skill(SkillDefinition.catalog(&"juggernaut_1"))
+	assert_true(world.can_receive_war_horn(trainer))
+	var menu := _menu(session)
+	menu.open_conversation(trainer)
+	var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+	assert_not_null(gift)
+	if gift == null:
+		return
+	assert_false(world.has_war_horn(), "Building dialogue does not award the gift.")
+	gift.pressed.emit()
+	assert_true(world.has_war_horn())
+	assert_true(world.war_horn_received)
+	assert_true(world.hotbar.has(ItemData.WAR_HORN_HOTBAR_ID))
+	assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+	assert_false(world.receive_war_horn(trainer))
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.hero.copper, 0)
+
+
+func test_full_bags_leave_war_horn_reward_available_and_full_hotbar_is_preserved() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 911)
+	_beside(world, trainer)
+	for skill in SkillDefinition.trainer_skills(&"Warrior"):
+		world.hero.learn_skill(skill)
+	for slot in range(world.hero.inventory.size()):
+		world.hero.inventory[slot] = ItemData.instance(35)
+	world.hotbar.fill(&"mortal_strike_1")
+	assert_false(world.receive_war_horn(trainer))
+	assert_false(world.war_horn_received)
+	assert_true(world.can_receive_war_horn(trainer))
+	world.hero.inventory[0] = {}
+	assert_true(world.receive_war_horn(trainer))
+	assert_eq(world.hotbar.count(&"mortal_strike_1"), GridWorld.HOTBAR_SIZE)
+	assert_false(world.assign_hotbar(0, &"booming_shout_1"))
+	world.hotbar_locked = true
+	assert_false(world.assign_hotbar(0, ItemData.WAR_HORN_HOTBAR_ID))
+	world.hotbar_locked = false
+	assert_true(world.assign_hotbar(0, ItemData.WAR_HORN_HOTBAR_ID))
+
+
+func test_retained_warrior_learning_allows_new_gift_next_loop_in_another_class() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 911)
+	_beside(world, trainer)
+	for skill in SkillDefinition.trainer_skills(&"Warrior"):
+		world.hero.learn_skill(skill)
+	assert_true(world.receive_war_horn(trainer))
+	world.hero.health = 0
+	assert_true(session.restart_after_death())
+	world = session.world
+	trainer = _contact(world, 911)
+	_beside(world, trainer)
+	assert_false(world.can_receive_war_horn(trainer), "Choose a class at the marshal first.")
+	world.class_selected = true
+	world.hero.selected_class = &"Rogue"
+	assert_true(world.receive_war_horn(trainer))
+	assert_true(world.has_war_horn())
+	var janos := _contact(world, NpcDefinition.JANOS_ID)
+	assert_false(world.receive_war_horn(janos))
+	var snapshot := SaveCodec.capture(session)
+	assert_not_null(SaveCodec.restore(snapshot, false))
+	snapshot.war_horn_received = "yes"
+	assert_null(SaveCodec.restore(snapshot, false))
+
+
+func test_rogue_farewell_requires_all_training_and_awards_passive_charm_once() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 915)
+	_beside(world, trainer)
+	assert_false(world.can_receive_lucky_charm(trainer))
+	for skill in SkillDefinition.trainer_skills(&"Rogue"):
+		if skill.id != &"precision_1":
+			world.hero.learn_skill(skill)
+	assert_false(world.can_receive_lucky_charm(trainer), "All passives must be learned too.")
+	world.hero.learn_skill(SkillDefinition.catalog(&"precision_1"))
+	assert_true(world.can_receive_lucky_charm(trainer))
+	var hotbar := world.hotbar.duplicate()
+	var menu := _menu(session)
+	menu.open_conversation(trainer)
+	var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+	assert_not_null(gift)
+	if gift == null:
+		return
+	assert_false(world.lucky_charm_received)
+	gift.pressed.emit()
+	assert_true(world.lucky_charm_received)
+	assert_true(world.hero.inventory.any(func(item: Dictionary) -> bool:
+		return not item.is_empty() and item.id == ItemData.LUCKY_CHARM_ID))
+	assert_eq(world.hotbar, hotbar, "Passive charm gets no hotbar assignment.")
+	assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+	assert_false(world.receive_lucky_charm(trainer))
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.hero.copper, 0)
+	NpcTarget.new(world, null).take_damage(10000, &"hit")
+	assert_false(world.receive_lucky_charm(trainer), "Breaking the gift does not allow a refill.")
+
+
+func test_full_bags_preserve_rogue_gift_and_loop_reset_allows_a_new_charm() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 915)
+	_beside(world, trainer)
+	for skill in SkillDefinition.trainer_skills(&"Rogue"):
+		world.hero.learn_skill(skill)
+	for slot in range(world.hero.inventory.size()):
+		world.hero.inventory[slot] = ItemData.instance(35)
+	assert_false(world.receive_lucky_charm(trainer))
+	assert_false(world.lucky_charm_received)
+	assert_true(world.can_receive_lucky_charm(trainer))
+	world.hero.inventory[0] = {}
+	assert_true(world.receive_lucky_charm(trainer))
+	NpcTarget.new(world, null).take_damage(10000, &"hit")
+	assert_eq(world.hero.inventory[0].id, ItemData.BROKEN_LUCKY_CHARM_ID)
+	NpcTarget.new(world, null).take_damage(1, &"hit")
+	assert_true(session.restart_after_death())
+	world = session.world
+	assert_false(world.lucky_charm_received)
+	assert_false(world.hero.inventory.any(func(item: Dictionary) -> bool:
+		return (not item.is_empty()
+			and item.id in [ItemData.LUCKY_CHARM_ID, ItemData.BROKEN_LUCKY_CHARM_ID])))
+	trainer = _contact(world, 915)
+	_beside(world, trainer)
+	assert_false(world.can_receive_lucky_charm(trainer))
+	world.class_selected = true
+	assert_eq(world.hero.selected_class, &"Warrior", "Retained Rogue learning works in another class.")
+	assert_false(world.receive_lucky_charm(_contact(world, 911)))
+	assert_true(world.receive_lucky_charm(trainer))
+
+
+func test_shaman_farewell_requires_all_training_and_awards_totem_once_per_loop() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 900002)
+	_beside(world, trainer)
+	assert_false(world.can_receive_ancestral_totem(trainer))
+	for skill in SkillDefinition.trainer_skills(&"Shaman"):
+		if skill.id != &"toughness_1":
+			world.hero.learn_skill(skill)
+	assert_false(world.can_receive_ancestral_totem(trainer))
+	world.hero.learn_skill(SkillDefinition.catalog(&"toughness_1"))
+	assert_true(world.can_receive_ancestral_totem(trainer))
+	var menu := _menu(session)
+	menu.open_conversation(trainer)
+	var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+	assert_not_null(gift)
+	if gift == null:
+		return
+	assert_false(world.has_ancestral_totem())
+	gift.pressed.emit()
+	assert_true(world.ancestral_totem_received)
+	assert_true(world.has_ancestral_totem())
+	assert_true(world.hotbar.has(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID))
+	assert_eq(world.turn_count, 0)
+	assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+	assert_true(world.use_ancestral_totem())
+	assert_false(world.receive_ancestral_totem(trainer), "Consumption does not allow a refill.")
+	world.hero.health = 0
+	assert_true(session.restart_after_death())
+	world = session.world
+	trainer = _contact(world, 900002)
+	_beside(world, trainer)
+	assert_false(world.ancestral_totem_received)
+	assert_false(world.has_ancestral_totem())
+	assert_null(SummonRules.active(world, "earth_elemental"))
+	assert_false(world.hotbar.has(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID))
+	assert_false(world.can_receive_ancestral_totem(trainer), "Choose a class at the marshal first.")
+	world.class_selected = true
+	assert_false(world.receive_ancestral_totem(_contact(world, 911)))
+	assert_true(world.receive_ancestral_totem(trainer), "Retained learning works in another class.")
+
+
+func test_full_bags_preserve_totem_gift_and_full_hotbar_keeps_existing_assignments() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 900002)
+	_beside(world, trainer)
+	for skill in SkillDefinition.trainer_skills(&"Shaman"):
+		world.hero.learn_skill(skill)
+	for slot in range(world.hero.inventory.size()):
+		world.hero.inventory[slot] = ItemData.instance(35)
+	world.hotbar.fill(&"mortal_strike_1")
+	assert_false(world.receive_ancestral_totem(trainer))
+	assert_false(world.ancestral_totem_received)
+	assert_true(world.can_receive_ancestral_totem(trainer))
+	world.hero.inventory[0] = {}
+	assert_true(world.receive_ancestral_totem(trainer))
+	assert_eq(world.hotbar.count(&"mortal_strike_1"), GridWorld.HOTBAR_SIZE)
+
+
+func test_paladin_farewell_requires_every_skill_and_awards_banner_once_then_resets_on_death() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 925)
+	_beside(world, trainer)
+	assert_false(world.can_receive_war_banner(trainer))
+	for skill in SkillDefinition.trainer_skills(&"Paladin"):
+		if skill.id != &"sacred_duty_1":
+			world.hero.learn_skill(skill)
+	assert_false(world.can_receive_war_banner(trainer))
+	world.hero.learn_skill(SkillDefinition.catalog(&"sacred_duty_1"))
+	var menu := _menu(session)
+	menu.open_conversation(trainer)
+	var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+	assert_not_null(gift)
+	if gift == null:
+		return
+	assert_false(world.has_war_banner())
+	gift.pressed.emit()
+	assert_true(world.war_banner_received)
+	assert_true(world.has_war_banner())
+	assert_true(world.hotbar.has(ItemData.WAR_BANNER_HOTBAR_ID))
+	assert_eq(world.turn_count, 0)
+	assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+	assert_true(world.use_war_banner())
+	assert_false(world.receive_war_banner(trainer))
+	world.hero.health = 0
+	assert_true(session.restart_after_death())
+	world = session.world
+	trainer = _contact(world, 925)
+	_beside(world, trainer)
+	assert_false(world.war_banner_received)
+	assert_false(world.has_war_banner())
+	assert_true(world.war_banner.is_empty())
+	assert_false(world.hotbar.has(ItemData.WAR_BANNER_HOTBAR_ID))
+	assert_false(world.can_receive_war_banner(trainer))
+	world.class_selected = true
+	assert_false(world.receive_war_banner(_contact(world, 911)))
+	assert_true(world.receive_war_banner(trainer), "Retained Paladin learning works as Warrior.")
+
+
+func test_full_bags_preserve_banner_reward_and_full_hotbar_is_not_overwritten() -> void:
+	var session := _session()
+	var world := session.world
+	var trainer := _contact(world, 925)
+	_beside(world, trainer)
+	for skill in SkillDefinition.trainer_skills(&"Paladin"):
+		world.hero.learn_skill(skill)
+	for slot in range(world.hero.inventory.size()):
+		world.hero.inventory[slot] = ItemData.instance(35)
+	world.hotbar.fill(&"mortal_strike_1")
+	assert_false(world.receive_war_banner(trainer))
+	assert_false(world.war_banner_received)
+	assert_true(world.can_receive_war_banner(trainer))
+	world.hero.inventory[0] = {}
+	assert_true(world.receive_war_banner(trainer))
+	assert_eq(world.hotbar.count(&"mortal_strike_1"), GridWorld.HOTBAR_SIZE)
+
+
 func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -> void:
 	var session := _session()
 	var world := session.world

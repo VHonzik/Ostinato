@@ -80,9 +80,13 @@ func test_last_kill_stops_same_turn_reinforcement_and_later_enemy_response() -> 
 
 
 func test_area_attack_stops_after_last_present_stalker_dies() -> void:
-	for identifier: StringName in [&"whirlwind_1", &"booming_shout_1"]:
+	for identifier: StringName in [&"whirlwind_1", ItemData.WAR_HORN_HOTBAR_ID]:
 		var world := GridWorld.new(Rect2i(0, 0, 15, 15), Vector2i(7, 7), 97, false)
-		world.hero.learned_skills.append(SkillDefinition.catalog(identifier))
+		if identifier == ItemData.WAR_HORN_HOTBAR_ID:
+			InventoryRules.receive(world.hero, ItemData.instance(ItemData.WAR_HORN_ID))
+			assert_true(world.use_war_horn())
+		else:
+			world.hero.learned_skills.append(SkillDefinition.catalog(identifier))
 		world.hero.rage = 100
 		world.hero.melee.hit = 1000
 		for offset in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]:
@@ -92,7 +96,10 @@ func test_area_attack_stops_after_last_present_stalker_dies() -> void:
 			actor.stalker = offset != Vector2i.DOWN
 			actor.melee.dodge = 0
 			world.actors.append(actor)
-		assert_true(world.cast_skill(identifier))
+		if identifier == ItemData.WAR_HORN_HOTBAR_ID:
+			assert_true(world.continue_cast())
+		else:
+			assert_true(world.cast_skill(identifier))
 		assert_false(world.actors[0].alive)
 		assert_false(world.actors[1].alive)
 		assert_true(world.actors[2].alive, "The last stalker ends the action before later targets.")

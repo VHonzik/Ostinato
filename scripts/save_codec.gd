@@ -53,8 +53,16 @@ static func capture(session: GameSession) -> Dictionary:
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
 		"starter_gear_received": world.starter_gear_received,
+		"war_horn_received": world.war_horn_received,
+		"lucky_charm_received": world.lucky_charm_received,
+		"ancestral_totem_received": world.ancestral_totem_received,
+		"war_banner_received": world.war_banner_received,
+		"war_banner": {},
 		"consecration": {},
 	}
+	if not world.war_banner.is_empty():
+		var banner := world.war_banner
+		data.war_banner = {"tile": [banner.tile.x, banner.tile.y], "until": banner.until}
 	if not world.consecration.is_empty():
 		var ground := world.consecration
 		data.consecration = {"center": [ground.center.x, ground.center.y],
@@ -142,6 +150,18 @@ static func _restore_world(world: GridWorld, data: Dictionary) -> bool:
 	if not data.get("starter_gear_received", false) is bool:
 		return false
 	world.starter_gear_received = data.get("starter_gear_received", false)
+	if not data.get("war_horn_received") is bool:
+		return false
+	world.war_horn_received = data.war_horn_received
+	if not data.get("lucky_charm_received", false) is bool:
+		return false
+	world.lucky_charm_received = data.get("lucky_charm_received", false)
+	if not data.get("ancestral_totem_received") is bool:
+		return false
+	world.ancestral_totem_received = data.ancestral_totem_received
+	if not data.get("war_banner_received", false) is bool:
+		return false
+	world.war_banner_received = data.get("war_banner_received", false)
 	if world.valley_route:
 		if world.bounds != ValleyRoute.BOUNDS or not world.northshire:
 			return false
@@ -244,7 +264,7 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 			or actor.expires_turn < 0 or actor.stunned_until < 0):
 			return false
 		if actor.summon_kind != "":
-			var summon := SkillDefinition.catalog(actor.summon_skill)
+			var summon := SummonRules.definition(actor)
 			if (summon == null or (summon.effect != SkillDefinition.Effect.SUMMON and summon.family != &"feral_spirit")
 				or SummonRules.slot(summon) != actor.summon_kind
 				or actor.relationship != GridActor.Relationship.FRIENDLY or actor.awards_experience):
@@ -322,7 +342,8 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 					and int(world.hero.buffs[key].until) <= world.turn_count))):
 			return false
 	for actor in world.actors:
-		if actor.summon_kind != "" and world.hero.find_skill(actor.summon_skill) == null:
+		if (actor.summon_kind != "" and actor.summon_skill != ItemData.ANCESTRAL_TOTEM_HOTBAR_ID
+			and world.hero.find_skill(actor.summon_skill) == null):
 			return false
 		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
 			return false
@@ -335,7 +356,8 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 				return false
 	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
 		return false
-	if data.debuffs.has("execution_sentence_1") or not _restore_consecration(world, data.consecration):
+	if (data.debuffs.has("execution_sentence_1") or not _restore_consecration(world, data.consecration)
+		or not _restore_war_banner(world, data.get("war_banner", {}))):
 		return false
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
 	world.hero.refresh_stats()
@@ -403,6 +425,9 @@ static func _restore_ui(world: GridWorld, data: Dictionary, learned: Array[Strin
 		if not identifier is String:
 			return false
 		if (identifier != "" and identifier != String(GridWorld.FOOD_HOTBAR_ID)
+			and identifier != String(ItemData.WAR_HORN_HOTBAR_ID)
+			and identifier != String(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID)
+			and identifier != String(ItemData.WAR_BANNER_HOTBAR_ID)
 			and not learned.has(identifier)
 			and world.hero.find_skill(StringName(identifier)) == null):
 			return false
@@ -607,6 +632,24 @@ static func _normalized_numbers(data: Dictionary) -> Dictionary:
 	for key in data:
 		result[key] = float(data[key]) if key == "damage_credit" else int(data[key])
 	return result
+
+
+static func _restore_war_banner(world: GridWorld, data: Variant) -> bool:
+	if not data is Dictionary:
+		return false
+	if data.is_empty():
+		return true
+	if (data.size() != 2 or not data.has_all(["tile", "until"])
+		or not data.tile is Array or data.tile.size() != 2
+		or not _integer(data.tile[0], -2147483648) or not _integer(data.tile[1], -2147483648)
+		or not _integer(data.until, world.turn_count + 1)
+		or int(data.until) > world.turn_count + int(ItemData.get_item(ItemData.WAR_BANNER_ID).duration)):
+		return false
+	var tile := Vector2i(int(data.tile[0]), int(data.tile[1]))
+	if not world.bounds.has_point(tile) or world.blocked_tiles.has(tile):
+		return false
+	world.war_banner = {"tile": tile, "until": int(data.until)}
+	return true
 
 
 static func _restore_consecration(world: GridWorld, data: Variant) -> bool:

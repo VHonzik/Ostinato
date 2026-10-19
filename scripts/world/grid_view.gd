@@ -312,6 +312,7 @@ func _draw() -> void:
 			if actor.chest:
 				sprite = &"chest_open" if actor.loot_assigned else &"chest_closed"
 			_draw_valley_sprite(actor.tile, sprite)
+	_draw_war_banner()
 	for actor: GridActor in occupants.values():
 		if actor.alive:
 			_draw_actor(actor)
@@ -322,6 +323,23 @@ func _draw() -> void:
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_player()
 	_draw_consecration()
+
+
+func _draw_war_banner() -> void:
+	if not WarBannerRules.active(world):
+		return
+	var tile: Vector2i = world.war_banner.tile
+	var radius := int(ItemData.get_item(ItemData.WAR_BANNER_ID).radius)
+	var area := Rect2(Vector2((tile - Vector2i.ONE * radius) * TILE_SIZE),
+		Vector2.ONE * (radius * 2 + 1) * TILE_SIZE)
+	draw_rect(area.grow(-1), Color(0.95, 0.79, 0.3, 0.4), false, 1.0)
+	var origin := Vector2(tile * TILE_SIZE)
+	draw_line(origin + Vector2(6, 3), origin + Vector2(6, 29), Color("d7b779"), 2)
+	var cloth := PackedVector2Array([origin + Vector2(8, 4), origin + Vector2(27, 4),
+		origin + Vector2(22, 10), origin + Vector2(26, 17), origin + Vector2(8, 19)])
+	draw_colored_polygon(cloth, Color("793d4e"))
+	draw_line(origin + Vector2(10, 7), origin + Vector2(21, 7), Color("f3d77a"), 2)
+	draw_line(origin + Vector2(15, 5), origin + Vector2(15, 15), Color("f3d77a"), 2)
 
 
 func _draw_actor(actor: GridActor) -> void:

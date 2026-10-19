@@ -86,6 +86,7 @@ func _process(delta: float) -> void:
 	if not active_game or menu.visible or world.is_terminal():
 		_clear_movement_hold()
 		return
+	world.screen_size_tiles = get_viewport_rect().size / camera.zoom / GridView.TILE_SIZE
 	if world.pending_skill != null:
 		_clear_movement_hold()
 		_melee_delay_seconds -= delta
@@ -438,6 +439,7 @@ func refresh_view() -> void:
 	grid_view.alternate_palette = menu.options.alternate_palette
 	camera.position = GridView.tile_center(world.player_tile)
 	camera.force_update_scroll()
+	world.screen_size_tiles = get_viewport_rect().size / camera.zoom / GridView.TILE_SIZE
 	grid_view.queue_redraw()
 	hero_panel.refresh()
 	_refresh_hotbar()
@@ -480,6 +482,18 @@ func _cast_skill(identifier: StringName) -> void:
 	if not active_game or world.is_terminal():
 		return
 	_pending_action = false
+	if identifier == ItemData.WAR_BANNER_HOTBAR_ID:
+		world.use_war_banner()
+		refresh_view()
+		return
+	if identifier == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+		world.use_ancestral_totem()
+		refresh_view()
+		return
+	if identifier == ItemData.WAR_HORN_HOTBAR_ID:
+		world.use_war_horn()
+		refresh_view()
+		return
 	if identifier == GridWorld.FOOD_HOTBAR_ID:
 		world.consume_hotbar_food()
 		refresh_view()

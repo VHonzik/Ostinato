@@ -364,6 +364,48 @@ Playtest keyboard inspection and gear swaps, proc consumption between encounters
 the outdoor camp versus mine, and the stalker arrival. Readability and feel remain
 for owner review.
 
+### Implemented playtest follow-up — War Horn
+
+- [x] Replace Booming Shout with Llane's reusable War Horn gift after learning every
+  Warrior ability/passive. Offer the requested farewell dialogue once per Loop; leave
+  the gift available if bags are full. Retained learning permits a new gift next Loop.
+- [x] Add a two-turn cast, screen-wide pull with sight, and 30-turn item cooldown.
+  Support Bags and hotbar use, save the item/claim/cooldown, and lose the item on death.
+  Revision 29 explicitly leaves earlier saves incompatible and unchanged.
+- [ ] Owner playtest: claim the gift, pull a distant group, cancel and repeat a cast,
+  and collect a replacement after death. Judge screen range and casting commitment.
+
+### Implemented playtest follow-up — Lucky charm
+
+- [x] Add Jorik's once-per-Loop farewell gift after every Rogue ability/passive is
+  learned, using the same dialogue and full-bag handling as War Horn.
+- [x] Passively prevent one lethal hit while carried, leaving 1 HP and replacing the
+  charm in place with an inert Broken lucky charm. Save both item forms and the claim;
+  lose them on death and permit a fresh gift next Loop. Preserve revision 29.
+- [ ] Owner playtest: claim the gift, survive a lethal hit, inspect the broken charm,
+  then take another hit and reclaim the gift next Loop. Judge survival feedback.
+
+### Implemented playtest follow-up — Ancestral totem
+
+- [x] Replace Earth Elemental training with Farseer Lopaa's once-per-Loop farewell
+  gift after all remaining Shaman training. Keep the elemental's behavior and art.
+- [x] Add a free, one-turn, single-use item for Bags/hotbar. Preserve it on blocked
+  placement or an existing summon. Save the item, claim and summon; clear all on death.
+  Revision 30 explicitly leaves earlier saves incompatible and unchanged.
+- [ ] Owner playtest: claim and use the totem, let the elemental draw attacks, save
+  and reload while it lives, then try to claim again before and after death.
+
+### Implemented playtest follow-up — Wartorn Banner
+
+- [x] Add Brother Sammuel's once-per-Loop farewell gift after every Paladin ability
+  and passive is learned. Preserve the gift on full bags and use retained learning.
+- [x] Plant a single-use, free, one-turn banner beside the player for 10 turns. Give
+  the player and friendly summons within 3 tiles 10% damage reduction, with a ground
+  marker/range outline and HUD feedback. Keep placement nonblocking and preserve failed
+  uses. Save the item, banner and claim; clear them on death. Preserve revision 30.
+- [ ] Owner playtest: plant beside Consecration, move in/out of range with summons,
+  judge the marker and mitigation, then save/reload and reclaim the gift after death.
+
 ### Remaining slices — after itemization
 
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area

@@ -73,6 +73,10 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 	for index in range(slots.size()):
 		var button := slots[index]
 		var skill := world.hero.find_skill(world.hotbar[index])
+		if world.hotbar[index] == ItemData.WAR_HORN_HOTBAR_ID:
+			skill = ItemData.war_horn_action()
+		elif world.hotbar[index] == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+			skill = ItemData.ancestral_totem_action()
 		button.describe(skill, world.hero)
 		var key := options.key_label(StringName("hotbar_%d" % (index + 1))).replace("Shift+", "S+")
 		button.text = "%s\n%s" % [key, "—" if skill == null else skill.title.get_slice(" ", 0)]
@@ -109,6 +113,18 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			button.text = "%s\nFood x%d" % [key, quantity]
 			button.tooltip_text = "%s x%d\nHeals %d HP over %d turns. Movement or combat ends eating." % [
 				food.title, quantity, food.restore, food.duration]
+		elif world.hotbar[index] == ItemData.WAR_HORN_HOTBAR_ID:
+			button.text = "%s\nHorn" % key
+			button.tooltip_text = ItemData.describe(ItemData.WAR_HORN_ID)
+			button.disabled = button.disabled or not world.has_war_horn()
+		elif world.hotbar[index] == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+			button.text = "%s\nTotem x%d" % [key, 1 if world.has_ancestral_totem() else 0]
+			button.tooltip_text = ItemData.describe(ItemData.ANCESTRAL_TOTEM_ID)
+			button.disabled = button.disabled or not world.has_ancestral_totem()
+		elif world.hotbar[index] == ItemData.WAR_BANNER_HOTBAR_ID:
+			button.text = "%s\nBanner x%d" % [key, 1 if world.has_war_banner() else 0]
+			button.tooltip_text = ItemData.describe(ItemData.WAR_BANNER_ID)
+			button.disabled = button.disabled or not world.has_war_banner()
 	lock_button.text = "Unlock" if world.hotbar_locked else "Lock"
 	lock_button.tooltip_text = "Lock layout edits; assigned skills can still be activated."
 	lock_button.disabled = not can_edit

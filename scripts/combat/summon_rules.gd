@@ -6,6 +6,12 @@ static func slot(skill: SkillDefinition) -> String:
 	return "wolf" if skill.family == &"feral_spirit" else "earth_elemental"
 
 
+static func definition(actor: GridActor) -> SkillDefinition:
+	if actor.summon_skill == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+		return ItemData.ancestral_totem_action()
+	return SkillDefinition.catalog(actor.summon_skill)
+
+
 static func active(world: GridWorld, kind: String) -> GridActor:
 	for actor in world.actors:
 		if actor.alive and actor.summon_kind == kind:
@@ -29,6 +35,8 @@ static func summon(world: GridWorld, skill: SkillDefinition) -> void:
 	actor.summon_kind = slot(skill)
 	actor.summon_skill = skill.id
 	actor.title = skill.title.trim_prefix("Summon ")
+	if skill.id == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
+		actor.title = ItemData.get_item(ItemData.ANCESTRAL_TOTEM_ID).summon_title
 	actor.spawn_id = "summon/%d" % world.actors.size()
 	actor.awards_experience = false
 	actor.corpse_visible = false
@@ -36,9 +44,9 @@ static func summon(world: GridWorld, skill: SkillDefinition) -> void:
 	actor.creature_type = "elemental"
 	actor.max_health = skill.minimum
 	actor.health = actor.max_health
-	actor.melee.damage_min = ClassToolkitData.EARTH_ELEMENTAL_DAMAGE_MIN
-	actor.melee.damage_max = ClassToolkitData.EARTH_ELEMENTAL_DAMAGE_MAX
-	actor.melee.interval = ClassToolkitData.EARTH_ELEMENTAL_SWING_TURNS
+	actor.melee.damage_min = ItemData.ELEMENTAL_DAMAGE_MIN
+	actor.melee.damage_max = ItemData.ELEMENTAL_DAMAGE_MAX
+	actor.melee.interval = ItemData.ELEMENTAL_SWING_TURNS
 	actor.melee.critical = 0.0
 	actor.melee.dodge = 0.0
 	# Zero means no expiration; the elemental remains until killed or Loop reset.
@@ -63,7 +71,7 @@ static func enemy_target(world: GridWorld, actor: GridActor) -> GridActor:
 	var elemental := active(world, "earth_elemental")
 	if (elemental != null and actor.engaged
 		and actor.relationship == GridActor.Relationship.HOSTILE):
-		var skill := SkillDefinition.catalog(elemental.summon_skill)
+		var skill := definition(elemental)
 		if (GridWorld.tile_distance(elemental.tile, actor.tile) <= skill.range_tiles
 			and world.has_sight(elemental.tile, actor.tile)):
 			return elemental
