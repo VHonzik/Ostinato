@@ -16,8 +16,9 @@ func test_outdoor_enemies_wander_locally_while_mine_and_named_enemies_stay_put()
 			assert_false(actor.wander_area.has_area(), actor.title)
 	world._spawn_stalker(ValleyRoute.STALKER_ENTRIES[0])
 	assert_false(world.actors[-1].wander_area.has_area())
-	for wolf in ValleyRoute.WOLVES:
-		assert_gt(GridWorld.tile_distance(wolf, ValleyRoute.STALKER_ENTRIES[0]), 10)
+	for actor in world.actors:
+		if actor.npc_id == 299:
+			assert_gt(GridWorld.tile_distance(actor.home_tile, ValleyRoute.STALKER_ENTRIES[0]), 10)
 
 
 func test_exploration_credits_mine_entrance_vineyard_approach_and_wolf_area_without_chests() -> void:
@@ -29,8 +30,12 @@ func test_exploration_credits_mine_entrance_vineyard_approach_and_wolf_area_with
 	world.player_tile = Vector2i(22, 15)
 	QuestRules.visit(world)
 	assert_eq(QuestRules.progress(world, "valley_explore", 0), 0)
+	var vineyard: Rect2i = ValleyLandmarks.EXPLORATION["vineyard"]
+	world.player_tile = vineyard.position + Vector2i.LEFT
+	QuestRules.visit(world)
+	assert_eq(QuestRules.progress(world, "valley_explore", 1), 0)
 	for index in range(3):
-		world.player_tile = [Vector2i(22, 13), Vector2i(44, 60), Vector2i(19, 48)][index]
+		world.player_tile = [Vector2i(22, 13), vineyard.position, Vector2i(19, 48)][index]
 		QuestRules.visit(world)
 		assert_eq(QuestRules.progress(world, "valley_explore", index), 1)
 	assert_true(QuestRules.ready(world, "valley_explore"))
@@ -197,7 +202,7 @@ func test_death_rebuilds_the_same_route_with_learning_and_fresh_encounters() -> 
 	assert_eq(session.world.hotbar[2], &"fireball_1")
 	assert_eq(session.world.quests, {})
 	assert_true(session.world.actors.all(func(actor: GridActor) -> bool: return actor.chest or actor.alive))
-	assert_eq(_actor(session.world, 299).tile, ValleyRoute.WOLVES[0])
+	assert_eq(_actor(session.world, 299).tile, _actor(before, 299).home_tile)
 
 
 func test_non_valley_codec_snapshots_need_no_route_marker() -> void:

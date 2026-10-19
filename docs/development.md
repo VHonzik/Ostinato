@@ -28,7 +28,7 @@ includes both young and timber wolves in one western-woods quest. Trees, walls
 and vine trellises block movement; flowers, bushes, small stones and sparse grass tufts are
 decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
 wolf types and outdoor kobold vermin are neutral until attacked; all mine kobolds and
-bandits are hostile. The road south of the southwestern gate admits timed stalkers at the guard's position.
+bandits are hostile. The road south of the southwestern gate admits timed stalkers beside the guard.
 Outdoor enemies wander locally with random pauses and staggered starts; mine kobolds,
 Garrick and stalkers stay put when idle. Saves retain pending wandering deadlines.
 Closed chests block movement; bumping a chest collects its loot, retaining items when bags are full.
@@ -215,6 +215,39 @@ Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userd
 global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
 files during failures and declare future compatibility breaks explicitly.
 
+## Editing the valley
+
+Open [valley.tscn](../scenes/valley.tscn) in Godot's 2D editor. It is the layout
+source read by New Game and death/Loop reset; the existing grid simulation and
+`GridView` still run and draw the game. Run the main project to play the layout.
+
+- `Terrain/Background` paints open ground and the blocked exterior.
+  `Ground` paints roads, floors and soil. Abbey/mine floor tiles also mark indoors.
+- `Terrain/Scenery` paints the original 16px art, scaled twice; `Props` paints the
+  32px valley art. Both use tile custom data for movement/sight blocking. Flowers,
+  bushes, small rocks, grass and signposts remain passable. Paint/erase cells in the
+  TileMap editor; keep the terrain layers' transforms as supplied.
+- `Actors` contains sprite placeholders for every initial contact, enemy and chest.
+  Move them with 32px grid snapping. Positions are sprite centers (16px grid offset);
+  the containing tile becomes the actor's starting/home tile. `wander_radius` sets
+  its patrol area around that home; zero keeps it stationary.
+- Keep an actor's `spawn_id` when moving it. When adding a creature by duplicating a
+  placeholder, give it a unique `spawn_id` and `turn_order`; that order governs turns
+  independently of tree order. `npc_id` selects existing contact/creature data. The
+  Sprite2D texture/scale is an editor preview; update it when changing creature type.
+  Contacts retain their identities/dialogue in `NpcDefinition`; creature stats remain
+  in `NorthshireData`. Chests also carry a unique `treasure_id` and exploration hint.
+- `PlayerSpawn`, ordered `StalkerEntries` markers and `Exploration` regions set their
+  corresponding locations. Exploration regions expose their size in tiles. The map
+  root exposes bounds and stalker deadlines. Summons and timed arrivals spawn during play.
+
+The TileSets under [assets/tilesets](../assets/tilesets/) reference the existing sprite
+sheets directly. Their `sprite`, `blocked` and `indoors` custom data feeds the grid
+model; Godot physics collision shapes are not used for movement.
+
+Start a New Game after layout edits. Existing saves retain their recorded actors,
+collision and indoor state; this conversion preserves the current save format.
+
 ## Checks
 
 Design experiments use the temporary [simulation bench](../bench/README.md), launched
@@ -253,7 +286,7 @@ successful run for debugging. No written validation report is required.
 
 ## Where things live
 
-- `scenes/`: main viewport and playable scene.
+- `scenes/`: main viewport, playable scene and editable valley layout.
 - `scripts/world/`, `combat/`, `hero/`, `items/`, `quests/`: simulation, UI, and game data.
 - `scripts/game_session.gd`, `save_codec.gd`, `save_store.gd`: Loops and persistence.
 - `test/unit/`: behavioral GUT tests; `tools/`: setup, launch, and checks.

@@ -43,6 +43,8 @@ progression are playable.
 - [x] Expand the valley with fewer NPCs, no within-Loop respawns, deliberate
   encounters and exploration destinations. Add a timed arrival at the southwestern gate.
   Branch rewards are an initial tuning pass; routes and XP still need playtesting.
+- [x] Move the existing valley into an editable Godot scene with terrain layers,
+  actor placeholders, spawn markers and exploration regions, retaining grid gameplay.
 - [ ] Add a small story pass with recognizable contacts and dialogue that changes
   as the player realizes the Loop. NPCs remain unaware of it; settle the shaman's
   identity and keep invasion knowledge limited.

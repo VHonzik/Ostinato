@@ -1,0 +1,39 @@
+[gd_resource type="TileSet" format=3 uid="uid://o1licuomi64q"]
+
+[ext_resource type="Texture2D" uid="uid://chuhik31a8lt7" path="res://assets/spritesheets/scroolospritesenvironment_nobg.png" id="1_t2bpl"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_7pkn4"]
+texture = ExtResource("1_t2bpl")
+4:4/0 = 0
+4:4/0/custom_data_0 = "pine_tree"
+4:4/0/custom_data_1 = true
+0:2/0 = 0
+0:2/0/custom_data_0 = "abbey_wall_straight"
+0:2/0/custom_data_1 = true
+1:2/0 = 0
+1:2/0/custom_data_0 = "abbey_wall_vertical"
+1:2/0/custom_data_1 = true
+14:0/0 = 0
+14:0/0/custom_data_0 = "abbey_entrance"
+3:4/0 = 0
+3:4/0/custom_data_0 = "broadleaf_tree"
+3:4/0/custom_data_1 = true
+1:4/next_alternative_id = 2
+1:4/0 = 0
+1:4/0/custom_data_0 = "boulder"
+1:4/0/custom_data_1 = true
+1:4/1 = 1
+1:4/1/custom_data_0 = "small_rock"
+2:4/0 = 0
+2:4/0/custom_data_0 = "flowers"
+0:4/0 = 0
+0:4/0/custom_data_0 = "grass"
+
+[resource]
+custom_data_layer_0/name = "sprite"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "blocked"
+custom_data_layer_1/type = 1
+custom_data_layer_2/name = "indoors"
+custom_data_layer_2/type = 1
+sources/0 = SubResource("TileSetAtlasSource_7pkn4")

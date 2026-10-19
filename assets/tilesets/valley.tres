@@ -1,0 +1,100 @@
+[gd_resource type="TileSet" format=3 uid="uid://b6crud30fuo85"]
+
+[ext_resource type="Texture2D" uid="uid://cqgefmtiqtvi" path="res://assets/spritesheets/valley/sprites.png" id="1_57fbr"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_lmsw4"]
+texture = ExtResource("1_57fbr")
+texture_region_size = Vector2i(32, 32)
+4:0/0 = 0
+4:0/0/custom_data_0 = "abbey_floor"
+4:0/0/custom_data_2 = true
+5:0/0 = 0
+5:0/0/custom_data_0 = "mine_floor"
+5:0/0/custom_data_2 = true
+3:0/0 = 0
+3:0/0/custom_data_0 = "dirt_road"
+6:0/0 = 0
+6:0/0/custom_data_0 = "tilled_soil"
+7:0/0 = 0
+7:0/0/custom_data_0 = "cliff_face"
+7:0/0/custom_data_1 = true
+2:2/0 = 0
+2:2/0/custom_data_0 = "fence_straight"
+2:2/0/custom_data_1 = true
+1:2/0 = 0
+1:2/0/custom_data_0 = "gate_post"
+1:2/0/custom_data_1 = true
+5:1/0 = 0
+5:1/0/custom_data_0 = "mine_mouth"
+2:1/0 = 0
+2:1/0/custom_data_0 = "banner"
+2:1/0/custom_data_1 = true
+4:1/0 = 0
+4:1/0/custom_data_0 = "brazier"
+4:1/0/custom_data_1 = true
+1:1/0 = 0
+1:1/0/custom_data_0 = "abbey_cross"
+1:1/0/custom_data_1 = true
+3:1/0 = 0
+3:1/0/custom_data_0 = "bench"
+3:1/0/custom_data_1 = true
+4:2/0 = 0
+4:2/0/custom_data_0 = "crate"
+4:2/0/custom_data_1 = true
+6:1/0 = 0
+6:1/0/custom_data_0 = "ore"
+6:1/0/custom_data_1 = true
+0:2/0 = 0
+0:2/0/custom_data_0 = "grape_basket"
+0:2/0/custom_data_1 = true
+5:2/0 = 0
+5:2/0/custom_data_0 = "dropped_bag"
+5:2/0/custom_data_1 = true
+3:2/0 = 0
+3:2/0/custom_data_0 = "signpost"
+0:1/0 = 0
+0:1/0/custom_data_0 = "bush"
+7:1/0 = 0
+7:1/0/custom_data_0 = "vine_trellis"
+7:1/0/custom_data_1 = true
+
+[sub_resource type="Gradient" id="Gradient_c6ml3"]
+colors = PackedColorArray(0.14117648, 0.23137255, 0.20784314, 1, 0.14117648, 0.23137255, 0.20784314, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_uitfr"]
+gradient = SubResource("Gradient_c6ml3")
+width = 32
+height = 32
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_pxkx6"]
+resource_name = "Open ground"
+texture = SubResource("GradientTexture2D_uitfr")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+
+[sub_resource type="Gradient" id="Gradient_hkct4"]
+colors = PackedColorArray(0.08235294, 0.14901961, 0.1254902, 1, 0.08235294, 0.14901961, 0.1254902, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_aacvn"]
+gradient = SubResource("Gradient_hkct4")
+width = 32
+height = 32
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_61mhm"]
+resource_name = "Blocked exterior"
+texture = SubResource("GradientTexture2D_aacvn")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+0:0/0/custom_data_1 = true
+
+[resource]
+tile_size = Vector2i(32, 32)
+custom_data_layer_0/name = "sprite"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "blocked"
+custom_data_layer_1/type = 1
+custom_data_layer_2/name = "indoors"
+custom_data_layer_2/type = 1
+sources/0 = SubResource("TileSetAtlasSource_lmsw4")
+sources/1 = SubResource("TileSetAtlasSource_pxkx6")
+sources/2 = SubResource("TileSetAtlasSource_61mhm")

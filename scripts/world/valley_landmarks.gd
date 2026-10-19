@@ -2,16 +2,16 @@ class_name ValleyLandmarks
 extends RefCounted
 
 ## Treasure positions are independent of the broad exploration destinations.
-const EXPLORATION: Dictionary = {
-	"mine": Rect2i(17, 2, 11, 12),
-	"vineyard": Rect2i(44, 54, 19, 24),
-	"wolf_woods": Rect2i(4, 28, 18, 32),
-}
-static var CHESTS: Dictionary[String, Landmark] = {
-	"mine_chest": Landmark.new(Vector2i(19, 3), "Explore the back of Echo Ridge Mine"),
-	"ridge_chest": Landmark.new(Vector2i(69, 52), "Explore the eastern ridge above the vineyard"),
-	"vineyard_chest": Landmark.new(Vector2i(50, 79), "Explore the southern vineyard edge"),
-}
+static var EXPLORATION: Dictionary:
+	get:
+		return ValleyRoute.layout_info().exploration
+static var CHESTS: Dictionary[String, Landmark]:
+	get:
+		var result: Dictionary[String, Landmark] = {}
+		var chests: Dictionary = ValleyRoute.layout_info().chests
+		for id: String in chests:
+			result[id] = Landmark.new(chests[id].tile, chests[id].hint)
+		return result
 
 
 static func objective_label(identifier: StringName) -> String:
