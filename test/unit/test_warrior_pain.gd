@@ -61,6 +61,7 @@ func _fixed_weapon(hero: HeroState) -> void:
 
 func test_pain_passives_unlock_early_without_becoming_castable() -> void:
 	var world := _world()
+	assert_eq(SkillDefinition.catalog(&"recklessness_1").title, "Death Wish")
 	for identifier: StringName in [&"enrage_1", &"recklessness_1"]:
 		var skill := SkillDefinition.catalog(identifier)
 		world.hero.copper = 0

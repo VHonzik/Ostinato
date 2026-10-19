@@ -16,7 +16,7 @@ func show_game() -> void:
 
 func hide_game() -> void:
 	for path in ["Top", "Bottom", "PlayerMenu", "Auras", "RageBar", "HealthBar",
-		"ComboPointBar", "QuestTracker", "Enemy"]:
+		"ComboPointBar", "MaelstromWeaponBar", "QuestTracker", "Enemy"]:
 		(get_node(path) as Control).hide()
 
 
@@ -61,6 +61,9 @@ func refresh_resources(world: GridWorld, show_resources: bool) -> void:
 	$ComboPointBar.visible = ($Auras.visible
 		and world.hero.find_skill(&"relentless_assault_1") != null)
 	$ComboPointBar.refresh(world.hero)
+	$MaelstromWeaponBar.visible = ($Auras.visible
+		and world.hero.find_skill(&"maelstrom_weapon_1") != null)
+	$MaelstromWeaponBar.refresh(world.hero)
 	_refresh_enemy(world, show_resources)
 	_refresh_quest_tracker(world)
 
@@ -128,7 +131,7 @@ func _refresh_auras(world: GridWorld) -> void:
 	var reckless_damage := (ClassToolkitRules.recklessness_damage_multiplier(hero) - 1.0) * 100.0
 	if reckless_damage > 0.0:
 		var reckless_taken := (ClassToolkitRules.recklessness_taken_multiplier(hero) - 1.0) * 100.0
-		_add_aura(world, "Recklessness", {"until": 0,
+		_add_aura(world, "Death Wish", {"until": 0,
 			"detail": "+%.1f%% physical damage / +%.1f%% damage taken" % [
 				reckless_damage, reckless_taken]}, false)
 

@@ -455,7 +455,7 @@ func open_buy(merchant: GridActor) -> void:
 	_finish()
 
 
-func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
+func open_sell(merchant: GridActor, selected_slot: int = 0) -> void:
 	if session.world == null or not session.world.trader_in_range(merchant):
 		close()
 		return
@@ -467,6 +467,7 @@ func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
 		session.world.sell_all_grey.bind(merchant), open_sell.bind(merchant)))
 	grey.disabled = true
 	var selected: Button
+	var first_item: Button
 	for index in range(40):
 		var item := session.world.hero.inventory[index]
 		if item.is_empty():
@@ -477,15 +478,18 @@ func open_sell(merchant: GridActor, selected_item: int = 0) -> void:
 		var button := _button("Sell slot %d: %s x%d / %s total" % [index + 1, data.title,
 			item.quantity, InventoryRules.money(int(data.sell) * int(item.quantity))],
 			_transaction.bind(session.world.sell_item.bind(merchant, index, int(item.quantity)),
-				open_sell.bind(merchant, int(item.id))))
+				open_sell.bind(merchant, index)))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_item_color(button, int(item.id))
 		if int(data.quality) == 0:
 			grey.disabled = false
-		if selected == null and (selected_item == 0 or int(item.id) == selected_item):
+		if first_item == null:
+			first_item = button
+		if selected == null and index >= selected_slot:
 			selected = button
 	var back := _button("Back (Esc)", open_trade.bind(merchant))
-	# Keep consecutive sales on the same item; exhaustion must not select another sale.
+	if selected == null:
+		selected = first_item
 	(selected if selected != null else back).grab_focus()
 
 
@@ -764,7 +768,7 @@ func open_conversation(actor: GridActor) -> void:
 	_show_conversation(actor)
 
 
-func _show_conversation(actor: GridActor) -> void:
+func _show_conversation(actor: GridActor, prefer_available_quest: bool = false) -> void:
 	var conversation := NpcConversation.build(session, actor)
 	if conversation == null:
 		close()
@@ -782,13 +786,18 @@ func _show_conversation(actor: GridActor) -> void:
 			var callback := _conversation_choice.bind(choice, actor)
 			if choice.action == NpcConversation.Action.QUEST:
 				_quest_button(choice.quest_id, choice.quest_prefix, callback)
+				if (prefer_available_quest and selected_button == null
+					and QuestRules.available(session.world, choice.quest_id)):
+					selected_button = _buttons.back()
 			else:
 				var button := _button(choice.title, callback)
 				button.tooltip_text = choice.tooltip
 				if (choice.action == NpcConversation.Action.SELECT_CLASS
 					and choice.category == session.world.hero.selected_class):
 					selected_button = button
-		_button("Leave (Esc)", close)
+		var leave := _button("Leave (Esc)", close)
+		if prefer_available_quest and selected_button == null:
+			selected_button = leave
 		if selected_button != null:
 			selected_button.grab_focus()
 		else:
@@ -870,7 +879,8 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 	_label("Reward: %d XP, %s." % [QuestRules.experience(int(quest.xp),
 		int(quest.level), world.hero.level), InventoryRules.money(int(quest.copper))])
 	if QuestRules.available(world, identifier) and actor != null:
-		_button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor), back))
+		_button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor),
+			_show_conversation.bind(actor, true)))
 	elif world.quests.has(identifier) and not world.quests[identifier].handed_in:
 		if QuestRules.ready(world, identifier):
 			_label("Objectives complete — ready for hand-in.")

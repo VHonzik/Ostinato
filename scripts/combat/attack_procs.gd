@@ -7,6 +7,9 @@ static func on_attack(world: GridWorld, event: AttackEvent) -> void:
 		return
 	# Keep this order explicit: handlers consume randomness and can end the encounter.
 	_maelstrom(world, event)
+	PaladinRules.melee_vulnerability(world, event)
+	if world.is_terminal():
+		return
 	if event.is_swing() and event.hand == AttackEvent.Hand.MAIN:
 		ClassSpellEffects.on_melee(world, event)
 	if world.is_terminal():
@@ -104,8 +107,7 @@ static func _sweeping_strikes(world: GridWorld, event: AttackEvent) -> void:
 
 static func _judgement(world: GridWorld, target: GridActor) -> void:
 	if target.alive and ClassToolkitRules.has(world.hero, &"heart_of_the_crusader_1"):
-		target.debuffs["crusader_crit"] = {"until": world.turn_count + 11,
-			"bonus": ClassToolkitRules.magnitude(world.hero, &"heart_of_the_crusader_1")}
+		target.debuffs[&"heart_of_the_crusader_1"] = {"until": 0}
 
 
 static func _maelstrom(world: GridWorld, event: AttackEvent) -> void:

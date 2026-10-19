@@ -95,6 +95,7 @@ var world: GridWorld:
 		if world != null:
 			world.npc_combat_text.disconnect(combat_text.spawn)
 			world.ability_used.disconnect(_show_player_ability)
+			world.consecration_ticked.disconnect(_show_consecration)
 			world.npc_ability_hit.disconnect(_show_npc_ability)
 		world = value
 		combat_text.clear()
@@ -104,6 +105,7 @@ var world: GridWorld:
 		if world != null:
 			world.npc_combat_text.connect(combat_text.spawn)
 			world.ability_used.connect(_show_player_ability)
+			world.consecration_ticked.connect(_show_consecration)
 			world.npc_ability_hit.connect(_show_npc_ability)
 var selected: GridActor
 var alternate_palette: bool = false
@@ -212,23 +214,24 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
+func _show_consecration() -> void:
+	var skill := world.hero.find_skill(&"consecration_1")
+	var tiles: Array[Vector2i] = []
+	var center: Vector2i = world.consecration.center
+	for y in range(center.y - skill.range_tiles, center.y + skill.range_tiles + 1):
+		for x in range(center.x - skill.range_tiles, center.x + skill.range_tiles + 1):
+			var tile := Vector2i(x, y)
+			if (world.bounds.has_point(tile) and not world.blocked_tiles.has(tile)
+				and PaladinRules.covers(world, tile)):
+				tiles.append(tile)
+	_consecration_blink = {"tiles": tiles, "elapsed": 0.0}
+	for actor: GridActor in _npc_blinks.keys():
+		if tiles.has(actor.tile):
+			_npc_blinks.erase(actor)
+	queue_redraw()
+
+
 func _show_player_ability(skill: SkillDefinition) -> void:
-	if skill.family == &"consecration":
-		var tiles: Array[Vector2i] = []
-		var center: Vector2i = world.consecration.center
-		for y in range(center.y - skill.range_tiles, center.y + skill.range_tiles + 1):
-			for x in range(center.x - skill.range_tiles, center.x + skill.range_tiles + 1):
-				var tile := Vector2i(x, y)
-				if (world.bounds.has_point(tile) and not world.blocked_tiles.has(tile)
-					and PaladinRules.covers(world, tile)):
-					tiles.append(tile)
-		_consecration_blink = {"tiles": tiles, "elapsed": 0.0}
-		if tiles.has(world.player_tile):
-			_player_blink.clear()
-		for actor: GridActor in _npc_blinks.keys():
-			if tiles.has(actor.tile):
-				_npc_blinks.erase(actor)
-		queue_redraw()
 	if PLAYER_ABILITIES.has(skill.family):
 		_replace_consecration_tile(world.player_tile)
 		_player_blink = {"sprite": _ability_sprite(PLAYER_ABILITIES[skill.family]),
@@ -264,7 +267,7 @@ func _blink_sprite(effect: Dictionary) -> Texture2D:
 
 
 func _consecration_visible(tile: Vector2i) -> bool:
-	return (not _consecration_blink.is_empty()
+	return (tile != world.player_tile and not _consecration_blink.is_empty()
 		and _consecration_blink.tiles.has(tile))
 
 
@@ -371,9 +374,7 @@ func _draw_consecration() -> void:
 			continue
 		var color := Color.WHITE
 		var actor := world.actor_at(tile)
-		if tile == world.player_tile:
-			color = health_tint(world.hero.health, world.hero.max_health)
-		elif actor != null:
+		if actor != null:
 			color = health_tint(actor.health, actor.max_health)
 		_draw_sprite_layers(tile, _ability_sprite(CONSECRATION_CELL), null, color, Color.WHITE)
 

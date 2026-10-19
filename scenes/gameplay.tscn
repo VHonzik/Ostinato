@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://cbnewxckmgwqw" path="res://scripts/combat/combat_panel.gd" id="4"]
 [ext_resource type="Script" uid="uid://c5v0xs2rsdhnj" path="res://scripts/hero/combo_point_bar.gd" id="5"]
 [ext_resource type="Script" uid="uid://ctinxw3qi0quw" path="res://scripts/gameplay_hud.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/hero/maelstrom_weapon_bar.gd" id="7"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 18
@@ -213,9 +214,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -125.0
-offset_top = -235.0
+offset_top = -259.0
 offset_right = 125.0
-offset_bottom = -220.0
+offset_bottom = -244.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("Style_rage_border")
 
@@ -234,9 +235,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -125.0
-offset_top = -254.0
+offset_top = -278.0
 offset_right = 125.0
-offset_bottom = -239.0
+offset_bottom = -263.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("Style_rage_border")
 
@@ -257,11 +258,26 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -100.0
+offset_top = -240.0
+offset_right = 100.0
+offset_bottom = -220.0
+mouse_filter = 2
+script = ExtResource("5")
+
+[node name="MaelstromWeaponBar" type="Control" parent="HUD"]
+visible = false
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -100.0
 offset_top = -216.0
 offset_right = 100.0
 offset_bottom = -196.0
 mouse_filter = 2
-script = ExtResource("5")
+script = ExtResource("7")
 
 [node name="Auras" type="HBoxContainer" parent="HUD" unique_id=1350681828]
 anchors_preset = 7

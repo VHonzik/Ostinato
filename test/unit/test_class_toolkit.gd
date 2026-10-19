@@ -770,7 +770,7 @@ func test_judgement_impact_rewards_preserve_passive_seal_and_haste_leaves_cooldo
 	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
-	assert_eq(int(enemy.debuffs.crusader_crit.bonus), 3)
+	assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"))
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
 	assert_true(world.cast_skill(&"judgement_1", enemy))

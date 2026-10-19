@@ -210,6 +210,40 @@ func test_combo_bar_follows_gameplay_hud_visibility() -> void:
 	assert_false(bar.visible)
 
 
+func test_maelstrom_bar_unlocks_fades_after_spending_and_follows_hud_visibility() -> void:
+	var bar := _game.get_node("HUD/MaelstromWeaponBar") as Control
+	_game.refresh_view()
+	assert_false(bar.visible)
+	_game.world.hero.learn_skill(SkillDefinition.catalog(&"maelstrom_weapon_1"))
+	_game.refresh_view()
+	assert_true(bar.visible, "Retained learning shows the empty bar in every class.")
+	var empty_alpha := bar.modulate.a
+	_game.world.hero.buffs[&"maelstrom_weapon_1"] = {"until": 0, "armor": 0, "charges": 5}
+	_game.refresh_view()
+	assert_gt(bar.modulate.a, empty_alpha)
+	assert_lt(bar.modulate.a, 1.0)
+	_game.menu.open_player()
+	assert_false(bar.visible)
+	_game.menu.close()
+	assert_true(bar.visible)
+	await _tap_key(KEY_K)
+	assert_false(bar.visible)
+	await _tap_key(KEY_ESCAPE)
+	assert_true(bar.visible)
+	ClassToolkitRules.spend_maelstrom(_game.world.hero, 5)
+	_game.refresh_view()
+	assert_true(bar.visible)
+	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
+	_game.world.hero.health = 0
+	_game.refresh_view()
+	assert_true(bar.visible, "Death retains the passive, with empty stacks.")
+	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
+	_game._return_to_menu()
+	assert_false(bar.visible)
+	_game.start_new_game()
+	assert_false(bar.visible)
+
+
 func test_camera_follows_movement_and_remains_centered_at_all_map_edges() -> void:
 	_game.world.move_player(Vector2i.LEFT)
 	_game.refresh_view()
@@ -1258,6 +1292,23 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	assert_eq(_game.world.turn_count, 0)
 
 
+func test_accepting_quests_focuses_the_next_available_quest_until_all_are_accepted() -> void:
+	var marshal := _game.world.actors[0]
+	_game.world.hero.level = 2
+	_game.world.player_tile = marshal.tile + Vector2i.DOWN
+	_game.menu.open_conversation(marshal)
+	for identifier: String in ["valley_wolves", "valley_camp", "valley_mine"]:
+		var focus := _game_viewport.gui_get_focus_owner() as Button
+		assert_string_contains(focus.text, "Available: " + String(QuestData.QUESTS[identifier].title))
+		await _tap_key(KEY_ENTER)
+		assert_eq(_game.menu.page, "quest_detail")
+		await _tap_key(KEY_ENTER)
+		assert_true(_game.world.quests.has(identifier))
+		assert_eq(_game.menu.page, "conversation")
+	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Leave (Esc)")
+	assert_eq(_game.world.turn_count, 0)
+
+
 func test_quest_pages_support_keyboard_and_mouse_navigation() -> void:
 	_game.menu.open_options()
 	await get_tree().process_frame
@@ -1725,14 +1776,15 @@ func test_mouse_loot_all_and_keyboard_sell_all_grey_are_free() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> void:
+func test_consecutive_sales_select_next_sellable_slot_and_wrap_after_the_last() -> void:
 	var merchant := _test_merchant(152)
 	_game.world.player_tile = merchant.tile + Vector2i.DOWN
+	for index in range(40):
+		_game.world.hero.inventory[index] = {}
 	_game.world.hero.inventory[0] = ItemData.instance(35)
-	for index in range(1, 39):
-		_game.world.hero.inventory[index] = ItemData.instance(4540, 20)
+	_game.world.hero.inventory[1] = ItemData.instance(750)
 	_game.world.hero.inventory[3] = ItemData.instance(117, 20)
-	_game.world.hero.inventory[25] = ItemData.instance(117, 7)
+	_game.world.hero.inventory[25] = ItemData.instance(4540, 7)
 	_game.world.hero.inventory[39] = ItemData.instance(117)
 	var stock := _game.world.vendor_stock.duplicate(true)
 	_game.menu.open_trade(merchant)
@@ -1743,9 +1795,10 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 		return button.text.begins_with("Sell slot 4:"))[0] as Button
 	water.grab_focus()
 	var proceeds := 0
-	for entry in [[3, 20], [25, 7], [39, 1]]:
+	for entry in [[3, 20, "Tough Jerky"], [25, 7, "Tough Hunk of Bread"],
+		[39, 1, "Tough Jerky"]]:
 		var focused := _game_viewport.gui_get_focus_owner() as Button
-		assert_string_contains(focused.text, "Tough Jerky x%d" % int(entry[1]))
+		assert_string_contains(focused.text, "%s x%d" % [entry[2], int(entry[1])])
 		for frame in range(4):
 			await get_tree().process_frame
 		await _tap_key(KEY_ENTER)
@@ -1753,13 +1806,15 @@ func test_three_confirmations_sell_three_same_item_stacks_and_keep_focus() -> vo
 		assert_true(_game.world.hero.inventory[int(entry[0])].is_empty())
 		assert_eq(_game.world.hero.copper, proceeds)
 		assert_eq(_game.menu.page, "sell")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Sell slot 1:")
+	await _tap_key(KEY_ENTER)
+	assert_true(_game.world.hero.inventory[0].is_empty())
 	assert_eq((_game_viewport.gui_get_focus_owner() as Button).text, "Back (Esc)")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trade")
-	assert_eq(_game.world.hero.inventory[0], ItemData.instance(35))
-	assert_eq(_game.world.hero.inventory[1], ItemData.instance(4540, 20))
+	assert_eq(_game.world.hero.inventory[1], ItemData.instance(750))
 	assert_eq(_game.world.vendor_stock, stock)
-	assert_eq(_game.world.hero.copper, 28)
+	assert_eq(_game.world.hero.copper, 30)
 	assert_eq(_game.world.player_tile, merchant.tile + Vector2i.DOWN)
 	assert_eq(_game.world.turn_count, 0)
 

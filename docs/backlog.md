@@ -309,8 +309,8 @@ provisional. The [bench](../bench/README.md) now compares production rules.
 
 - [x] Replace starter Heroic Strike with Whirlwind and remove Incite and strike-queue
   mechanics. Keep Execute's later unlock and the existing per-target proc interactions.
-- [x] Replace Warrior Flurry with early Enrage and Recklessness learning. Enrage can
-  trigger from surviving damaging enemy hits at any health; passive Recklessness ramps
+- [x] Replace Warrior Flurry with early Enrage and Death Wish learning. Enrage can
+  trigger from surviving damaging enemy hits at any health; passive Death Wish ramps
   the physical damage reward and incoming damage risk as health falls, with a modest cap.
   Keep Shaman Flurry and retained effects across classes. Preserve proc expiry and save
   boundaries; leave incompatible saves untouched.
@@ -320,7 +320,7 @@ provisional. The [bench](../bench/README.md) now compares production rules.
   redistributing damage and limiting kill-heal frequency; review remaining per-target procs.
 - [ ] Playtest the early health/rage tradeoff, healing and Enrage feedback, then compare
   developed kits against the stalker. Removing Warrior haste also changes rage income;
-  the capped Recklessness penalty has no boss-specific exception. Revisit tuning from
+  the capped Death Wish penalty has no boss-specific exception. Revisit tuning from
   these later playtests and simulations.
 - [ ] Decide later passive development after moving Whirlwind out of trainer progression
   and adding the early risk/reward passives.

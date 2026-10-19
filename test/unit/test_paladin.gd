@@ -30,6 +30,103 @@ func _enemy(world: GridWorld, tile: Vector2i) -> GridActor:
 	return enemy
 
 
+func test_crusader_verdict_marks_then_next_landed_melee_adds_holy_damage_once() -> void:
+	var world := _world()
+	world.hero.learn_skill(SkillDefinition.catalog(&"heart_of_the_crusader_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"relentless_assault_1"))
+	var enemy := _enemy(world, Vector2i(10, 8))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_false(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	for turn in range(3):
+		world.wait_turn()
+	assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	for turn in range(12):
+		world.wait_turn()
+	assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"), "Vulnerability waits until used.")
+	enemy.tile = world.player_tile + Vector2i.RIGHT
+	enemy.melee.armor = 100000
+	world.hero.melee.damage_min = 20
+	world.hero.melee.damage_max = 20
+	world.hero.melee.attack_power = 0
+	world.hero.combo_points = 0
+	world.combo_event_counted = false
+	var before := enemy.health
+	var event := AttackEvent.new(enemy, null, &"hit", 1)
+	SpellEffects.attack(world, event, "You")
+	AttackProcs.on_attack(world, event)
+	assert_eq(before - enemy.health, 11, "1 physical + 5 Crusader Holy + 5 Seal Holy, ignoring armor.")
+	assert_false(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	assert_eq(world.hero.combo_points, 1, "The bonus grants no additional points.")
+	before = enemy.health
+	AttackProcs.on_attack(world, event)
+	assert_eq(before - enemy.health, 5, "Only the normal Seal bonus remains.")
+
+
+func test_crusader_ignores_misses_bonus_ranged_and_other_targets_but_accepts_melee_actives() -> void:
+	var world := _world()
+	world.hero.learn_skill(SkillDefinition.catalog(&"heart_of_the_crusader_1"))
+	world.hero.melee.damage_min = 20
+	world.hero.melee.damage_max = 20
+	world.hero.melee.attack_power = 0
+	var enemy := _enemy(world, Vector2i(9, 8))
+	var other := _enemy(world, Vector2i(8, 9))
+	enemy.debuffs[&"heart_of_the_crusader_1"] = {"until": 0}
+	for result: StringName in [&"miss", &"dodge"]:
+		AttackProcs.on_attack(world, AttackEvent.new(enemy, null, result, 0))
+		assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	var bonus := AttackEvent.new(enemy, null, &"hit", 1)
+	bonus.origin = AttackEvent.Origin.BONUS
+	AttackProcs.on_attack(world, bonus)
+	AttackProcs.on_attack(world, AttackEvent.new(other, null, &"hit", 1))
+	AttackProcs.on_attack(world, AttackEvent.new(enemy, SkillDefinition.catalog(&"lava_burst_1"),
+		&"hit", 1, AttackEvent.School.FIRE))
+	assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	enemy.tile = Vector2i(10, 8)
+	AttackProcs.on_attack(world, AttackEvent.new(enemy,
+		SkillDefinition.catalog(&"mortal_strike_1"), &"hit", 1))
+	assert_true(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+	enemy.tile = Vector2i(9, 8)
+	var before := enemy.health
+	AttackProcs.on_attack(world, AttackEvent.new(enemy,
+		SkillDefinition.catalog(&"mortal_strike_1"), &"critical", 1))
+	assert_eq(before - enemy.health, 5, "Melee abilities consume one noncritical Holy bonus.")
+	assert_false(enemy.debuffs.has(&"heart_of_the_crusader_1"))
+
+
+func test_crusader_vulnerability_saves_strictly_and_clears_on_death() -> void:
+	var game := GameSession.new()
+	game.development_build = false
+	game.new_game(97)
+	game.loop_count = 2
+	game.world = _world()
+	var world := game.world
+	world.hero.learn_skill(SkillDefinition.catalog(&"heart_of_the_crusader_1"))
+	var enemy := _enemy(world, Vector2i(10, 8))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	for turn in range(3):
+		world.wait_turn()
+	var snapshot := SaveCodec.capture(game)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_true(restored.actors[0].debuffs.has(&"heart_of_the_crusader_1"))
+	for malformed: Dictionary in [{"until": -1}, {"until": 1}, {"until": 0, "bonus": 3}]:
+		var invalid := snapshot.duplicate(true)
+		invalid.actors[0].debuffs.heart_of_the_crusader_1 = malformed
+		assert_null(SaveCodec.restore(invalid, false))
+	var unlearned := snapshot.duplicate(true)
+	unlearned.learned.erase("heart_of_the_crusader_1")
+	assert_null(SaveCodec.restore(unlearned, false))
+	world.hero.health = 0
+	assert_true(game.restart_after_death())
+	assert_true(game.world.actors.all(func(actor: GridActor) -> bool:
+		return not actor.debuffs.has(&"heart_of_the_crusader_1")))
+	assert_not_null(game.world.hero.find_skill(&"heart_of_the_crusader_1"))
+	SpellEffects.damage(restored, restored.actors[0], 10000, "Test")
+	assert_false(restored.actors[0].debuffs.has(&"heart_of_the_crusader_1"))
+
+
 func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_requirement() -> void:
 	var world := _world()
 	var enemy := _enemy(world, Vector2i(10, 8))

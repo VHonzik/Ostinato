@@ -5,6 +5,7 @@ signal message_added(message: String)
 signal friendly_interaction_requested(actor: GridActor)
 signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 signal ability_used(skill: SkillDefinition)
+signal consecration_ticked
 signal npc_ability_hit(actor: GridActor, family: StringName)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
@@ -906,6 +907,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			return
 		target.alive = false
 		target.debuffs.erase(&"judgement_1")
+		target.debuffs.erase(&"heart_of_the_crusader_1")
 		target.engaged = false
 		target.returning_home = false
 		if check_terminal():

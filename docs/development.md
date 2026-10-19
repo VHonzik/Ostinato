@@ -73,7 +73,7 @@ first attack, choose an enemy in melee range. Automatic attacks continue on that
 while it remains in melee range, including turns spent moving, waiting and using abilities.
 Whirlwind casts directly from the hotbar against adjacent enemies, preserving the
 selected attack target and ordinary swing timing. Heroic Strike and Incite are removed.
-Early Warrior training adds Enrage from surviving enemy hits and passive Recklessness,
+Early Warrior training adds Enrage from surviving enemy hits and passive Death Wish,
 which increases physical damage dealt and damage taken as health falls. Its aura shows
 the current tradeoff. Warrior Flurry is removed; Shaman retains its own Flurry.
 The action effect resolves before player swings, followed by enemy actions. No attacks
@@ -198,10 +198,10 @@ Divine Purpose, Eye for an Eye and combo-point refunds are removed. Existing Hol
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 32, with gear stats rebuilt from equipment on load.
-Revision 31 and older saves are incompatible and left unchanged; start a fresh game.
-This revision removes nine learned passive IDs after folding six effects into their
-parent abilities and removing three effects. No save migration is provided.
+Current saves are `demo` revision 33, with gear stats rebuilt from equipment on load.
+Revision 32 and older saves are incompatible and left unchanged; start a fresh game.
+This revision replaces Heart of the Crusader's timed critical-chance debuff with a
+saved, single-use melee vulnerability. No save migration is provided.
 Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
 primary-stat buff fields. Failed writes/loads preserve existing player files.
 Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.

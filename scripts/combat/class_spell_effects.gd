@@ -43,7 +43,7 @@ static func tick(world: GridWorld) -> void:
 	# Delayed verdicts and poison own their expiry so their final delivery is preserved.
 	for actor in world.actors:
 		for key in actor.debuffs.keys():
-			if (key not in [&"judgement_1", &"deadly_poison_1"]
+			if (key not in [&"judgement_1", &"deadly_poison_1", &"heart_of_the_crusader_1"]
 				and int(actor.debuffs[key].until) <= world.turn_count):
 				actor.debuffs.erase(key)
 	for key in world.hero.debuffs.keys():

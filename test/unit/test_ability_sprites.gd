@@ -158,13 +158,13 @@ func test_consecration_shows_open_tiles_for_one_and_a_half_seconds_then_restores
 	var turn := _world.turn_count
 	var occupants := _view._sprite_occupants()
 	assert_eq(_view._consecration_blink.tiles.size(), 8)
-	assert_true(_view._consecration_visible(_world.player_tile))
+	assert_false(_view._consecration_visible(_world.player_tile))
 	assert_true(_view._consecration_visible(_enemy.tile))
 	assert_true(_view._consecration_visible(flowers))
 	assert_false(_view._consecration_visible(wall))
 	assert_eq(_view._terrain_sprite(flowers, occupants), &"")
 	_view._draw_consecration()
-	assert_eq(_view.effect_tiles.size(), 8)
+	assert_eq(_view.effect_tiles.size(), 7)
 	_view._process(0.125)
 	assert_true(_view._consecration_visible(flowers))
 	assert_eq(_view._terrain_sprite(flowers, occupants), &"")
@@ -182,6 +182,28 @@ func test_consecration_shows_open_tiles_for_one_and_a_half_seconds_then_restores
 	assert_eq(_world.turn_count, turn)
 
 
+func test_consecration_replays_each_tick_and_always_leaves_the_player_visible() -> void:
+	assert_true(_world.cast_skill(&"consecration_1"))
+	var center := _world.player_tile
+	for tick in range(6):
+		assert_false(_view._consecration_blink.is_empty())
+		assert_false(_view._consecration_visible(_world.player_tile))
+		assert_true(_view._consecration_visible(_enemy.tile))
+		_view._draw_player()
+		assert_same(_view.base, _view.player_sprite_layers(_world.hero.selected_class).base_sprite)
+		_view._process(GridView.ABILITY_BLINK_SECONDS)
+		assert_true(_view._consecration_blink.is_empty())
+		if tick == 0:
+			_world.player_tile = center + Vector2i.LEFT
+		if tick < 5:
+			_world.wait_turn()
+			assert_true(_view._consecration_visible(center))
+	_world.wait_turn()
+	assert_true(_world.consecration.is_empty())
+	assert_true(_view._consecration_blink.is_empty(), "Expired ground stops replaying.")
+	assert_eq(_world.turn_count, 7)
+
+
 func test_world_replacement_clears_blinks_and_disconnects_old_world() -> void:
 	assert_true(_world.cast_skill(&"consecration_1"))
 	_world.ability_used.emit(SkillDefinition.catalog(&"battle_shout_1"))
@@ -192,6 +214,7 @@ func test_world_replacement_clears_blinks_and_disconnects_old_world() -> void:
 	assert_true(_view._consecration_blink.is_empty())
 	_world.ability_used.emit(SkillDefinition.catalog(&"battle_shout_1"))
 	_world.npc_ability_hit.emit(_enemy, &"mortal_strike")
+	_world.wait_turn()
 	assert_true(_view._player_blink.is_empty())
 	assert_true(_view._npc_blinks.is_empty())
 

@@ -346,6 +346,10 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 			return false
 		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
 			return false
+		if actor.debuffs.has(&"heart_of_the_crusader_1"):
+			if (world.hero.find_skill(&"heart_of_the_crusader_1") == null or not actor.alive
+				or actor.relationship == GridActor.Relationship.FRIENDLY):
+				return false
 		if actor.debuffs.has(&"judgement_1"):
 			var sentence := world.hero.find_skill(&"judgement_1")
 			var effect: Dictionary = actor.debuffs[&"judgement_1"]
@@ -355,7 +359,8 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 				return false
 	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
 		return false
-	if (data.debuffs.has("judgement_1") or not _restore_consecration(world, data.consecration)
+	if (data.debuffs.has("judgement_1") or data.debuffs.has("heart_of_the_crusader_1")
+		or not _restore_consecration(world, data.consecration)
 		or not _restore_war_banner(world, data.get("war_banner", {}))):
 		return false
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
@@ -690,6 +695,12 @@ static func _debuffs(data: Variant) -> bool:
 		if not key is String or not data[key] is Dictionary or not data[key].has("until"):
 			return false
 		var effect: Dictionary = data[key].duplicate()
+		if key == "crusader_crit":
+			return false
+		if key == "heart_of_the_crusader_1":
+			if effect.size() != 1 or not _integer(effect.until, 0) or effect.until != 0:
+				return false
+			continue
 		if key == "judgement_1":
 			if (effect.size() != 3 or not effect.has_all(["until", "damage", "critical"])
 				or not _integer(effect.until, 1) or not _integer(effect.damage, 0)

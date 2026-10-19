@@ -33,8 +33,10 @@ and the implementation together.
   Pixel rectangle is `(16x, 16y, 16, 16)`; the world draws it at 32x32.
 - Sprite placement describes actual rendering, separately from the gameplay target.
   Most ability sprites briefly replace the player/struck enemy for 1.5 real seconds.
-  Whirlwind flashes landed targets, not a whole area. Consecration briefly covers
-  its ground tiles, including occupants; its visual does not last the damage duration.
+  Whirlwind flashes landed targets, not a whole area. Consecration flashes its fixed
+  ground tiles for 1.5 real seconds on each damage tick, including NPC occupants but
+  always excluding the player's current tile. Later ability effects replace that
+  tile's flash until the next tick; leaving the ground does not move it.
   Summon art is a world actor, not an overlay. Passives add no dedicated effect sprite;
   upgraded actives retain their own art. `-` does not exclude aura text, combat numbers
   or other shared UI. These are default mappings; GridView allows actor-art overrides.
@@ -77,7 +79,9 @@ Consecration and Deadly Poison resolve, followed by due player swings and enemy 
 Final verdicts/poison ticks are preserved. Terminal death/victory stops further resolution.
 Death clears temporary combat state, summons, coatings, ground and combo points, retaining
 learning. Saves retain implemented mid-Loop effect state, including banked Maelstrom.
-Current saves use revision 32; earlier revisions are incompatible and left unchanged.
+Current saves use revision 33; earlier revisions are incompatible and left unchanged.
+Revision 33 replaces Heart of the Crusader's timed critical debuff with a persistent,
+single-use melee vulnerability.
 The catalogue has 32 passives. Folded effects are intrinsic to their parent abilities,
 with the parents' learning levels/prices unchanged; there are no replacement purchases.
 Eviscerate refunds rage after spending, including on a miss, and never refunds points.
@@ -96,7 +100,7 @@ active crits. Eviscerate alone spends combo points; Execute and Judgement do not
 **Tagline: Turn pain into rage, then spend it on decisive physical blows.**
 
 Physical burst, adjacent cleave, rage preparation, a travel opener and low-health
-execution. Enrage rewards taking hits; Recklessness raises damage and risk as health
+execution. Enrage rewards taking hits; Death Wish raises damage and risk as health
 falls. Mortal Strike is the larger single-target spender; Whirlwind gains value against
 groups. Wrecking Crew strengthens developed Whirlwind while its critical buff lasts;
 Sweeping Strikes copies single-target actives only. Victory Rush keeps its full kill
@@ -120,7 +124,7 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Whirlwind | 15 | 1 | - | - | 1 | 1 | 0 | C(0,2) | Targets (each landed hit) | Active. 70% weapon damage to each adjacent neutral or hostile enemy in sight (3x3 area), in stable actor order. One turn, no cooldown; weapon timing continues. Wrecking Crew adds 35% more Whirlwind damage while its buff is active. Each landed hit can crit/proc, but cannot trigger Sweeping Strikes; Relentless Assault grants at most one base point per turn. Keeps your selected attack target. Stops on terminal death. |
 | Enrage | - | - | - | 10 | - | 1 | 15c | - | - | Passive proc. Surviving damaging enemy hits have a 30% chance for +10% physical damage and +5 percentage points of attack critical chance for 10 turns, at any health. At most one roll per world turn. Refreshes without stacking; misses, dodges and immune hits cannot trigger it. |
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
-| Recklessness | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
+| Death Wish | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
 | Cruelty | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
@@ -142,6 +146,12 @@ extra critical chance by Maelstrom Weapon. The Ancestral totem item supplies a l
 elemental that redirects engaged enemies; temporary wolves inherently add damage
 and healing. Earth Shock, its interrupt/stun upgrade and Elemental Assault
 are removed. Flurry remains early training; Maelstrom is available at level 2.
+
+Learning Maelstrom Weapon reveals a purple bar below combo points in every class.
+Its three cells have widths in a 1:3:1 ratio: stacks fill continuously from zero to
+five, completing the first cell at one stack, the middle at four, and the last at
+five. Like combo points, it uses 20% opacity at zero and 80% with stacks, and follows
+gameplay HUD visibility. The aura and Lava Burst tooltip also show current stacks.
 
 Earth Elemental is removed from training. After learning all remaining Shaman actives
 and passives, Farseer Lopaa offers Ancestral totem through the shared trainer farewell
@@ -172,7 +182,8 @@ skills. Death clears the item, summon and claim; retained learning allows a new 
 
 Holy damage on main-hand swings, a committed delayed verdict and fixed damaging ground.
 Art of War empowers later Judgements with a stronger guaranteed critical. Passive Seal needs no
-maintenance. Blessing of Kings adds primary stats to Battle Shout; Divine Shield
+maintenance. Heart of the Crusader makes a landed verdict empower the next melee
+strike with bonus Holy damage. Blessing of Kings adds primary stats to Battle Shout; Divine Shield
 trades outgoing damage for immunity.
 
 Completing all Paladin training unlocks Brother Sammuel's Wartorn Banner gift through
@@ -198,9 +209,9 @@ new gift with retained learning. It does not change any learned Paladin ability.
 | Conviction | - | - | - | - | - | 2 | 100c | - | - | Passive. +3 percentage points of critical chance for weapon/physical and direct Holy/Fire/Nature attacks. |
 | Art of War | - | - | - | * | - | 3 | 135c | - | - | Passive. Every third landed primary Holy event empowers the next Judgement to critically hit for 225% damage until used or death. Ordinary random criticals remain 200%; the empowered damage is fixed at cast. Progress does not expire; at most one event counts per world-turn action, including Seal damage. Judgement contributes on impact. A missed Judgement cast does not consume the critical proc. |
 | Vengeance | - | - | - | 10 | - | 3 | 170c | - | - | Passive. Primary attack crits grant +3% damage per stack, up to 3 stacks (+9%), for 10 turns. Further primary crits refresh the duration. |
-| Consecration | 5 | 1 | 12 | 6 | 1 | 3 | 200c | C(1,2) | Area (fixed 3x3) | Active. Consecrate the fixed 3x3 area around you for 6 turns, replacing your previous ground. Each turn deals 7.5 + 6% weapon damage as Holy to visible neutral or hostile enemies inside. Damage is fixed when cast; no crits, combo points or attack procs. Ticks begin this turn before weapon swings and enemy actions. No damage reduction; one turn. |
+| Consecration | 5 | 1 | 12 | 6 | 1 | 3 | 200c | C(1,2) | Area (fixed 3x3, excluding player tile visually) | Active. Consecrate the fixed 3x3 area around you for 6 turns, replacing your previous ground. Each turn deals 7.5 + 6% weapon damage as Holy to visible neutral or hostile enemies inside. Damage is fixed when cast; no crits, combo points or attack procs. Ticks begin this turn before weapon swings and enemy actions. Each tick replays the 1.5-second ground flash; the player's current tile always keeps its player art. No damage reduction; one turn. |
 | Divine Shield | 20 | 1 | 30* | 3* | Self | 3 | 200c | C(1,4) | Player | Active self buff. Immune to incoming damage for 3 turns; deal 30% less damage while active. Guardian's Favor changes duration to 4 turns and cooldown from 30 to 20. Weapon timing continues. |
-| Heart of the Crusader | - | - | - | 10 | - | 4 | 235c | - | - | Passive. Landed Judgement gives +3% critical chance against that enemy for 10 turns. |
+| Heart of the Crusader | - | - | - | * | - | 4 | 235c | - | - | Passive. Judgement's landed verdict leaves its living target vulnerable until your next landed ordinary melee strike (either hand) or physical melee ability. That strike adds 25% of the striking hand's weapon damage as Holy, bypassing armor and using current damage buffs and level differences; off-hand damage uses its normal 50%/75% penalty. No additional crit roll, rage, combo points, Art of War progress or attack procs. Misses, dodges, ranged attacks, bonus strikes and summons do not consume it. Refreshes without stacking, persists until used or target death, and is saved. Replaces the former critical-chance debuff. |
 | Pursuit of Justice | - | - | - | - | - | 4 | 305c | - | - | Passive. +20% movement credit: periodically move an extra tile in the chosen direction, stopping at obstacles. |
 | Guardian's Favor | - | - | - | - | - | 5 | 370c | - | - | Passive. Divine Shield cooldown is 10 turns shorter and its duration is 1 turn longer. |
 

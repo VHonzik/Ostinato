@@ -64,7 +64,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   rather than adding both abilities at full strength. Seal of Command is an
   always-on learned passive. Execute and Judgement do not spend combo points.
 - Warrior supplies physical burst, rage, execution and strength through taking damage.
-  Enrage rewards surviving enemy hits; passive Recklessness trades more incoming damage
+  Enrage rewards surviving enemy hits; passive Death Wish trades more incoming damage
   for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
   Shaman retains its attack-haste passive. A long-cast,
   damage-only Lava Burst replaces Earth Shock alongside starter Lightning Shield. Maelstrom Weapon builds

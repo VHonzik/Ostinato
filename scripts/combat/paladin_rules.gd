@@ -34,6 +34,29 @@ static func covers(world: GridWorld, tile: Vector2i) -> bool:
 		and world.has_sight(center, tile))
 
 
+static func melee_vulnerability(world: GridWorld, event: AttackEvent) -> void:
+	var target := event.target
+	if (not event.landed() or event.school != AttackEvent.School.PHYSICAL
+		or not event.is_primary() or GridWorld.tile_distance(world.player_tile, target.tile) > 1
+		or not target.debuffs.has(&"heart_of_the_crusader_1")):
+		return
+	target.debuffs.erase(&"heart_of_the_crusader_1")
+	var skill := world.hero.find_skill(&"heart_of_the_crusader_1")
+	if skill == null or not target.alive:
+		return
+	var weapon := (world.hero.off_hand_melee() if event.hand == AttackEvent.Hand.OFF
+		else world.hero.melee)
+	var roll := world.combat_random.randf()
+	var raw := MeleeRules.weapon_damage(weapon, roll)
+	if event.hand == AttackEvent.Hand.OFF:
+		raw *= (HeroState.BASE_OFF_HAND_DAMAGE_PERCENT
+			+ ClassToolkitRules.magnitude(world.hero, &"ambidexterity_1")) / 100.0
+	var value := MeleeRules.round_weapon_damage(raw * skill.weapon_multiplier
+		* ClassToolkitRules.damage_multiplier(world.hero)
+		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level), weapon, roll)
+	SpellEffects.damage(world, target, value, skill.title, world.turn_count)
+
+
 static func tick(world: GridWorld) -> void:
 	if world.is_terminal():
 		return
@@ -63,6 +86,7 @@ static func tick(world: GridWorld) -> void:
 	if world.turn_count < int(ground.next_tick):
 		return
 	ground.next_tick += 1
+	world.consecration_ticked.emit()
 	for target in world.actors:
 		if (not target.alive or target.relationship == GridActor.Relationship.FRIENDLY
 			or not covers(world, target.tile)):
