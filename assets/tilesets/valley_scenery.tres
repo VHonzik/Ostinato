@@ -21,7 +21,6 @@ texture = ExtResource("1_t2bpl")
 1:4/next_alternative_id = 2
 1:4/0 = 0
 1:4/0/custom_data_0 = "boulder"
-1:4/0/custom_data_1 = true
 1:4/1 = 1
 1:4/1/custom_data_0 = "small_rock"
 2:4/0 = 0
