@@ -106,6 +106,8 @@ def blocked(cells, metric):
 
 
 def write_csv(path, rows):
+    if not rows:
+        return
     with path.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
@@ -116,6 +118,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("results", type=Path, nargs="+")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--all-only", action="store_true",
+                        help="Current full-unlock scenario: all kits, with/no gifts baselines")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     rows, setups, replayed = [], [], 0
@@ -124,8 +128,10 @@ def main():
         setups.append(result["setup"])
         rows.extend(result["rows"])
         replayed += result["replayed"]
-    assert len({key(r) for r in rows if r["phase"] == "baseline"}) == 90
+    expected_baselines = 12 if args.all_only else 90
+    assert len({key(r) for r in rows if r["phase"] == "baseline"}) == expected_baselines
     baselines = {key(r): r for r in rows if r["phase"] == "baseline"}
+    assert len(baselines) == sum(r["phase"] == "baseline" for r in rows)
     metric_names = list(metrics(rows[0]["fights"][0]))
     baseline_summary, baseline_cells, damage_sources = [], [], []
     for build in dict.fromkeys(r["build"] for r in baselines.values()):
@@ -146,7 +152,7 @@ def main():
             result = win_estimate(values) if name == "win_percent" else estimate(values)
             for field in ("mean", "low", "high"):
                 record[name + "_" + field] = result[field]
-        for source in ("Spirit Hunt", "Victory Rush", "Potion", "Out-of-combat regeneration"):
+        for source in ("Feral Spirit", "Spirit Hunt", "Victory Rush", "Potion", "Out-of-combat regeneration"):
             record["heal_" + source] = statistics.mean(f["healing"].get(source, 0)
                                                        for f in cell["fights"])
         baseline_cells.append(record)
@@ -223,14 +229,19 @@ def main():
     for row in ablations:
         if row["build"] != "All":
             continue
-        own = native[row["id"]]
-        record = dict(passive=row["passive"], native_kit=own["build"],
+        own = native.get(row["id"])
+        record = dict(passive=row["passive"], native_kit=own["build"] if own else "Not tested",
                       weapon_scope="DW only" if row["strata"] == 2 else "All three weapons")
         for label, source, metric, sign in (
                 ("native_added_boss_hp", own, "boss_damage", 1),
                 ("all_added_damage_per_turn", row, "damage_per_turn", 1),
                 ("all_prevented_player_hp_loss", row, "damage_taken", -1),
                 ("all_added_effective_healing", row, "healing", 1)):
+            if source is None:
+                record[label] = ""
+                record[label + "_95ci"] = ""
+                record[label + "_holm_p"] = ""
+                continue
             low = source[metric + ("_low" if sign == 1 else "_high")] * sign
             high = source[metric + ("_high" if sign == 1 else "_low")] * sign
             record[label] = round(sign * source[metric + "_mean"], 3)
@@ -240,12 +251,14 @@ def main():
     write_csv(args.output / "passive_summary.csv", summary)
     # Save an analysis manifest, not a validation report.
     manifest = dict(inputs=[str(p) for p in args.results],
-                    entry_note="Prepared rage is set to 90 before resolving maintenance buffs; known Battle Shout adds 10, so Warrior-containing builds start at 100. Earlier result setup prose says 90 without this distinction; simulation behavior is identical.",
+                    entry_note=(setups[0]["entry"] if args.all_only else
+                                "Prepared rage is set to 90 before resolving maintenance buffs; known Battle Shout adds 10, so Warrior-containing builds start at 100. Earlier result setup prose says 90 without this distinction; simulation behavior is identical."),
                     fights=sum(len(r["fights"]) for r in rows),
                     baseline_fights=sum(len(r["fights"]) for r in baselines.values()),
                     plain_replays=replayed, tested_passives=len({r["id"] for r in ablations}),
                     hypotheses=len(hypotheses),
-                    method="Equal-weight weapon/entry strata; pair by seed and average strata within seed. Approximate paired Student-t 95% effect CIs; baseline win rates use Wilson-style bounds with independent seed blocks as n (binomial variance envelope for pooled fractional blocks). One global Holm correction over six primary outcomes and both kit contexts. Deltas are FULL minus REMOVED. Positive damage/healing/wins means more with passive; negative taken/turns means less with passive. Raw incoming damage, class-only healing and end HP exploratory, no corrected p. CIs are unadjusted; correlated RNG streams can diverge after removal. Effects conditional on fixed baseline-selected bot. Zero observed effect is not proof of no gameplay value.",
+                    contexts="All four kits with gifts only" if args.all_only else "Native and All",
+                    method="Equal-weight weapon/entry strata; pair by seed and average strata within seed. Approximate paired Student-t 95% effect CIs; baseline win rates use Wilson-style bounds with independent seed blocks as n (binomial variance envelope for pooled fractional blocks). One global Holm correction over six primary outcomes and every tested kit context. Deltas are FULL minus REMOVED. Positive damage/healing/wins means more with passive; negative taken/turns means less with passive. Raw incoming damage, class-only healing and end HP exploratory, no corrected p. CIs are unadjusted; correlated RNG streams can diverge after removal. Effects conditional on the fixed bot. Zero observed effect is not proof of no gameplay value.",
                     skipped=setups[0]["passives"])
     (args.output / "analysis.json").write_text(json.dumps(manifest, indent=2) + "\n",
                                               encoding="utf-8")

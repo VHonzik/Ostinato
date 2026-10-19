@@ -21,9 +21,9 @@ const WARRIOR_SKILLS: Array[StringName] = [
 const STARTER_SKILLS: Dictionary = {
 	"lightning_shield_1": {
 		"title": "Lightning Shield", "class_tab": "Shaman", "training_level": 1,
-		"rage_cost": 0, "cast_seconds": 1.0, "duration": 30, "minimum": 10,
+		"rage_cost": 0, "cast_seconds": 1.0, "duration": 30, "minimum": 15, "maximum": 6,
 		"family": "lightning_shield", "effect": "ARMOR", "target": "SELF", "school": 3,
-		"detail": "Three Nature-damage charges for 30 turns. At most one discharge per 3 turns. Refreshing counts as a use."
+		"detail": "Six charges of 15 base Nature damage for 30 turns. At most one discharge per 3 turns. Refreshing counts as a use."
 	},
 	"seal_of_command_1": {
 		"title": "Seal of Command", "class_tab": "Paladin",
@@ -35,16 +35,17 @@ const STARTER_SKILLS: Dictionary = {
 	"judgement_1": {
 		"title": "Judgement", "class_tab": "Paladin", "training_level": 1,
 		"rage_cost": 20, "cast_seconds": 1.0, "range_tiles": 2, "cooldown_seconds": 6,
-		"weapon_multiplier": 1.5, "delay_turns": 3, "family": "judgement", "school": 1,
+		"weapon_multiplier": 1.5, "minimum": 35, "delay_turns": 3, "family": "judgement", "school": 1,
 		"effect": "JUDGEMENT", "target": "ENEMY",
-		"detail": "Requires learned Seal of Command and an equipped weapon setup. Judge the engaged target for 150% weapon damage as Holy after 3 further turns. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; fixed 6-turn cooldown."
+		"detail": "Requires learned Seal of Command and an equipped weapon setup. Judge the engaged target for 150% weapon damage plus 35 as Holy after 3 further turns. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; fixed 6-turn cooldown."
 	},
 	"eviscerate_1": {
 		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,
 		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
-		"weapon_multiplier": 0.5, "minimum": 4, "family": "eviscerate",
+		"weapon_multiplier": 0.5, "minimum": 4, "coefficient": 0.2, "rage_generated": 15,
+		"family": "eviscerate",
 		"effect": "TOOLKIT", "target": "ENEMY",
-		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 50% weapon damage plus 4 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. Finisher refunds happen once after spending. Builds no attack points. One turn, no cooldown; weapon timing continues."
+		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 50% weapon damage plus 4 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. After spending, has a 20% chance per point spent to refund 15 rage (guaranteed at five points), including on a miss. Refunds happen once; no combo points are refunded. Builds no attack points. One turn, no cooldown; weapon timing continues."
 	},
 	"relentless_assault_1": {
 		"title": "Relentless Assault", "class_tab": "Rogue", "training_level": 1,

@@ -272,10 +272,10 @@ func test_paladin_farewell_requires_every_skill_and_awards_banner_once_then_rese
 	_beside(world, trainer)
 	assert_false(world.can_receive_war_banner(trainer))
 	for skill in SkillDefinition.trainer_skills(&"Paladin"):
-		if skill.id != &"sacred_duty_1":
+		if skill.id != &"guardians_favor_1":
 			world.hero.learn_skill(skill)
 	assert_false(world.can_receive_war_banner(trainer))
-	world.hero.learn_skill(SkillDefinition.catalog(&"sacred_duty_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"guardians_favor_1"))
 	var menu := _menu(session)
 	menu.open_conversation(trainer)
 	var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)

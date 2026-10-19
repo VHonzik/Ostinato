@@ -105,8 +105,6 @@ static func _judgement(world: GridWorld, target: GridActor) -> void:
 	if target.alive and ClassToolkitRules.has(world.hero, &"heart_of_the_crusader_1"):
 		target.debuffs["crusader_crit"] = {"until": world.turn_count + 11,
 			"bonus": ClassToolkitRules.magnitude(world.hero, &"heart_of_the_crusader_1")}
-	if ClassToolkitRules.proc(world, &"divine_purpose_1"):
-		ClassToolkitRules.apply(world, &"divine_purpose_1", {"charges": 1})
 
 
 static func _maelstrom(world: GridWorld, event: AttackEvent) -> void:
@@ -132,5 +130,5 @@ static func _windfury(world: GridWorld, event: AttackEvent) -> void:
 		enchant.ready = world.turn_count + 3
 		for index in range(2):
 			ClassToolkitRules.bonus_strike(world, event.target, false,
-				1.0 + ClassToolkitRules.magnitude(world.hero, &"elemental_weapons_1") / 100.0,
+				SkillDefinition.catalog(&"windfury_weapon_1").weapon_multiplier,
 				"Windfury", SkillDefinition.catalog(&"windfury_weapon_1"))

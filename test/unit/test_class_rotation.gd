@@ -221,9 +221,9 @@ func test_banked_maelstrom_saves_strictly_and_death_clears_stacks_but_retains_le
 	assert_not_null(game.world.hero.find_skill(&"lava_burst_1"))
 
 
-func test_sacred_duty_strengthens_only_empowered_judgement_and_commits_damage_at_cast() -> void:
+func test_art_of_war_strengthens_only_empowered_judgement_and_commits_damage_at_cast() -> void:
 	var world := _world()
-	for id in [&"seal_of_command_1", &"judgement_1", &"art_of_war_1", &"sacred_duty_1"]:
+	for id in [&"seal_of_command_1", &"judgement_1", &"art_of_war_1"]:
 		world.hero.learn_skill(SkillDefinition.catalog(id))
 	ClassToolkitRules.apply(world, &"art_of_war_1", {"critical_ready": 1})
 	world.hero.melee.hit = 100
@@ -233,16 +233,23 @@ func test_sacred_duty_strengthens_only_empowered_judgement_and_commits_damage_at
 	world.hero.melee.attack_power = 0
 	var enemy := _enemy(world)
 	assert_true(world.cast_skill(&"judgement_1", enemy))
-	assert_eq(int(enemy.debuffs[&"judgement_1"].damage), 68)
+	assert_eq(int(enemy.debuffs[&"judgement_1"].damage), 146)
 	assert_eq(int(enemy.debuffs[&"judgement_1"].critical), 1)
 	assert_false(world.hero.buffs.has(&"art_of_war_1"))
-	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
-	world.hero.learned_skills.erase(world.hero.find_skill(&"sacred_duty_1"))
+	world.hero.learned_skills.erase(world.hero.find_skill(&"art_of_war_1"))
 	world.hero.melee.damage_min = 1000
 	world.hero.melee.damage_max = 1000
 	for index in range(3):
 		world.wait_turn()
-	assert_eq(enemy.health, 10000 - 68)
+	assert_eq(enemy.health, 10000 - 146)
+	world.hero.melee.damage_min = 20
+	world.hero.melee.damage_max = 20
+	world.hero.melee.critical = 100
+	world.hero.melee.attack_power = 0
+	var ordinary := ClassToolkitRules.magic_outcome(world, enemy,
+		world.hero.find_skill(&"judgement_1"))
+	assert_true(ordinary.critical())
+	assert_eq(ordinary.amount, 130, "An ordinary random critical stays at 200% of 65.")
 
 
 func test_kings_shout_stats_rebuild_on_load_and_reject_copied_stats_or_expired_shout() -> void:
@@ -269,7 +276,7 @@ func test_kings_shout_stats_rebuild_on_load_and_reject_copied_stats_or_expired_s
 	var expired := snapshot.duplicate(true)
 	expired.buffs.battle_shout_1.until = game.world.turn_count
 	assert_null(SaveCodec.restore(expired, false))
-	for id in ["seal_of_command_1", "blessing_of_kings_1", "sacred_duty_1"]:
+	for id in ["seal_of_command_1", "blessing_of_kings_1"]:
 		var stale := snapshot.duplicate(true)
 		stale.buffs[id] = {"armor": 0, "until": 0}
 		assert_null(SaveCodec.restore(stale, false))

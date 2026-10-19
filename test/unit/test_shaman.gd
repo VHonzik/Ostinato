@@ -194,10 +194,9 @@ func test_totem_summon_save_keeps_health_and_singleton_without_learning_then_loo
 	assert_false(game.world.hero.cooldowns.has(&"earth_elemental"))
 
 
-func test_buffed_wolf_damage_also_improves_spirit_hunt_healing() -> void:
+func test_wolves_inherently_heal_from_actual_damage_excluding_overkill() -> void:
 	var world := _world()
 	world.hero.learn_skill(SkillDefinition.catalog(&"feral_spirit_1"))
-	world.hero.learn_skill(SkillDefinition.catalog(&"spirit_hunt_1"))
 	world.hero.melee.damage_min = 20.0
 	world.hero.melee.damage_max = 20.0
 	world.hero.melee.attack_power = 0
@@ -211,4 +210,10 @@ func test_buffed_wolf_damage_also_improves_spirit_hunt_healing() -> void:
 	world.hero.health = 10
 	ClassToolkitRules.act_wolf(world, wolf)
 	assert_eq(enemy.max_health - enemy.health, 15)
-	assert_eq(world.hero.health, 17, "Spirit Hunt heals from the stronger actual hit.")
+	assert_eq(world.hero.health, 17, "Feral Spirit inherently heals for half its actual hit.")
+	enemy.health = 3
+	world.hero.health = 10
+	wolf.swing.remaining = 0
+	ClassToolkitRules.act_wolf(world, wolf)
+	assert_false(enemy.alive)
+	assert_eq(world.hero.health, 11, "Overkill grants only half the 3 HP actually removed, rounded down.")

@@ -54,7 +54,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Points persist across targets and encounters and reset on death. Eviscerate is the
   starter active finisher: it requires a melee target and spends all held points.
   Learned Slice and Dice passively grants attack haste from the same spent points,
-  including on a missed finisher. Finisher refunds happen once after spending.
+  including on a missed finisher. Eviscerate's intrinsic rage refund happens once
+  after spending; it never refunds combo points.
   Judgement retains a delayed verdict without stacks or
   damage accumulation. It commits damage and hit/critical results on casting and
   delivers its attack rewards on impact, without retargeting. Consecration adds fixed
@@ -72,13 +73,16 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   stun and dependent passives are removed or replaced. Shaman supplies free
   weapon/shield preparation, reactive damage and a distinct banked spell payoff.
   Earth Elemental is a mobile, lasting summon that draws nearby engaged enemies
-  away from the player; only one may be alive. Spirit wolves supply damage and healing.
+  away from the player; only one may be alive. Spirit wolves inherently supply damage
+  and healing. Shield strength, Windfury damage and wolf healing belong to their
+  active abilities rather than separate numerical upgrade passives.
   Strength of Earth Totem and Elemental Warding are removed.
   Paladin supplies Holy damage,
   buffs and guaranteed-critical payoffs. Passive Blessing of Kings replaces Might:
   active Battle Shout also grants flat Strength, Agility and Stamina.
   This depends on learned Battle Shout; Seal needs no application or refresh.
-  Benediction is removed.
+  Judgement includes its flat damage bonus; Art of War includes its stronger
+  empowered critical. Divine Purpose and Eye for an Eye are removed.
   Rogue supplies combo points, dual wielding,
   speed, poisons and finishers. Opportunity is removed. Seal Fate and Bandit's Guile
   reward qualifying retained attacks from other classes. The milestone covers the full v0.1 toolkit.
@@ -125,7 +129,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Art of War counts at most one Holy event per attack action. Shaman Flurry grants
   attack-haste charges. Bonus strikes cannot crit or trigger primary
   attack hooks. Spirit wolves follow the selected enemy;
-  Spirit Hunt heals from their actual damage taken by the target.
+  their own hits heal from actual damage taken by the target, excluding overkill.
 - Consumable triggered procs persist until used or death. Timed buffs persist between
   encounters until their duration expires. Timed hero buffs expire at
   the advanced world-turn boundary after the committed action's effect. Expire timed

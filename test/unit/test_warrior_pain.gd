@@ -235,7 +235,7 @@ func test_recklessness_boosts_physical_attacks_but_not_holy_or_nature_damage() -
 	assert_eq(before - enemy.health, 48, "Physical bonus does not amplify Fire damage.")
 	before = enemy.health
 	ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1"))
-	assert_eq(before - enemy.health, 150, "Physical bonus does not amplify Holy damage.")
+	assert_eq(before - enemy.health, 185, "Physical bonus does not amplify Holy damage, including its flat 35.")
 
 
 func test_pain_passives_work_in_retained_classes_while_shaman_keeps_flurry() -> void:

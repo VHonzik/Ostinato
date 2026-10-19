@@ -1,6 +1,66 @@
 extends GutTest
 
 
+func test_eviscerate_intrinsic_refund_scales_with_spent_points_without_refunding_points() -> void:
+	var generator := RandomNumberGenerator.new()
+	var controlled_seed := -1
+	for seed_value in range(1000):
+		generator.seed = seed_value
+		var roll := generator.randf()
+		if roll > 0.25 and roll < 0.35:
+			controlled_seed = seed_value
+			break
+	assert_ne(controlled_seed, -1)
+	for points in [1, 2, 5]:
+		var world := _world(&"Rogue")
+		_learn(world, [&"eviscerate_1"])
+		world.hero.rage = 10
+		world.hero.combo_points = 0
+		world.combat_random.seed = controlled_seed
+		ClassToolkitRules.finish(world, points, world.hero.find_skill(&"eviscerate_1"))
+		assert_eq(world.hero.rage, 10 if points == 1 else 25,
+			"The same ~30% roll fails at one point, succeeds at two; five guarantees the refund.")
+		assert_eq(world.hero.combo_points, 0)
+
+
+func test_terminal_eviscerate_kill_spends_points_and_rage_without_late_refunds() -> void:
+	var world := _world(&"Rogue")
+	_learn(world, [&"eviscerate_1", &"slice_and_dice_1"])
+	var enemy := _enemy(world)
+	enemy.stalker = true
+	enemy.health = 1
+	world.stalkers_arrived = 1
+	world.hero.combo_points = 5
+	world.hero.rage = 20
+	assert_true(world.cast_skill(&"eviscerate_1", enemy))
+	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
+	assert_eq(world.hero.rage, 5, "Victory stops the otherwise guaranteed five-point refund.")
+	assert_eq(world.hero.combo_points, 0)
+	assert_false(world.hero.buffs.has(&"slice_and_dice_1"))
+
+
+func test_folded_passives_are_absent_from_training_and_rejected_in_saved_learning_or_buffs() -> void:
+	var session := GameSession.new()
+	session.development_build = false
+	session.new_game(97)
+	var snapshot := SaveCodec.capture(session)
+	var passive_count := 0
+	for category in ClassSkillData.PLAYABLE_CLASSES:
+		for skill in SkillDefinition.trainer_skills(category):
+			passive_count += int(skill.effect == SkillDefinition.Effect.PASSIVE)
+	assert_eq(passive_count, 32)
+	for id in ["improved_shields_1", "elemental_weapons_1", "spirit_hunt_1",
+		"sanctity_of_battle_1", "sacred_duty_1", "divine_purpose_1", "eye_for_an_eye_1",
+		"relentless_strikes_1", "ruthlessness_1"]:
+		assert_null(SkillDefinition.catalog(StringName(id)))
+		var stale_learning := snapshot.duplicate(true)
+		stale_learning.learned.append(id)
+		assert_null(SaveCodec.restore(stale_learning, false))
+		var stale_buff := snapshot.duplicate(true)
+		stale_buff.buffs[id] = {"armor": 0, "until": 0}
+		assert_null(SaveCodec.restore(stale_buff, false))
+
+
 func test_five_point_noncritical_eviscerate_leaves_both_wolf_types_alive() -> void:
 	for identity in [299, 69]:
 		var world := _world(&"Rogue")
@@ -59,7 +119,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_require_level_and_gold_preserving_full_hotbar() -> void:
-	var counts := {&"Warrior": 15, &"Shaman": 11, &"Paladin": 15, &"Rogue": 16}
+	var counts := {&"Warrior": 15, &"Shaman": 8, &"Paladin": 11, &"Rogue": 14}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -136,7 +196,7 @@ func test_holy_and_fire_actives_share_level_penalties_while_bypassing_armor() ->
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
-		var expected := 36 if identifier == &"lava_burst_1" else 23
+		var expected := 36 if identifier == &"lava_burst_1" else 49
 		assert_true(world.cast_skill(identifier, enemy))
 		while world.pending_skill != null:
 			world.hero.melee.critical = -100
@@ -160,7 +220,7 @@ func test_level_penalties_apply_once_to_seal_and_lightning_shield_damage() -> vo
 		"charges": 3, "ready": 0}
 	var before := enemy.health
 	ClassToolkitRules.discharge(world, enemy, true)
-	assert_eq(before - enemy.health, 7, "Reactive Nature damage also respects the level gap.")
+	assert_eq(before - enemy.health, 11, "Reactive Nature damage also respects the level gap.")
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 2)
 
 
@@ -186,19 +246,15 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 	world.discard()
 
 
-func test_sanctity_adds_holy_damage_without_changing_the_base_judgement() -> void:
-	for developed in [false, true]:
-		var world := _world()
-		var learned: Array[StringName] = [&"judgement_1", &"seal_of_command_1"]
-		if developed:
-			learned.append(&"sanctity_of_battle_1")
-		_learn(world, learned)
-		var enemy := _enemy(world)
-		enemy.melee.armor = 100000
-		assert_true(world.cast_skill(&"judgement_1", enemy))
-		for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
-			world.wait_turn()
-		assert_eq(enemy.max_health - enemy.health, 65 if developed else 30)
+func test_judgement_inherently_adds_flat_holy_damage_and_bypasses_armor() -> void:
+	var world := _world()
+	_learn(world, [&"judgement_1", &"seal_of_command_1"])
+	var enemy := _enemy(world)
+	enemy.melee.armor = 100000
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
+		world.wait_turn()
+	assert_eq(enemy.max_health - enemy.health, 65, "150% of 20 plus 35 Holy damage.")
 
 
 func test_main_hand_and_active_points_share_one_turn_even_with_many_due_swings() -> void:
@@ -307,7 +363,7 @@ func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> voi
 	var world := _world()
 	var procs: Array[StringName] = [&"shaman_flurry_1",
 		&"battle_trance_1", &"sudden_death_1", &"juggernaut_1", &"maelstrom_weapon_1",
-		&"art_of_war_1", &"divine_purpose_1"]
+		&"art_of_war_1"]
 	_learn(world, procs)
 	_learn(world, [&"wrecking_crew_1", &"vengeance_1", &"bandits_guile_1"])
 	for identifier in procs:
@@ -441,16 +497,16 @@ func test_juggernaut_changes_charge_cooldown_and_guarantees_only_one_mortal_stri
 	assert_false(world.hero.buffs.has(&"juggernaut_1"))
 
 
-func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_points_or_xp() -> void:
+func test_inherent_shield_and_static_shock_consume_charges_without_extra_rage_points_or_xp() -> void:
 	var world := _world(&"Shaman")
-	_learn(world, [&"lightning_shield_1", &"improved_shields_1", &"static_shock_1", &"relentless_assault_1"])
+	_learn(world, [&"lightning_shield_1", &"static_shock_1", &"relentless_assault_1"])
 	var enemy := _enemy(world)
 	assert_true(world.cast_skill(&"lightning_shield_1"))
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 6)
 	world.hero.find_skill(&"static_shock_1").coefficient = 1.0
 	var rage := world.hero.rage
 	AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"hit", 20))
-	assert_eq(enemy.health, 9985, "50% improvement increases shield damage from 10 to 15.")
+	assert_eq(enemy.health, 9985, "Lightning Shield deals 15 without an upgrade passive.")
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 5)
 	ClassToolkitRules.discharge(world, enemy, true)
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 4)
@@ -502,7 +558,7 @@ func test_removed_shaman_abilities_are_unavailable() -> void:
 
 func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_internal_cooldown() -> void:
 	var world := _world()
-	_learn(world, [&"windfury_weapon_1", &"elemental_weapons_1", &"relentless_assault_1", &"sudden_death_1"])
+	_learn(world, [&"windfury_weapon_1", &"relentless_assault_1", &"sudden_death_1"])
 	world.hero.find_skill(&"sudden_death_1").coefficient = 1
 	var enemy := _enemy(world)
 	assert_true(world.cast_skill(&"windfury_weapon_1"))
@@ -522,9 +578,9 @@ func test_windfury_bonus_hits_cannot_recurse_or_generate_rage_points_and_have_in
 	assert_false(world.hero.buffs.has(&"sudden_death_1"), "Windfury cannot trigger Sudden Death.")
 
 
-func test_wolf_pair_placement_is_atomic_replaces_expires_and_spirit_hunt_heals_actual_damage() -> void:
+func test_wolf_pair_placement_is_atomic_replaces_expires_and_heals_actual_damage() -> void:
 	var world := _world(&"Shaman")
-	_learn(world, [&"feral_spirit_1", &"spirit_hunt_1"])
+	_learn(world, [&"feral_spirit_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
 	world.auto_attack_target = enemy
 	world.hero.health = 1
@@ -615,41 +671,35 @@ func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_judgement_o
 
 func test_judgement_impact_rewards_preserve_passive_seal_and_haste_leaves_cooldown_fixed() -> void:
 	var world := _world(&"Paladin")
-	_learn(world, [&"seal_of_command_1", &"judgement_1", &"divine_purpose_1",
-		&"sacred_duty_1", &"heart_of_the_crusader_1", &"sanctity_of_battle_1"])
+	_learn(world, [&"seal_of_command_1", &"judgement_1", &"battle_trance_1",
+		&"heart_of_the_crusader_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
-	world.hero.find_skill(&"divine_purpose_1").coefficient = 1
+	world.hero.melee.critical = 100
 	world.hero.haste = 2
 	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(world.hero.cooldowns.judgement - world.turn_count, 6)
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"), "Rewards wait for the verdict.")
+	assert_false(world.hero.buffs.has(&"battle_trance_1"), "Rewards wait for the verdict.")
 	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
-	assert_true(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_false(world.hero.buffs.has(&"sacred_duty_1"), "Sacred Duty no longer supplies readiness.")
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
 	assert_eq(int(enemy.debuffs.crusader_crit.bonus), 3)
-	world.hero.find_skill(&"divine_purpose_1").coefficient = 0
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
 	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(world.hero.rage, 0)
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
+	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 	assert_true(ClassToolkitRules.has(world.hero, &"seal_of_command_1"))
 
 
-func test_vengeance_caps_three_stacks_and_eye_reflection_does_not_build_combo_points() -> void:
+func test_vengeance_caps_three_stacks_without_extra_combo_points() -> void:
 	var world := _world()
-	_learn(world, [&"vengeance_1", &"eye_for_an_eye_1", &"relentless_assault_1"])
+	_learn(world, [&"vengeance_1", &"relentless_assault_1"])
 	var enemy := _enemy(world)
 	for index in range(4):
 		AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"critical", 20))
 	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.09, 0.001)
-	ClassToolkitRules.incoming(world, enemy, 100, true)
-	assert_eq(enemy.health, 9970)
-	assert_eq(world.hero.combo_points, 1, "Only the primary main-hand hits build a base point.")
-	world.hero.health = 0
-	ClassToolkitRules.incoming(world, enemy, 100, true)
-	assert_eq(enemy.health, 9970, "A lethal hit cannot retaliate.")
+	assert_eq(enemy.health, 10000)
+	assert_eq(world.hero.combo_points, 1, "Only the primary hits build one base point per turn.")
 
 
 func test_pursuit_of_justice_accumulates_extra_grid_steps_and_stops_at_obstacles() -> void:
@@ -726,7 +776,7 @@ func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand
 
 func test_eviscerate_spends_on_miss_grants_haste_then_refunds_once_and_reduces_cooldowns() -> void:
 	var world := _world(&"Rogue")
-	_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1", &"ruthlessness_1", &"relentless_strikes_1", &"restless_blades_1"])
+	_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1", &"restless_blades_1"])
 	var enemy := _enemy(world)
 	assert_false(world.cast_skill(&"eviscerate_1", enemy))
 	assert_false(world.cast_skill(&"slice_and_dice_1"))
@@ -734,12 +784,10 @@ func test_eviscerate_spends_on_miss_grants_haste_then_refunds_once_and_reduces_c
 	world.hero.combo_points = 5
 	world.hero.rage = 20
 	world.hero.melee.hit = -1000
-	world.hero.find_skill(&"ruthlessness_1").coefficient = 1
-	world.hero.find_skill(&"relentless_strikes_1").coefficient = 1
 	world.hero.cooldowns.charge = 10
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(enemy.health, 10000)
-	assert_eq(world.hero.combo_points, 1)
+	assert_eq(world.hero.combo_points, 0, "Finishers no longer refund combo points.")
 	assert_eq(world.hero.rage, 20)
 	assert_eq(world.hero.cooldowns.charge, 7)
 	assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].haste_percent), 30)
@@ -803,7 +851,10 @@ func test_eviscerate_scales_damage_and_passive_haste_duration_with_the_same_spen
 		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].until) - world.turn_count,
 			5 + 3 * points)
 		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].haste_percent), 30)
-		assert_eq(world.hero.rage, 85, "Only Eviscerate costs rage.")
+		if points == 5:
+			assert_eq(world.hero.rage, 100, "Five points refund the 15 rage spent.")
+		else:
+			assert_true(world.hero.rage in [85, 100], "Pay 15 rage, with at most one 15-rage refund.")
 		assert_eq(world.turn_count, 1)
 
 
@@ -873,7 +924,7 @@ func test_eviscerate_kill_prevents_a_due_swing_on_the_dead_target() -> void:
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_false(enemy.alive)
 	assert_eq(world.hero.combo_points, 0, "No ordinary swing builds points after the kill.")
-	assert_eq(world.hero.rage, 33, "One cast cost and out-of-combat decay; no swing rage.")
+	assert_eq(world.hero.rage, 48, "The five-point refund offsets the cost; only out-of-combat decay remains.")
 	assert_true(world.hero.buffs.has(&"slice_and_dice_1"))
 	assert_eq(world.turn_count, 1)
 
@@ -1082,7 +1133,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 57)
+	assert_eq(restored.hero.learned_skills.size(), 48)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1098,7 +1149,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 57)
+	assert_eq(game.world.hero.learned_skills.size(), 48)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

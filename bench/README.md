@@ -13,6 +13,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario paladin
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario rogue
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-passives -Shard 0
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -Shard 0
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -BaselineOnly
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario priorities -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario accessories
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot -Smoke
@@ -26,6 +28,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `paladin` | Full Paladin, Warrior + Paladin and all four kits; single enemies, groups and Stalker, three weapons and cold/prepared entry. Independent pilots select Holy-first, physical-first or Holy-first without ground. Damage reconciles to enemy HP and sample fights replay on plain `GridWorld`. |
 | `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `stalker-passives` | All 15 retained-kit combinations against Stalker, then one-passive removals in its own kit and all four kits. Records actual player healing/losses as well as boss damage. 200 baseline seeds, 100 matched removal seeds, independent 40-seed policy pilots; three weapons and cold/prepared entry. Use shards 0/1/2 sequentially. |
+| `stalker-full` | Current coordinated rotation with all four kits fully learned, against Stalker only. 200 baseline seeds with and without trainer gifts; 100 paired seeds per passive removal with gifts. Three weapons, cold/live prepared entry; use shards 0/1/2 sequentially. |
 | `priorities` | Live requested priorities on starter Shaman, full Shaman/Paladin, all four three-kit combinations and all kits. Five priority alternatives on all kits; ordinary groups, Stalker, ranged pulls and durable-group/banked-stack stress cases. Cold/live prepared entry, 30 seeds per cell, three weapons; sample fights replay against plain `GridWorld`. |
 | `accessories` | Expected auto-attack damage and physical effective HP for common gear, upgrades and primary stats. No active rotation; `-Smoke` runs the same calculation. |
 | `loot` | Seeded valley loot, obtainable loadouts, estimated auto-attack gains, and a full-route gold budget beside total training costs. |
@@ -117,6 +120,35 @@ Deltas use full kit minus removed passive. Effects are conditional and cannot be
 lower incoming totals can also mean an earlier death, so read wins, damage and turns together.
 
 ## Coordinated rotation comparisons
+
+For current full-unlock passive trials, use `stalker-full`. It inherits the production
+`priorities` intent bot and live preparation below, rather than the older shock/seal
+rotation and constructed 90-rage entry in `stalker-passives`. Gift runs carry all four
+already-earned trainer rewards: use the totem then banner after entering melee, carry
+the charm, and leave the single-target-irrelevant horn unused. Removals keep the gifts
+to avoid confounding a lost passive with lost gift eligibility. The no-gift baseline
+separates reward items from current skill power. Gift timing is fixed, not optimized.
+
+The same five passive exclusions and off-hand restrictions apply as above. Removing
+Seal also disables dependent Judgement; removing Maelstrom suppresses the bot's
+full-stack Lava choice; removing Art of War removes its stronger empowered-crit
+opportunity. Interpret these as dependency-family effects. Every fight checks effective
+HP/healing accounting, including the narrow charm-break event. First three seeds per
+cell replay on plain `GridWorld`. No game rules are overridden.
+
+Use `-BaselineOnly` to skip passive removals and run all 12 baseline cells (2,400
+fights without `-Smoke`). Summarize all three current shards with:
+
+```powershell
+python -B bench/analyze_stalker_passives.py <shard0/result.json> <shard1/result.json> <shard2/result.json> --all-only --output reports/bench/stalker-full/analysis
+```
+
+The analyzer also accepts one unsharded `-BaselineOnly` result with `--all-only`;
+it writes baseline summaries and omits empty passive-removal tables.
+
+Intervals and the global Holm correction use the same seed-blocked method above,
+with only the all-kit context in the family. Native-kit columns are blank in the
+compact summary because this scenario deliberately does not run native kits.
 
 `priority_sim.gd` uses production combat rules. `priority_world.gd` only observes
 active decisions, combo points, Maelstrom stacks and rage. Every measured fight

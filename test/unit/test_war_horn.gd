@@ -105,7 +105,7 @@ func test_horn_cooldown_is_not_reduced_by_finisher_passives() -> void:
 	var world := _world()
 	world.hero.learn_skill(SkillDefinition.catalog(&"restless_blades_1"))
 	world.hero.cooldowns = {"war_horn": 30, "charge": 10}
-	ClassToolkitRules.finish(world, 5)
+	ClassToolkitRules.finish(world, 5, SkillDefinition.catalog(&"eviscerate_1"))
 	assert_eq(world.hero.cooldowns.war_horn, 30)
 	assert_eq(world.hero.cooldowns.charge, 7)
 

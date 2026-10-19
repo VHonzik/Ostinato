@@ -574,7 +574,7 @@ static func _buffs(data: Variant) -> bool:
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
-		if key in ["seal_of_command_1", "blessing_of_kings_1", "sacred_duty_1"]:
+		if key in ["seal_of_command_1", "blessing_of_kings_1"]:
 			return false
 		if key == "maelstrom_weapon_1":
 			if (buff.size() != 3 or not buff.has("charges") or buff.armor != 0

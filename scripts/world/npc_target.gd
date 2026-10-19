@@ -62,7 +62,5 @@ func _break_lucky_charm() -> bool:
 	return false
 
 
-func retaliate(attacker: GridActor, amount: int, critical: bool) -> void:
+func retaliate(attacker: GridActor, amount: int) -> void:
 	ClassSpellEffects.retaliate(_world, attacker, actor, amount)
-	if is_player():
-		ClassToolkitRules.incoming(_world, attacker, amount, critical)

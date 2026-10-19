@@ -290,6 +290,21 @@ provisional. The [bench](../bench/README.md) now compares production rules.
   prior-encounter buff expiry and banked-point entries. The fixed isolated bots do
   not cover these routes or establish final balance or human acceptance.
 
+### Implemented slice — Fewer passive unlocks
+
+- [x] Fold Shaman's shield strength, Windfury damage and wolf healing into their
+  existing actives; fold Judgement's flat damage and stronger Art of War critical
+  into their existing definitions. Preserve fully learned values.
+- [x] Remove Divine Purpose, Eye for an Eye and Ruthlessness. Put the former
+  Relentless Strikes rage refund directly on Eviscerate, including misses, without
+  combo-point refunds. Retain parent learning levels/prices; gift completion uses
+  the smaller catalogues automatically.
+- [x] Update mechanics, trainer/save/retained-effect checks and the current Stalker
+  bench. Revision 32 rejects older saves unchanged, without migration.
+- [ ] Owner playtest: judge stronger parent abilities when first learned, training
+  and gift pacing, wolf healing, empowered verdicts and finisher resource flow.
+  Full-unlock simulations do not settle early progression or human balance acceptance.
+
 ### Current class-identity follow-up — Warrior rage spending
 
 - [x] Replace starter Heroic Strike with Whirlwind and remove Incite and strike-queue

@@ -181,7 +181,7 @@ func test_lightning_shield_can_be_reapplied_and_discharges_grant_no_points() -> 
 	var enemy := _enemy(world)
 	ClassSpellEffects.retaliate(world, enemy, null, 1)
 	assert_lt(enemy.health, enemy.max_health)
-	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 2)
+	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 5)
 	var health := enemy.health
 	ClassSpellEffects.retaliate(world, enemy, null, 1)
 	assert_eq(enemy.health, health, "Discharge cooldown prevents a second proc.")

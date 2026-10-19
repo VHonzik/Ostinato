@@ -117,8 +117,9 @@ combo points from landed direct active attacks and ordinary main-hand hits, acro
 classes and targets, with one base point per world turn. Seal Fate can add an extra point
 on an active crit; off-hand hits and bonus damage grant none. Eviscerate needs points
 and a melee target and spends all held points on its physical attack. Learned Slice
-and Dice adds attack haste using those same spent points, even on a miss. It cannot
-be cast or assigned separately. Opportunity is removed; Seal Fate and Bandit's Guile
+and Dice adds attack haste using those same spent points, even on a miss. Slice and Dice
+cannot be cast or assigned separately. Eviscerate inherently rolls a rage refund after
+spending; combo points are never refunded. Opportunity is removed; Seal Fate and Bandit's Guile
 continue to reward qualifying retained class attacks. Seal of Command is always on
 once learned; it has no cast, refresh or hotbar slot. Blessing of Kings is also passive: active
 Battle Shout grants +2 Strength, Agility and Stamina, without healing when refreshed.
@@ -143,8 +144,11 @@ The elemental follows the player or an
 engaged target and repeatedly taunts nearby engaged hostiles in sight. It lasts until
 killed or Loop reset and blocks resummoning while alive. The gift is once per Loop;
 death removes the item and summon and permits another gift with retained learning.
+Lightning Shield includes its stronger six charges, and Windfury includes its stronger
+bonus strikes without separate upgrade purchases.
 Hands have independent timers; due swings resolve in time order, with main-hand first
-on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy.
+on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy,
+inherently healing you from their actual damage dealt.
 Instant and Deadly Poison cost no rage and become available together at the Rogue trainer; Catalytic
 Venom unlocks later. Casting either coating with dual wield opens a hand picker:
 directions choose main hand, off hand or both; Enter applies, Escape cancels freely.
@@ -187,15 +191,17 @@ Judgement retains its delayed verdict. It fixes damage and hit/critical results 
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings
 and enemy actions. Impact ignores current range and never changes the selected target;
 a target dying early loses its sentence. It casts on the engaged target and its hotbar
-label turns red without learned Seal of Command. Art of War empowers a critical;
-Sacred Duty strengthens that empowered hit. Sanctity adds damage without shortening
-the fixed base cooldown through haste. Existing Holy/critical rewards happen on impact.
+label turns red without learned Seal of Command. Art of War empowers a stronger critical,
+and Judgement includes its flat
+damage bonus without shortening the fixed base cooldown through haste.
+Divine Purpose, Eye for an Eye and combo-point refunds are removed. Existing Holy/critical rewards happen on impact.
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 31, with gear stats rebuilt from equipment on load.
-Revision 30 and older saves are incompatible and left unchanged; start a fresh game.
-This revision changes learned ability IDs and stores banked Maelstrom stacks.
+Current saves are `demo` revision 32, with gear stats rebuilt from equipment on load.
+Revision 31 and older saves are incompatible and left unchanged; start a fresh game.
+This revision removes nine learned passive IDs after folding six effects into their
+parent abilities and removing three effects. No save migration is provided.
 Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
 primary-stat buff fields. Failed writes/loads preserve existing player files.
 Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.

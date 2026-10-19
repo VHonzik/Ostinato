@@ -224,6 +224,8 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			assert(world.consume_item(0))
 			continue
 		var target: GridActor = living[0]
+		if _try_item_action(world, target):
+			continue
 		var choices := _priority_choices(world, target, living, policy)
 		var acted := false
 		for id in choices:
@@ -275,3 +277,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	result.merge(_battle_metrics(world))
 	world.discard()
 	return result
+
+
+func _try_item_action(_world: GridWorld, _target: GridActor) -> bool:
+	return false

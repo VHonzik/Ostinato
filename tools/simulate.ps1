@@ -1,9 +1,10 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'priorities', 'accessories', 'loot', 'loot-rates')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'accessories', 'loot', 'loot-rates')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
+  [switch]$BaselineOnly,
   [ValidateRange(-1, 2)][int]$Shard = -1,
   [string]$Baseline = '',
   [ValidateRange(1, 600)][int]$TimeoutSeconds = 600
@@ -15,6 +16,7 @@ $scriptsByScenario = @{
   paladin = 'paladin_sim.gd'
   rogue = 'rogue_sim.gd'
   'stalker-passives' = 'stalker_passive_sim.gd'
+  'stalker-full' = 'stalker_full_sim.gd'
   priorities = 'priority_sim.gd'
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
@@ -25,7 +27,8 @@ $savedEnvironment = @{}
 $metadata = $null
 $passed = $false
 try {
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'priorities')) { throw '-Shard is only for combat simulations.' }
+  if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -52,6 +55,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Cannot read working tree status.' }
   $metadata = [ordered]@{
     scenario = $Scenario; smoke = [bool]$Smoke; shard = $Shard
+    baseline_only = [bool]$BaselineOnly
     revision = $revision; dirty = $dirty; godot = $ToolVersions.godot.version
     started_utc = [DateTime]::UtcNow.ToString('o'); timeout_seconds = $TimeoutSeconds
     status = 'running'
@@ -88,6 +92,7 @@ try {
   if ($result.Stdout -notmatch "(?m)^Checked $($scripts.Count) scripts\.\r?$") { throw 'Bench script loading did not complete.' }
   $simulationArguments = @('--script', ('res://bench/' + $scriptsByScenario[$Scenario]), '--', "shard=$Shard")
   if ($Smoke) { $simulationArguments += 'smoke' }
+  if ($BaselineOnly) { $simulationArguments += 'baseline_only' }
   $result = Invoke-ToolProcess 'simulation' $engine ($baseArguments + $simulationArguments) $runDirectory $TimeoutSeconds
   Assert-NoUnexpectedDiagnostics $result
   $data = Get-Content -LiteralPath (Join-Path $runDirectory 'result.json') -Raw | ConvertFrom-Json
@@ -126,6 +131,25 @@ try {
     if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete priority matrix.' }
     foreach ($row in $data.rows) {
       if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete priority sample.' }
+    }
+  }
+  if ($Scenario -eq 'stalker-full') {
+    $weaponCount = if ($Shard -eq -1) { 3 } else { 1 }
+    if (@($data.rows | Where-Object phase -eq 'baseline').Count -ne 4 * $weaponCount) {
+      throw 'Incomplete full-unlock Stalker baseline.'
+    }
+    $expected = 0
+    foreach ($passive in @($data.setup.passives | Where-Object { !$_.skip -and !$BaselineOnly })) {
+      $offhandOnly = $passive.id -in @('ambidexterity_1', 'combat_potency_1', 'main_gauche_1', 'catalytic_venom_1')
+      $eligible = if (!$offhandOnly) { $weaponCount } elseif ($Shard -in @(-1, 2)) { 1 } else { 0 }
+      $expected += 2 * $eligible
+    }
+    if (@($data.rows | Where-Object phase -eq 'ablation').Count -ne $expected) {
+      throw 'Incomplete full-unlock Stalker removals.'
+    }
+    foreach ($row in $data.rows) {
+      $count = if ($row.phase -eq 'baseline') { $data.setup.baseline_samples } else { $data.setup.ablation_samples }
+      if ($row.fights.Count -ne $count) { throw 'Incomplete full-unlock sample.' }
     }
   }
   $passed = $true

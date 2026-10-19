@@ -183,19 +183,15 @@ static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefin
 	var weapon_roll := world.combat_random.randf()
 	var raw := (MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
 		if skill.weapon_multiplier != 0.0 else 0.0)
-	var flat_bonus := skill.minimum
-	if skill.family == &"judgement":
-		flat_bonus += magnitude(world.hero, &"sanctity_of_battle_1")
-	var amount := (raw * skill.weapon_multiplier + flat_bonus) * extra * damage_multiplier(world.hero)
+	var amount := (raw * skill.weapon_multiplier + skill.minimum) * extra * damage_multiplier(world.hero)
 	amount *= MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level)
 	# Flat spells reuse a uniform rounding roll without depending on weapon damage bands.
 	var value := (floori(amount) + int(weapon_roll < amount - floori(amount))
 		if skill.weapon_multiplier == 0.0 else
 		MeleeRules.round_weapon_damage(amount, world.hero.melee, weapon_roll))
 	if critical:
-		value *= 2
-		if empowered:
-			value = roundi(value * (1.0 + magnitude(world.hero, &"sacred_duty_1") / 200.0))
+		value = (roundi(value * SkillDefinition.catalog(&"art_of_war_1").critical_damage_percent / 100.0)
+			if empowered else value * 2)
 	return AttackEvent.new(target, skill, &"critical" if critical else &"hit",
 		value, skill.school as AttackEvent.School)
 
@@ -253,15 +249,14 @@ static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> vo
 	if reactive:
 		shield.ready = world.turn_count + 3
 	var value := SkillDefinition.catalog(&"lightning_shield_1").minimum
-	value = floori(value * (1.0 + magnitude(world.hero, &"improved_shields_1") / 100.0)
-		* damage_multiplier(world.hero)
+	value = floori(value * damage_multiplier(world.hero)
 		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
 	SpellEffects.damage(world, target, value, "Lightning Shield", world.turn_count)
 	if int(shield.charges) <= 0:
 		world.hero.buffs.erase(&"lightning_shield_1")
 
 
-static func finish(world: GridWorld, points: int) -> void:
+static func finish(world: GridWorld, points: int, skill: SkillDefinition) -> void:
 	if world.is_terminal():
 		return
 	if has(world.hero, &"restless_blades_1"):
@@ -270,18 +265,9 @@ static func finish(world: GridWorld, points: int) -> void:
 			if key == "war_horn":
 				continue
 			world.hero.cooldowns[key] = maxi(world.turn_count, int(world.hero.cooldowns[key]) - reduction)
-	if has(world.hero, &"relentless_assault_1") and proc(world, &"ruthlessness_1"):
-		world.hero.combo_points = mini(5, world.hero.combo_points + magnitude(world.hero, &"ruthlessness_1"))
-	if proc(world, &"relentless_strikes_1", points):
-		world.hero.gain_rage(magnitude(world.hero, &"relentless_strikes_1"))
+	if world.combat_random.randf() < skill.coefficient * points:
+		world.hero.gain_rage(skill.rage_generated)
 	world.add_message("Finisher spent %d combo points." % points)
-
-
-static func incoming(world: GridWorld, attacker: GridActor, amount: int, critical: bool) -> void:
-	if world.is_terminal() or not attacker.alive:
-		return
-	if amount > 0 and critical and has(world.hero, &"eye_for_an_eye_1"):
-		SpellEffects.damage(world, attacker, floori(amount * magnitude(world.hero, &"eye_for_an_eye_1") / 100.0), "Eye for an Eye", world.turn_count)
 
 
 static func wolf_tiles(world: GridWorld) -> Array[Vector2i]:
@@ -337,5 +323,7 @@ static func act_wolf(world: GridWorld, wolf: GridActor) -> void:
 		var before := target.health
 		SpellEffects.damage(world, target, floori(value * damage_multiplier(world.hero)),
 			wolf.title, world.turn_count, wolf, true, result)
-		if not world.is_terminal() and has(world.hero, &"spirit_hunt_1"):
-			SpellEffects.heal(world, null, floori((before - target.health) * magnitude(world.hero, &"spirit_hunt_1") / 100.0), "Spirit Hunt")
+		if not world.is_terminal():
+			var skill := SkillDefinition.catalog(wolf.summon_skill)
+			SpellEffects.heal(world, null,
+				floori((before - target.health) * skill.healing_percent / 100.0), skill.title)

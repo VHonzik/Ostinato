@@ -212,12 +212,12 @@ class Eviscerate extends PhysicalAttack:
 		ClassToolkitRules.physical_attack(world, cast.target, cast.skill,
 			cast.skill.minimum * points, false)
 		ClassToolkitRules.slice_and_dice(world, points)
-		ClassToolkitRules.finish(world, points)
+		ClassToolkitRules.finish(world, points, cast.skill)
 
 
 class LightningShield extends Buff:
-	func configure(world: GridWorld, _skill: SkillDefinition, effect: Dictionary) -> void:
-		effect["charges"] = 6 if ClassToolkitRules.has(world.hero, &"improved_shields_1") else 3
+	func configure(_world: GridWorld, skill: SkillDefinition, effect: Dictionary) -> void:
+		effect["charges"] = skill.maximum
 		effect["ready"] = 0
 
 

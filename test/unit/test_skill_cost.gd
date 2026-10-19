@@ -4,7 +4,7 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 16, 16), Vector2i(5, 5), 97, false)
 	for identifier: StringName in [&"execute_1", &"sudden_death_1", &"battle_trance_1",
-		&"judgement_1", &"divine_purpose_1", &"seal_of_command_1", &"blessing_of_kings_1"]:
+		&"judgement_1", &"seal_of_command_1", &"blessing_of_kings_1"]:
 		world.hero.learn_skill(SkillDefinition.catalog(identifier))
 	world.hero.melee.hit = 100.0
 	world.hero.melee.critical = 0.0
@@ -58,20 +58,15 @@ func test_execute_uses_specific_free_proc_and_preserves_generic_proc_for_next_at
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
 
-func test_judgement_uses_specific_free_proc_before_generic_proc() -> void:
+func test_judgement_consumes_battle_trance_and_next_cast_pays_normal_cost() -> void:
 	var world := _world()
-	_free_proc(world, &"divine_purpose_1")
 	_free_proc(world, &"battle_trance_1")
-	world.hero.find_skill(&"divine_purpose_1").coefficient = 0.0
 	world.hero.rage = 0
 	assert_true(world.cast_skill(&"judgement_1", world.actors[0]))
 	assert_eq(world.hero.rage, 0)
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_true(world.hero.buffs.has(&"battle_trance_1"))
-	assert_true(world.cast_skill(&"mortal_strike_1", world.actors[0]))
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
-	world.hero.rage = 20
 	assert_eq(world.hero.find_skill(&"judgement_1").cost(world.hero), 20)
+	assert_false(world.cast_skill(&"mortal_strike_1", world.actors[0]))
 
 
 func test_passive_blessing_and_seal_reject_casts_without_spending_turn_or_free_proc() -> void:

@@ -75,8 +75,8 @@ func test_sentence_uses_committed_enemy_and_needs_seal_without_spending_a_failed
 
 func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
 	var world := _world()
-	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"divine_purpose_1")))
-	world.hero.find_skill(&"divine_purpose_1").coefficient = 1.0
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"battle_trance_1")))
+	world.hero.melee.critical = 100
 	var enemy := _enemy(world, Vector2i(10, 8))
 	var other := _enemy(world, Vector2i(8, 10))
 	assert_true(world.cast_skill(&"judgement_1", enemy))
@@ -85,17 +85,16 @@ func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
 	for turn in range(4):
 		world.wait_turn()
 	assert_false(enemy.debuffs.has(&"judgement_1"))
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
+	assert_false(world.hero.buffs.has(&"battle_trance_1"), "A lost verdict grants no critical reward.")
 	assert_eq(other.health, 10000)
 	assert_same(world.auto_attack_target, other)
 
 
 func test_sentence_reserves_guaranteed_crit_and_grants_retained_rewards_only_on_impact() -> void:
 	var world := _world()
-	for id in [&"art_of_war_1", &"sacred_duty_1", &"divine_purpose_1",
+	for id in [&"art_of_war_1",
 		&"battle_trance_1", &"relentless_assault_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
-	world.hero.find_skill(&"divine_purpose_1").coefficient = 1
 	ClassToolkitRules.apply(world, &"art_of_war_1", {"critical_ready": 1})
 	world.hero.melee.hit = 100
 	world.hero.melee.critical = 0
@@ -103,21 +102,16 @@ func test_sentence_reserves_guaranteed_crit_and_grants_retained_rewards_only_on_
 	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(int(enemy.debuffs[&"judgement_1"].critical), 1)
 	assert_false(world.hero.buffs.has(&"art_of_war_1"))
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 	assert_eq(world.hero.combo_points, 0)
 	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
-	assert_true(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
 	assert_eq(world.hero.combo_points, 1)
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
 	assert_true(world.cast_skill(&"judgement_1", enemy))
-	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
-	assert_true(world.hero.buffs.has(&"battle_trance_1"))
+	assert_false(world.hero.buffs.has(&"battle_trance_1"), "The free Judgement consumes Battle Trance.")
 	assert_eq(world.hero.combo_points, 1, "Applying the next sentence grants no early point.")
 
 
