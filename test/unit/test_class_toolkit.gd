@@ -59,7 +59,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_require_level_and_gold_preserving_full_hotbar() -> void:
-	var counts := {&"Warrior": 15, &"Shaman": 12, &"Paladin": 15, &"Rogue": 16}
+	var counts := {&"Warrior": 15, &"Shaman": 11, &"Paladin": 15, &"Rogue": 16}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -129,17 +129,19 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 	assert_almost_eq(world.hero.melee.critical, base_crit + 13, 0.001)
 
 
-func test_holy_and_nature_actives_share_level_penalties_while_bypassing_armor() -> void:
-	for identifier: StringName in [&"execution_sentence_1", &"earth_shock_1"]:
+func test_holy_and_fire_actives_share_level_penalties_while_bypassing_armor() -> void:
+	for identifier: StringName in [&"judgement_1", &"lava_burst_1"]:
 		var world := _world()
-		_learn(world, [&"execution_sentence_1", &"earth_shock_1"])
-		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+		_learn(world, [&"judgement_1", &"lava_burst_1", &"seal_of_command_1"])
 		var enemy := _enemy(world)
 		enemy.melee.level = 3
 		enemy.melee.armor = 100000
-		var expected := 18 if identifier == &"earth_shock_1" else 23
+		var expected := 36 if identifier == &"lava_burst_1" else 23
 		assert_true(world.cast_skill(identifier, enemy))
-		if identifier == &"execution_sentence_1":
+		while world.pending_skill != null:
+			world.hero.melee.critical = -100
+			world.continue_cast()
+		if identifier == &"judgement_1":
 			for turn in range(world.hero.find_skill(identifier).delay_turns):
 				world.wait_turn()
 		assert_eq(enemy.max_health - enemy.health, expected,
@@ -151,7 +153,6 @@ func test_level_penalties_apply_once_to_seal_and_lightning_shield_damage() -> vo
 	_learn(world, [&"seal_of_command_1", &"lightning_shield_1"])
 	var enemy := _enemy(world)
 	enemy.melee.level = 3
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 	ClassSpellEffects.on_melee(world, AttackEvent.new(enemy, null, &"hit", 20))
 	assert_eq(enemy.max_health - enemy.health, 4,
 		"Seal averages 3.8 damage: a quarter of 20, then the level penalty, with unbiased rounding.")
@@ -171,7 +172,6 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 	enemy.max_health = 1000000
 	enemy.health = enemy.max_health
 	enemy.melee.level = 3
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 	var generator := RandomNumberGenerator.new()
 	generator.state = world.combat_random.state
 	for index in range(10000):
@@ -186,18 +186,17 @@ func test_holy_weapon_damage_keeps_fractional_power_without_extra_random_draws()
 	world.discard()
 
 
-func test_sanctity_adds_holy_damage_without_changing_the_base_execution_sentence() -> void:
+func test_sanctity_adds_holy_damage_without_changing_the_base_judgement() -> void:
 	for developed in [false, true]:
 		var world := _world()
-		var learned: Array[StringName] = [&"execution_sentence_1"]
+		var learned: Array[StringName] = [&"judgement_1", &"seal_of_command_1"]
 		if developed:
 			learned.append(&"sanctity_of_battle_1")
 		_learn(world, learned)
-		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		var enemy := _enemy(world)
 		enemy.melee.armor = 100000
-		assert_true(world.cast_skill(&"execution_sentence_1", enemy))
-		for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+		assert_true(world.cast_skill(&"judgement_1", enemy))
+		for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 			world.wait_turn()
 		assert_eq(enemy.max_health - enemy.health, 65 if developed else 30)
 
@@ -223,20 +222,22 @@ func test_main_hand_and_active_points_share_one_turn_even_with_many_due_swings()
 	assert_eq(world.hero.combo_points, 2, "An off-hand-only turn grants no point.")
 
 
-func test_battle_trance_accepts_holy_and_nature_active_crits() -> void:
-	for id: StringName in [&"execution_sentence_1", &"earth_shock_1"]:
+func test_battle_trance_accepts_holy_and_fire_active_crits() -> void:
+	for id: StringName in [&"judgement_1", &"lava_burst_1"]:
 		var world := _world()
 		_learn(world, [&"battle_trance_1", &"seal_of_command_1", id])
 		var enemy := _enemy(world)
-		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		world.hero.melee.critical = 100
 		assert_true(world.cast_skill(id, enemy))
-		if id == &"execution_sentence_1":
+		while world.pending_skill != null:
+			world.hero.melee.critical = 100
+			world.continue_cast()
+		if id == &"judgement_1":
 			for turn in range(world.hero.find_skill(id).delay_turns):
 				world.wait_turn()
 		assert_true(world.hero.buffs.has(&"battle_trance_1"))
 		var rage := world.hero.rage
-		assert_true(world.cast_skill(&"seal_of_command_1"))
+		assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 		assert_eq(world.hero.rage, rage, "The following active is free.")
 		assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
@@ -285,12 +286,12 @@ func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execut
 			[&"eviscerate_1", true, true, false, true],
 			[&"execute_1", true, true, false, false],
 			[&"mortal_strike_1", false, true, false, false],
-			[&"earth_shock_1", true, false, false, false],
+			[&"lava_burst_1", true, false, false, false],
 			[&"", true, true, false, false],
 			[&"", true, true, true, false],
 		]:
 			var world := _world()
-			_learn(world, [&"sudden_death_1", &"execute_1", &"eviscerate_1", &"earth_shock_1"])
+			_learn(world, [&"sudden_death_1", &"execute_1", &"eviscerate_1", &"lava_burst_1"])
 			world.combat_random.seed = chosen_seed
 			var enemy := _enemy(world)
 			var skill := world.hero.find_skill(setup[0])
@@ -305,8 +306,8 @@ func test_sudden_death_only_procs_from_landed_physical_actives_other_than_execut
 func test_consumable_procs_survive_time_while_timed_damage_buffs_expire() -> void:
 	var world := _world()
 	var procs: Array[StringName] = [&"shaman_flurry_1",
-		&"battle_trance_1", &"sudden_death_1", &"juggernaut_1", &"elemental_assault_1",
-		&"art_of_war_1", &"divine_purpose_1", &"sacred_duty_1"]
+		&"battle_trance_1", &"sudden_death_1", &"juggernaut_1", &"maelstrom_weapon_1",
+		&"art_of_war_1", &"divine_purpose_1"]
 	_learn(world, procs)
 	_learn(world, [&"wrecking_crew_1", &"vengeance_1", &"bandits_guile_1"])
 	for identifier in procs:
@@ -354,15 +355,18 @@ func test_timed_damage_buffs_last_ten_turns_and_refresh_without_stacking() -> vo
 
 func test_battle_trance_free_attack_consumes_once_and_rejected_use_keeps_proc() -> void:
 	var world := _world()
-	_learn(world, [&"battle_trance_1", &"earth_shock_1"])
+	_learn(world, [&"battle_trance_1", &"lava_burst_1"])
 	var enemy := _enemy(world)
 	world.hero.melee.critical = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
 	world.hero.rage = 0
-	assert_false(world.cast_skill(&"earth_shock_1", _enemy(world, Vector2i(15, 8))))
+	assert_false(world.cast_skill(&"lava_burst_1", _enemy(world, Vector2i(16, 8))))
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
-	assert_true(world.cast_skill(&"earth_shock_1", enemy))
+	assert_true(world.cast_skill(&"lava_burst_1", enemy))
+	while world.pending_skill != null:
+		world.hero.melee.critical = -100
+		world.continue_cast()
 	assert_eq(world.hero.rage, 0)
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
@@ -456,38 +460,39 @@ func test_improved_shield_and_static_shock_consume_charges_without_extra_rage_po
 	assert_eq(world.hero.combo_points, 1, "Only the primary main-hand hit builds a point.")
 
 
-func test_earth_shock_flat_damage_and_crits_ignore_weapon_and_strength() -> void:
+func test_lava_burst_flat_damage_and_crits_ignore_weapon_and_strength() -> void:
 	for critical in [false, true]:
 		for weapon_damage in [1.0, 16.0, 1000.0]:
 			var world := _world(&"Shaman")
-			_learn(world, [&"earth_shock_1"])
+			_learn(world, [&"lava_burst_1"])
 			var enemy := _enemy(world, Vector2i(10, 8))
 			world.hero.melee.damage_min = weapon_damage
 			world.hero.melee.damage_max = weapon_damage + 0.5
 			world.hero.melee.attack_power = 1000
 			world.hero.melee.critical = 100.0 if critical else 0.0
-			assert_true(world.cast_skill(&"earth_shock_1", enemy))
-			assert_eq(enemy.max_health - enemy.health, 48 if critical else 24)
+			assert_true(world.cast_skill(&"lava_burst_1", enemy))
+			while world.pending_skill != null:
+				world.hero.melee.critical = 100.0 if critical else -100.0
+				world.continue_cast()
+			assert_eq(enemy.max_health - enemy.health, 96 if critical else 48)
 
 
-func test_earth_shock_ignores_armor_builds_points_and_interrupts_with_passive_upgrade() -> void:
+func test_lava_burst_bypasses_armor_builds_points_and_has_no_control_effect() -> void:
 	var world := _world(&"Shaman")
-	_learn(world, [&"earth_shock_1", &"improved_earth_shock_1", &"elemental_assault_1", &"relentless_assault_1"])
+	_learn(world, [&"lava_burst_1", &"relentless_assault_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
 	enemy.melee.armor = 10000
 	enemy.stunned_until = 0
-	enemy.swing.remaining = 5
-	ClassToolkitRules.apply(world, &"elemental_assault_1", {"charges": 1})
-	world.hero.melee.damage_min = 76
-	world.hero.melee.damage_max = 76
-	world.hero.melee.attack_power = 0
-	assert_true(world.cast_skill(&"earth_shock_1", enemy))
-	assert_eq(enemy.health, 10000 - 41, "Flat Nature damage retains Elemental Assault empowerment.")
-	assert_eq(enemy.stunned_until, 2)
-	assert_almost_eq(enemy.swing.remaining, 5.0, 0.001)
-	assert_eq(world.hero.cooldowns.shock, 7)
+	enemy.swing.remaining = 100
+	assert_true(world.cast_skill(&"lava_burst_1", enemy))
+	while world.pending_skill != null:
+		world.hero.melee.critical = -100
+		world.continue_cast()
+	assert_eq(enemy.health, 10000 - 48)
+	assert_eq(enemy.stunned_until, 0)
+	assert_false(enemy.debuffs.has("interrupt"))
+	assert_eq(world.hero.cooldowns.lava_burst - world.turn_count, 6)
 	assert_eq(world.hero.combo_points, 1)
-	assert_false(world.hero.buffs.has(&"elemental_assault_1"))
 
 
 func test_removed_shaman_abilities_are_unavailable() -> void:
@@ -549,21 +554,31 @@ func test_wolf_pair_placement_is_atomic_replaces_expires_and_spirit_hunt_heals_a
 	assert_eq(blocked.turn_count, 0)
 
 
-func test_blessing_is_free_and_grants_strength_when_retained_as_warrior() -> void:
+func test_kings_updates_existing_shout_all_primary_stats_without_healing_or_stacking() -> void:
 	var world := _world()
-	_learn(world, [&"blessing_of_might_1"])
+	_learn(world, [&"battle_shout_1"])
 	world.hero.refresh_stats()
 	var strength := world.hero.strength
-	world.hero.rage = 0
-	assert_true(world.cast_skill(&"blessing_of_might_1"))
-	assert_eq(world.hero.strength, strength + 6)
-	assert_eq(world.hero.rage, 0)
-	assert_eq(world.turn_count, 1)
-	for index in range(59):
-		world.wait_turn()
-	assert_eq(world.hero.strength, strength + 6)
+	var agility := world.hero.agility
+	var stamina := world.hero.stamina
+	var health := world.hero.health
+	assert_true(world.cast_skill(&"battle_shout_1"))
+	assert_true(world.hero.learn_skill(SkillDefinition.catalog(&"blessing_of_kings_1")))
+	assert_eq(world.hero.strength, strength + 2)
+	assert_eq(world.hero.agility, agility + 2)
+	assert_eq(world.hero.stamina, stamina + 2)
+	assert_eq(world.hero.health, health, "Learning Kings does not heal.")
+	assert_false(world.cast_skill(&"blessing_of_kings_1"))
+	assert_false(world.assign_hotbar(0, &"blessing_of_kings_1"))
+	for index in range(3):
+		world.hero.refresh_stats()
+	assert_eq(world.hero.strength, strength + 2)
+	assert_eq(world.hero.health, health)
+	world.hero.buffs[&"battle_shout_1"].until = world.turn_count + 1
 	world.wait_turn()
-	assert_eq(world.hero.strength, strength, "Blessing expires after sixty turns.")
+	assert_eq(world.hero.strength, strength)
+	assert_eq(world.hero.agility, agility)
+	assert_eq(world.hero.stamina, stamina)
 
 
 func test_shield_protects_both_schools_penalizes_damage_and_guardians_favor_extends_it() -> void:
@@ -582,48 +597,44 @@ func test_shield_protects_both_schools_penalizes_damage_and_guardians_favor_exte
 	assert_false(world.hero.buffs.has(&"divine_shield_1"))
 
 
-func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_execution_sentence_once() -> void:
+func test_art_of_war_counts_one_holy_event_per_action_and_guarantees_judgement_once() -> void:
 	var world := _world()
-	_learn(world, [&"art_of_war_1", &"seal_of_command_1", &"execution_sentence_1"])
+	_learn(world, [&"art_of_war_1", &"seal_of_command_1", &"judgement_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
 	for index in range(3):
 		world.holy_event_counted = false
 		ClassToolkitRules.holy_event(world)
 		ClassToolkitRules.holy_event(world)
 		assert_eq(int(world.hero.buffs[&"art_of_war_1"].get("critical_ready", 0)), 1 if index == 2 else 0)
-	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.melee.critical = -100
-	var result := ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"execution_sentence_1"))
+	var result := ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1"))
 	assert_true(result.critical())
-	assert_eq(int(world.hero.buffs[&"art_of_war_1"].get("critical_ready", 0)), 0)
-	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"execution_sentence_1")).critical())
+	assert_eq(int(world.hero.buffs.get(&"art_of_war_1", {}).get("critical_ready", 0)), 0)
+	assert_false(ClassToolkitRules.magic_attack(world, enemy, world.hero.find_skill(&"judgement_1")).critical())
 
 
-func test_execution_sentence_procs_apply_after_consumption_keep_seal_and_haste_shortens_only_execution_sentence() -> void:
+func test_judgement_impact_rewards_preserve_passive_seal_and_haste_leaves_cooldown_fixed() -> void:
 	var world := _world(&"Paladin")
-	_learn(world, [&"seal_of_command_1", &"execution_sentence_1", &"divine_purpose_1", &"sacred_duty_1", &"heart_of_the_crusader_1", &"sanctity_of_battle_1"])
+	_learn(world, [&"seal_of_command_1", &"judgement_1", &"divine_purpose_1",
+		&"sacred_duty_1", &"heart_of_the_crusader_1", &"sanctity_of_battle_1"])
 	var enemy := _enemy(world, Vector2i(10, 8))
-	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.find_skill(&"divine_purpose_1").coefficient = 1
-	world.hero.find_skill(&"sacred_duty_1").coefficient = 1
 	world.hero.haste = 2
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
-	assert_eq(world.hero.cooldowns.execution_sentence - world.turn_count, 3)
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_eq(world.hero.cooldowns.judgement - world.turn_count, 6)
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"), "Rewards wait for the verdict.")
-	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_true(world.hero.buffs.has(&"sacred_duty_1"))
+	assert_false(world.hero.buffs.has(&"sacred_duty_1"), "Sacred Duty no longer supplies readiness.")
 	assert_eq(int(enemy.debuffs.crusader_crit.bonus), 3)
 	world.hero.find_skill(&"divine_purpose_1").coefficient = 0
-	world.hero.find_skill(&"sacred_duty_1").coefficient = 0
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(world.hero.rage, 0)
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
-	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
+	assert_true(ClassToolkitRules.has(world.hero, &"seal_of_command_1"))
 
 
 func test_vengeance_caps_three_stacks_and_eye_reflection_does_not_build_combo_points() -> void:
@@ -753,17 +764,20 @@ func test_seal_fate_and_bandits_guile_reward_retained_physical_crits_without_fin
 	assert_eq(int(world.hero.buffs[&"bandits_guile_1"].charges), 0)
 
 
-func test_retained_holy_and_nature_crits_build_seal_fate_and_bandits_guile() -> void:
-	for identifier: StringName in [&"earth_shock_1", &"execution_sentence_1"]:
+func test_retained_holy_and_fire_crits_build_seal_fate_and_bandits_guile() -> void:
+	for identifier: StringName in [&"lava_burst_1", &"judgement_1"]:
 		var world := _world(&"Warrior")
-		_learn(world, [identifier, &"seal_fate_1", &"bandits_guile_1", &"relentless_assault_1"])
+		_learn(world, [identifier, &"seal_of_command_1", &"seal_fate_1", &"bandits_guile_1", &"relentless_assault_1"])
 		var enemy := _enemy(world)
 		world.hero.melee.critical = 100
-		world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 		for index in range(4):
 			world.hero.rage = 100
+			world.hero.melee.critical = 100
 			assert_true(world.cast_skill(identifier, enemy))
-			if identifier == &"execution_sentence_1":
+			while world.pending_skill != null:
+				world.hero.melee.critical = 100
+				world.continue_cast()
+			if identifier == &"judgement_1":
 				for turn in range(world.hero.find_skill(identifier).delay_turns):
 					world.wait_turn()
 			if index == 0:
@@ -1068,7 +1082,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 58)
+	assert_eq(restored.hero.learned_skills.size(), 57)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1084,7 +1098,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 58)
+	assert_eq(game.world.hero.learned_skills.size(), 57)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

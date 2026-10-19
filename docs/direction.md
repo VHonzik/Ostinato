@@ -55,28 +55,44 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   starter active finisher: it requires a melee target and spends all held points.
   Learned Slice and Dice passively grants attack haste from the same spent points,
   including on a missed finisher. Finisher refunds happen once after spending.
-  Execution Sentence replaces Judgement with a delayed verdict, without stacks or
+  Judgement retains a delayed verdict without stacks or
   damage accumulation. It commits damage and hit/critical results on casting and
   delivers its attack rewards on impact, without retargeting. Consecration adds fixed
   Holy ground for positional play; its periodic damage has no attack procs or defense bonus.
   Preserve roughly the current overall damage contribution by redistributing damage
-  rather than adding both abilities at full strength. Execution Sentence leaves Seal
-  of Command active. Execute and Execution Sentence do not spend combo points.
+  rather than adding both abilities at full strength. Seal of Command is an
+  always-on learned passive. Execute and Judgement do not spend combo points.
 - Warrior supplies physical burst, rage, execution and strength through taking damage.
   Enrage rewards surviving enemy hits; passive Recklessness trades more incoming damage
   for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
-  Shaman retains its attack-haste passive. Shaman starts with Lightning Shield and
-  Earth Shock, supplies free weapon/shield preparation, reactive damage and tactical
-  procs. Earth Shock deals flat Nature damage independent of weapons and Strength.
+  Shaman retains its attack-haste passive. A long-cast,
+  damage-only Lava Burst replaces Earth Shock alongside starter Lightning Shield. Maelstrom Weapon builds
+  up to five stacks through weapon combat, shortening Lava Burst to an instant cast
+  at full stacks and increasing its critical chance. The old shock interrupt,
+  stun and dependent passives are removed or replaced. Shaman supplies free
+  weapon/shield preparation, reactive damage and a distinct banked spell payoff.
   Earth Elemental is a mobile, lasting summon that draws nearby engaged enemies
   away from the player; only one may be alive. Spirit wolves supply damage and healing.
   Strength of Earth Totem and Elemental Warding are removed.
   Paladin supplies Holy damage,
-  buffs and guaranteed-critical payoffs. Blessing of Might is free maintenance;
-  Seal of Command retains its rage cost for rotational flavor. Benediction is removed.
+  buffs and guaranteed-critical payoffs. Passive Blessing of Kings replaces Might:
+  active Battle Shout also grants flat Strength, Agility and Stamina.
+  This depends on learned Battle Shout; Seal needs no application or refresh.
+  Benediction is removed.
   Rogue supplies combo points, dual wielding,
   speed, poisons and finishers. Opportunity is removed. Seal Fate and Bandit's Guile
   reward qualifying retained attacks from other classes. The milestone covers the full v0.1 toolkit.
+- Aim for this typical developed mixed-kit priority: prepare poisons, Windfury, Battle
+  Shout and Lightning Shield before pulling; Charge into Mortal Strike; full-stack
+  Lava Burst (also a ranged pull when Charge is unavailable); passively empowered
+  Judgement if its target will survive the delay; five-point Eviscerate, especially
+  to sustain Slice and Dice; available Execute; exhausted Lightning Shield;
+  Whirlwind against at least three adjacent enemies; Consecration against at least
+  three enemies that will stay in its area; Mortal Strike; remaining actions.
+  This describes usual offensive choices, allowing emergency defenses, movement and
+  encounter-specific decisions. Review the interacting passives and resource economy
+  together so the choices earn their positions. Do not implement an automatic rotation
+  or ability locks to enforce a preferred ordering.
 - Poisons cost no rage and offer a preparation choice: Instant rewards short fights, while Deadly
   builds sustained damage. A later Rogue passive rewards mixed coatings with Instant
   on the faster weapon and Deadly on the slower. Its extra stack is a deliberate
@@ -101,8 +117,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - Main-hand auto-attacks and incoming hits supply rage; rage decays outside combat.
   Ordinary swing rage scales with base weapon speed, independently of haste.
   Attack speed changes weapon timing, not action count or ordinary ability cooldowns;
-  Sanctity of Battle explicitly divides Execution Sentence's cooldown by current attack haste,
-  rounding up to a whole turn. Pursuit of Justice adds fractional movement credit,
+  Judgement also keeps its base cooldown regardless of haste.
+  Pursuit of Justice adds fractional movement credit,
   occasionally allowing an extra grid step in the chosen direction.
 - Bonus strikes do not recursively trigger procs or generate ordinary swing rage.
   Define qualifying events consistently for crits, combo points and procs.
@@ -116,8 +132,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   combat effects first, then resolve delayed verdicts, ground damage and poison ticks
   before due player swings and enemy actions. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
-  Holy and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
-  hit or crit; shields contribute armor. Holy and Nature damage bypass armor.
+  Holy, Fire and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
+  hit or crit; shields contribute armor. These magic schools bypass armor.
   Higher-level enemies reduce accuracy; their percentage penalty to player damage
   matches their percentage increase to incoming damage,
   without the old attack tables. A starter Warrior should struggle against one enemy
@@ -157,7 +173,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   class. Small primary bonuses must matter; preserve fractional weapon power through
   damage resolution so rounding cannot erase them. Crit and haste bonuses remain direct
   percentages, with small numbers on gear. Keep existing weapon-based Holy/Nature scaling
-  except for flat-damage Earth Shock;
+  while Lava Burst uses flat Fire damage independent of weapon power;
   broader damage/healing scaling
   remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.
@@ -193,10 +209,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - First: unlock ordering and thresholds; character XP/level
   scaling; boss behavior and clone schedule.
 - Next: Whirlwind versus Mortal Strike rage economy and later passive development;
-  optional combo empowerment for Execute/Execution Sentence; gear ranges, weapon progression,
+  optional combo empowerment for Execute/Judgement; gear ranges, weapon progression,
   respawns and healing.
 - During the complete-toolkit playtest: revise provisional passive/proc behavior,
-  wolf usefulness, movement credit and the Execution Sentence haste exception as needed.
+  wolf usefulness, movement credit and the coordinated rotation as needed.
 - Later: additional talents/synergies and leaderboard categories or achievements.
 
 Keep answers brief here when they become durable direction. Keep tuning values and

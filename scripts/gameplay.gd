@@ -424,7 +424,8 @@ func refresh_view() -> void:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
 		hud.feedback.text = "Charging. Actions resume on arrival." if world.is_charging() else (
-			"Casting %s. Esc cancels." % world.pending_skill.title)
+			"Casting %s: %d/%d turns. Esc cancels." % [world.pending_skill.title,
+				world.cast_elapsed, world.cast_turns])
 	elif world.pending_melee != null:
 		_pending_action = false
 		_melee_delay_seconds = MELEE_BOUNDARY_SECONDS
@@ -501,14 +502,14 @@ func _cast_skill(identifier: StringName) -> void:
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
 		return
-	var target := (world.committed_enemy() if skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
+	var target := (world.committed_enemy() if skill.effect == SkillDefinition.Effect.JUDGEMENT
 		else world.last_attacked_enemy)
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)
 	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
 		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
-		SkillDefinition.Effect.EXECUTION_SENTENCE]
+		SkillDefinition.Effect.JUDGEMENT]
 		and skill.target == SkillDefinition.Target.ENEMY
 		and world.in_combat()
 		and target != null):

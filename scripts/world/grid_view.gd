@@ -18,15 +18,15 @@ const CLASS_ART: Dictionary[StringName, Vector2i] = {
 }
 const PLAYER_ABILITIES: Dictionary[StringName, Vector2i] = {
 	&"charge": Vector2i(0, 3),
-	&"battle_shout": Vector2i(0, 4), &"seal_of_command": Vector2i(1, 3),
+	&"battle_shout": Vector2i(0, 4),
 	&"divine_shield": Vector2i(1, 4), &"instant_poison": Vector2i(2, 2),
 	&"deadly_poison": Vector2i(2, 2), &"evasion": Vector2i(2, 3),
 	&"lightning_shield": Vector2i(3, 2),
 }
 const ENEMY_ABILITIES: Dictionary[StringName, Vector2i] = {
-	&"mortal_strike": Vector2i(0, 1), &"execution_sentence": Vector2i(1, 1),
+	&"mortal_strike": Vector2i(0, 1), &"judgement": Vector2i(1, 1),
 	&"eviscerate": Vector2i(2, 1), &"windfury_weapon": Vector2i(3, 1),
-	&"earth_shock": Vector2i(3, 3),
+	&"lava_burst": Vector2i(3, 3),
 	&"whirlwind": Vector2i(0, 2),
 }
 const ABILITY_BLINK_SECONDS: float = 1.5
@@ -239,7 +239,8 @@ func _show_player_ability(skill: SkillDefinition) -> void:
 func _show_npc_ability(actor: GridActor, family: StringName) -> void:
 	if ENEMY_ABILITIES.has(family):
 		_replace_consecration_tile(actor.tile)
-		_npc_blinks[actor] = {"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0}
+		_npc_blinks[actor] = {"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0,
+			"color": Color("ff7733") if family == &"lava_burst" else Color.WHITE}
 		queue_redraw()
 
 
@@ -352,9 +353,10 @@ func _draw_actor(actor: GridActor) -> void:
 		faction = _quest_marker_sprite
 	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
 		faction if effect == null else null,
-		health_tint(actor.health, actor.max_health), _actor_color(actor))
-	if actor.debuffs.has(&"execution_sentence_1"):
-		var remaining := int(actor.debuffs[&"execution_sentence_1"].until) - world.turn_count
+		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
+		_actor_color(actor))
+	if actor.debuffs.has(&"judgement_1"):
+		var remaining := int(actor.debuffs[&"judgement_1"].until) - world.turn_count
 		var position := Vector2(actor.tile * TILE_SIZE)
 		draw_rect(Rect2(position + Vector2(18, 0), Vector2(14, 15)), Color("#382b15"))
 		draw_string(ThemeDB.fallback_font, position + Vector2(21, 12), str(remaining),

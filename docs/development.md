@@ -107,10 +107,10 @@ the same once-per-Loop farewell dialogue. Its free one-turn use plants a nonbloc
 banner beside you for 10 turns, giving you and friendly summons within 3 tiles 10% less
 damage taken. Bags and hotbar support use; the ground outline and HUD show protection.
 Saves retain the item, planted banner and claim. Death clears them and permits a new
-gift with retained learning. This additive item keeps revision-30 saves compatible.
+gift with retained learning. The item and its claim persist in current saves.
 
-Shaman starts with Lightning Shield and Earth Shock; Paladin with Seal of
-Command and Execution Sentence; Rogue with Eviscerate and the Relentless Assault passive.
+Shaman starts with Lightning Shield and Lava Burst; Paladin with Seal of
+Command and Judgement; Rogue with Eviscerate and the Relentless Assault passive.
 All use rage. Retained abilities/passives work in every class. Training spends gold,
 requires the current Loop's level, and does not spend player XP. Relentless Assault builds player-held
 combo points from landed direct active attacks and ordinary main-hand hits, across
@@ -119,7 +119,9 @@ on an active crit; off-hand hits and bonus damage grant none. Eviscerate needs p
 and a melee target and spends all held points on its physical attack. Learned Slice
 and Dice adds attack haste using those same spent points, even on a miss. It cannot
 be cast or assigned separately. Opportunity is removed; Seal Fate and Bandit's Guile
-continue to reward qualifying retained class attacks. Execution Sentence leaves the seal active.
+continue to reward qualifying retained class attacks. Seal of Command is always on
+once learned; it has no cast, refresh or hotbar slot. Blessing of Kings is also passive: active
+Battle Shout grants +2 Strength, Agility and Stamina, without healing when refreshed.
 All four class kits are available, including their actives and passives. The spell book
 describes their provisional mechanics; passives can be focused and inspected but cannot
 be cast or assigned. New catalogue data lives in
@@ -127,8 +129,13 @@ be cast or assigned. New catalogue data lives in
 [starter and Warrior data](../scripts/hero/class_skill_data.gd).
 Every class can equip any gear without level or learning requirements.
 Ambidexterity improves off-hand damage when learned.
-Lightning Shield and Windfury cost no rage but still use a world turn. Earth Shock
-deals flat Nature damage independent of weapon damage and Strength. Strength of Earth
+Lightning Shield and Windfury cost no rage but still use a world turn. Lava Burst
+deals flat Fire damage independent of weapon damage and Strength. Its base cast takes
+three turns. Maelstrom Weapon banks up to five stacks from the first landed primary
+physical attack per action; stacks shorten the cast and improve critical chance. Five
+stacks make it instant, still spending one turn. The HUD shows stack count and the
+tooltip shows current cast time. Reserved stacks are spent only on valid completion,
+including a miss; cancellation preserves them. Earth Shock control effects are removed. Strength of Earth
 Totem and Elemental Warding are removed. Earth Elemental is now summoned by the
 single-use Ancestral totem item, Farseer Lopaa's farewell gift after all Shaman training.
 Use it free in one turn from Bags or the hotbar; failed placement preserves the item.
@@ -146,10 +153,10 @@ Single-weapon setups coat the main hand directly. Catalytic Venom rewards Instan
 on the faster base-speed weapon and Deadly on the slower; equal-speed pairs do not
 catalyze. Deadly stacks belong to each enemy and tick at the turn boundary, retaining
 fractional damage across ticks. Saves retain coatings, stacks and pending tick damage.
-Finishers spend all held points before refunds; Execute and Execution Sentence do not spend points.
+Finishers spend all held points before refunds; Execute and Judgement do not spend points.
 Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
 boundary before player swings and enemy attacks. The same phase expires summons and
-ordinary combat debuffs, then resolves Execution Sentence, Consecration and Deadly
+ordinary combat debuffs, then resolves Judgement, Consecration and Deadly
 Poison in that order. Their handlers preserve the final verdict or poison tick.
 
 The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
@@ -176,20 +183,23 @@ profiles; saved actors keep their recorded stats. The current
 [simulation bench](../bench/README.md) compares kits, weapon setups and encounters
 using the live game model; generated results stay under ignored `reports/bench/`.
 
-Execution Sentence replaces Judgement. It fixes damage and hit/critical results when
+Judgement retains its delayed verdict. It fixes damage and hit/critical results when
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings
 and enemy actions. Impact ignores current range and never changes the selected target;
 a target dying early loses its sentence. It casts on the engaged target and its hotbar
-label turns red without Seal of Command. Existing Holy/critical rewards happen on impact.
+label turns red without learned Seal of Command. Art of War empowers a critical;
+Sacred Duty strengthens that empowered hit. Sanctity adds damage without shortening
+the fixed base cooldown through haste. Existing Holy/critical rewards happen on impact.
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 30, with gear stats rebuilt from equipment on load.
-Revision 29 and older saves are incompatible and left unchanged; start a fresh game.
-This revision replaces learned Earth Elemental with the single-use Ancestral totem
-trainer reward and saves its summoned actor without a learned-skill requirement.
+Current saves are `demo` revision 31, with gear stats rebuilt from equipment on load.
+Revision 30 and older saves are incompatible and left unchanged; start a fresh game.
+This revision changes learned ability IDs and stores banked Maelstrom stacks.
+Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
+primary-stat buff fields. Failed writes/loads preserve existing player files.
 Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.
-Committed Execution Sentence verdicts and Consecration ground persist across saves;
+Committed Judgement verdicts and Consecration ground persist across saves;
 both clear with the physical world on death.
 Victory requires defeating all present stalkers.
 Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;

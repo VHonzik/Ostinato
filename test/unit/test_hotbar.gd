@@ -35,9 +35,9 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 	assert_true(world.assign_hotbar(11, &"mortal_strike_1"))
 	for identifier: StringName in [
 		&"battle_shout_1", &"windfury_weapon_1", &"lightning_shield_1", &"seal_of_command_1",
-		&"instant_poison_1", &"deadly_poison_1", &"blessing_of_might_1",
-		&"charge_1", &"execute_1", &"earth_shock_1", &"feral_spirit_1",
-		&"execution_sentence_1", &"divine_shield_1", &"evasion_1", &"eviscerate_1",
+		&"instant_poison_1", &"deadly_poison_1", &"blessing_of_kings_1",
+		&"charge_1", &"execute_1", &"lava_burst_1", &"feral_spirit_1",
+		&"judgement_1", &"divine_shield_1", &"evasion_1", &"eviscerate_1",
 		&"relentless_assault_1", &"consecration_1",
 	]:
 		var skill := SkillDefinition.catalog(identifier)
@@ -46,14 +46,13 @@ func test_training_groups_maintenance_above_rotation_and_keeps_custom_assignment
 		world.hero.copper = 10000
 		assert_true(world.train(skill.class_tab, identifier))
 	assert_eq(world.hotbar.slice(0, 10), [
-		&"whirlwind_1", &"charge_1", &"execute_1", &"earth_shock_1",
-		&"feral_spirit_1", &"execution_sentence_1", &"divine_shield_1", &"evasion_1", &"eviscerate_1",
+		&"whirlwind_1", &"charge_1", &"execute_1", &"lava_burst_1",
+		&"feral_spirit_1", &"judgement_1", &"divine_shield_1", &"evasion_1", &"eviscerate_1",
 		&"consecration_1",
 	])
 	assert_eq(world.hotbar.slice(10), [
 		&"battle_shout_1", &"mortal_strike_1", &"windfury_weapon_1", &"lightning_shield_1",
-		&"seal_of_command_1", &"instant_poison_1", &"deadly_poison_1",
-		&"blessing_of_might_1", &"", &"",
+		&"instant_poison_1", &"deadly_poison_1", &"", &"", &"", &"",
 	])
 	assert_eq(world.turn_count, 0)
 
@@ -253,19 +252,19 @@ func test_food_shortcut_rejects_empty_bags_and_combat_without_spending_a_turn() 
 	assert_eq(world.turn_count, 0)
 
 
-func test_sentence_hotbar_is_red_until_seal_is_active_and_turns_red_on_expiry() -> void:
+func test_judgement_hotbar_requires_learned_seal_and_stays_available_without_refresh() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	world.hero.learn_skill(SkillDefinition.catalog(&"execution_sentence_1"))
+	world.hero.learn_skill(SkillDefinition.catalog(&"judgement_1"))
 	world.hero.rage = 100
-	world.assign_hotbar(0, &"execution_sentence_1")
+	world.assign_hotbar(0, &"judgement_1")
 	var panel := HotbarPanel.new()
 	add_child_autofree(panel)
 	var options := GlobalOptions.new()
 	panel.refresh(world, options, true, true, false)
 	assert_eq(panel.slots[0].get_theme_color("font_color"), HotbarPanel.INSUFFICIENT_RAGE_COLOR)
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 1}
+	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
 	panel.refresh(world, options, true, true, false)
 	assert_false(panel.slots[0].has_theme_color_override("font_color"))
 	world.wait_turn()
 	panel.refresh(world, options, true, true, false)
-	assert_eq(panel.slots[0].get_theme_color("font_color"), HotbarPanel.INSUFFICIENT_RAGE_COLOR)
+	assert_false(panel.slots[0].has_theme_color_override("font_color"))

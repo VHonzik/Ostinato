@@ -105,7 +105,7 @@ func test_full_round_trip_restores_random_streams_effects_outfit_and_future_arri
 	StarterGear.exchange(_session.world.hero, &"Shaman")
 	_session.world.class_selected = true
 	_session.world.train(&"Shaman", &"lightning_shield_1")
-	_session.world.train(&"Shaman", &"earth_shock_1")
+	_session.world.train(&"Shaman", &"lava_burst_1")
 	_session.world.hero.rage = 100
 	_session.world.hero.casting_credit = 0.6
 	_session.world.movement_credit = 0.5

@@ -12,7 +12,7 @@ static func quote(hero: HeroState, skill: SkillDefinition) -> SkillCost:
 		return payment
 	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
 		payment.consumed_proc = &"sudden_death_1"
-	elif skill.family == &"execution_sentence" and hero.buffs.has(&"divine_purpose_1"):
+	elif skill.family == &"judgement" and hero.buffs.has(&"divine_purpose_1"):
 		payment.consumed_proc = &"divine_purpose_1"
 	elif skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1"):
 		payment.consumed_proc = &"battle_trance_1"

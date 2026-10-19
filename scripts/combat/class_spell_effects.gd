@@ -26,8 +26,8 @@ static func on_melee(world: GridWorld, event: AttackEvent) -> void:
 	var target := event.target
 	if world.is_terminal() or not target.alive:
 		return
-	if event.landed() and world.hero.buffs.has(&"seal_of_command_1"):
-		var skill := SkillDefinition.catalog(&"seal_of_command_1")
+	var skill := world.hero.find_skill(&"seal_of_command_1")
+	if event.landed() and skill != null and world.hero.equipment.has("weapons"):
 		var weapon_roll := world.combat_random.randf()
 		var raw := MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
 		var value := MeleeRules.round_weapon_damage(raw * skill.weapon_multiplier
@@ -43,7 +43,7 @@ static func tick(world: GridWorld) -> void:
 	# Delayed verdicts and poison own their expiry so their final delivery is preserved.
 	for actor in world.actors:
 		for key in actor.debuffs.keys():
-			if (key not in [&"execution_sentence_1", &"deadly_poison_1"]
+			if (key not in [&"judgement_1", &"deadly_poison_1"]
 				and int(actor.debuffs[key].until) <= world.turn_count):
 				actor.debuffs.erase(key)
 	for key in world.hero.debuffs.keys():

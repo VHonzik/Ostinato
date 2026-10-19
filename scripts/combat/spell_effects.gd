@@ -7,10 +7,11 @@ static func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActo
 
 
 static func resolve(world: GridWorld, skill: SkillDefinition, target: GridActor,
-	resource_spent: int = 0, poison_hands: int = PoisonRules.Hands.BOTH) -> void:
+	resource_spent: int = 0, poison_hands: int = PoisonRules.Hands.BOTH,
+	maelstrom_stacks: int = 0) -> void:
 	if world.is_terminal():
 		return
-	var cast := SkillBehavior.Cast.new(skill, target, resource_spent, poison_hands)
+	var cast := SkillBehavior.Cast.new(skill, target, resource_spent, poison_hands, maelstrom_stacks)
 	SkillBehaviors.for_skill(skill).resolve(world, cast)
 	world.ability_used.emit(skill)
 

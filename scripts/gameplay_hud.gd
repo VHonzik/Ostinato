@@ -83,6 +83,8 @@ func _refresh_auras(world: GridWorld) -> void:
 		$Auras.remove_child(child)
 		child.queue_free()
 	for identifier in hero.buffs:
+		if identifier == &"maelstrom_weapon_1":
+			continue
 		var skill := hero.find_skill(StringName(identifier))
 		var title := skill.title if skill != null else String(identifier).capitalize()
 		if skill != null and PoisonRules.is_poison(skill):
@@ -95,6 +97,17 @@ func _refresh_auras(world: GridWorld) -> void:
 					title.left(1) + ("O" if off_hand else "M"))
 			continue
 		_add_aura(world, title, hero.buffs[identifier], false)
+	var maelstrom := hero.find_skill(&"maelstrom_weapon_1")
+	if maelstrom != null:
+		var stacks := ClassToolkitRules.maelstrom_stacks(hero)
+		var lava := hero.find_skill(&"lava_burst_1")
+		var cast_text := "learn Lava Burst to spend" if lava == null else (
+			"instant (one action)" if stacks == maelstrom.maximum else
+			"%d-turn cast" % int(ClassToolkitRules.cast_duration(hero, lava)))
+		_add_aura(world, maelstrom.title, {"until": 0, "charges": stacks,
+			"critical_ready": int(stacks == maelstrom.maximum),
+			"detail": "%d/%d stacks / %s / +%d percentage points Lava crit" % [
+				stacks, maelstrom.maximum, cast_text, stacks * maelstrom.critical_percent]}, false, "MW")
 	for identifier in hero.debuffs:
 		_add_aura(world, String(identifier).capitalize(), hero.debuffs[identifier], true)
 	if WarBannerRules.active(world):
@@ -148,6 +161,8 @@ func _add_aura(world: GridWorld, title: String, effect: Dictionary, harmful: boo
 	style.bg_color = Color("243b35")
 	style.set_border_width_all(1)
 	style.border_color = Color("ff7777") if harmful else Color("a6c8a0")
+	if int(effect.get("critical_ready", 0)) > 0:
+		style.border_color = Color("ffe187")
 	square.add_theme_stylebox_override("panel", style)
 	var words := title.split(" ", false)
 	var shortcut := title.left(2).to_upper()

@@ -4,7 +4,7 @@ extends RefCounted
 ## Facts about one resolved attack. Bonus damage cannot enter the primary proc pipeline.
 enum Origin { SWING, ACTIVE, BONUS }
 enum Hand { MAIN, OFF }
-enum School { PHYSICAL = 0, HOLY = 1, NATURE = 3 }
+enum School { PHYSICAL = 0, HOLY = 1, FIRE = 2, NATURE = 3 }
 
 var target: GridActor
 var skill: SkillDefinition

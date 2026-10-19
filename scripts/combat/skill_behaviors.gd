@@ -6,15 +6,13 @@ static var _families: Dictionary[StringName, SkillBehavior] = {
 	&"execute": Execute.new(),
 	&"whirlwind": Whirlwind.new(),
 	&"war_horn": WarHorn.new(),
-	&"earth_shock": EarthShock.new(),
+	&"lava_burst": LavaBurst.new(),
 	&"feral_spirit": FeralSpirit.new(),
-	&"seal_of_command": WeaponBuff.new(),
 	&"windfury_weapon": Windfury.new(),
 	&"instant_poison": Poison.new(),
 	&"deadly_poison": Poison.new(),
-	&"execution_sentence": ExecutionSentence.new(),
+	&"judgement": Judgement.new(),
 	&"consecration": Consecration.new(),
-	&"blessing_of_might": BlessingOfMight.new(),
 	&"divine_shield": DivineShield.new(),
 	&"eviscerate": Eviscerate.new(),
 	&"lightning_shield": LightningShield.new(),
@@ -26,7 +24,7 @@ static var _effects: Dictionary[int, SkillBehavior] = {
 	SkillDefinition.Effect.CHARGE: Charge.new(),
 	SkillDefinition.Effect.ARMOR: Buff.new(),
 	SkillDefinition.Effect.SUMMON: Summon.new(),
-	SkillDefinition.Effect.EXECUTION_SENTENCE: ExecutionSentence.new(),
+	SkillDefinition.Effect.JUDGEMENT: Judgement.new(),
 	SkillDefinition.Effect.PASSIVE: Passive.new(),
 	SkillDefinition.Effect.PRACTICE: Development.new(),
 	SkillDefinition.Effect.EXPERIENCE: Development.new(),
@@ -121,21 +119,12 @@ class WarHorn extends SkillBehavior:
 					-1, null, true)
 
 
-class EarthShock extends SkillBehavior:
+class LavaBurst extends SkillBehavior:
 	func resolve(world: GridWorld, cast: Cast) -> void:
-		var extra := 1.0 + ClassToolkitRules.magnitude(world.hero, &"elemental_assault_1") / 100.0
-		if world.hero.buffs.has(&"elemental_assault_1"):
-			extra += 0.5
-			world.hero.buffs.erase(&"elemental_assault_1")
-		var result := ClassToolkitRules.magic_attack(world, cast.target, cast.skill, extra)
-		var target := cast.target
-		if result.landed() and target.alive and not world.is_terminal():
-			target.swing.remaining += 1.0
-			target.debuffs["interrupt"] = {"until": world.turn_count + 3}
-			if ClassToolkitRules.has(world.hero, &"improved_earth_shock_1"):
-				target.stunned_until = world.turn_count + 1 \
-					+ ClassToolkitRules.magnitude(world.hero, &"improved_earth_shock_1")
-			world.add_message("Earth Shock interrupts %s and delays its next swing." % target.title)
+		var passive := world.hero.find_skill(&"maelstrom_weapon_1")
+		var critical_bonus := cast.maelstrom_stacks * (passive.critical_percent if passive != null else 0)
+		ClassToolkitRules.spend_maelstrom(world.hero, cast.maelstrom_stacks)
+		ClassToolkitRules.magic_attack(world, cast.target, cast.skill, 1.0, critical_bonus)
 
 
 class FeralSpirit extends SkillBehavior:
@@ -155,9 +144,9 @@ class Summon extends SkillBehavior:
 		SummonRules.summon(world, cast.skill)
 
 
-class ExecutionSentence extends SkillBehavior:
+class Judgement extends SkillBehavior:
 	func can_apply(world: GridWorld, skill: SkillDefinition, target: GridActor) -> bool:
-		return (world.hero.buffs.has(&"seal_of_command_1")
+		return (ClassToolkitRules.has(world.hero, &"seal_of_command_1")
 			and world.hero.equipment.has("weapons") and not target.debuffs.has(skill.id))
 
 	func resolve(world: GridWorld, cast: Cast) -> void:
@@ -204,11 +193,6 @@ class Windfury extends WeaponBuff:
 	func configure(world: GridWorld, _skill: SkillDefinition, effect: Dictionary) -> void:
 		effect["weapon_id"] = world.hero.weapon_id()
 		effect["ready"] = 0
-
-
-class BlessingOfMight extends Buff:
-	func configure(_world: GridWorld, skill: SkillDefinition, effect: Dictionary) -> void:
-		effect["strength"] = skill.minimum
 
 
 class DivineShield extends Buff:

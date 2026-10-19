@@ -6,6 +6,7 @@ static func on_attack(world: GridWorld, event: AttackEvent) -> void:
 	if world.is_terminal() or not event.is_primary():
 		return
 	# Keep this order explicit: handlers consume randomness and can end the encounter.
+	_maelstrom(world, event)
 	if event.is_swing() and event.hand == AttackEvent.Hand.MAIN:
 		ClassSpellEffects.on_melee(world, event)
 	if world.is_terminal():
@@ -17,8 +18,8 @@ static func on_attack(world: GridWorld, event: AttackEvent) -> void:
 		return
 	if event.school == AttackEvent.School.PHYSICAL:
 		_physical_hit(world, event)
-	if event.is_direct() and event.is_family(&"execution_sentence") and not world.is_terminal():
-		_execution_sentence(world, event.target)
+	if event.is_direct() and event.is_family(&"judgement") and not world.is_terminal():
+		_judgement(world, event.target)
 
 
 static func weapon_procs(world: GridWorld, event: AttackEvent) -> void:
@@ -70,7 +71,6 @@ static func _critical_buffs(world: GridWorld, event: AttackEvent) -> void:
 			{"charges": 3, "haste_percent": ClassToolkitRules.magnitude(world.hero, &"shaman_flurry_1")})
 		ClassToolkitRules.apply(world, &"wrecking_crew_1",
 			{"physical_percent": ClassToolkitRules.magnitude(world.hero, &"wrecking_crew_1")})
-		ClassToolkitRules.apply(world, &"elemental_assault_1", {"charges": 1})
 	if event.can_trigger_battle_trance():
 		ClassToolkitRules.apply(world, &"battle_trance_1", {"charges": 1})
 	var stacks := mini(3, int(ClassToolkitRules.effect(world.hero,
@@ -101,14 +101,26 @@ static func _sweeping_strikes(world: GridWorld, event: AttackEvent) -> void:
 			break
 
 
-static func _execution_sentence(world: GridWorld, target: GridActor) -> void:
+static func _judgement(world: GridWorld, target: GridActor) -> void:
 	if target.alive and ClassToolkitRules.has(world.hero, &"heart_of_the_crusader_1"):
 		target.debuffs["crusader_crit"] = {"until": world.turn_count + 11,
 			"bonus": ClassToolkitRules.magnitude(world.hero, &"heart_of_the_crusader_1")}
 	if ClassToolkitRules.proc(world, &"divine_purpose_1"):
 		ClassToolkitRules.apply(world, &"divine_purpose_1", {"charges": 1})
-	if ClassToolkitRules.proc(world, &"sacred_duty_1"):
-		ClassToolkitRules.apply(world, &"sacred_duty_1", {"critical_ready": 1})
+
+
+static func _maelstrom(world: GridWorld, event: AttackEvent) -> void:
+	var skill := world.hero.find_skill(&"maelstrom_weapon_1")
+	if (skill == null or world.maelstrom_event_counted or not event.landed()
+		or event.school != AttackEvent.School.PHYSICAL):
+		return
+	world.maelstrom_event_counted = true
+	var stacks := ClassToolkitRules.maelstrom_stacks(world.hero)
+	if stacks >= skill.maximum:
+		return
+	world.hero.buffs[skill.id] = {"armor": 0, "until": 0, "charges": stacks + skill.minimum}
+	world.add_message("Maelstrom Weapon: %d/%d%s." % [stacks + skill.minimum, skill.maximum,
+		"; Lava Burst ready instantly" if stacks + skill.minimum == skill.maximum else ""])
 
 
 static func _windfury(world: GridWorld, event: AttackEvent) -> void:

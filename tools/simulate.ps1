@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'accessories', 'loot', 'loot-rates')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'priorities', 'accessories', 'loot', 'loot-rates')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [ValidateRange(-1, 2)][int]$Shard = -1,
@@ -14,6 +14,8 @@ $scriptsByScenario = @{
   warrior = 'warrior_identity_sim.gd'; 'warrior-harder' = 'warrior_identity_harder.gd'
   paladin = 'paladin_sim.gd'
   rogue = 'rogue_sim.gd'
+  'stalker-passives' = 'stalker_passive_sim.gd'
+  priorities = 'priority_sim.gd'
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
 }
@@ -23,7 +25,7 @@ $savedEnvironment = @{}
 $metadata = $null
 $passed = $false
 try {
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue')) { throw '-Shard is only for combat simulations.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'priorities')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -98,6 +100,33 @@ try {
   if ($Scenario -in @('paladin', 'rogue')) {
     $expectedCells = if ($Shard -eq -1) { 54 } else { 18 }
     if ($data.rows.Count -ne $expectedCells) { throw "Incomplete $Scenario matrix: expected $expectedCells cells." }
+  }
+  if ($Scenario -eq 'stalker-passives') {
+    $weaponCount = if ($Shard -eq -1) { 3 } else { 1 }
+    $baselineRows = @($data.rows | Where-Object phase -eq 'baseline')
+    if ($baselineRows.Count -ne 30 * $weaponCount) { throw 'Incomplete Stalker baseline matrix.' }
+    $passives = @($data.setup.passives | Where-Object { !$_.skip })
+    $expectedAblations = 0
+    foreach ($passive in $passives) {
+      $offhandOnly = $passive.id -in @('ambidexterity_1', 'combat_potency_1', 'main_gauche_1', 'catalytic_venom_1')
+      $eligibleWeapons = if (!$offhandOnly) { $weaponCount } elseif ($Shard -in @(-1, 2)) { 1 } else { 0 }
+      $expectedAblations += 4 * $eligibleWeapons
+    }
+    if (@($data.rows | Where-Object phase -eq 'ablation').Count -ne $expectedAblations) {
+      throw 'Incomplete Stalker ablation matrix.'
+    }
+    foreach ($row in $data.rows) {
+      $expectedRuns = if ($row.phase -eq 'baseline') { $data.setup.baseline_samples } else { $data.setup.ablation_samples }
+      if ($row.fights.Count -ne $expectedRuns) { throw 'Incomplete Stalker sample.' }
+    }
+  }
+  if ($Scenario -eq 'priorities') {
+    $expectedCells = $data.setup.expected_cells
+    if ($expectedCells -ne $(if ($Shard -eq -1) { 420 } else { 140 })) { throw 'Unexpected priority setup size.' }
+    if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete priority matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete priority sample.' }
+    }
   }
   $passed = $true
   $metadata.status = 'passed'

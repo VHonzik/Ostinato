@@ -107,6 +107,10 @@ func refresh_stats() -> void:
 	for buff in buffs.values():
 		for stat in attributes:
 			attributes[stat] += int(buff.get(stat, 0))
+	if buffs.has(&"battle_shout_1"):
+		var kings := ClassToolkitRules.magnitude(self, &"blessing_of_kings_1")
+		for stat in attributes:
+			attributes[stat] += kings
 	strength = int(attributes.strength)
 	agility = int(attributes.agility)
 	stamina = int(attributes.stamina)

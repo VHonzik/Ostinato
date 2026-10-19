@@ -529,7 +529,7 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 				button.pressed.emit()
 				break
 		assert_not_null(world.hero.find_skill(identifier))
-		assert_true(world.hotbar.has(identifier))
+		assert_eq(world.hotbar.has(identifier), skill.effect != SkillDefinition.Effect.PASSIVE)
 	assert_eq(world.hero.copper, 0)
 
 func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> void:

@@ -68,7 +68,7 @@ The owner playtested the current Warrior state; that feedback led to the time-lo
 
 Plan an end-to-end playable prototype of [the current direction](direction.md), including
 **every active and passive in the owner's consolidated v0.1 snapshot**. The owner's
-current priority is itemization following completion of all four class toolkits.
+current priority is the coordinated class rotation and passive overhaul following itemization.
 Keep intermediate changes runnable; deferred playtests
 do not gate completion of the catalogue. Tuning still needs human playtesting.
 
@@ -241,8 +241,54 @@ Try the complete learned toolkit over returning Loops alongside the new itemizat
 Judge unlock pacing, rage economy, buff/proc feedback, cleave, wolves, dual wielding,
 defensive windows and mixed-class combinations. Adjust code/data from that feedback;
 do not treat catalogue completion or automated tests as balance/readability acceptance.
-Optional combo empowerment of Execute/Execution Sentence remains a later design choice; the
+Optional combo empowerment of Execute/Judgement remains a later design choice; the
 current deliberate spender is Eviscerate, with passive Slice and Dice haste when learned.
+
+### Implemented slice — Coordinated class rotation and passives
+
+The owner's mixed-kit priority in [direction](direction.md) supersedes the earlier
+Seal/Might maintenance and Earth Shock implementation below. The coordinated change
+is implemented and ready for owner QA. Current tuning, learning requirements and
+interactions live in [class mechanics](class-mechanics.md); prices and balance remain
+provisional. The [bench](../bench/README.md) now compares production rules.
+
+- [x] Rename Execution Sentence to Judgement across learning, effects, targeting,
+  tooltips and saved state. Preserve snapshot damage/hit/crit, delayed delivery,
+  early-target-death loss and impact-only attack rewards.
+- [x] Make Seal of Command an always-on learned passive on ordinary main-hand hits,
+  removing its cast, timer and hotbar assignment. Judgement requires learned Seal.
+- [x] Replace Might with passive Kings on learned, active Battle Shout. Rebuild stats
+  from those dependencies; apply learning immediately without healing on refresh.
+- [x] Replace Earth Shock with long-cast, damage-only Fire Lava Burst. Replace
+  Elemental Assault with early Maelstrom Weapon; remove Improved Earth Shock and
+  its control. Keep Flurry's existing early training. Reuse orange-tinted target art.
+- [x] Bank guaranteed Maelstrom on the first qualifying primary physical hit per
+  action, including off-hand and finishers, without bonus/proc recursion. Snapshot
+  stacks/time at cast start, cap reserved plus new stacks together, preserve stacks
+  on cancellation/invalid completion and spend only reserved stacks on completion,
+  including misses. Give five stacks a distinct instant payoff; no casting-credit gain.
+- [x] Keep Art of War's critical readiness; make Sacred Duty strengthen that empowered
+  critical. Keep Sanctity's damage with fixed cooldown. Redistribute damage into
+  Consecration. Keep Charge rage, cooldown-free Whirlwind and Rogue rewards unchanged.
+  Existing per-hit Seal Fate behavior is retained; no extra multi-target cap added.
+- [x] Check Charge's ordinary arrival swing and prepared Mortal Strike affordability
+  across weapons. Compare requested priorities against alternate orders using real
+  low-rage preparation, ordinary groups, ranged pulls, durable groups and Stalker;
+  include starter/native and all three-kit combinations. Observer fights replay
+  against plain world rules and reconcile player/enemy HP.
+- [x] Update trainer completion/gifts, passive/hotbar handling, stack/cast feedback,
+  effect placement and class summaries. Save revision 31 rejects incompatible older
+  files without migration or overwriting them; banked stacks persist in valid saves.
+- [x] Test snapshots, cancellation, failure/miss/target loss, stack caps, physical versus
+  spell hooks, delayed impacts, Kings expiry, retained learning, save validation and
+  death reset. Full validation passes; obsolete active/control tests are replaced.
+- [ ] Owner QA: play the opener, full-stack ranged pull, empowered delayed verdict,
+  five-point haste refresh and three-enemy ground/cleave choices. Judge commitment,
+  readable feedback and practical exceptions to the preferred priority.
+- [ ] Tune contribution and training budgets from QA. Revisit the intended
+  three-developed-kit boss goal, purchase routes, passive-removal comparisons,
+  prior-encounter buff expiry and banked-point entries. The fixed isolated bots do
+  not cover these routes or establish final balance or human acceptance.
 
 ### Current class-identity follow-up — Warrior rage spending
 
@@ -273,9 +319,10 @@ current deliberate spender is Eviscerate, with passive Slice and Dice haste when
   Keep its health, cooldown and singleton state through saves; clear it on Loop reset.
 - [x] Strengthen spirit-wolf attacks and their damage-based healing. Keep tuning in
   game data and descriptions, with a placeholder elemental sprite for playtesting.
-- [ ] Owner playtest: compare Earth Shock across weapon setups, summon the elemental
-  during a Stalker fight and against a group, then compare wolves' damage/healing.
-  Judge whether the elemental buys useful time without making ordinary pulls trivial.
+- [ ] Owner playtest after the coordinated replacement above: compare Lava Burst's
+  pull and Maelstrom payoff across weapon setups, summon the elemental during a Stalker
+  fight and against a group, then compare wolves' damage/healing. Judge whether the
+  elemental buys useful time without making ordinary pulls trivial.
 
 ### Current class-identity follow-up — Paladin
 

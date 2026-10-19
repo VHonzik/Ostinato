@@ -58,34 +58,35 @@ bonus strikes generate no baseline rage. Outside combat, rage decays by 2 per tu
 or 0.5 with Anger Management; fractional rage is retained internally.
 
 Table rage costs are base costs. Battle Trance makes the next rage-costing active free.
-Execute first uses Sudden Death if ready; Execution Sentence first uses Divine Purpose;
+Execute first uses Sudden Death if ready; Judgement first uses Divine Purpose;
 otherwise Battle Trance applies. Only the chosen free-use proc is consumed. Consumable
 procs/charges persist until spent or death, including between encounters. Timed buffs
 continue counting down outside combat.
 
 Weapon damage uses the main hand and Strength-derived weapon power unless specified
-otherwise. Physical attacks use hit, dodge, critical and armor rules. Direct Holy/Nature
+otherwise. Physical attacks use hit, dodge, critical and armor rules. Direct Holy/Fire/Nature
 attacks use hit/critical rules and bypass armor. Level differences and applicable buffs
 still modify listed base damage. Haste changes independent hand swing timers, not action
-count or ordinary cooldowns; Sanctity of Battle is the Execution Sentence exception.
+count or ability cooldowns. Restless Blades can reduce running cooldowns.
 Swing timing continues through abilities, movement and waiting, attacking the committed
 enemy when in melee. Retargeting keeps the remaining swing delay.
 
 The committed action resolves before the turn advances. At the advanced turn boundary,
-timed hero buffs, summons and ordinary debuffs expire, then Execution Sentence,
+timed hero buffs, summons and ordinary debuffs expire, then Judgement,
 Consecration and Deadly Poison resolve, followed by due player swings and enemy actions.
 Final verdicts/poison ticks are preserved. Terminal death/victory stops further resolution.
 Death clears temporary combat state, summons, coatings, ground and combo points, retaining
-learning. Saves retain implemented mid-Loop effect state.
+learning. Saves retain implemented mid-Loop effect state, including banked Maelstrom.
+Current saves use revision 31; earlier revisions are incompatible and left unchanged.
 
 Primary attacks are ordinary swings and direct active attacks. Primary physical crits,
-including physical active crits, can trigger Flurry, Wrecking Crew and Elemental Assault.
+including physical active crits, can trigger Flurry and Wrecking Crew.
 Finishers still qualify for these critical buffs and Vengeance, but cannot build points,
 advance Bandit's Guile, or trigger Battle Trance. Bonus strikes/copies, seal damage,
 poison, ground and reactive damage do not recursively enter the primary attack pipeline.
 With Relentless Assault, points belong to the player across targets/encounters, capped
 at five, with at most one base point per world turn. Seal Fate can add points on qualifying
-active crits. Eviscerate alone spends combo points; Execute and Execution Sentence do not.
+active crits. Eviscerate alone spends combo points; Execute and Judgement do not.
 
 ## Warrior
 
@@ -116,7 +117,7 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
 | Recklessness | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
-| Cruelty | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Nature attacks. |
+| Cruelty | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
 | Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
 | Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
@@ -128,13 +129,14 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 
 ## Shaman
 
-**Tagline: Prepare the storm, shock your foes, and let spirits share the fight.**
+**Tagline: Bank the storm in your weapons, then release it in a burst of fire.**
 
-Free shield/weapon preparation, flat Nature damage, reactive charges and weapon-
-triggered attacks. The Ancestral totem item supplies a lasting elemental that redirects
-engaged enemies; temporary wolves add
-damage and, with Spirit Hunt, healing. Earth Shock does not scale with weapons or
-Strength.
+Free shield/weapon preparation, reactive Nature damage and a banked Fire payoff.
+Lava Burst deals flat damage independent of weapons or Strength, shortened and given
+extra critical chance by Maelstrom Weapon. The Ancestral totem item supplies a lasting
+elemental that redirects engaged enemies; temporary wolves add damage and, with
+Spirit Hunt, healing. Earth Shock, its interrupt/stun upgrade and Elemental Assault
+are removed. Flurry remains early training; Maelstrom is available at level 2.
 
 Earth Elemental is removed from training. After learning all remaining Shaman actives
 and passives, Farseer Lopaa offers Ancestral totem through the shared trainer farewell
@@ -150,26 +152,26 @@ skills. Death clears the item, summon and claim; retained learning allows a new 
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Earth Shock | 15 | 1 | 7* | * | 3 | 1 | 0 | C(3,3) | Target | Active Nature attack. 24 base damage independent of weapon damage/Strength; hit/crit, buffs and level differences apply, armor does not. A landed hit interrupts and delays the next enemy swing by 1 turn. Improved Earth Shock changes cooldown from 7 to 6 and adds a 1-enemy-turn stun. Elemental Assault adds 20% damage and another additive 50% when empowered. Landed attacks may build combo points. |
+| Lava Burst | 10 | 3* | 6 | - | 6 | 1 | 0 | C(3,3), orange tint | Target (landed impact) | Active Fire attack. 48 base damage independent of weapons/Strength; hit/crit, buffs and level differences apply, armor does not. No interrupt or stun. With Maelstrom: 0-1 stacks take 3 turns, 2-4 take 2, 5 is instant (one world action); +10 percentage points of critical chance per reserved stack. Snapshots stacks/time at start; spends reserved stacks on successful completion, including a miss. No fractional casting credit is consumed or generated. Landed attacks can grant direct-spell combo/critical rewards. |
 | Lightning Shield | 0 | 1 | - | 30* | Self | 1 | 0 | C(3,2) | Player (application) | Active self buff. Three charges of 10 base Nature damage for 30 turns, ending early when exhausted. Surviving damaging enemy hits discharge at most once per 3 turns, with no distance check on the attacker. Improved Shields gives 6 charges and +50% damage. Static Shock can spend charges offensively without the retaliation cooldown. Refreshing replaces the shield. Player sprite appears on application; no separate discharge sprite. |
 | Improved Shields | - | - | - | - | - | 2 | 60c | - | - | Passive. Lightning Shield has 6 charges and deals 50% more damage. |
 | Flurry | - | - | - | * | - | 2 | 90c | - | - | Passive. Primary physical crits grant or refresh 3 charges of +30% attack haste until consumed or death. Ordinary main/off-hand swing attempts each consume a charge, including misses. |
 | Windfury Weapon | 0 | 1 | * | 60 | Self | 2 | 135c | C(3,1) | Target (bonus hit) | Active main-hand enchant for 60 turns, tied to the equipped weapon setup. No cast cooldown; the proc has an internal cooldown. Landed primary main-hand physical swings/actives have a 25% chance for 2 bonus strikes, at most once per 3 turns. Each deals 100% weapon damage, or 140% with Elemental Weapons, using normal hit/armor but no crits, further procs, rage or points. No application sprite; landed bonus strikes flash the target. |
+| Maelstrom Weapon | - | - | - | * | - | 2 | 270c | - | - | Passive. The first landed primary physical attack per committed world action grants 1 stack, up to 5: ordinary main/off-hand hits and direct physical actives, including finishers. No bonus/proc/summon damage. Stacks bank across encounters and saves, clear on death. Shortens Lava Burst and adds +10 percentage points of critical chance per stack; five makes it instant. Reserved stacks stay counted against the cap until successful completion; only the reserved count is spent, preserving new gains. Cancelled or invalid completions preserve stacks. New gains do not accelerate a pending cast. |
 | Static Shock | - | - | - | - | - | 3 | 180c | - | - | Passive. Landed primary physical attacks, including main/off-hand swings and direct physical actives, have a 20% chance to discharge an active Lightning Shield charge, ignoring its retaliation cooldown. |
 | Elemental Weapons | - | - | - | - | - | 3 | 225c | - | - | Passive. Windfury bonus damage increases 40%. |
-| Elemental Assault | - | - | - | * | - | 3 | 270c | - | - | Passive. Earth Shock deals +20% damage. A primary physical crit empowers the next Earth Shock by another additive +50% (70% total), until used or death. A miss still consumes the empowerment. |
 | Feral Spirit | 25 | 1 | 30 | 12* | 1 (placement)* | 4 | 390c | R(7,4), wolf | Area (summoned actors)* | Active summon. Requires 2 free or replaceable adjacent tiles. Replaces existing wolves with 2 wolves for 12 turns or until killed. Each has 50 health, attacks every 2 turns and snapshots 75% of weapon damage/power at summoning. Follows the selected enemy, otherwise returns to you; can be attacked and grants no XP/rage/points. Spirit Hunt heals from actual damage. Sprites are the summoned actors. |
 | Spirit Hunt | - | - | - | - | - | 4 | 435c | - | - | Passive. Spirit wolves heal you for 50% of their actual damage dealt. |
 | Toughness | - | - | - | - | - | 5 | 480c | - | - | Passive. +20% armor. |
-| Improved Earth Shock | - | - | - | 1 (stun) | - | 5 | 540c | - | - | Passive. Earth Shock cooldown is 1 turn shorter; its interrupt also stuns for 1 enemy turn. |
 
 ## Paladin
 
-**Tagline: Keep the seal, sentence a foe, and make your ground holy.**
+**Tagline: Carry a lasting seal, commit your verdict, and make your ground holy.**
 
 Holy damage on main-hand swings, a committed delayed verdict and fixed damaging ground.
-Holy-event and critical rewards improve later sentences. Blessing of Might supplies
-Strength; Divine Shield trades outgoing damage for immunity.
+Holy-event and critical rewards improve later Judgements. Passive Seal needs no
+maintenance. Blessing of Kings adds primary stats to Battle Shout; Divine Shield
+trades outgoing damage for immunity.
 
 Completing all Paladin training unlocks Brother Sammuel's Wartorn Banner gift through
 the shared trainer farewell dialogue, once each Loop in any selected class. This
@@ -188,21 +190,21 @@ new gift with retained learning. It does not change any learned Paladin ability.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Execution Sentence | 20 | 1 | 6* | 3 (delay)* | 2 | 1 | 0 | C(1,1) | Target | Active delayed Holy attack. Requires an equipped weapon setup, active Seal of Command and an engaged/selected enemy within 2 tiles not already sentenced. Fixes hit/crit and damage at cast: 150% weapon damage, plus 35 with Sanctity of Battle. A landed cast delivers after 3 further turns, ignoring later range/armor; lost if the target dies first. Rewards/procs occur once on impact without retargeting; seal remains active. Divine Purpose or Battle Trance can make it free. Sanctity sets cooldown to ceiling(6 / current attack-haste multiplier), minimum 1. Target sprite flashes on application and impact; also shows a drawn countdown. |
-| Seal of Command | 10 | 1 | - | 30 | Self | 1 | 0 | C(1,3) | Player (application) | Active. Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, combo points. Execution Sentence leaves the seal active. |
-| Blessing of Might | 0 | 1 | - | 60 | Self | 2 | 70c | - | - | Active. +6 Strength for 60 turns. No rage cost; one turn. Stacks with Battle Shout. |
-| Conviction | - | - | - | - | - | 2 | 100c | - | - | Passive. +3 percentage points of critical chance for weapon/physical and direct Holy/Nature attacks. |
-| Art of War | - | - | - | * | - | 3 | 135c | - | - | Passive. Every third landed primary Holy event guarantees the next Execution Sentence crit until used or death. Progress does not expire; at most one event counts per world-turn action, including Seal damage. Sentence contributes on impact. A missed Sentence cast does not consume the critical proc. |
+| Judgement | 20 | 1 | 6 | 3 (delay)* | 2 | 1 | 0 | C(1,1) | Target (application and impact) | Active delayed Holy attack. Requires an equipped weapon setup, learned Seal of Command and an engaged/selected enemy within 2 tiles not already judged. Fixes hit/crit and damage at cast: 150% weapon damage, plus 35 with Sanctity of Battle. A landed cast delivers after 3 further turns, ignoring later range/armor; lost if the target dies first. Rewards/procs occur once on impact without retargeting. Divine Purpose or Battle Trance can make it free. Haste does not shorten cooldown. Target flashes on application and impact, with a countdown between. |
+| Seal of Command | - | - | - | - | - | 1 | 0 | - | - | Learned passive. Landed ordinary main-hand swings with an equipped weapon add 25% weapon damage as Holy. No application, refresh, cost or timer. Bonus damage grants no rage or combo points and cannot recursively trigger weapon procs; it can advance Art of War once per action. Required for Judgement. |
+| Blessing of Kings | - | - | - | - | - | 2 | 70c | - | - | Passive upgrade to Battle Shout. While learned Battle Shout is active, add +2 Strength, Agility and Stamina. Requires Shout learning; no separate cast or rage. Learning Kings during an existing Shout applies immediately. Bonus is derived from active Shout, clears on expiry/death and does not heal on learning, application or refresh. |
+| Conviction | - | - | - | - | - | 2 | 100c | - | - | Passive. +3 percentage points of critical chance for weapon/physical and direct Holy/Fire/Nature attacks. |
+| Art of War | - | - | - | * | - | 3 | 135c | - | - | Passive. Every third landed primary Holy event guarantees the next Judgement crit until used or death. Progress does not expire; at most one event counts per world-turn action, including Seal damage. Judgement contributes on impact. A missed Judgement cast does not consume the critical proc. |
 | Vengeance | - | - | - | 10 | - | 3 | 170c | - | - | Passive. Primary attack crits grant +3% damage per stack, up to 3 stacks (+9%), for 10 turns. Further primary crits refresh the duration. |
-| Consecration | 5 | 1 | 12 | 6 | 1 | 3 | 200c | C(1,2) | Area (fixed 3x3) | Active. Consecrate the fixed 3x3 area around you for 6 turns, replacing your previous ground. Each turn deals 2.5 + 6% weapon damage as Holy to visible neutral or hostile enemies inside. Damage is fixed when cast; no crits, combo points or attack procs. Ticks begin this turn before weapon swings and enemy actions. No damage reduction; one turn. |
+| Consecration | 5 | 1 | 12 | 6 | 1 | 3 | 200c | C(1,2) | Area (fixed 3x3) | Active. Consecrate the fixed 3x3 area around you for 6 turns, replacing your previous ground. Each turn deals 4.5 + 6% weapon damage as Holy to visible neutral or hostile enemies inside. Damage is fixed when cast; no crits, combo points or attack procs. Ticks begin this turn before weapon swings and enemy actions. No damage reduction; one turn. |
 | Divine Shield | 20 | 1 | 30* | 3* | Self | 3 | 200c | C(1,4) | Player | Active self buff. Immune to incoming damage for 3 turns; deal 30% less damage while active. Guardian's Favor changes duration to 4 turns and cooldown from 30 to 20. Weapon timing continues. |
-| Heart of the Crusader | - | - | - | 10 | - | 4 | 235c | - | - | Passive. Landed Execution Sentence gives +3% critical chance against that enemy for 10 turns. |
-| Divine Purpose | - | - | - | * | - | 4 | 270c | - | - | Passive. Landed Execution Sentence has a 15% chance to make the next Execution Sentence free until used. |
+| Heart of the Crusader | - | - | - | 10 | - | 4 | 235c | - | - | Passive. Landed Judgement gives +3% critical chance against that enemy for 10 turns. |
+| Divine Purpose | - | - | - | * | - | 4 | 270c | - | - | Passive. Landed Judgement has a 15% chance to make the next Judgement free until used. |
 | Pursuit of Justice | - | - | - | - | - | 4 | 305c | - | - | Passive. +20% movement credit: periodically move an extra tile in the chosen direction, stopping at obstacles. |
 | Eye for an Eye | - | - | - | - | - | 5 | 340c | - | - | Passive. Surviving an incoming critical hit reflects 30% of damage taken as Holy damage. Reflections cannot proc. |
 | Guardian's Favor | - | - | - | - | - | 5 | 370c | - | - | Passive. Divine Shield cooldown is 10 turns shorter and its duration is 1 turn longer. |
-| Sacred Duty | - | - | - | * | - | 5 | 415c | - | - | Passive. Landed Execution Sentence has a 25% chance to guarantee the next Execution Sentence crit until used. |
-| Sanctity of Battle | - | - | - | - | - | 5 | 470c | - | - | Passive. Execution Sentence deals +35 Holy damage. Its cooldown is divided by current attack haste, rounded up to at least 1 turn. |
+| Sacred Duty | - | - | - | - | - | 5 | 415c | - | - | Passive. Art of War-empowered Judgement criticals deal 225% damage instead of 200%. Fixed at cast, delivered on delayed impact. Ordinary random Judgement crits remain 200%; no separate readiness proc. |
+| Sanctity of Battle | - | - | - | - | - | 5 | 470c | - | - | Passive. Judgement deals +35 Holy damage. Base cooldown stays 6 turns regardless of haste; Restless Blades can still reduce a running cooldown. |
 
 ## Rogue
 
@@ -240,7 +242,7 @@ claim clear on death, allowing another gift with retained Rogue learning next Lo
 | Ruthlessness | - | - | - | - | - | 5 | 340c | - | - | Passive. After a finisher spends points, 60% chance to refund 1 combo point. |
 | Bandit's Guile | - | - | - | 10 | - | 5 | 370c | - | - | Passive. Every 4 qualifying landed direct active attacks grant +5% damage, stacking to +15%. Each qualifying hit refreshes the 10-turn state, including partially built progress. Misses and finishers do not advance it. Retained class attacks qualify. |
 | Relentless Strikes | - | - | - | - | - | 5 | 400c | - | - | Passive. Finishers have a 20% chance per point spent to refund 15 rage, after spending. |
-| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. +5 percentage points of hit chance for weapon/physical and direct Holy/Nature attacks. |
+| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. +5 percentage points of hit chance for weapon/physical and direct Holy/Fire/Nature attacks. |
 
 ## Implementation sources and upkeep
 

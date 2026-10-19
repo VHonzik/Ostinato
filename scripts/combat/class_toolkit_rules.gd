@@ -37,12 +37,34 @@ static func cooldown(hero: HeroState, skill: SkillDefinition) -> int:
 	var turns := skill.cooldown_seconds
 	match skill.family:
 		&"charge": turns -= magnitude(hero, &"juggernaut_1")
-		&"earth_shock": turns -= magnitude(hero, &"improved_earth_shock_1")
 		&"divine_shield": turns -= magnitude(hero, &"guardians_favor_1")
-		&"execution_sentence":
-			if has(hero, &"sanctity_of_battle_1"):
-				turns = maxi(1, ceili(turns / hero.attack_haste()))
 	return maxi(0, turns)
+
+
+static func maelstrom_stacks(hero: HeroState) -> int:
+	return int(effect(hero, &"maelstrom_weapon_1").get("charges", 0))
+
+
+static func cast_duration(hero: HeroState, skill: SkillDefinition) -> float:
+	if skill.family != &"lava_burst":
+		return skill.cast_seconds
+	var passive := hero.find_skill(&"maelstrom_weapon_1")
+	var stacks := maelstrom_stacks(hero)
+	if passive == null or stacks == 0:
+		return skill.cast_seconds
+	if stacks == passive.maximum:
+		return 1.0
+	return maxf(2.0, ceili(skill.cast_seconds * (passive.maximum - stacks) / passive.maximum))
+
+
+static func spend_maelstrom(hero: HeroState, reserved: int) -> void:
+	if reserved == 0:
+		return
+	var remaining := maelstrom_stacks(hero) - reserved
+	if remaining > 0:
+		hero.buffs[&"maelstrom_weapon_1"].charges = remaining
+	else:
+		hero.buffs.erase(&"maelstrom_weapon_1")
 
 
 static func damage_multiplier(hero: HeroState) -> float:
@@ -132,17 +154,17 @@ static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefi
 
 
 static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	extra: float = 1.0) -> AttackEvent:
+	extra: float = 1.0, critical_bonus: int = 0) -> AttackEvent:
 	world.last_attacked_enemy = target
 	world.auto_attack_target = target
-	var event := magic_outcome(world, target, skill, extra)
+	var event := magic_outcome(world, target, skill, extra, critical_bonus)
 	if event.landed():
 		resolve_magic(world, event)
 	return event
 
 
 static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	extra: float = 1.0) -> AttackEvent:
+	extra: float = 1.0, critical_bonus: int = 0) -> AttackEvent:
 	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
 	if world.combat_random.randf() * 100.0 >= hit_chance:
 		world.npc_combat_text.emit(target.tile, 0, &"miss")
@@ -151,17 +173,18 @@ static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefin
 	var critical := false
 	var chance := MeleeRules.critical_chance(world.hero.melee, target.melee)
 	chance += int(target.debuffs.get("crusader_crit", {}).get("bonus", 0))
+	chance += critical_bonus
 	critical = world.combat_random.randf() * 100.0 < chance
-	if skill.family == &"execution_sentence":
-		for key: StringName in [&"art_of_war_1", &"sacred_duty_1"]:
-			if int(effect(world.hero, key).get("critical_ready", 0)) > 0:
-				critical = true
-				world.hero.buffs.erase(key)
+	var empowered := (skill.family == &"judgement"
+		and int(effect(world.hero, &"art_of_war_1").get("critical_ready", 0)) > 0)
+	if empowered:
+		critical = true
+		world.hero.buffs.erase(&"art_of_war_1")
 	var weapon_roll := world.combat_random.randf()
 	var raw := (MeleeRules.weapon_damage(world.hero.melee, weapon_roll)
 		if skill.weapon_multiplier != 0.0 else 0.0)
 	var flat_bonus := skill.minimum
-	if skill.family == &"execution_sentence":
+	if skill.family == &"judgement":
 		flat_bonus += magnitude(world.hero, &"sanctity_of_battle_1")
 	var amount := (raw * skill.weapon_multiplier + flat_bonus) * extra * damage_multiplier(world.hero)
 	amount *= MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level)
@@ -171,6 +194,8 @@ static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefin
 		MeleeRules.round_weapon_damage(amount, world.hero.melee, weapon_roll))
 	if critical:
 		value *= 2
+		if empowered:
+			value = roundi(value * (1.0 + magnitude(world.hero, &"sacred_duty_1") / 200.0))
 	return AttackEvent.new(target, skill, &"critical" if critical else &"hit",
 		value, skill.school as AttackEvent.School)
 

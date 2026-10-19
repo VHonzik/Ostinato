@@ -4,9 +4,8 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(8, 8), 97, false)
 	world.hero.selected_class = &"Paladin"
-	for id in [&"seal_of_command_1", &"execution_sentence_1", &"consecration_1"]:
+	for id in [&"seal_of_command_1", &"judgement_1", &"consecration_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
 	world.hero.rage = 100
 	world.hero.melee.hit = 100
 	world.hero.melee.critical = 0
@@ -35,8 +34,8 @@ func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_
 	var world := _world()
 	var enemy := _enemy(world, Vector2i(10, 8))
 	var other := _enemy(world, Vector2i(8, 10))
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
-	var damage := int(enemy.debuffs[&"execution_sentence_1"].damage)
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	var damage := int(enemy.debuffs[&"judgement_1"].damage)
 	assert_eq(enemy.health, 10000)
 	world.auto_attack_target = other
 	world.last_attacked_enemy = other
@@ -44,7 +43,7 @@ func test_sentence_is_fixed_at_cast_and_lands_once_without_retargeting_or_range_
 	world.hero.melee.damage_min = 1000
 	world.hero.melee.damage_max = 1000
 	world.hero.melee.critical = 100
-	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns - 1):
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns - 1):
 		world.wait_turn()
 		assert_eq(enemy.health, 10000)
 	world.wait_turn()
@@ -62,15 +61,16 @@ func test_sentence_uses_committed_enemy_and_needs_seal_without_spending_a_failed
 	world.last_attacked_enemy = previous
 	world.auto_attack_target = enemy
 	world.hero.buffs.clear()
+	world.hero.learned_skills.erase(world.hero.find_skill(&"seal_of_command_1"))
 	var rage := world.hero.rage
-	assert_false(world.cast_skill(&"execution_sentence_1"))
+	assert_false(world.cast_skill(&"judgement_1"))
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.hero.rage, rage)
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
-	assert_true(world.cast_skill(&"execution_sentence_1"))
-	assert_true(enemy.debuffs.has(&"execution_sentence_1"))
-	assert_false(previous.debuffs.has(&"execution_sentence_1"))
-	assert_eq(int(enemy.debuffs[&"execution_sentence_1"].until) - world.turn_count, 3)
+	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
+	assert_true(world.cast_skill(&"judgement_1"))
+	assert_true(enemy.debuffs.has(&"judgement_1"))
+	assert_false(previous.debuffs.has(&"judgement_1"))
+	assert_eq(int(enemy.debuffs[&"judgement_1"].until) - world.turn_count, 3)
 
 
 func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
@@ -79,12 +79,12 @@ func test_dead_target_loses_sentence_without_rewards_or_retargeting() -> void:
 	world.hero.find_skill(&"divine_purpose_1").coefficient = 1.0
 	var enemy := _enemy(world, Vector2i(10, 8))
 	var other := _enemy(world, Vector2i(8, 10))
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	SpellEffects.damage(world, enemy, 10000, "Test")
 	world.auto_attack_target = other
 	for turn in range(4):
 		world.wait_turn()
-	assert_false(enemy.debuffs.has(&"execution_sentence_1"))
+	assert_false(enemy.debuffs.has(&"judgement_1"))
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_eq(other.health, 10000)
 	assert_same(world.auto_attack_target, other)
@@ -96,26 +96,25 @@ func test_sentence_reserves_guaranteed_crit_and_grants_retained_rewards_only_on_
 		&"battle_trance_1", &"relentless_assault_1"]:
 		assert_true(world.hero.learn_skill(SkillDefinition.catalog(id)))
 	world.hero.find_skill(&"divine_purpose_1").coefficient = 1
-	world.hero.find_skill(&"sacred_duty_1").coefficient = 1
 	ClassToolkitRules.apply(world, &"art_of_war_1", {"critical_ready": 1})
 	world.hero.melee.hit = 100
 	world.hero.melee.critical = 0
 	var enemy := _enemy(world, Vector2i(10, 8))
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
-	assert_eq(int(enemy.debuffs[&"execution_sentence_1"].critical), 1)
+	assert_true(world.cast_skill(&"judgement_1", enemy))
+	assert_eq(int(enemy.debuffs[&"judgement_1"].critical), 1)
 	assert_false(world.hero.buffs.has(&"art_of_war_1"))
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 	assert_eq(world.hero.combo_points, 0)
-	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
 	assert_true(world.hero.buffs.has(&"divine_purpose_1"))
-	assert_true(world.hero.buffs.has(&"sacred_duty_1"))
+	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
 	assert_eq(world.hero.combo_points, 1)
 	world.hero.cooldowns.clear()
 	world.hero.rage = 0
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_false(world.hero.buffs.has(&"divine_purpose_1"))
 	assert_false(world.hero.buffs.has(&"sacred_duty_1"))
 	assert_true(world.hero.buffs.has(&"battle_trance_1"))
@@ -125,11 +124,11 @@ func test_sentence_reserves_guaranteed_crit_and_grants_retained_rewards_only_on_
 func test_verdict_precedes_due_swings_and_enemy_actions_and_stops_on_victory() -> void:
 	var world := _world()
 	var enemy := _enemy(world, Vector2i(9, 8))
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	enemy.stalker = true
 	world.stalkers_arrived = 1
 	enemy.health = 1
-	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns - 1):
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns - 1):
 		world.wait_turn()
 	world.hero.swing.remaining = 0
 	enemy.stunned_until = 0
@@ -139,7 +138,7 @@ func test_verdict_precedes_due_swings_and_enemy_actions_and_stops_on_victory() -
 	world.wait_turn()
 	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
 	assert_eq(world.hero.health, health)
-	assert_string_contains("\n".join(world.messages), "Execution Sentence ->")
+	assert_string_contains("\n".join(world.messages), "Judgement ->")
 
 
 func test_consecration_stays_put_ticks_six_times_and_never_triggers_attack_rewards() -> void:
@@ -213,7 +212,7 @@ func test_save_restores_pending_verdict_and_ground_timing_and_rejects_invalid_ef
 	var world := game.world
 	var enemy := _enemy(world, Vector2i(10, 8))
 	assert_true(world.cast_skill(&"consecration_1"))
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	var snapshot := SaveCodec.capture(game)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
 	assert_not_null(restored)
@@ -230,12 +229,12 @@ func test_save_restores_pending_verdict_and_ground_timing_and_rejects_invalid_ef
 	assert_eq(restored.combat_random.state, world.combat_random.state)
 	for field in ["damage", "until", "critical"]:
 		var invalid := snapshot.duplicate(true)
-		invalid.actors[0].debuffs.execution_sentence_1[field] = -1
+		invalid.actors[0].debuffs.judgement_1[field] = -1
 		assert_null(SaveCodec.restore(invalid, false))
 	var invalid_ground := snapshot.duplicate(true)
 	invalid_ground.consecration.center = [999, 999]
 	assert_null(SaveCodec.restore(invalid_ground, false))
-	for id in ["consecration_1", "execution_sentence_1"]:
+	for id in ["consecration_1", "judgement_1"]:
 		var unlearned := snapshot.duplicate(true)
 		unlearned.learned.erase(id)
 		assert_null(SaveCodec.restore(unlearned, false))
@@ -243,6 +242,6 @@ func test_save_restores_pending_verdict_and_ground_timing_and_rejects_invalid_ef
 	assert_true(game.restart_after_death())
 	assert_true(game.world.consecration.is_empty())
 	assert_true(game.world.actors.all(func(actor: GridActor) -> bool:
-		return not actor.debuffs.has(&"execution_sentence_1")))
-	assert_not_null(game.world.hero.find_skill(&"execution_sentence_1"))
+		return not actor.debuffs.has(&"judgement_1")))
+	assert_not_null(game.world.hero.find_skill(&"judgement_1"))
 	assert_not_null(game.world.hero.find_skill(&"consecration_1"))

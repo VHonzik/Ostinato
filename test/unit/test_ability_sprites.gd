@@ -9,7 +9,7 @@ func before_each() -> void:
 	_world = GridWorld.new(Rect2i(0, 0, 24, 24), Vector2i(8, 8), 97, false)
 	_world.hero.equipment["weapons"] = ItemData.instance(2092)
 	for identifier: StringName in [&"battle_shout_1", &"lightning_shield_1",
-		&"execution_sentence_1", &"seal_of_command_1", &"windfury_weapon_1", &"consecration_1"]:
+		&"judgement_1", &"seal_of_command_1", &"windfury_weapon_1", &"consecration_1"]:
 		_world.hero.learn_skill(SkillDefinition.catalog(identifier))
 	_world.hero.rage = 100
 	_world.hero.melee.hit = 100.0
@@ -71,7 +71,7 @@ func test_failed_cast_does_not_start_a_blink() -> void:
 
 
 func test_landed_enemy_effect_replaces_both_layers_and_keeps_current_health_tint() -> void:
-	for identifier: StringName in [&"mortal_strike_1", &"eviscerate_1", &"earth_shock_1"]:
+	for identifier: StringName in [&"mortal_strike_1", &"eviscerate_1", &"lava_burst_1"]:
 		var event := AttackEvent.new(_enemy, SkillDefinition.catalog(identifier), &"hit", 1)
 		SpellEffects.attack(_world, event, "Hit")
 		_enemy.health = 200
@@ -102,7 +102,7 @@ func test_enemy_effect_replacement_resets_time_and_other_actors_keep_their_own_t
 	_world.npc_ability_hit.emit(other, &"mortal_strike")
 	_world.npc_ability_hit.emit(_enemy, &"mortal_strike")
 	_view._process(1.25)
-	_world.npc_ability_hit.emit(_enemy, &"earth_shock")
+	_world.npc_ability_hit.emit(_enemy, &"lava_burst")
 	_view._draw_actor(_enemy)
 	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 48, 16, 16))
 	_view._process(0.25)
@@ -113,8 +113,8 @@ func test_enemy_effect_replacement_resets_time_and_other_actors_keep_their_own_t
 
 
 func test_sentence_shows_at_cast_and_again_at_impact_then_windfury_can_replace_it() -> void:
-	_world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
-	assert_true(_world.cast_skill(&"execution_sentence_1", _enemy))
+	_world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
+	assert_true(_world.cast_skill(&"judgement_1", _enemy))
 	assert_eq((_view._npc_blinks[_enemy].sprite as AtlasTexture).region,
 		Rect2(16, 16, 16, 16))
 	_view._process(1.5)

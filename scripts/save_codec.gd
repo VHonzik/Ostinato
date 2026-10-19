@@ -336,10 +336,9 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 		return false
 	world.hero.buffs = _normalized_buffs(data.buffs)
 	for key in world.hero.buffs:
-		if ((ClassToolkitData.PASSIVES.has(String(key)) or ClassToolkitData.ACTIVES.has(String(key)))
-			and (world.hero.find_skill(key) == null
-				or (int(world.hero.buffs[key].until) > 0
-					and int(world.hero.buffs[key].until) <= world.turn_count))):
+		if (world.hero.find_skill(key) == null
+			or (int(world.hero.buffs[key].until) > 0
+				and int(world.hero.buffs[key].until) <= world.turn_count)):
 			return false
 	for actor in world.actors:
 		if (actor.summon_kind != "" and actor.summon_skill != ItemData.ANCESTRAL_TOTEM_HOTBAR_ID
@@ -347,16 +346,16 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 			return false
 		if actor.debuffs.has(&"deadly_poison_1") and world.hero.find_skill(&"deadly_poison_1") == null:
 			return false
-		if actor.debuffs.has(&"execution_sentence_1"):
-			var sentence := world.hero.find_skill(&"execution_sentence_1")
-			var effect: Dictionary = actor.debuffs[&"execution_sentence_1"]
+		if actor.debuffs.has(&"judgement_1"):
+			var sentence := world.hero.find_skill(&"judgement_1")
+			var effect: Dictionary = actor.debuffs[&"judgement_1"]
 			if (sentence == null or not actor.alive or actor.relationship == GridActor.Relationship.FRIENDLY
 				or int(effect.until) <= world.turn_count
 				or int(effect.until) > world.turn_count + sentence.delay_turns):
 				return false
 	if not _debuffs(data.debuffs) or data.debuffs.has("deadly_poison_1"):
 		return false
-	if (data.debuffs.has("execution_sentence_1") or not _restore_consecration(world, data.consecration)
+	if (data.debuffs.has("judgement_1") or not _restore_consecration(world, data.consecration)
 		or not _restore_war_banner(world, data.get("war_banner", {}))):
 		return false
 	world.hero.debuffs = _normalized_buffs(data.debuffs)
@@ -575,10 +574,17 @@ static func _buffs(data: Variant) -> bool:
 		var buff: Variant = data[key]
 		if not _number_map(buff, 0) or not buff.has_all(["armor", "until"]):
 			return false
+		if key in ["seal_of_command_1", "blessing_of_kings_1", "sacred_duty_1"]:
+			return false
+		if key == "maelstrom_weapon_1":
+			if (buff.size() != 3 or not buff.has("charges") or buff.armor != 0
+				or buff.until != 0 or not _integer(buff.charges, 1)
+				or buff.charges > skill.maximum):
+				return false
 		if int(buff.until) == 0 and (skill.effect != SkillDefinition.Effect.PASSIVE or skill.duration != 0):
 			return false
 		for stat in buff:
-			if stat not in ["armor", "until", "strength", "agility", "stamina",
+			if stat not in ["armor", "until",
 				"charges", "ready", "weapon_id", "off_weapon_id", "physical_percent",
 				"haste_percent", "critical_percent", "immunity", "bonus_percent", "critical_ready"]:
 				if stat not in ["main_until", "off_until"] or not PoisonRules.is_poison(skill):
@@ -684,7 +690,7 @@ static func _debuffs(data: Variant) -> bool:
 		if not key is String or not data[key] is Dictionary or not data[key].has("until"):
 			return false
 		var effect: Dictionary = data[key].duplicate()
-		if key == "execution_sentence_1":
+		if key == "judgement_1":
 			if (effect.size() != 3 or not effect.has_all(["until", "damage", "critical"])
 				or not _integer(effect.until, 1) or not _integer(effect.damage, 0)
 				or not _integer(effect.critical, 0) or effect.critical > 1):

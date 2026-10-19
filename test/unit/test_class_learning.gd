@@ -190,11 +190,13 @@ func test_lightning_shield_can_be_reapplied_and_discharges_grant_no_points() -> 
 
 func test_shaman_starters_include_a_direct_attack_without_mastery_requirement() -> void:
 	var world := _world(&"Shaman")
-	assert_true(world.train(&"Shaman", &"earth_shock_1"))
+	assert_true(world.train(&"Shaman", &"lava_burst_1"))
 	assert_true(world.train(&"Shaman", &"lightning_shield_1"))
 	world.hero.rage = 15
 	world.hero.melee.hit = 100.0
-	assert_true(world.cast_skill(&"earth_shock_1", _enemy(world)))
+	assert_true(world.cast_skill(&"lava_burst_1", _enemy(world)))
+	while world.pending_skill != null:
+		world.continue_cast()
 	assert_true(world.cast_skill(&"lightning_shield_1"))
 
 
@@ -207,9 +209,7 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
 	assert_true(world.request_melee(first))
-	assert_eq(world.hero.combo_points, 1, "Ordinary main-hand hits build points.")
-	assert_true(world.cast_skill(&"seal_of_command_1"))
-	assert_eq(world.hero.combo_points, 1, "Buff and its swing proc do not build points.")
+	assert_eq(world.hero.combo_points, 1, "Main-hand hit builds one point; passive Seal adds none.")
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", first))
 	assert_eq(world.hero.combo_points, 2)
@@ -259,31 +259,30 @@ func test_eviscerate_requires_points_spends_all_and_leaves_ability_cooldowns_unc
 	assert_almost_eq(world.hero.attack_haste(), 1.0, 0.00001)
 
 
-func test_execution_sentence_hits_and_misses_keep_seal_and_only_hits_build_points() -> void:
+func test_judgement_hits_and_misses_keep_seal_and_only_hits_build_points() -> void:
 	var world := _world(&"Paladin")
 	_learn_starters(world, &"Paladin")
 	_learn_starters(world, &"Rogue")
 	var enemy := _enemy(world, Vector2i(7, 5))
 	world.hero.rage = 100
-	assert_false(world.cast_skill(&"execution_sentence_1", enemy), "Requires the seal.")
+	assert_false(world.cast_skill(&"seal_of_command_1"), "The learned seal is passive.")
 	assert_eq(world.turn_count, 0)
-	assert_true(world.cast_skill(&"seal_of_command_1"))
 	world.hero.melee.hit = -1000.0
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 0)
-	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
+	assert_true(ClassToolkitRules.has(world.hero, &"seal_of_command_1"))
 	for turn in range(6):
 		world.wait_turn()
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"execution_sentence_1", enemy))
+	assert_true(world.cast_skill(&"judgement_1", enemy))
 	assert_eq(enemy.health, enemy.max_health, "A landed sentence waits for its verdict.")
-	for turn in range(world.hero.find_skill(&"execution_sentence_1").delay_turns):
+	for turn in range(world.hero.find_skill(&"judgement_1").delay_turns):
 		world.wait_turn()
 	assert_lt(enemy.health, enemy.max_health)
 	assert_eq(world.hero.combo_points, 1)
-	assert_true(world.hero.buffs.has(&"seal_of_command_1"))
+	assert_true(ClassToolkitRules.has(world.hero, &"seal_of_command_1"))
 
 
 func test_learning_and_previous_class_survive_death_while_combat_state_resets() -> void:
@@ -327,7 +326,6 @@ func test_mixed_class_save_roundtrip_preserves_choice_combo_points_and_buff_timi
 			game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 	game.world.hero.rage = 100
 	assert_true(game.world.cast_skill(&"lightning_shield_1"))
-	assert_true(game.world.cast_skill(&"seal_of_command_1"))
 	game.world.hero.combo_points = 3
 	game.world.hero.level = 5
 	game.world.hero.copper = 10000
@@ -510,7 +508,6 @@ func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() 
 	_learn_starters(world, &"Paladin")
 	_learn_starters(world, &"Rogue")
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"seal_of_command_1"))
 	var enemy := _enemy(world)
 	enemy.facing = Vector2i.LEFT
 	world.hero.melee.hit = 100.0
@@ -545,11 +542,10 @@ func test_class_selection_blocks_saving_until_locked_and_then_saves_without_new_
 	assert_not_null(SaveCodec.restore(SaveCodec.capture(game), false))
 
 
-func test_execution_sentence_retargets_without_banking_swings_or_attacking_the_previous_enemy() -> void:
+func test_judgement_retargets_without_banking_swings_or_attacking_the_previous_enemy() -> void:
 	var world := _world(&"Paladin")
 	_learn_starters(world, &"Paladin")
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"seal_of_command_1"))
 	var previous := _enemy(world, Vector2i(5, 6))
 	var chosen := _enemy(world, Vector2i(7, 5))
 	world.hero.melee.hit = 100.0
@@ -557,7 +553,7 @@ func test_execution_sentence_retargets_without_banking_swings_or_attacking_the_p
 	var health := previous.health
 	world.hero.swing.remaining = 1.0
 	world.hero.rage = 100
-	assert_true(world.cast_skill(&"execution_sentence_1", chosen))
+	assert_true(world.cast_skill(&"judgement_1", chosen))
 	assert_same(world.auto_attack_target, chosen)
 	assert_same(world.last_attacked_enemy, chosen)
 	assert_eq(previous.health, health, "The previous target receives no due swing.")
@@ -574,7 +570,7 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	game.restore(restored, game.seed_value, game.loop_count)
 	assert_false(game.can_select_class())
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
-	assert_null(game.world.hero.find_skill(&"execution_sentence_1"))
+	assert_null(game.world.hero.find_skill(&"judgement_1"))
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_eq(game.world.hero.selected_class, &"Paladin")
@@ -584,26 +580,26 @@ func test_save_load_and_death_before_training_keep_the_choice_without_granting_s
 	assert_null(game.world.hero.find_skill(&"seal_of_command_1"))
 	assert_false(game.world.train(&"Shaman", &"lightning_shield_1"))
 	assert_true(game.world.train(&"Paladin", &"seal_of_command_1"))
-	assert_eq(game.world.hotbar[10], &"seal_of_command_1")
+	assert_false(game.world.hotbar.has(&"seal_of_command_1"))
 	assert_false(game.world.train(&"Paladin", &"seal_of_command_1"), "Already learned.")
-	assert_eq(game.world.hotbar.count(&"seal_of_command_1"), 1)
+	assert_eq(game.world.hotbar.count(&"seal_of_command_1"), 0)
 	var partial := SaveCodec.restore(SaveCodec.capture(game), false)
 	assert_not_null(partial)
 	if partial == null:
 		return
 	game.restore(partial, game.seed_value, game.loop_count)
 	assert_not_null(game.world.hero.find_skill(&"seal_of_command_1"))
-	assert_null(game.world.hero.find_skill(&"execution_sentence_1"))
-	assert_true(game.world.train(&"Paladin", &"execution_sentence_1"))
-	assert_eq(game.world.hotbar[2], &"execution_sentence_1")
+	assert_null(game.world.hero.find_skill(&"judgement_1"))
+	assert_true(game.world.train(&"Paladin", &"judgement_1"))
+	assert_eq(game.world.hotbar[2], &"judgement_1")
 	game.world.hero.rage = 100
-	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Learning is usable immediately.")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 	assert_true(game.select_class(&"Warrior", _marshal(game)))
-	game.world.hero.rage = 100
-	assert_true(game.world.cast_skill(&"seal_of_command_1"), "Retained starter needs no relearning.")
+	assert_not_null(game.world.hero.find_skill(&"seal_of_command_1"))
+	assert_not_null(game.world.hero.find_skill(&"judgement_1"))
+	assert_false(game.world.cast_skill(&"seal_of_command_1"), "Retained Seal remains passive.")
 
 
 func test_matching_trainer_menu_teaches_both_starters_free_and_assigns_only_actives() -> void:

@@ -48,11 +48,13 @@ var pending_skill: SkillDefinition
 var pending_target: GridActor
 var pending_poison_hands: int = PoisonRules.Hands.BOTH
 var cast_turns: int = 0
+var cast_maelstrom: int = 0
 var cast_elapsed: int = 0
 var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
 var holy_event_counted: bool = false
 var combo_event_counted: bool = false
+var maelstrom_event_counted: bool = false
 var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
@@ -379,9 +381,9 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 		return false
 	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
 		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
-		SkillDefinition.Effect.EXECUTION_SENTENCE]
+		SkillDefinition.Effect.JUDGEMENT]
 		and skill.target == SkillDefinition.Target.ENEMY and target == null and in_combat()):
-		target = (committed_enemy() if skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
+		target = (committed_enemy() if skill.effect == SkillDefinition.Effect.JUDGEMENT
 			else last_attacked_enemy)
 	if skill.effect == SkillDefinition.Effect.PASSIVE:
 		return false
@@ -418,8 +420,11 @@ func _begin_cast(skill: SkillDefinition, target: GridActor,
 	pending_target = target
 	pending_poison_hands = poison_hands
 	cast_elapsed = 0
-	cast_duration = skill.cast_seconds
-	cast_turns = maxi(1, ceili(cast_duration - hero.casting_credit))
+	cast_maelstrom = (ClassToolkitRules.maelstrom_stacks(hero)
+		if skill.family == &"lava_burst" else 0)
+	cast_duration = ClassToolkitRules.cast_duration(hero, skill)
+	cast_turns = maxi(1, ceili(cast_duration
+		- (0.0 if skill.family == &"lava_burst" else hero.casting_credit)))
 	global_cooldown_until = turn_count + 1
 	if skill.target == SkillDefinition.Target.ENEMY:
 		target.relationship = GridActor.Relationship.HOSTILE
@@ -445,16 +450,17 @@ func continue_cast() -> bool:
 		var skill := pending_skill
 		var target := pending_target
 		var poison_hands := pending_poison_hands
+		var reserved_stacks := cast_maelstrom
 		cancel_cast()
 		var payment := SkillCost.quote(hero, skill)
 		if (skill.available_resource(hero) >= payment.rage_cost and valid_spell_target(skill, target)
 			and SpellEffects.can_apply(self, skill, target)):
-			if skill.family != &"war_horn":
+			if skill.family not in [&"war_horn", &"lava_burst"]:
 				hero.casting_credit += cast_turns - cast_duration
 			payment.pay(hero)
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
-			_resolve_skill(skill, target, payment.rage_cost, poison_hands)
+			_resolve_skill(skill, target, payment.rage_cost, poison_hands, reserved_stacks)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
 	_finish_turn()
@@ -510,10 +516,11 @@ func cancel_cast(force: bool = false) -> void:
 		return
 	pending_skill = null
 	pending_target = null
+	cast_maelstrom = 0
 
 
 func cooldown_family(skill: SkillDefinition) -> StringName:
-	return &"shock" if skill.family == &"earth_shock" else skill.family
+	return skill.family
 
 
 func valid_spell_target(skill: SkillDefinition, target: GridActor) -> bool:
@@ -616,9 +623,9 @@ func _first_living_stalker() -> GridActor:
 
 
 func _resolve_skill(skill: SkillDefinition, target: GridActor, resource_spent: int = 0,
-	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
+	poison_hands: int = PoisonRules.Hands.BOTH, maelstrom_stacks: int = 0) -> void:
 	_award_ability_use(skill)
-	SpellEffects.resolve(self, skill, target, resource_spent, poison_hands)
+	SpellEffects.resolve(self, skill, target, resource_spent, poison_hands, maelstrom_stacks)
 	check_terminal()
 
 
@@ -857,6 +864,7 @@ func _finish_turn() -> void:
 	NpcRules.acquire_hostiles(self)
 	resolving_turn = false
 	combo_event_counted = false
+	maelstrom_event_counted = false
 	for actor in actors:
 		_hide_empty_corpse(actor)
 		if not actor.alive and not actor.chest and not actor.story_guard and actor.died_on_turn >= 0:
@@ -897,7 +905,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			add_message(target.title + " dies.")
 			return
 		target.alive = false
-		target.debuffs.erase(&"execution_sentence_1")
+		target.debuffs.erase(&"judgement_1")
 		target.engaged = false
 		target.returning_home = false
 		if check_terminal():

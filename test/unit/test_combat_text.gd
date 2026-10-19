@@ -61,7 +61,7 @@ func test_weapon_miss_dodge_critical_and_off_hand_emit_separate_results() -> voi
 
 func test_magic_and_bonus_strike_misses_show_text_without_damage() -> void:
 	_world.hero.melee.hit = -100.0
-	ClassToolkitRules.magic_attack(_world, _enemy, SkillDefinition.catalog(&"earth_shock_1"))
+	ClassToolkitRules.magic_attack(_world, _enemy, SkillDefinition.catalog(&"lava_burst_1"))
 	ClassToolkitRules.bonus_strike(_world, _enemy, false, 1.0, "Windfury")
 	assert_eq(_view.combat_text._entries.size(), 2)
 	for entry in _view.combat_text._entries:
@@ -77,7 +77,7 @@ func test_absorbed_hit_shows_zero_instead_of_miss() -> void:
 
 
 func test_display_labels_do_not_choose_attack_type_or_rewrite_log_format() -> void:
-	var holy := AttackEvent.new(_enemy, SkillDefinition.catalog(&"execution_sentence_1"),
+	var holy := AttackEvent.new(_enemy, SkillDefinition.catalog(&"judgement_1"),
 		&"hit", 11, AttackEvent.School.HOLY)
 	SpellEffects.attack(_world, holy, "You (custom label)")
 	assert_eq(_world.messages[-1], "You (custom label) -> Enemy: 11 damage.")

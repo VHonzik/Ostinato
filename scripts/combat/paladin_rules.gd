@@ -11,7 +11,7 @@ static func sentence(world: GridWorld, target: GridActor, skill: SkillDefinition
 	target.debuffs[skill.id] = {"until": world.turn_count + 1 + skill.delay_turns,
 		"damage": event.amount, "critical": int(event.critical())}
 	world.npc_ability_hit.emit(target, skill.family)
-	world.add_message("Execution Sentence on %s: verdict in %d turns." % [
+	world.add_message("Judgement on %s: verdict in %d turns." % [
 		target.title, skill.delay_turns])
 
 
@@ -38,16 +38,16 @@ static func tick(world: GridWorld) -> void:
 	if world.is_terminal():
 		return
 	for target in world.actors:
-		var effect: Dictionary = target.debuffs.get(&"execution_sentence_1", {})
+		var effect: Dictionary = target.debuffs.get(&"judgement_1", {})
 		if effect.is_empty():
 			continue
 		if not target.alive:
-			target.debuffs.erase(&"execution_sentence_1")
+			target.debuffs.erase(&"judgement_1")
 			continue
 		if world.turn_count < int(effect.until):
 			continue
-		target.debuffs.erase(&"execution_sentence_1")
-		var skill := world.hero.find_skill(&"execution_sentence_1")
+		target.debuffs.erase(&"judgement_1")
+		var skill := world.hero.find_skill(&"judgement_1")
 		var event := AttackEvent.new(target, skill,
 			&"critical" if int(effect.critical) == 1 else &"hit", int(effect.damage),
 			AttackEvent.School.HOLY)

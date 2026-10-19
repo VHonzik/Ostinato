@@ -46,7 +46,7 @@ func _run() -> void:
 		"gear": "Common armor 85, neck 70001, rings 70002/70003; weapon 5579/5580/2224.",
 		"kits": "Full named kits %s; initial Warrior learning cleared. Selected %s." % [str(builds), selected_class],
 		"entry": "All enemies adjacent and hostile. Cold: full HP, zero rage, no buffs. Prepared: full HP, 90 rage, known maintenance buffs and mixed poisons; no assigned procs, combo points or summons.",
-		"policies": "Choose Holy-first, physical-first or Holy-first without ground on %d independent pilot seeds per policy. Maintain buffs, use defenses below 50%% HP, summon allies and spend combo points at 3+. Holy-first: Sentence, ground, Shock, Mortal Strike. Physical-first: Mortal Strike, Shock, Sentence, ground. Follow targets without kiting." % pilot_samples,
+		"policies": "Choose Holy-first, physical-first or Holy-first without ground on %d independent pilot seeds per policy. Maintain buffs, use defenses below 50%% HP, summon allies and spend combo points at 3+. Holy-first: Judgement, ground, Lava Burst, Mortal Strike. Physical-first: Mortal Strike, Lava Burst, Judgement, ground. Follow targets without kiting." % pilot_samples,
 		"potions": "One Minor Healing Potion in Stalker fights, used at 40+ missing HP.",
 		"seeds": "Same as warrior bench: pilot 1500000 (+10000 for Stalker); measured 1600000 + encounter_index*10000 + fight_index. Shared across builds and weapon/entry states.",
 		"accounting": "Pooled effective enemy HP removed, overkill excluded. Passives embedded. First up to 10 seeds per cell replayed on plain GridWorld, checking outcomes, HP, turns, rage and RNG.",
@@ -82,18 +82,11 @@ func _choose_policy(encounter: Dictionary, weapon: int, prepared: bool) -> Strin
 
 func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 	policy: String, seed_value: int, traced: bool) -> Dictionary:
-	var world: GridWorld = (PaladinWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12),
-		seed_value, false) if traced else
-		GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12), seed_value, false))
+	var world := _create_world(seed_value, traced)
 	var hero := world.hero
 	hero.level = int(encounter.hero_level)
 	hero.selected_class = selected_class
-	hero.learned_skills.clear()
-	for category in ClassSkillData.PLAYABLE_CLASSES:
-		if build != "All" and String(category) not in build.split("+"):
-			continue
-		for skill in kit_skills[category]:
-			hero.learned_skills.append(skill)
+	_learn_skills(hero)
 	hero.equipment.clear()
 	var gear := {"armor": 85, "neck": 70001, "ring_1": 70002,
 		"ring_2": 70003, "weapons": WEAPONS[weapon]}
@@ -132,6 +125,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		initial_hp += enemies[index].health
 	if traced:
 		(world as PaladinWorld).watch(enemies)
+	_open_battle(world, enemies)
 	while not world.is_terminal() and world.turn_count < 300:
 		var living := enemies.filter(func(enemy: GridActor) -> bool: return enemy.alive)
 		if living.is_empty():
@@ -147,7 +141,7 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			continue
 		var target: GridActor = living[0]
 		var choices: Array[StringName] = []
-		for id in [&"battle_shout_1", &"blessing_of_might_1", &"seal_of_command_1",
+		for id in [&"battle_shout_1",
 			&"lightning_shield_1", &"windfury_weapon_1"]:
 			if not hero.buffs.has(id):
 				choices.append(id)
@@ -158,15 +152,15 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			choices.append(&"instant_poison_1")
 		choices.append_array(_finishers(hero))
 		if policy == "physical":
-			choices.append_array([&"mortal_strike_1", &"earth_shock_1", &"judgement_1",
-				&"execution_sentence_1", &"consecration_1"])
+			choices.append_array([&"mortal_strike_1", &"lava_burst_1", &"judgement_1", &"consecration_1"])
 		else:
-			choices.append_array([&"judgement_1", &"execution_sentence_1"])
+			choices.append_array([&"judgement_1"])
 			if policy != "no_ground":
 				choices.append(&"consecration_1")
-			choices.append_array([&"earth_shock_1", &"mortal_strike_1"])
+			choices.append_array([&"lava_burst_1", &"mortal_strike_1"])
 		if living.size() > 1:
 			choices.append(&"whirlwind_1")
+		choices.append_array(_additional_choices(world, policy))
 		var acted := false
 		for id in choices:
 			var skill := hero.find_skill(id)
@@ -209,8 +203,35 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		assert(trace.valid_accounting and trace.damage_total == initial_hp - enemy_hp)
 		result.merge({"damage": trace.damage.duplicate(true), "damage_total": trace.damage_total,
 			"casts": trace.casts.duplicate(), "activations": trace.activations.duplicate()})
+	result.merge(_battle_metrics(world))
 	world.discard()
 	return result
+
+
+func _create_world(seed_value: int, traced: bool) -> GridWorld:
+	return (PaladinWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12), seed_value, false)
+		if traced else GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(10, 12), seed_value, false))
+
+
+func _learn_skills(hero: HeroState) -> void:
+	hero.learned_skills.clear()
+	for category in ClassSkillData.PLAYABLE_CLASSES:
+		if build != "All" and String(category) not in build.split("+"):
+			continue
+		for skill in kit_skills[category]:
+			hero.learned_skills.append(skill)
+
+
+func _open_battle(_world: GridWorld, _enemies: Array[GridActor]) -> void:
+	pass
+
+
+func _additional_choices(_world: GridWorld, _policy: String) -> Array[StringName]:
+	return []
+
+
+func _battle_metrics(_world: GridWorld) -> Dictionary:
+	return {}
 
 
 func _finishers(hero: HeroState) -> Array[StringName]:
@@ -225,7 +246,7 @@ func _finishers(hero: HeroState) -> Array[StringName]:
 
 
 func _prepare(world: GridWorld) -> void:
-	for id in [&"battle_shout_1", &"blessing_of_might_1", &"seal_of_command_1",
+	for id in [&"battle_shout_1",
 		&"lightning_shield_1", &"windfury_weapon_1", &"instant_poison_1"]:
 		var skill := world.hero.find_skill(id)
 		if skill != null:

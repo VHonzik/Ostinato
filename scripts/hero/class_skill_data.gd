@@ -4,13 +4,13 @@ extends RefCounted
 ## Starter and Warrior skills for the four-class toolkit.
 const PLAYABLE_CLASSES: Array[StringName] = [&"Warrior", &"Shaman", &"Paladin", &"Rogue"]
 const MAINTENANCE_FAMILIES: Array[StringName] = [
-	&"battle_shout", &"windfury_weapon", &"lightning_shield", &"seal_of_command",
-	&"instant_poison", &"deadly_poison", &"blessing_of_might",
+	&"battle_shout", &"windfury_weapon", &"lightning_shield",
+	&"instant_poison", &"deadly_poison",
 ]
 const STARTERS: Dictionary = {
 	&"Warrior": [&"mortal_strike_1", &"whirlwind_1"],
-	&"Shaman": [&"lightning_shield_1", &"earth_shock_1"],
-	&"Paladin": [&"seal_of_command_1", &"execution_sentence_1"],
+	&"Shaman": [&"lightning_shield_1", &"lava_burst_1"],
+	&"Paladin": [&"seal_of_command_1", &"judgement_1"],
 	&"Rogue": [&"eviscerate_1", &"relentless_assault_1"],
 }
 const WARRIOR_SKILLS: Array[StringName] = [
@@ -27,17 +27,17 @@ const STARTER_SKILLS: Dictionary = {
 	},
 	"seal_of_command_1": {
 		"title": "Seal of Command", "class_tab": "Paladin",
-		"training_level": 1, "rage_cost": 10, "cast_seconds": 1.0, "duration": 30,
+		"training_level": 1,
 		"weapon_multiplier": 0.25, "family": "seal_of_command", "school": 1,
-		"effect": "ARMOR", "target": "SELF",
-		"detail": "Landed main-hand swings add 25% weapon damage as Holy damage for 30 turns. Bonus damage grants no rage, combo points. Execution Sentence leaves the seal active."
+		"effect": "PASSIVE", "target": "NONE",
+		"detail": "Passive: while a weapon setup is equipped, landed ordinary main-hand swings add 25% weapon damage as Holy damage. Always active once learned; no application or refresh. Bonus damage grants no rage or combo points and cannot trigger further attack procs."
 	},
-	"execution_sentence_1": {
-		"title": "Execution Sentence", "class_tab": "Paladin", "training_level": 1,
+	"judgement_1": {
+		"title": "Judgement", "class_tab": "Paladin", "training_level": 1,
 		"rage_cost": 20, "cast_seconds": 1.0, "range_tiles": 2, "cooldown_seconds": 6,
-		"weapon_multiplier": 1.5, "delay_turns": 3, "family": "execution_sentence", "school": 1,
-		"effect": "EXECUTION_SENTENCE", "target": "ENEMY",
-		"detail": "Requires Seal of Command. Sentence the engaged target to 150% weapon damage as Holy damage after 3 further turns. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; seal remains active."
+		"weapon_multiplier": 1.5, "delay_turns": 3, "family": "judgement", "school": 1,
+		"effect": "JUDGEMENT", "target": "ENEMY",
+		"detail": "Requires learned Seal of Command and an equipped weapon setup. Judge the engaged target for 150% weapon damage as Holy after 3 further turns. Damage and hit/crit are fixed when cast; later attacks do not build it up. Impact ignores range and armor, triggers attack rewards once, and leaves your current target unchanged. Lost if the target dies first. One turn; fixed 6-turn cooldown."
 	},
 	"eviscerate_1": {
 		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,

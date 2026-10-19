@@ -1100,7 +1100,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> void:
 	var hero := _game.world.hero
 	assert_true(hero.learn_skill(SkillDefinition.catalog(&"lightning_shield_1")))
-	assert_true(hero.learn_skill(SkillDefinition.catalog(&"earth_shock_1")))
+	assert_true(hero.learn_skill(SkillDefinition.catalog(&"lava_burst_1")))
 	await _tap_key(KEY_K)
 	var shout :=  _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
 		return button.text.begins_with("Battle Shout"))[0] as Button
@@ -1111,12 +1111,12 @@ func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> v
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.change_tab(2)
 	var healing := _game.hero_panel._skill_buttons.filter(func(button: Button) -> bool:
-		return button.text.begins_with("Earth Shock"))[0] as Button
+		return button.text.begins_with("Lava Burst"))[0] as Button
 	healing.grab_focus()
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_K)
 	assert_eq(_game.hero_panel._tabs.get_tab_title(_game.hero_panel._tabs.current_tab), "Shaman")
-	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Earth Shock")
+	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Lava Burst")
 	_game.hero_panel.change_tab(-2)
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.hero_panel.close()
@@ -2021,13 +2021,12 @@ func test_sentence_hotkey_casts_on_engaged_enemy_without_opening_target_picker()
 	world.hero.swing.remaining = 100
 	world.hero.swing._active = true
 	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
-	world.hero.learn_skill(SkillDefinition.catalog(&"execution_sentence_1"))
-	world.hero.buffs[&"seal_of_command_1"] = {"armor": 0, "until": 100}
+	world.hero.learn_skill(SkillDefinition.catalog(&"judgement_1"))
 	world.auto_attack_target = enemy
 	world.last_attacked_enemy = enemy
-	assert_true(world.assign_hotbar(0, &"execution_sentence_1"))
+	assert_true(world.assign_hotbar(0, &"judgement_1"))
 	await _tap_key(KEY_1)
 	assert_eq(world.turn_count, 1)
 	assert_false(_game.combat_panel.visible)
-	assert_true(enemy.debuffs.has(&"execution_sentence_1"))
+	assert_true(enemy.debuffs.has(&"judgement_1"))
 	assert_eq(enemy.health, 10000)

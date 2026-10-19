@@ -93,8 +93,8 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			and (not world.valid_spell_target(skill, world.last_attacked_enemy) if world.in_combat()
 				else world.spell_candidates(skill).is_empty()))
 		var sentence_unavailable := (skill != null
-			and skill.effect == SkillDefinition.Effect.EXECUTION_SENTENCE
-			and not world.hero.buffs.has(&"seal_of_command_1"))
+			and skill.effect == SkillDefinition.Effect.JUDGEMENT
+			and world.hero.find_skill(&"seal_of_command_1") == null)
 		for color_state in LABEL_COLOR_STATES:
 			if insufficient_rage or execute_unavailable or sentence_unavailable:
 				button.add_theme_color_override(color_state, INSUFFICIENT_RAGE_COLOR)
