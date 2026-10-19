@@ -33,6 +33,7 @@ var _repeat_arrow: bool = false
 
 
 func _ready() -> void:
+	grid_view.melee_bumps_finished.connect(_refresh_hotbar)
 	hotbar_panel = HotbarPanel.new()
 	hotbar_panel.theme = hero_panel.theme
 	$HUD.add_child(hotbar_panel)
@@ -87,6 +88,10 @@ func _process(delta: float) -> void:
 		_clear_movement_hold()
 		return
 	world.screen_size_tiles = get_viewport_rect().size / camera.zoom / GridView.TILE_SIZE
+	if grid_view.is_melee_bumping():
+		_pending_action = false
+		_clear_movement_hold()
+		return
 	if world.pending_skill != null:
 		_clear_movement_hold()
 		_melee_delay_seconds -= delta
@@ -147,6 +152,14 @@ func _input(event: InputEvent) -> void:
 	if active_game and world.is_charging():
 		_pending_action = false
 		get_viewport().set_input_as_handled()
+		return
+	if active_game and grid_view.is_melee_bumping():
+		_pending_action = false
+		if event is InputEventKey:
+			if event.is_action_pressed("ui_cancel") and (
+				world.pending_melee != null or world.pending_skill != null):
+				_cancel_pending_melee()
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventKey and event.is_pressed() and not event.is_echo():
 		var movement_key := false
@@ -223,7 +236,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
-	if menu.visible or not active_game or world.is_terminal():
+	if menu.visible or not active_game or world.is_terminal() or grid_view.is_melee_bumping():
 		return
 	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
 		return
@@ -361,7 +374,7 @@ func _return_to_menu() -> void:
 
 
 func _open_options() -> void:
-	if world.is_charging():
+	if world.is_charging() or grid_view.is_melee_bumping():
 		return
 	_pending_action = false
 	menu.open_options()
@@ -397,7 +410,7 @@ func _notification(what: int) -> void:
 
 func refresh_view() -> void:
 	world.check_terminal()
-	if (world.is_terminal() or world.pending_skill != null or world.pending_melee != null
+	if (world.is_terminal() or _actions_blocked()
 		or menu.visible or combat_panel.visible or hero_panel.visible):
 		_clear_movement_hold()
 	if world.attempt_state == GridWorld.AttemptState.COMPLETED:
@@ -462,16 +475,15 @@ func _open_interaction() -> void:
 
 
 func _open_inventory() -> void:
-	if (not active_game or world.is_terminal() or world.pending_melee != null
-		or world.pending_skill != null or combat_panel.visible or hero_panel.visible):
+	if (not active_game or world.is_terminal() or _actions_blocked()
+		or combat_panel.visible or hero_panel.visible):
 		return
 	_pending_action = false
 	menu.open_inventory()
 
 
 func _open_hero_panel(spell_book: bool) -> void:
-	if (world.is_terminal() or world.pending_melee != null
-		or world.pending_skill != null or combat_panel.visible):
+	if world.is_terminal() or _actions_blocked() or combat_panel.visible:
 		return
 	_pending_action = false
 	hero_panel.layout_locked = world.hotbar_locked
@@ -480,7 +492,7 @@ func _open_hero_panel(spell_book: bool) -> void:
 
 
 func _cast_skill(identifier: StringName) -> void:
-	if not active_game or world.is_terminal():
+	if not active_game or world.is_terminal() or grid_view.is_melee_bumping():
 		return
 	_pending_action = false
 	if identifier == ItemData.WAR_BANNER_HOTBAR_ID:
@@ -590,9 +602,14 @@ func _default_arrow_bindings() -> bool:
 	return true
 
 
+func _actions_blocked() -> bool:
+	return (world.pending_skill != null or world.pending_melee != null
+		or grid_view.is_melee_bumping())
+
+
 func _hotbar_can_edit() -> bool:
 	return (active_game and world != null and not world.is_terminal() and not menu.visible
-		and not combat_panel.visible and world.pending_skill == null and world.pending_melee == null)
+		and not combat_panel.visible and not _actions_blocked())
 
 
 func _refresh_hotbar() -> void:

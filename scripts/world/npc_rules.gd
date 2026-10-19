@@ -78,6 +78,8 @@ static func _pursue(world: GridWorld, actor: GridActor, target: Vector2i) -> voi
 
 static func _attack(world: GridWorld, actor: GridActor, target: NpcTarget) -> void:
 	actor.facing = MeleeRules.facing_toward(target.tile - actor.tile)
+	if target.is_player():
+		world.melee_attacked.emit(actor, target.tile)
 	var result := MeleeRules.outcome(actor.melee, target.melee,
 		MeleeRules.is_behind(target.facing, actor.tile - target.tile) and not target.has_evasion(),
 		world.combat_random.randf() * 100.0)

@@ -489,6 +489,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	var status := _game.get_node("HUD/Top/Rows/HeroStatus") as Label
 	assert_string_contains(status.text, "Lv 2")
 	assert_string_contains(status.text, "Rage")
+	_game.grid_view._process(1.0)
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.hero_panel.visible)
 	assert_null(_game_viewport.gui_get_focus_owner())
@@ -643,10 +644,42 @@ func test_melee_automatically_waits_until_one_swing_and_gives_npcs_every_turn() 
 	assert_eq(_game.world.turn_count, 4, "Finishing a request does not start another attack.")
 
 
+func test_melee_bumps_block_keyboard_mouse_actions_and_held_movement_until_finished() -> void:
+	_prepare_melee(GridActor.Relationship.HOSTILE)
+	_game.grid_view.set_process(false)
+	await _tap_key(KEY_F)
+	assert_null(_game.world.pending_melee)
+	assert_true(_game.grid_view.is_melee_bumping())
+	var tile := _game.world.player_tile
+	var turn := _game.world.turn_count
+	for key in [KEY_PERIOD, KEY_K, KEY_I, KEY_M, KEY_1]:
+		await _tap_key(key)
+	_send_key(KEY_S, true)
+	_game._hotbar_slot_pressed(0)
+	_game._open_inventory()
+	_game._open_hero_panel(true)
+	_game._process(1.0)
+	assert_eq(_game.world.turn_count, turn)
+	assert_eq(_game.world.player_tile, tile)
+	assert_false(_game.hero_panel.visible)
+	assert_false(_game.menu.visible)
+	assert_false(_game._hotbar_can_edit())
+	_game.grid_view._process(GridView.MELEE_BUMP_SECONDS * 10.0)
+	assert_true(_game._hotbar_can_edit())
+	_game._process(1.0)
+	assert_eq(_game.world.turn_count, turn, "Blocked keys must not queue a later action.")
+	_send_key(KEY_S, false)
+	await _tap_key(KEY_PERIOD)
+	_game._process(0.0)
+	assert_eq(_game.world.turn_count, turn + 1)
+
+
 func test_automatic_melee_can_be_canceled_between_boundaries_with_escape_or_mouse() -> void:
 	var actor := _prepare_melee(GridActor.Relationship.HOSTILE)
+	_game.grid_view.set_process(false)
 	_game.world.hero.swing.remaining = 3.5
 	await _tap_key(KEY_F)
+	_game.grid_view._process(1.0)
 	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.world.turn_count, 2)
@@ -654,8 +687,10 @@ func test_automatic_melee_can_be_canceled_between_boundaries_with_escape_or_mous
 	assert_eq(_game.world.hero.swing.remaining, 1.5)
 	_game._process(10.0)
 	assert_eq(_game.world.turn_count, 2)
+	_game.grid_view._process(1.0)
 	await _tap_key(KEY_F)
 	assert_same(_game.world.pending_melee, actor)
+	assert_true(_game.grid_view.is_melee_bumping())
 	var cancel := _game.get_node("HUD/Top/Rows/CancelAttack") as Button
 	assert_true(cancel.is_visible_in_tree())
 	await _click_button(cancel)
@@ -669,6 +704,7 @@ func test_pending_melee_stops_on_invalid_target_reset_and_death() -> void:
 	_game.world.hero.swing.remaining = 3.5
 	await _tap_key(KEY_F)
 	actor.tile += Vector2i(5, 0)
+	_game.grid_view._process(1.0)
 	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS)
 	assert_null(_game.world.pending_melee)
 	assert_eq(_game.world.turn_count, 1)
@@ -1513,6 +1549,7 @@ func test_hotbar_uses_spell_book_targeting_and_rejects_activation_with_modal_own
 	await _tap_key(KEY_5)
 	assert_eq(_game.world.turn_count, turns, "Pending casts own hotbar keys.")
 	await _tap_key(KEY_ESCAPE)
+	_game.grid_view._process(1.0)
 	_game.menu.open_options()
 	await _tap_key(KEY_5)
 	assert_eq(_game.world.turn_count, turns)

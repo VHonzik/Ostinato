@@ -685,7 +685,7 @@ class RecordingGridView:
 
 
 	func _draw_sprite_layers(_tile: Vector2i, base: Texture2D, faction: Texture2D,
-		base_color: Color, faction_color: Color) -> void:
+		base_color: Color, faction_color: Color, _offset: Vector2 = Vector2.ZERO) -> void:
 		drawn_base = base
 		drawn_faction = faction
 		drawn_base_color = base_color

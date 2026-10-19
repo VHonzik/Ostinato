@@ -78,6 +78,9 @@ which increases physical damage dealt and damage taken as health falls. Its aura
 the current tradeoff. Warrior Flurry is removed; Shaman retains its own Flurry.
 The action effect resolves before player swings, followed by enemy actions. No attacks
 are banked out of range and target changes keep the weapon's remaining delay.
+Ordinary player swings and enemy melee attacks against the player show sequential
+bumps, including misses. The action input gate stays closed until the bumps finish;
+pending melee/casts still allow cancellation, except Charge. Bumps spend no extra turns.
 
 Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
 XP, gold, Death trigger, and Kill stalker for quick experiments. The stalker

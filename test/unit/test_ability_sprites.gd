@@ -70,6 +70,85 @@ func test_failed_cast_does_not_start_a_blink() -> void:
 	assert_true(_view._player_blink.is_empty())
 
 
+func test_player_and_enemy_melee_bumps_take_turns_without_advancing_combat() -> void:
+	_enemy.stunned_until = 0
+	_world.hero.equipment["weapons"] = ItemData.instance(2361)
+	_world.hero.refresh_stats()
+	_world.hero.swing.remaining = 0.0
+	assert_true(_world.request_melee(_enemy))
+	var turn := _world.turn_count
+	var health := _world.hero.health
+	assert_eq(_view._melee_bumps.size(), 2)
+	assert_null(_view._melee_bumps[0].attacker)
+	assert_same(_view._melee_bumps[1].attacker, _enemy)
+	_view._process(GridView.MELEE_BUMP_SECONDS / 2.0)
+	assert_ne(_view._melee_bump_offset(null), Vector2.ZERO)
+	assert_eq(_view._melee_bump_offset(_enemy), Vector2.ZERO)
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_eq(_view._melee_bump_offset(null), Vector2.ZERO)
+	assert_ne(_view._melee_bump_offset(_enemy), Vector2.ZERO)
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_false(_view.is_melee_bumping())
+	assert_eq(_view._melee_bump_offset(_enemy), Vector2.ZERO)
+	assert_eq(_world.turn_count, turn)
+	assert_eq(_world.hero.health, health)
+
+
+func test_enemy_misses_bump_but_waiting_for_a_swing_does_not() -> void:
+	_enemy.engaged = true
+	_enemy.stunned_until = 0
+	_world.hero.melee.dodge = 100.0
+	var health := _world.hero.health
+	NpcRules.act(_world, _enemy)
+	assert_eq(_world.hero.health, health)
+	assert_true(_view.is_melee_bumping(), "Dodged attacks still show the attempt.")
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	_enemy.swing.remaining = 10.0
+	NpcRules.act(_world, _enemy)
+	assert_false(_view.is_melee_bumping(), "No bump without a due attack.")
+
+
+func test_world_replacement_disconnects_old_attacks_and_clears_bump_queue() -> void:
+	_world.melee_attacked.emit(_enemy, _world.player_tile)
+	assert_true(_view.is_melee_bumping())
+	_view.world = GridWorld.new(_world.bounds, _world.player_tile)
+	assert_false(_view.is_melee_bumping())
+	_world.melee_attacked.emit(_enemy, _world.player_tile)
+	assert_false(_view.is_melee_bumping())
+
+
+func test_dead_attackers_are_skipped_and_multiple_enemies_bump_separately() -> void:
+	var other := GridActor.new(_world.player_tile + Vector2i.DOWN)
+	other.relationship = GridActor.Relationship.HOSTILE
+	other.engaged = true
+	_world.actors.append(other)
+	_enemy.engaged = true
+	_enemy.stunned_until = 0
+	NpcRules.act(_world, _enemy)
+	NpcRules.act(_world, other)
+	assert_eq(_view._melee_bumps.size(), 2)
+	_view._process(GridView.MELEE_BUMP_SECONDS / 2.0)
+	assert_ne(_view._melee_bump_offset(_enemy), Vector2.ZERO)
+	assert_eq(_view._melee_bump_offset(other), Vector2.ZERO)
+	_enemy.alive = false
+	_view._process(0.0)
+	_view._process(GridView.MELEE_BUMP_SECONDS / 2.0)
+	assert_ne(_view._melee_bump_offset(other), Vector2.ZERO)
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_false(_view.is_melee_bumping())
+
+
+func test_enemy_bump_temporarily_reveals_actor_through_consecration_flash() -> void:
+	assert_true(_world.cast_skill(&"consecration_1"))
+	assert_true(_view._consecration_visible(_enemy.tile))
+	_enemy.stunned_until = 0
+	NpcRules.act(_world, _enemy)
+	assert_true(_view.is_melee_bumping())
+	assert_false(_view._consecration_visible(_enemy.tile))
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_true(_view._consecration_visible(_enemy.tile))
+
+
 func test_landed_enemy_effect_replaces_both_layers_and_keeps_current_health_tint() -> void:
 	for identifier: StringName in [&"mortal_strike_1", &"eviscerate_1", &"lava_burst_1"]:
 		var event := AttackEvent.new(_enemy, SkillDefinition.catalog(identifier), &"hit", 1)
@@ -247,7 +326,8 @@ class RecordingGridView:
 
 
 	func _draw_sprite_layers(tile: Vector2i, base_texture: Texture2D,
-		faction_texture: Texture2D, color: Color, _faction_color: Color) -> void:
+		faction_texture: Texture2D, color: Color, _faction_color: Color,
+		_offset: Vector2 = Vector2.ZERO) -> void:
 		base = base_texture
 		faction = faction_texture
 		base_color = color

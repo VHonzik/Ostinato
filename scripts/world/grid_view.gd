@@ -1,7 +1,11 @@
 class_name GridView
 extends Node2D
 
+signal melee_bumps_finished
+
 const TILE_SIZE: int = 32
+const MELEE_BUMP_SECONDS: float = 0.14
+const MELEE_BUMP_DISTANCE: float = 8.0
 # Shared by the player and trainer NPCs.
 const CLASS_SPRITES: Dictionary[StringName, Vector2i] = {
 	&"Shaman": Vector2i(3, 0),
@@ -97,7 +101,10 @@ var world: GridWorld:
 			world.ability_used.disconnect(_show_player_ability)
 			world.consecration_ticked.disconnect(_show_consecration)
 			world.npc_ability_hit.disconnect(_show_npc_ability)
+			world.melee_attacked.disconnect(_queue_melee_bump)
 		world = value
+		_melee_bumps.clear()
+		_melee_bump_elapsed = 0.0
 		combat_text.clear()
 		_player_blink.clear()
 		_npc_blinks.clear()
@@ -107,6 +114,7 @@ var world: GridWorld:
 			world.ability_used.connect(_show_player_ability)
 			world.consecration_ticked.connect(_show_consecration)
 			world.npc_ability_hit.connect(_show_npc_ability)
+			world.melee_attacked.connect(_queue_melee_bump)
 var selected: GridActor
 var alternate_palette: bool = false
 var combat_text := FloatingCombatText.new()
@@ -119,6 +127,8 @@ var _player_blink: Dictionary = {}
 var _npc_blinks: Dictionary[GridActor, Dictionary] = {}
 var _consecration_blink: Dictionary = {}
 var _ability_sprites: Dictionary[Vector2i, AtlasTexture] = {}
+var _melee_bumps: Array[Dictionary] = []
+var _melee_bump_elapsed: float = 0.0
 
 
 func _init() -> void:
@@ -196,6 +206,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_advance_melee_bumps(delta)
 	if (not _player_blink.is_empty() or not _npc_blinks.is_empty()
 		or not _consecration_blink.is_empty()):
 		_advance_ability_blink(_player_blink, delta)
@@ -212,6 +223,45 @@ func _process(delta: float) -> void:
 		if phases % 2 == 1:
 			_blink_alternate_visible = not _blink_alternate_visible
 		queue_redraw()
+
+
+func is_melee_bumping() -> bool:
+	return not _melee_bumps.is_empty()
+
+
+func _queue_melee_bump(attacker: GridActor, target_tile: Vector2i) -> void:
+	var origin := world.player_tile if attacker == null else attacker.tile
+	_melee_bumps.append({"attacker": attacker,
+		"direction": Vector2(target_tile - origin).normalized()})
+	queue_redraw()
+
+
+func _advance_melee_bumps(delta: float) -> void:
+	if not is_melee_bumping():
+		return
+	_melee_bump_elapsed += delta
+	while is_melee_bumping():
+		var attacker: GridActor = _melee_bumps[0].attacker
+		if attacker != null and (not attacker.alive or not world.actors.has(attacker)):
+			_melee_bumps.pop_front()
+			_melee_bump_elapsed = 0.0
+		elif _melee_bump_elapsed >= MELEE_BUMP_SECONDS:
+			_melee_bumps.pop_front()
+			_melee_bump_elapsed -= MELEE_BUMP_SECONDS
+		else:
+			break
+	queue_redraw()
+	if not is_melee_bumping():
+		_melee_bump_elapsed = 0.0
+		melee_bumps_finished.emit()
+
+
+func _melee_bump_offset(attacker: GridActor) -> Vector2:
+	if not is_melee_bumping() or _melee_bumps[0].attacker != attacker:
+		return Vector2.ZERO
+	var progress := _melee_bump_elapsed / MELEE_BUMP_SECONDS
+	var direction: Vector2 = _melee_bumps[0].direction
+	return (direction * MELEE_BUMP_DISTANCE * sin(progress * PI)).round()
 
 
 func _show_consecration() -> void:
@@ -267,8 +317,10 @@ func _blink_sprite(effect: Dictionary) -> Texture2D:
 
 
 func _consecration_visible(tile: Vector2i) -> bool:
+	var attacker: GridActor = _melee_bumps[0].attacker if is_melee_bumping() else null
 	return (tile != world.player_tile and not _consecration_blink.is_empty()
-		and _consecration_blink.tiles.has(tile))
+		and _consecration_blink.tiles.has(tile)
+		and (attacker == null or attacker.tile != tile))
 
 
 func _ability_sprite(cell: Vector2i) -> AtlasTexture:
@@ -357,10 +409,10 @@ func _draw_actor(actor: GridActor) -> void:
 	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
 		faction if effect == null else null,
 		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
-		_actor_color(actor))
+		_actor_color(actor), _melee_bump_offset(actor))
 	if actor.debuffs.has(&"judgement_1"):
 		var remaining := int(actor.debuffs[&"judgement_1"].until) - world.turn_count
-		var position := Vector2(actor.tile * TILE_SIZE)
+		var position := Vector2(actor.tile * TILE_SIZE) + _melee_bump_offset(actor)
 		draw_rect(Rect2(position + Vector2(18, 0), Vector2(14, 15)), Color("#382b15"))
 		draw_string(ThemeDB.fallback_font, position + Vector2(21, 12), str(remaining),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#ffe187"))
@@ -386,13 +438,14 @@ func _draw_player() -> void:
 	var effect := _blink_sprite(_player_blink)
 	_draw_sprite_layers(world.player_tile, sprites.base_sprite if effect == null else effect,
 		sprites.faction_sprite if effect == null else null,
-		health_tint(world.hero.health, world.hero.max_health), Color.WHITE)
+		health_tint(world.hero.health, world.hero.max_health), Color.WHITE,
+		_melee_bump_offset(null))
 
 
 # Both textures use the entire tile, so matching asset pixels stay aligned.
 func _draw_sprite_layers(tile: Vector2i, base: Texture2D, faction: Texture2D,
-	base_color: Color, faction_color: Color) -> void:
-	var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
+	base_color: Color, faction_color: Color, offset: Vector2 = Vector2.ZERO) -> void:
+	var rectangle := Rect2(Vector2(tile * TILE_SIZE) + offset, Vector2.ONE * TILE_SIZE)
 	if base != null:
 		draw_texture_rect(base, rectangle, false, base_color)
 	if faction != null:

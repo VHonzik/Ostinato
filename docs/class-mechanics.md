@@ -37,6 +37,7 @@ and the implementation together.
   ground tiles for 1.5 real seconds on each damage tick, including NPC occupants but
   always excluding the player's current tile. Later ability effects replace that
   tile's flash until the next tick; leaving the ground does not move it.
+  An enemy's melee bump briefly reveals its actor through a Consecration flash.
   Summon art is a world actor, not an overlay. Passives add no dedicated effect sprite;
   upgraded actives retain their own art. `-` does not exclude aura text, combat numbers
   or other shared UI. These are default mappings; GridView allows actor-art overrides.

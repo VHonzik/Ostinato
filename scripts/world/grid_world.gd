@@ -7,6 +7,8 @@ signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 signal ability_used(skill: SkillDefinition)
 signal consecration_ticked
 signal npc_ability_hit(actor: GridActor, family: StringName)
+# A null attacker denotes the player. Presentation never delays combat resolution.
+signal melee_attacked(attacker: GridActor, target_tile: Vector2i)
 
 enum AttemptState { ACTIVE, PLAYER_DIED, COMPLETED, DISCARDED }
 
@@ -874,6 +876,7 @@ func _finish_turn() -> void:
 
 
 func _player_swing(target: GridActor) -> void:
+	melee_attacked.emit(null, target.tile)
 	last_attacked_enemy = target
 	hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
 	ClassToolkitRules.consume_flurry(hero)
@@ -887,6 +890,7 @@ func _player_swing(target: GridActor) -> void:
 
 
 func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
+	melee_attacked.emit(null, target.tile)
 	ClassToolkitRules.consume_flurry(hero)
 	var event := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
 	event.hand = AttackEvent.Hand.OFF
