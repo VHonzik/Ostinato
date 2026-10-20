@@ -186,7 +186,7 @@ There is no cooldown. Blocked adjacent placement or a living elemental rejects u
 without spending the item or a turn. The elemental keeps the former ability's behavior:
 40 health, no expiration, follows you or an engaged hostile, taunts already engaged
 hostiles within 4 tiles and sight of itself, and attacks for 2-4 physical damage every
-2.5 turns. Its actor uses [earth_elemental.svg](../assets/sprites/dev/earth_elemental.svg).
+2.5 turns. Its actor uses C(3,4) as its health-tinted base, with an empty faction layer.
 Saves retain the unspent item, gift claim, and summoned actor independently of learned
 skills. Death clears the item, summon and claim; retained learning allows a new gift.
 

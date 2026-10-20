@@ -175,6 +175,32 @@ func test_enemy_miss_dodge_and_ordinary_swing_do_not_start_effects() -> void:
 	assert_true(_view._npc_blinks.is_empty())
 
 
+func test_stalker_health_and_faction_layers_tint_independently_and_elemental_uses_health_art() -> void:
+	_enemy.stalker = true
+	_enemy.health = 200
+	_view._draw_actor(_enemy)
+	assert_eq((_view.base as AtlasTexture).region, Rect2(64, 0, 16, 16))
+	assert_eq((_view.faction as AtlasTexture).region, Rect2(64, 16, 16, 16))
+	assert_eq(_view.base_color, Color.RED)
+	assert_eq(_view.faction_color, _view._actor_color(_enemy))
+	var faction := _view.faction
+	_enemy.health = _enemy.max_health
+	_enemy.relationship = GridActor.Relationship.NEUTRAL
+	_view._draw_actor(_enemy)
+	assert_eq(_view.base_color, Color.WHITE)
+	assert_same(_view.faction, faction)
+	assert_eq(_view.faction_color, _view._actor_color(_enemy))
+	var elemental := GridActor.new(Vector2i(10, 8))
+	elemental.summon_kind = "earth_elemental"
+	elemental.relationship = GridActor.Relationship.FRIENDLY
+	elemental.health = 1
+	elemental.max_health = 40
+	_view._draw_actor(elemental)
+	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 64, 16, 16))
+	assert_eq(_view.base_color, Color.RED)
+	assert_null(_view.faction)
+
+
 func test_enemy_effect_replacement_resets_time_and_other_actors_keep_their_own_timer() -> void:
 	var other := GridActor.new(Vector2i(10, 8))
 	_world.actors.append(other)
@@ -322,14 +348,16 @@ class RecordingGridView:
 	var base: Texture2D
 	var faction: Texture2D
 	var base_color: Color
+	var faction_color: Color
 	var effect_tiles: Array[Vector2i] = []
 
 
 	func _draw_sprite_layers(tile: Vector2i, base_texture: Texture2D,
-		faction_texture: Texture2D, color: Color, _faction_color: Color,
+		faction_texture: Texture2D, color: Color, relationship_color: Color,
 		_offset: Vector2 = Vector2.ZERO) -> void:
 		base = base_texture
 		faction = faction_texture
 		base_color = color
+		faction_color = relationship_color
 		if base_texture == _ability_sprite(CONSECRATION_CELL):
 			effect_tiles.append(tile)

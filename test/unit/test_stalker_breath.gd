@@ -269,15 +269,54 @@ func test_view_warning_waits_for_turns_and_impact_clears_on_world_replacement() 
 	view.world = _world
 	view.set_process(false)
 	_announce()
+	assert_eq((view._npc_blinks[_boss].sprite as AtlasTexture).region, Rect2(64, 32, 16, 16))
+	assert_false(view._breath_blink.is_empty())
 	view._process(20.0)
+	assert_true(view._npc_blinks.is_empty())
+	assert_true(view._breath_blink.is_empty())
 	assert_eq(_boss.breath_remaining, 2, "Idle animation time cannot consume dodge turns.")
 	_world.wait_turn()
+	assert_eq((view._npc_blinks[_boss].sprite as AtlasTexture).region, Rect2(64, 32, 16, 16))
+	assert_false(view._breath_blink.is_empty(), "The next wind-up turn replays both effects.")
 	_world.wait_turn()
-	assert_false(view._breath_impact.is_empty())
+	assert_false(view._npc_blinks.has(_boss), "Release restores the Stalker layers immediately.")
+	assert_false(view._breath_blink.is_empty())
 	view._process(1.5)
-	assert_true(view._breath_impact.is_empty())
+	assert_true(view._breath_blink.is_empty())
 	view._show_breath([Vector2i(9, 8)])
 	view.world = GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(1, 1), 98, false)
-	assert_true(view._breath_impact.is_empty())
+	assert_true(view._breath_blink.is_empty())
 	_world.stalker_breath_released.emit([Vector2i(9, 8)])
-	assert_true(view._breath_impact.is_empty())
+	_world.stalker_breath_winding.emit(_boss)
+	assert_true(view._breath_blink.is_empty())
+	assert_true(view._npc_blinks.is_empty())
+
+
+func test_breath_area_replaces_ground_and_npcs_but_preserves_player_and_melee_bumps() -> void:
+	var view := GridView.new()
+	add_child_autofree(view)
+	view.world = _world
+	view.set_process(false)
+	var tile := Vector2i(10, 8)
+	_world.scenery_tiles[tile] = &"flowers"
+	_announce()
+	SummonRules.summon(_world, ItemData.ancestral_totem_action())
+	var ally: GridActor = _world.actors[-1]
+	ally.tile = tile
+	assert_true(view._breath_visible(tile))
+	assert_eq(view._terrain_sprite(tile, view._sprite_occupants()), &"")
+	assert_false(view._breath_visible(_world.player_tile))
+	_world.melee_attacked.emit(ally, _boss.tile)
+	assert_false(view._breath_visible(tile), "Melee bumps reveal actors through the flash.")
+	view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_true(view._breath_visible(tile))
+	_world.player_tile = tile
+	assert_false(view._breath_visible(tile), "Moving into the cone keeps the player art.")
+	assert_true(view._breath_visible(Vector2i(9, 8)), "The cone stays fixed when the player moves.")
+	view._process(GridView.ABILITY_BLINK_SECONDS)
+	assert_false(view._breath_visible(Vector2i(9, 8)))
+	assert_eq(_boss.breath_remaining, 2)
+	view.world = null
+	view.world = _world
+	assert_false(view._breath_blink.is_empty(), "Attaching a loaded wind-up replays its warning.")
+	assert_true(view._npc_blinks.has(_boss))

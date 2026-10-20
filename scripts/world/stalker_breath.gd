@@ -19,6 +19,8 @@ static func act(world: GridWorld, actor: GridActor) -> bool:
 		actor.breath_remaining -= 1
 		if actor.breath_remaining == 0:
 			_release(world, actor)
+		else:
+			world.stalker_breath_winding.emit(actor)
 		return true
 	if actor.stunned_until > world.turn_count or VanishRules.active(world):
 		return false
@@ -39,6 +41,7 @@ static func act(world: GridWorld, actor: GridActor) -> bool:
 	actor.swing.remaining = actor.melee.interval
 	actor.swing._active = false
 	world.add_message("%s draws breath! Fel Breath in 2 turns. Leave the marked cone." % actor.title)
+	world.stalker_breath_winding.emit(actor)
 	return true
 
 

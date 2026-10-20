@@ -7,6 +7,7 @@ signal loot_interaction_requested(source: GridActor)
 signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 signal ability_used(skill: SkillDefinition)
 signal consecration_ticked
+signal stalker_breath_winding(actor: GridActor)
 signal stalker_breath_released(tiles: Array[Vector2i])
 signal npc_ability_hit(actor: GridActor, family: StringName)
 # A null attacker denotes the player. Presentation never delays combat resolution.

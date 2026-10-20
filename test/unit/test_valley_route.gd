@@ -624,7 +624,10 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 		if not actor.alive:
 			continue
 		var sprites := view.npc_sprite_layers(actor)
-		assert_same(sprites.base_sprite, GridView.NPC_BASE_SPRITE, actor.title)
+		if actor.stalker:
+			assert_eq((sprites.base_sprite as AtlasTexture).region, Rect2(64, 0, 16, 16))
+		else:
+			assert_same(sprites.base_sprite, GridView.NPC_BASE_SPRITE, actor.title)
 		assert_not_null(sprites.faction_sprite, actor.title)
 	var wolf := view.npc_sprite_layers(_actor(view.world, 299)).faction_sprite as AtlasTexture
 	assert_same(wolf.atlas, GridView.CHARACTERS)

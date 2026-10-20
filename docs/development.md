@@ -36,7 +36,8 @@ anything or spending a turn. Remaining loot reopens the menu on later bumps; emp
 chests no longer intercept movement. Full bags preserve uncollected items.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
-A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
+A separate base layer shows health. Most NPCs temporarily use a corner heart; Stalker
+uses its own health/faction pair and Earth Elemental its own health base. The player uses
 its current class artwork with an empty faction layer.
 The upper-right quest tracker lists accepted quests and objective progress, marking
 finished objectives and ready quests completed. Handed-in or abandoned quests disappear.
@@ -214,7 +215,9 @@ and it delays starting if the player has no escape within two ordinary moves.
 The cone deals 60 base Fire damage with level scaling (81 against level five), no
 armor, block, dodge or critical rolls, and the usual explicit damage defenses.
 Friendly summons in the cone are hit too. Facing and threatened tiles stay fixed while
-the Stalker blinks; countdown and tile warnings persist while the player considers a move.
+the Stalker flashes its wind-up art for 1.5 seconds on each wind-up turn. Cone tiles
+flash like Consecration on wind-up turns and release, preserving the player sprite;
+countdown and cone outlines persist while the player considers a move.
 Enrage and regeneration remain experimental bench variants, outside the live encounter.
 
 Judgement retains its delayed verdict. It fixes damage and hit/critical results when
