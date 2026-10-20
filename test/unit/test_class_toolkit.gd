@@ -48,7 +48,7 @@ func test_folded_passives_are_absent_from_training_and_rejected_in_saved_learnin
 	for category in ClassSkillData.PLAYABLE_CLASSES:
 		for skill in SkillDefinition.trainer_skills(category):
 			passive_count += int(skill.effect == SkillDefinition.Effect.PASSIVE)
-	assert_eq(passive_count, 32)
+	assert_eq(passive_count, 33)
 	for id in ["improved_shields_1", "elemental_weapons_1", "spirit_hunt_1",
 		"sanctity_of_battle_1", "sacred_duty_1", "divine_purpose_1", "eye_for_an_eye_1",
 		"relentless_strikes_1", "ruthlessness_1"]:
@@ -119,7 +119,7 @@ func _off_hand_procs(world: GridWorld, enemy: GridActor) -> void:
 
 
 func test_all_four_kits_require_level_and_gold_preserving_full_hotbar() -> void:
-	var counts := {&"Warrior": 15, &"Shaman": 8, &"Paladin": 11, &"Rogue": 14}
+	var counts := {&"Warrior": 16, &"Shaman": 8, &"Paladin": 11, &"Rogue": 14}
 	for category: StringName in counts:
 		var world := _world(category)
 		var skills := SkillDefinition.trainer_skills(category)
@@ -1221,7 +1221,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_not_null(restored)
 	if restored == null:
 		return
-	assert_eq(restored.hero.learned_skills.size(), 48)
+	assert_eq(restored.hero.learned_skills.size(), 49)
 	assert_almost_eq(restored.hero.off_hand_swing.remaining, 1.25, 0.001)
 	assert_eq(int(restored.hero.buffs[&"art_of_war_1"].charges), 2)
 	assert_eq(restored.actors.filter(func(actor: GridActor) -> bool: return actor.alive and actor.summon_kind == "wolf").size(), 2)
@@ -1237,7 +1237,7 @@ func test_complete_mixed_toolkit_save_restores_proc_state_wolves_and_offhand_tim
 	assert_null(SaveCodec.restore(invalid_timer, false))
 	world.hero.health = 0
 	assert_true(game.restart_after_death())
-	assert_eq(game.world.hero.learned_skills.size(), 48)
+	assert_eq(game.world.hero.learned_skills.size(), 49)
 	assert_true(game.world.hero.buffs.is_empty())
 	assert_eq(game.world.hero.combo_points, 0)
 	assert_eq(game.world.hero.rage, 0)

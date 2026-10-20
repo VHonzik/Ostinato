@@ -141,7 +141,8 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   before due player swings and enemy actions. Simplify combat to
   health, armor, dodge and weapon hit chance (needed by Precision), with physical,
   Holy, Fire and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
-  hit or crit; shields contribute armor. These magic schools bypass armor.
+  hit or crit; shields contribute armor and enable learned Warrior Shield Block's
+  partial physical defense. These magic schools bypass armor and Shield Block.
   Higher-level enemies reduce accuracy; their percentage penalty to player damage
   matches their percentage increase to incoming damage,
   without the old attack tables. A starter Warrior should struggle against one enemy

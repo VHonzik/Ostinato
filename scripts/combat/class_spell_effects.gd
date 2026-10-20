@@ -2,7 +2,7 @@ class_name ClassSpellEffects
 extends RefCounted
 
 ## Buffs, Holy weapon effects and explicit class defenses.
-static func absorb(world: GridWorld, target: GridActor, amount: int, _physical: bool) -> int:
+static func absorb(world: GridWorld, target: GridActor, amount: int, physical: bool) -> int:
 	var buffs := world.hero.buffs if target == null else target.buffs
 	if buffs.has(&"divine_shield_1"):
 		return 0
@@ -12,6 +12,14 @@ static func absorb(world: GridWorld, target: GridActor, amount: int, _physical: 
 		var percent := int(ItemData.get_item(ItemData.WAR_BANNER_ID).reduction_percent)
 		# Whole damage rounds up so a small hit never becomes immunity.
 		amount = ceili(amount * (100 - percent) / 100.0)
+	if (physical and target == null and amount > 0 and world.hero.equipment.has("weapons")
+		and ItemData.get_item(world.hero.weapon_id()).shield):
+		var block := world.hero.find_skill(&"shield_block_1")
+		if block != null and ClassToolkitRules.proc(world, block.id):
+			var remaining := ceili(amount * (100 - block.minimum) / 100.0)
+			if remaining < amount:
+				world.add_message("Shield Block prevents %d damage." % (amount - remaining))
+			amount = remaining
 	return amount
 
 

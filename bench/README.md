@@ -9,6 +9,7 @@ From the repository root, after the normal [setup](../docs/development.md):
 
 ```powershell
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Smoke
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario shield-block
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario paladin
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario rogue
@@ -25,6 +26,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 
 | Scenario | Purpose |
 | --- | --- |
+| `shield-block` | Controlled shield-only 30% chance to remove 70% of a physical hit. Full Warrior against groups and all kits against Stalker; 400 seeds, cold/live preparation, current weapons as controls. Removes learned live Shield Block to avoid double application; the experiment's separate block RNG preserves baseline combat draws. Remaining damage rounds up. No game data changes. |
 | `garrick` | First-Loop Warrior at levels 3–5, starter/early/trained purchases, travel/free/common gear. Paired isolated live fights compare Garrick profiles; wins and surviving HP are recorded. No potions, kiting, route damage or XP healing. |
 | `warrior` | Full Warrior kit, three weapons, cold/prepared entry, groups and Stalker; paired potion runs for Stalker. Independent pilot seeds select the rotation. Traced damage is reconciled and replayed against plain `GridWorld`. |
 | `warrior-harder` | Harder groups using policies from a previous `warrior` result. Supply `-Baseline reports/bench/warrior/<run>/result.json`. |

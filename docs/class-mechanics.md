@@ -75,8 +75,10 @@ poison satisfies a hand. Present buffs never warn merely for nearing expiration.
 Tooltips explain the highlighted states without consuming procs.
 
 Weapon damage uses the main hand and Strength-derived weapon power unless specified
-otherwise. Physical attacks use hit, dodge, critical and armor rules. Direct Holy/Fire/Nature
-attacks use hit/critical rules and bypass armor. Level differences and applicable buffs
+otherwise. Physical attacks use hit, dodge, critical and armor rules; learned Shield
+Block can partially reduce incoming physical hits while a shield is equipped.
+Direct Holy/Fire/Nature attacks use hit/critical rules and bypass armor and Shield Block.
+Level differences and applicable buffs
 still modify listed base damage. Haste changes independent hand swing timers, not action
 count or ability cooldowns. Restless Blades can reduce running cooldowns.
 Swing timing continues through abilities, movement and waiting, attacking the committed
@@ -106,12 +108,14 @@ active crits. Eviscerate alone spends combo points; Execute and Judgement do not
 
 ## Warrior
 
-**Tagline: Turn pain into rage, then spend it on decisive physical blows.**
+**Tagline: Turn pain into rage, strike decisively, and raise a shield when survival matters.**
 
 Physical burst, adjacent cleave, rage preparation, a travel opener and low-health
 execution. Enrage rewards taking hits; Death Wish raises damage and risk as health
-falls. Mortal Strike is the larger single-target spender; Whirlwind gains value against
-groups. Wrecking Crew strengthens developed Whirlwind while its critical buff lasts;
+falls. Later Shield Block gives equipped shields a passive physical defense, including
+immediately after a combat weapon swap. Mortal Strike is the larger single-target
+spender; Whirlwind gains value against groups. Wrecking Crew strengthens developed
+Whirlwind while its critical buff lasts;
 Sweeping Strikes copies single-target actives only. Victory Rush keeps its full kill
 heal with a shared internal cooldown, limiting healing from large pulls.
 
@@ -140,6 +144,7 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
 | Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
 | Victory Rush | - | - | 6* | - | - | 4 | 285c | - | - | Passive. Nonfriendly enemy deaths heal 10% of maximum health, rounded down, including kills by damage effects or summons. All qualifying kills share a 6-turn internal cooldown; further kills during it do not heal. Overhealing also starts the cooldown. Uses the resolved death turn across action and periodic phases; Restless Blades cannot shorten it. Cooldown survives saves and clears on death. Summons dying and friendly actors do not qualify. Terminal victory/death stops further rewards. |
+| Shield Block | - | - | - | - | - | 4 | 320c | - | - | Passive. With a shield equipped, each damaging physical hit independently has a 30% chance to prevent 70% of damage remaining after armor, Death Wish and banner protection. Remaining damage rounds up to at least 1 HP. Includes critical hits and attacks from behind, with no per-turn cap or cooldown. Does not protect summons, block magic or roll on misses, dodges or immune hits. Partial blocks retain incoming-hit rage and eligibility for Enrage and Lightning Shield. Combat log reports prevented damage; no effect sprite. Retained learning works in every class and below its learning level. |
 | Sweeping Strikes | - | - | - | - | 1 (secondary target) | 5 | 370c | - | - | Passive. Landed single-target direct physical actives copy 50% of their damage to one other hostile enemy in melee. Whirlwind cannot trigger copies. Copies cannot proc, crit or generate rage/combo points. |
 | Sudden Death | - | - | - | * | - | 5 | 405c | - | - | Passive. Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage. |
 | Wrecking Crew | - | - | - | 10 | - | 5 | 450c | - | - | Passive. Primary physical crits grant +25% physical damage for 10 turns. While active, Whirlwind deals an additional 35% more damage, multiplying its weapon coefficient separately from the shared physical buff. Refreshes without stacking; both bonuses end with the buff. |

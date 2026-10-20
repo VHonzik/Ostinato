@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
@@ -24,6 +24,7 @@ $scriptsByScenario = @{
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
   garrick = 'garrick_sim.gd'
+  'shield-block' = 'shield_block_sim.gd'
 }
 $runRoot = Join-Path $ProjectRoot 'reports/bench'
 $runDirectory = Join-Path $runRoot ("$Scenario/" + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -108,6 +109,12 @@ try {
     $expectedCells = if ($Scenario -eq 'warrior') { 16 } else { 6 }
     if ($Shard -eq -1) { $expectedCells *= 3 }
     if ($data.rows.Count -ne $expectedCells) { throw "Incomplete Warrior matrix: expected $expectedCells cells." }
+  }
+  if ($Scenario -eq 'shield-block') {
+    if ($data.rows.Count -ne 24) { throw 'Incomplete Shield Block matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Shield Block sample.' }
+    }
   }
   if ($Scenario -in @('paladin', 'rogue')) {
     $expectedCells = if ($Shard -eq -1) { 54 } else { 18 }

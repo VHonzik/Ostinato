@@ -188,7 +188,10 @@ use direct percentage bonuses. Strength increases weapon power; Agility adds cri
 dodge. Weapon-based physical, Holy and Nature damage keeps fractional power until the
 final integer result, using the existing weapon roll for unbiased rounding.
 Mana, caster stats and the obsolete class catalogues
-are removed, along with parry, block, glancing, crushing and spell resistance.
+are removed, along with parry, glancing, crushing and spell resistance.
+Warrior's later Shield Block passive partially reduces physical hits while a shield
+is equipped, with prevented damage shown in the combat log. Equipment can be replaced
+in combat for one turn; the new setup applies before that turn's swings and enemy attacks.
 
 Ordinary enemy and stalker tuning lives in
 [northshire_data.gd](../scripts/world/northshire_data.gd); level-gap modifiers live in

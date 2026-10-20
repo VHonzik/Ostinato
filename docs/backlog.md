@@ -326,6 +326,10 @@ provisional. The [bench](../bench/README.md) now compares production rules.
   these later playtests and simulations.
 - [ ] Decide later passive development after moving Whirlwind out of trainer progression
   and adding the early risk/reward passives.
+- [x] Add later Shield Block training for a passive defense while a shield is equipped,
+  preserving partial-hit rage and reactive effects. Combat equipment swaps remain available.
+- [ ] Owner playtest: compare shield survival with two-hand clearing, and swap into/out of
+  a shield during combat. Review large retained-kit pulls before settling balance.
 
 ### Current class-identity follow-up — Shaman preparation and summons
 
