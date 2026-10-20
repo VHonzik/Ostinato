@@ -335,12 +335,17 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 		or not _restore_swing(world.hero.off_hand_swing, data.off_hand_swing)):
 		return false
 	world.hero.buffs = _normalized_buffs(data.buffs)
+	if (VanishRules.active(world)
+		and not world.bounds.has_point(VanishRules.origin(world))):
+		return false
 	for key in world.hero.buffs:
 		if (world.hero.find_skill(key) == null
 			or (int(world.hero.buffs[key].until) > 0
 				and int(world.hero.buffs[key].until) <= world.turn_count)):
 			return false
 	for actor in world.actors:
+		if actor.buffs.has(&"vanish_1"):
+			return false
 		if (actor.summon_kind != "" and actor.summon_skill != ItemData.ANCESTRAL_TOTEM_HOTBAR_ID
 			and world.hero.find_skill(actor.summon_skill) == null):
 			return false
@@ -581,6 +586,10 @@ static func _buffs(data: Variant) -> bool:
 			return false
 		if key in ["seal_of_command_1", "blessing_of_kings_1"]:
 			return false
+		if key == "vanish_1":
+			if (buff.size() != 4 or buff.armor != 0 or buff.until == 0
+				or not buff.has_all(["tile_offset_x", "tile_offset_y"])):
+				return false
 		if key == "maelstrom_weapon_1":
 			if (buff.size() != 3 or not buff.has("charges") or buff.armor != 0
 				or buff.until != 0 or not _integer(buff.charges, 1)
@@ -589,6 +598,8 @@ static func _buffs(data: Variant) -> bool:
 		if int(buff.until) == 0 and (skill.effect != SkillDefinition.Effect.PASSIVE or skill.duration != 0):
 			return false
 		for stat in buff:
+			if stat in ["tile_offset_x", "tile_offset_y"] and key == "vanish_1":
+				continue
 			if stat not in ["armor", "until",
 				"charges", "ready", "weapon_id", "off_weapon_id", "physical_percent",
 				"haste_percent", "critical_percent", "immunity", "bonus_percent", "critical_ready"]:

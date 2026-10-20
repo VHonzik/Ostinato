@@ -16,6 +16,7 @@ static var _families: Dictionary[StringName, SkillBehavior] = {
 	&"divine_shield": DivineShield.new(),
 	&"eviscerate": Eviscerate.new(),
 	&"lightning_shield": LightningShield.new(),
+	&"vanish": Vanish.new(),
 }
 static var _effects: Dictionary[int, SkillBehavior] = {
 	SkillDefinition.Effect.MORTAL_STRIKE: PhysicalAttack.new(),
@@ -187,6 +188,14 @@ class Buff extends SkillBehavior:
 class WeaponBuff extends Buff:
 	func can_apply(world: GridWorld, _skill: SkillDefinition, _target: GridActor) -> bool:
 		return world.hero.equipment.has("weapons")
+
+
+class Vanish extends Buff:
+	func configure(world: GridWorld, _skill: SkillDefinition, effect: Dictionary) -> void:
+		# Nonnegative offsets also support maps whose bounds start at negative coordinates.
+		var offset := world.player_tile - world.bounds.position
+		effect["tile_offset_x"] = offset.x
+		effect["tile_offset_y"] = offset.y
 
 
 class Windfury extends WeaponBuff:

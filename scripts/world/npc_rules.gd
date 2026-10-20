@@ -7,7 +7,8 @@ static func acquire_hostiles(world: GridWorld) -> void:
 		if (not actor.alive or actor.relationship != GridActor.Relationship.HOSTILE
 			or actor.returning_home or actor.engaged):
 			continue
-		if (GridWorld.tile_distance(actor.tile, world.player_tile) <= actor.aggro_range
+		if (not VanishRules.active(world)
+			and GridWorld.tile_distance(actor.tile, world.player_tile) <= actor.aggro_range
 			and world.has_sight(actor.tile, world.player_tile)):
 			actor.engaged = true
 			SummonRules.add_threat(world, actor, null, 1)
@@ -24,6 +25,10 @@ static func acquire_hostiles(world: GridWorld) -> void:
 
 static func act(world: GridWorld, actor: GridActor) -> void:
 	if actor.stunned_until > world.turn_count:
+		actor.swing.advance(false, actor.melee.interval)
+		return
+	if actor.engaged and VanishRules.active(world):
+		_pursue(world, actor, VanishRules.origin(world), true)
 		actor.swing.advance(false, actor.melee.interval)
 		return
 	var target := NpcTarget.new(world, SummonRules.enemy_target(world, actor))
@@ -57,7 +62,8 @@ static func _return_home(world: GridWorld, actor: GridActor) -> void:
 		actor.blocked_turns = 0
 
 
-static func _pursue(world: GridWorld, actor: GridActor, target: Vector2i) -> void:
+static func _pursue(world: GridWorld, actor: GridActor, target: Vector2i,
+	remembered: bool = false) -> void:
 	var goals: Array[Vector2i] = []
 	for direction in GridWorld.DIRECTIONS:
 		var tile := target + direction
@@ -65,6 +71,8 @@ static func _pursue(world: GridWorld, actor: GridActor, target: Vector2i) -> voi
 			goals.append(tile)
 	var static_path := world._route(actor.tile, goals, false, target)
 	if static_path.is_empty():
+		if remembered:
+			return
 		actor.blocked_turns += 1
 		if actor.blocked_turns >= 5:
 			actor.engaged = false

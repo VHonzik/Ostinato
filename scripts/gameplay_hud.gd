@@ -172,6 +172,9 @@ func _add_aura(world: GridWorld, title: String, effect: Dictionary, harmful: boo
 	square.add_child(label)
 	var until := int(effect.get("until", 0))
 	square.tooltip_text = title
+	if title == "Vanish":
+		square.tooltip_text += "\nMove or wait unseen. A melee attack or any ability ends Vanish."
+		square.tooltip_text += "\nOpening action: +%d percentage points crit." % SkillDefinition.catalog(&"vanish_1").critical_percent
 	if effect.has("physical_percent"):
 		square.tooltip_text += "\n+%d%% physical damage" % effect.physical_percent
 	if effect.has("critical_percent"):

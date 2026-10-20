@@ -53,6 +53,10 @@ var pending_target: GridActor
 var pending_poison_hands: int = PoisonRules.Hands.BOTH
 var cast_turns: int = 0
 var cast_maelstrom: int = 0
+var cast_critical_bonus: int = 0
+var melee_critical_bonus: int = 0
+# Only present while resolving the ability that broke Vanish, never its follow-up swings.
+var ability_critical_bonus: int = 0
 var cast_elapsed: int = 0
 var cast_duration: float = 1.0
 var global_cooldown_until: int = 0
@@ -298,6 +302,7 @@ func use_war_banner() -> bool:
 			hero.inventory[index] = {}
 			break
 	var item := ItemData.get_item(ItemData.WAR_BANNER_ID)
+	VanishRules.break_effect(self)
 	war_banner = {"tile": tile, "until": turn_count + 1 + int(item.duration)}
 	add_message("Wartorn Banner planted: nearby allies take %d%% less damage for %d turns."
 		% [item.reduction_percent, item.duration])
@@ -418,6 +423,7 @@ func cast_skill(identifier: StringName, target: GridActor = null,
 
 func _begin_cast(skill: SkillDefinition, target: GridActor,
 	poison_hands: int = PoisonRules.Hands.BOTH) -> void:
+	cast_critical_bonus = VanishRules.break_effect(self)
 	hero.restoration.clear()
 	pending_skill = skill
 	pending_target = target
@@ -454,6 +460,7 @@ func continue_cast() -> bool:
 		var target := pending_target
 		var poison_hands := pending_poison_hands
 		var reserved_stacks := cast_maelstrom
+		var critical_bonus := cast_critical_bonus
 		cancel_cast()
 		var payment := SkillCost.quote(hero, skill)
 		if (skill.available_resource(hero) >= payment.rage_cost and valid_spell_target(skill, target)
@@ -463,7 +470,8 @@ func continue_cast() -> bool:
 			payment.pay(hero)
 			if skill.cooldown_seconds > 0:
 				hero.cooldowns[String(cooldown_family(skill))] = turn_count + 1 + ClassToolkitRules.cooldown(hero, skill)
-			_resolve_skill(skill, target, payment.rage_cost, poison_hands, reserved_stacks)
+			_resolve_skill(skill, target, payment.rage_cost, poison_hands,
+				reserved_stacks, critical_bonus)
 		else:
 			add_message("Cast failed at completion; no resource spent or credit gained.")
 	_finish_turn()
@@ -520,6 +528,7 @@ func cancel_cast(force: bool = false) -> void:
 	pending_skill = null
 	pending_target = null
 	cast_maelstrom = 0
+	cast_critical_bonus = 0
 
 
 func cooldown_family(skill: SkillDefinition) -> StringName:
@@ -626,9 +635,14 @@ func _first_living_stalker() -> GridActor:
 
 
 func _resolve_skill(skill: SkillDefinition, target: GridActor, resource_spent: int = 0,
-	poison_hands: int = PoisonRules.Hands.BOTH, maelstrom_stacks: int = 0) -> void:
+	poison_hands: int = PoisonRules.Hands.BOTH, maelstrom_stacks: int = 0,
+	critical_bonus: int = 0) -> void:
 	_award_ability_use(skill)
+	if skill.family != &"vanish":
+		critical_bonus += VanishRules.break_effect(self)
+	ability_critical_bonus = critical_bonus
 	SpellEffects.resolve(self, skill, target, resource_spent, poison_hands, maelstrom_stacks)
+	ability_critical_bonus = 0
 	check_terminal()
 
 
@@ -756,6 +770,7 @@ func contact_greeting(actor: GridActor) -> String:
 func request_melee(target: GridActor) -> bool:
 	if is_terminal() or pending_melee != null or pending_skill != null or not _valid_melee(target):
 		return false
+	melee_critical_bonus = VanishRules.break_effect(self)
 	_neutral_bump_target = null
 	target.relationship = GridActor.Relationship.HOSTILE
 	target.engaged = true
@@ -783,6 +798,7 @@ func continue_melee() -> bool:
 func cancel_melee() -> void:
 	pending_melee = null
 	auto_attack_target = null
+	melee_critical_bonus = 0
 
 
 func _advance_player_weapon() -> void:
@@ -793,9 +809,13 @@ func _advance_player_weapon() -> void:
 	var target := auto_attack_target
 	var haste := hero.attack_haste()
 	var interval := hero.melee.interval / haste
-	var swings := hero.swing.advance(_valid_melee(target), interval)
 	var off_weapon := hero.off_hand_melee()
 	var off_interval := off_weapon.interval / haste
+	if VanishRules.active(self):
+		hero.swing.advance(false, interval)
+		hero.off_hand_swing.advance(false, off_interval)
+		return
+	var swings := hero.swing.advance(_valid_melee(target), interval)
 	var off_swings := hero.off_hand_swing.advance(hero.has_off_hand_weapon() and _valid_melee(target), off_interval)
 	var due: Array[Dictionary] = []
 	for index in range(swings):
@@ -880,7 +900,9 @@ func _player_swing(target: GridActor) -> void:
 	last_attacked_enemy = target
 	hero.gain_rage(HeroState.SWING_RAGE_PER_BASE_TURN * hero.melee.interval)
 	ClassToolkitRules.consume_flurry(hero)
-	var event := ClassToolkitRules.weapon_outcome(self, target, null, hero.melee)
+	var event := ClassToolkitRules.weapon_outcome(self, target, null, hero.melee,
+		melee_critical_bonus)
+	melee_critical_bonus = 0
 	var result := event.result
 	var amount := MeleeRules.damage(hero.melee, target.melee, result,
 		combat_random.randf(), 1.0, 0, ClassToolkitRules.recklessness_damage_multiplier(hero))
@@ -892,7 +914,9 @@ func _player_swing(target: GridActor) -> void:
 func _player_off_hand_swing(target: GridActor, weapon: MeleeProfile) -> void:
 	melee_attacked.emit(null, target.tile)
 	ClassToolkitRules.consume_flurry(hero)
-	var event := ClassToolkitRules.weapon_outcome(self, target, null, weapon)
+	var event := ClassToolkitRules.weapon_outcome(self, target, null, weapon,
+		melee_critical_bonus)
+	melee_critical_bonus = 0
 	event.hand = AttackEvent.Hand.OFF
 	var value := MeleeRules.damage(weapon, target.melee, event.result,
 		combat_random.randf(), 1.0, 0, ClassToolkitRules.recklessness_damage_multiplier(hero))

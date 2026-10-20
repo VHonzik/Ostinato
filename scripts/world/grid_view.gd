@@ -436,9 +436,14 @@ func _draw_player() -> void:
 		return
 	var sprites := player_sprite_layers(world.hero.selected_class)
 	var effect := _blink_sprite(_player_blink)
+	var tint := health_tint(world.hero.health, world.hero.max_health)
+	if VanishRules.active(world):
+		tint.a = 0.4
+		# Vanish reveals the translucent class sprite even during a previous ability flash.
+		effect = null
 	_draw_sprite_layers(world.player_tile, sprites.base_sprite if effect == null else effect,
 		sprites.faction_sprite if effect == null else null,
-		health_tint(world.hero.health, world.hero.max_health), Color.WHITE,
+		tint, Color(1.0, 1.0, 1.0, tint.a),
 		_melee_bump_offset(null))
 
 

@@ -28,13 +28,14 @@ static func level_damage_multiplier(attacker_level: int, defender_level: int) ->
 
 
 static func outcome(
-	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float
+	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float,
+	critical_bonus: int = 0
 ) -> StringName:
 	var miss := miss_chance(attacker, defender)
 	var dodge := defender.dodge + (defender.level - attacker.level) * LEVEL_DODGE_PERCENT
 	if defender.player and behind:
 		dodge = 0.0
-	var critical := critical_chance(attacker, defender)
+	var critical := critical_chance(attacker, defender) + critical_bonus
 	var threshold := 0.0
 	var chances: Array[float] = [miss, dodge, critical]
 	var outcomes: Array[StringName] = [&"miss", &"dodge", &"critical"]

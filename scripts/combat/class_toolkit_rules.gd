@@ -153,10 +153,12 @@ static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDef
 
 
 static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	weapon: MeleeProfile) -> AttackEvent:
+	weapon: MeleeProfile, critical_bonus: int = 0) -> AttackEvent:
+	if skill != null:
+		critical_bonus += world.ability_critical_bonus
 	var result := MeleeRules.outcome(weapon, target.melee,
 		MeleeRules.is_behind(target.facing, world.player_tile - target.tile),
-		world.combat_random.randf() * 100.0)
+		world.combat_random.randf() * 100.0, critical_bonus)
 	var landed := result not in [&"miss", &"dodge"]
 	if (skill != null and landed and skill.family == &"mortal_strike"
 		and world.hero.buffs.has(&"juggernaut_1")):
@@ -184,7 +186,7 @@ static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefin
 		return AttackEvent.new(target, skill, &"miss", 0, skill.school as AttackEvent.School)
 	var critical := false
 	var chance := MeleeRules.critical_chance(world.hero.melee, target.melee)
-	chance += critical_bonus
+	chance += critical_bonus + world.ability_critical_bonus
 	critical = world.combat_random.randf() * 100.0 < chance
 	var empowered := (skill.family == &"judgement"
 		and int(effect(world.hero, &"art_of_war_1").get("critical_ready", 0)) > 0)

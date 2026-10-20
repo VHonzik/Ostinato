@@ -485,6 +485,11 @@ isolated simulations inform it, while real routes and human play decide the resu
 
 ### Remaining slices — after itemization
 
+- [ ] **Vanish playtest:** learn the new Rogue active, vanish in an engaged pack,
+  move away while enemies approach the original tile, then break concealment with
+  a bump or retained ability. Check four-turn expiry, transparency, the opening crit
+  bonus and resumed pursuit. Training price and balance remain provisional.
+
 - [ ] **Temporary character progression and gear:** tune kill/quest XP, the finite-area
   level ceiling and revisit the implemented level-difference effects. The simplified gear,
   shared stat model and combat simplification are implemented; retain those while tuning
