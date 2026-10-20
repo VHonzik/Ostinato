@@ -24,6 +24,8 @@ static func acquire_hostiles(world: GridWorld) -> void:
 
 
 static func act(world: GridWorld, actor: GridActor) -> void:
+	if StalkerBreath.act(world, actor):
+		return
 	if actor.stunned_until > world.turn_count:
 		actor.swing.advance(false, actor.melee.interval)
 		return

@@ -225,6 +225,8 @@ func _update_selection() -> void:
 	if selected.debuffs.has(&"judgement_1"):
 		_detail.text += "\nJudgement: verdict in %d turns." % maxi(0,
 			int(selected.debuffs[&"judgement_1"].until) - _world.turn_count)
+	if selected.alive and selected.breath_remaining > 0:
+		_detail.text += "\nFel Breath: %d turns. Leave the marked cone." % selected.breath_remaining
 	_configure_buttons(_candidates.size() > 1,
 		"Cast (Enter)" if mode == Mode.SPELL else "Choose (Enter)", true)
 	selection_changed.emit(selected)

@@ -22,6 +22,7 @@ const ACTOR_FIELDS: Array[String] = [
 	"npc_id", "population_slot",
 	"summon_kind", "summon_skill", "expires_turn",
 	"stunned_until",
+	"breath_normal_turns", "breath_started", "breath_remaining", "breath_direction",
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
@@ -229,6 +230,8 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 			or int(wander_ready) > world.turn_count + GridWorld.WANDER_MAX_TURNS):
 			return false
 		actor.wander_ready_turn = int(wander_ready)
+		if not _valid_breath(actor):
+			return false
 		var contact := NpcDefinition.find(actor.npc_id)
 		if world.valley_route and contact != null and contact.refresh_saved_name:
 			actor.title = contact.title
@@ -282,6 +285,20 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 		world._hide_empty_corpse(actor)
 		world.actors.append(actor)
 	return true
+
+
+static func _valid_breath(actor: GridActor) -> bool:
+	var delay := StalkerBreath.NORMAL_TURNS_BETWEEN if actor.breath_started else StalkerBreath.FIRST_NORMAL_TURNS
+	if (actor.breath_normal_turns < 0 or actor.breath_normal_turns > delay
+		or actor.breath_remaining < 0 or actor.breath_remaining > StalkerBreath.WINDUP_TURNS):
+		return false
+	if not actor.stalker or not actor.alive:
+		return (actor.breath_normal_turns == 0 and not actor.breath_started
+			and actor.breath_remaining == 0 and actor.breath_direction == Vector2i.ZERO)
+	if actor.breath_remaining > 0:
+		return (actor.engaged and not actor.returning_home and actor.breath_started
+			and actor.breath_normal_turns == 0 and GridWorld.DIRECTIONS.has(actor.breath_direction))
+	return actor.breath_direction == Vector2i.ZERO or GridWorld.DIRECTIONS.has(actor.breath_direction)
 
 
 static func _restore_learning(world: GridWorld, data: Dictionary,

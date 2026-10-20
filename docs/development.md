@@ -203,6 +203,20 @@ Garrick now has 120 HP and 7–9 base melee damage, retaining his level, armor a
 2.6-turn swing interval. His first-Loop target is a close fight after free gear and
 modest training; stronger preparation can make him reliable in later Loops.
 
+Stalker uses [Fel Breath](../scripts/world/stalker_breath.gd): after four normal engaged
+turns it stops and marks a fixed 90-degree cone, three tiles deep. Two complete player
+response turns follow; release occurs after that turn's player spells and weapon swings.
+It waits ten normal turns between casts; announcement and both response turns replace
+movement and melee. Its weapon timer resets to a full interval and stays paused until
+release; player weapon timers keep ticking while dodging.
+Stuns and Vanish delay new starts; a committed breath still releases. Walls block it,
+and it delays starting if the player has no escape within two ordinary moves.
+The cone deals 60 base Fire damage with level scaling (81 against level five), no
+armor, block, dodge or critical rolls, and the usual explicit damage defenses.
+Friendly summons in the cone are hit too. Facing and threatened tiles stay fixed while
+the Stalker blinks; countdown and tile warnings persist while the player considers a move.
+Enrage and regeneration remain experimental bench variants, outside the live encounter.
+
 Judgement retains its delayed verdict. It fixes damage and hit/critical results when
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings
 and enemy actions. Impact ignores current range and never changes the selected target;
@@ -214,10 +228,10 @@ Divine Purpose, Eye for an Eye and combo-point refunds are removed. Existing Hol
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 33, with gear stats rebuilt from equipment on load.
-Revision 32 and older saves are incompatible and left unchanged; start a fresh game.
-This revision replaces Heart of the Crusader's timed critical-chance debuff with a
-saved, single-use melee vulnerability. No save migration is provided.
+Current saves are `demo` revision 34, with gear stats rebuilt from equipment on load.
+Revision 33 and older saves are incompatible and left unchanged; start a fresh game.
+This revision saves Stalker's pending Fel Breath direction, countdown and cadence.
+No save migration is provided.
 Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
 primary-stat buff fields. Failed writes/loads preserve existing player files.
 Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.

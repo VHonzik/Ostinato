@@ -91,6 +91,9 @@ const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
 @export var npc_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
 ## Player keys are class names. The default faction layer is empty.
 @export var player_sprites: Dictionary[StringName, ActorSpriteLayers] = {}
+## Temporary art; replace these with the final wind-up and cone tile sprites.
+@export var breath_windup_sprite: Texture2D = preload("res://assets/sprites/dev/fel_breath_windup.svg")
+@export var breath_tile_sprite: Texture2D = preload("res://assets/sprites/dev/fel_breath_tile.svg")
 
 var world: GridWorld:
 	set(value):
@@ -100,6 +103,7 @@ var world: GridWorld:
 			world.npc_combat_text.disconnect(combat_text.spawn)
 			world.ability_used.disconnect(_show_player_ability)
 			world.consecration_ticked.disconnect(_show_consecration)
+			world.stalker_breath_released.disconnect(_show_breath)
 			world.npc_ability_hit.disconnect(_show_npc_ability)
 			world.melee_attacked.disconnect(_queue_melee_bump)
 		world = value
@@ -109,10 +113,13 @@ var world: GridWorld:
 		_player_blink.clear()
 		_npc_blinks.clear()
 		_consecration_blink.clear()
+		_breath_impact.clear()
+		_breath_elapsed = 0.0
 		if world != null:
 			world.npc_combat_text.connect(combat_text.spawn)
 			world.ability_used.connect(_show_player_ability)
 			world.consecration_ticked.connect(_show_consecration)
+			world.stalker_breath_released.connect(_show_breath)
 			world.npc_ability_hit.connect(_show_npc_ability)
 			world.melee_attacked.connect(_queue_melee_bump)
 var selected: GridActor
@@ -129,6 +136,8 @@ var _consecration_blink: Dictionary = {}
 var _ability_sprites: Dictionary[Vector2i, AtlasTexture] = {}
 var _melee_bumps: Array[Dictionary] = []
 var _melee_bump_elapsed: float = 0.0
+var _breath_elapsed: float = 0.0
+var _breath_impact: Dictionary = {}
 
 
 func _init() -> void:
@@ -207,6 +216,12 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_advance_melee_bumps(delta)
+	_breath_elapsed = fmod(_breath_elapsed + delta, 1.0)
+	var had_impact := not _breath_impact.is_empty()
+	_advance_ability_blink(_breath_impact, delta)
+	if world != null and (had_impact or world.actors.any(
+		func(actor: GridActor) -> bool: return actor.alive and actor.breath_remaining > 0)):
+		queue_redraw()
 	if (not _player_blink.is_empty() or not _npc_blinks.is_empty()
 		or not _consecration_blink.is_empty()):
 		_advance_ability_blink(_player_blink, delta)
@@ -317,6 +332,9 @@ func _blink_sprite(effect: Dictionary) -> Texture2D:
 
 
 func _consecration_visible(tile: Vector2i) -> bool:
+	var occupant := world.actor_at(tile)
+	if occupant != null and occupant.breath_remaining > 0:
+		return false
 	var attacker: GridActor = _melee_bumps[0].attacker if is_melee_bumping() else null
 	return (tile != world.player_tile and not _consecration_blink.is_empty()
 		and _consecration_blink.tiles.has(tile)
@@ -369,6 +387,7 @@ func _draw() -> void:
 				sprite = &"chest_open" if actor.loot_assigned else &"chest_closed"
 			_draw_valley_sprite(actor.tile, sprite)
 	_draw_war_banner()
+	_draw_breath(false)
 	for actor: GridActor in occupants.values():
 		if actor.alive:
 			_draw_actor(actor)
@@ -379,6 +398,7 @@ func _draw() -> void:
 	draw_rect(player_rect.grow(1), Color("#83c5cf"), false, 1)
 	_draw_player()
 	_draw_consecration()
+	_draw_breath(true)
 
 
 func _draw_war_banner() -> void:
@@ -410,12 +430,44 @@ func _draw_actor(actor: GridActor) -> void:
 		faction if effect == null else null,
 		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
 		_actor_color(actor), _melee_bump_offset(actor))
+	if actor.breath_remaining > 0:
+		var position := Vector2(actor.tile * TILE_SIZE)
+		if _breath_elapsed < 0.5 and breath_windup_sprite != null:
+			draw_texture_rect(breath_windup_sprite, Rect2(position, Vector2.ONE * TILE_SIZE), false)
+		draw_rect(Rect2(position, Vector2(14, 15)), Color("#172719"))
+		draw_string(ThemeDB.fallback_font, position + Vector2(3, 12), str(actor.breath_remaining),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#c5fc87"))
 	if actor.debuffs.has(&"judgement_1"):
 		var remaining := int(actor.debuffs[&"judgement_1"].until) - world.turn_count
 		var position := Vector2(actor.tile * TILE_SIZE) + _melee_bump_offset(actor)
 		draw_rect(Rect2(position + Vector2(18, 0), Vector2(14, 15)), Color("#382b15"))
 		draw_string(ThemeDB.fallback_font, position + Vector2(21, 12), str(remaining),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#ffe187"))
+
+
+func _show_breath(tiles: Array[Vector2i]) -> void:
+	if not _breath_impact.is_empty() and float(_breath_impact.elapsed) == 0.0:
+		_breath_impact.tiles.append_array(tiles)
+	else:
+		_breath_impact = {"tiles": tiles.duplicate(), "elapsed": 0.0}
+	queue_redraw()
+
+
+func _draw_breath(outlines: bool) -> void:
+	var marked: Array[Vector2i] = []
+	for actor in world.actors:
+		if actor.alive and actor.breath_remaining > 0:
+			marked.append_array(StalkerBreath.tiles(world, actor))
+	var impact := not _breath_impact.is_empty()
+	if impact:
+		marked.append_array(_breath_impact.tiles)
+	for tile in marked:
+		var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
+		if outlines:
+			# A steady border keeps danger visible beneath occupants and other effects.
+			draw_rect(rectangle.grow(-1), Color("#c5fc87"), false, 2.0 if impact else 1.0)
+		elif breath_tile_sprite != null and (impact or _breath_elapsed < 0.5):
+			draw_texture_rect(breath_tile_sprite, rectangle, false)
 
 
 func _draw_consecration() -> void:

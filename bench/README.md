@@ -5,6 +5,13 @@ call the current game model; the game never loads the bench. `.gdignore` keeps t
 out of editor imports and normal script validation. The launcher loads them explicitly.
 No separate project, dependency upgrades, or simulation framework.
 
+`stalker-mechanics` and `stalker-patterns` retain their historical pre-Fel-Breath
+control (labelled `live` in their output). They suppress the adopted production breath
+to isolate experimental Enrage, recovery and cone variants. Replays use unobserved
+experimental worlds; the other encounter scenarios continue using current game rules.
+New cone runs reset and pause the Stalker's weapon interval through the breath;
+earlier saved runs let that timer tick, so their win rates describe the older variant.
+
 From the repository root, after the normal [setup](../docs/development.md):
 
 ```powershell
@@ -16,6 +23,9 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario rogue
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-passives -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-full -BaselineOnly
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-mechanics -Shard 0
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-patterns -Confirm
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario stalker-patterns -Confirm -Policy after-breath
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario priorities -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario pulls -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario pull-tuning -Confirm -Shard 0
@@ -34,6 +44,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `stalker-passives` | All 15 retained-kit combinations against Stalker, then one-passive removals in its own kit and all four kits. Records actual player healing/losses as well as boss damage. 200 baseline seeds, 100 matched removal seeds, independent 40-seed policy pilots; three weapons and cold/prepared entry. Use shards 0/1/2 sequentially. |
 | `stalker-full` | Current coordinated rotation with all four kits fully learned, against Stalker only. 200 baseline seeds with and without trainer gifts; 100 paired seeds per passive removal with gifts. Three weapons, cold/live prepared entry; use shards 0/1/2 sequentially. |
+| `stalker-mechanics` | Experimental 20%-HP Enrage and one four-turn recovery at 50% HP. Pilots ordinary spending, reacting and several banking policies across all four three-kit builds plus all kits, all weapons. Every build retains the initial Warrior MS/Whirlwind pair; Shaman/Paladin/Rogue has no purchased Warrior skills. Recovery always exceeds the interruption requirement. 30 pilot seeds; `-Confirm` compares ordinary and spell-only banking for live plus 150/180 and 150/240 on 100 fresh seeds (4800000+). Spell banking holds Lava/Judgement from 70% and MS from 60%, preserving their rage costs while keeping finishers/haste and affordable other spending active. Prepared common gear, no gifts. Cone omitted pending cadence/geometry. |
+| `stalker-patterns` | Isolates Enrage, then adds a locked three-tile cone with two full response turns. Four three-kit paths including Warrior starters, all weapons. Compare early/late sidesteps, saving burst or defenses for Enrage, wider dodges with ranged burst, saving Divine Shield for a cone, and ignoring it. First wind-up after four normal turns, then ten normal turns between casts; casting/channel time excluded. Cone can kill summoned wolves. Includes 150/180 recovery with/without banking; pilots also test eight/twelve-turn gaps. 20 pilot seeds, 60 fresh with `-Confirm`; same gear/preparation as mechanics. |
 | `priorities` | Live requested priorities on starter Shaman, full Shaman/Paladin, all four three-kit combinations and all kits. Five priority alternatives on all kits; ordinary groups, Stalker, ranged pulls and durable-group/banked-stack stress cases. Cold/live prepared entry, 30 seeds per cell, three weapons; sample fights replay against plain `GridWorld`. |
 | `pulls` | Prepared fully retained kits against 1-32 same-level regular thugs, with common/uncommon gear and usual/AoE priorities. Controls cover kobolds, banked entry, Warrior alone and removing Victory Rush. 20 seeds per cell; per-turn incoming damage/healing and plain-world replays. Shards select weapons. |
 | `pull-tuning` | Prepared pulls only. Pilot alternate Wrecking Crew/Consecration tuning and shared Victory Rush trigger cooldowns, then use `-Confirm` for actual game data on fresh seeds, with defensive skills disabled, emergency use or proactive use. Includes a 64-enemy two-hand stress case. |
@@ -41,7 +53,28 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `loot` | Seeded valley loot, obtainable loadouts, estimated auto-attack gains, and a full-route gold budget beside total training costs. |
 | `loot-rates` | Compare candidate uncommon drop rates on copied loot tables. These are experimental rates, not live tuning. |
 
+For `stalker-patterns`, `-Policy after-breath` runs a focused additional strategy on
+Enrage/cone and the full encounter: keep wolves until the first breath resolves,
+prioritize them just after a breath, and avoid wasting defenses during safe cast
+windows. It uses the same fresh seeds with `-Confirm`; combine the two result files
+in the mechanics analyzer for paired comparisons. This strategy sidesteps immediately;
+the focused run adds the matching immediate-sidestep control for the full encounter.
+Pattern policies avoid overlapping active Divine Shield and Evasion. Their fresh
+matched controls therefore matter more than comparisons with older mechanics runs.
+
 `-Smoke` reduces combat/loot samples for a wiring check, not a design conclusion.
+Stalker mechanics uses live actions with experiment-local boss changes. The full
+four-turn channel suppresses movement and melee, keeps swing timers ticking and
+counts all actual damage after the triggering boundary through the final response's
+summons. Success prevents healing at the deadline; it does not end the pause early.
+Thresholds never rearm after healing. Player and boss HP accounting includes recovery;
+control and candidate samples replay on the unobserved experiment.
+Use `python -B bench/analyze_stalker_mechanics.py <result.json> ...` to summarize,
+adding `--cells` for build/weapon detail. Shared seeds are paired strata, not extra
+independent samples. `--three-only --by-build` separates the three-kit target from
+the all-kit control. `--paired` prints nominal seed-block bootstrap intervals for
+win differences, without adjustment for exploratory comparisons. The mechanics-only
+scenario omits cone costs; both scenarios omit route and reinforcement pressure.
 Garrick's `-Confirm` runs only the live profile on fresh seeds after candidate tuning;
 its normal run compares the live profile with modest trial profiles.
 Omit it for the normal sample counts held in each script. Warrior `-Shard 0/1/2`

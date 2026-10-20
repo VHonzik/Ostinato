@@ -1,11 +1,12 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
   [switch]$Confirm,
+  [string]$Policy = '',
   [ValidateRange(-1, 2)][int]$Shard = -1,
   [string]$Baseline = '',
   [ValidateRange(1, 600)][int]$TimeoutSeconds = 600
@@ -18,6 +19,8 @@ $scriptsByScenario = @{
   rogue = 'rogue_sim.gd'
   'stalker-passives' = 'stalker_passive_sim.gd'
   'stalker-full' = 'stalker_full_sim.gd'
+  'stalker-mechanics' = 'stalker_mechanics_sim.gd'
+  'stalker-patterns' = 'stalker_patterns_sim.gd'
   priorities = 'priority_sim.gd'
   pulls = 'pull_sim.gd'
   'pull-tuning' = 'pull_tuning.gd'
@@ -32,9 +35,12 @@ $savedEnvironment = @{}
 $metadata = $null
 $passed = $false
 try {
+  if ($Policy -and ($Scenario -ne 'stalker-patterns' -or $Policy -ne 'after-breath')) {
+    throw '-Policy currently supports after-breath for stalker-patterns only.'
+  }
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
-  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick')) { throw '-Confirm is only for pull-tuning or garrick.' }
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning')) { throw '-Shard is only for combat simulations.' }
+  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns')) { throw '-Confirm is only for tuning scenarios.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -63,6 +69,7 @@ try {
     scenario = $Scenario; smoke = [bool]$Smoke; shard = $Shard
     baseline_only = [bool]$BaselineOnly
     confirm = [bool]$Confirm
+    policy = $Policy
     revision = $revision; dirty = $dirty; godot = $ToolVersions.godot.version
     started_utc = [DateTime]::UtcNow.ToString('o'); timeout_seconds = $TimeoutSeconds
     status = 'running'
@@ -101,10 +108,34 @@ try {
   if ($Smoke) { $simulationArguments += 'smoke' }
   if ($BaselineOnly) { $simulationArguments += 'baseline_only' }
   if ($Confirm) { $simulationArguments += 'confirm' }
+  if ($Policy) { $simulationArguments += "policy=$Policy" }
   $result = Invoke-ToolProcess 'simulation' $engine ($baseArguments + $simulationArguments) $runDirectory $TimeoutSeconds
   Assert-NoUnexpectedDiagnostics $result
   $data = Get-Content -LiteralPath (Join-Path $runDirectory 'result.json') -Raw | ConvertFrom-Json
   if ($null -eq $data) { throw 'Simulation produced no JSON result.' }
+  if ($Scenario -eq 'stalker-patterns') {
+    $weaponCount = if ($Shard -lt 0) { 3 } else { 1 }
+    if ($data.rows.Count -ne 4 * $weaponCount * $data.setup.policies_per_weapon) {
+      throw 'Incomplete Stalker pattern matrix.'
+    }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Stalker pattern sample.' }
+      if ($row.config.channel -and $row.config.heal -le $row.config.requirement) {
+        throw 'Recovery must exceed its interruption requirement.'
+      }
+    }
+  }
+  if ($Scenario -eq 'stalker-mechanics') {
+    $weaponCount = if ($Shard -lt 0) { 3 } else { 1 }
+    $expectedCells = 5 * $weaponCount * $data.setup.policies_per_weapon
+    if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete Stalker mechanics matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Stalker mechanics sample.' }
+      if ($row.config.heal -gt 0 -and $row.config.heal -le $row.config.requirement) {
+        throw 'Recovery must exceed its interruption requirement.'
+      }
+    }
+  }
   if ($Scenario -like 'warrior*') {
     $expectedCells = if ($Scenario -eq 'warrior') { 16 } else { 6 }
     if ($Shard -eq -1) { $expectedCells *= 3 }

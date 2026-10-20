@@ -1,0 +1,113 @@
+class_name StalkerBreath
+extends RefCounted
+
+const RANGE: int = 3
+const WINDUP_TURNS: int = 2
+const FIRST_NORMAL_TURNS: int = 4
+const NORMAL_TURNS_BETWEEN: int = 10
+const DAMAGE: int = 60
+
+
+## Returns true when the breath consumes this NPC turn, including its announcement.
+static func act(world: GridWorld, actor: GridActor) -> bool:
+	if not actor.stalker:
+		return false
+	if not actor.engaged or actor.returning_home:
+		reset(actor)
+		return false
+	if actor.breath_remaining > 0:
+		actor.breath_remaining -= 1
+		if actor.breath_remaining == 0:
+			_release(world, actor)
+		return true
+	if actor.stunned_until > world.turn_count or VanishRules.active(world):
+		return false
+	var delay := NORMAL_TURNS_BETWEEN if actor.breath_started else FIRST_NORMAL_TURNS
+	if actor.breath_normal_turns < delay:
+		actor.breath_normal_turns += 1
+		return false
+	var target := NpcTarget.new(world, SummonRules.enemy_target(world, actor))
+	actor.breath_direction = MeleeRules.facing_toward(target.tile - actor.tile)
+	# Do not announce an unavoidable hit when terrain or occupants box the player in.
+	if not _can_escape(world, actor):
+		return false
+	actor.facing = actor.breath_direction
+	actor.breath_remaining = WINDUP_TURNS
+	actor.breath_normal_turns = 0
+	actor.breath_started = true
+	# Hold a fresh weapon interval throughout the announcement and both response turns.
+	actor.swing.remaining = actor.melee.interval
+	actor.swing._active = false
+	world.add_message("%s draws breath! Fel Breath in 2 turns. Leave the marked cone." % actor.title)
+	return true
+
+
+static func reset(actor: GridActor) -> void:
+	actor.breath_remaining = 0
+	actor.breath_normal_turns = 0
+	actor.breath_started = false
+	actor.breath_direction = Vector2i.ZERO
+
+
+static func threatens(world: GridWorld, actor: GridActor, tile: Vector2i) -> bool:
+	var offset := tile - actor.tile
+	var direction := actor.breath_direction
+	var forward := offset.x * direction.x + offset.y * direction.y
+	var side := absi(offset.x * direction.y - offset.y * direction.x)
+	return (world.bounds.has_point(tile) and GridWorld.tile_distance(actor.tile, tile) <= RANGE
+		and forward > 0 and side <= forward and world.has_sight(actor.tile, tile))
+
+
+static func tiles(world: GridWorld, actor: GridActor) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for y in range(-RANGE, RANGE + 1):
+		for x in range(-RANGE, RANGE + 1):
+			var tile := actor.tile + Vector2i(x, y)
+			if threatens(world, actor, tile):
+				result.append(tile)
+	return result
+
+
+static func _can_escape(world: GridWorld, actor: GridActor) -> bool:
+	var frontier: Array[Vector2i] = [world.player_tile]
+	var visited: Array[Vector2i] = []
+	# Match player movement: only the destination blocks a diagonal step.
+	for step in range(WINDUP_TURNS + 1):
+		var next: Array[Vector2i] = []
+		for tile in frontier:
+			if not threatens(world, actor, tile):
+				return true
+			for direction in GridWorld.DIRECTIONS:
+				var destination := tile + direction
+				if not visited.has(destination) and world.is_open(destination):
+					visited.append(destination)
+					next.append(destination)
+		frontier = next
+	return false
+
+
+static func _release(world: GridWorld, actor: GridActor) -> void:
+	world.add_message("%s unleashes Fel Breath!" % actor.title)
+	world.stalker_breath_released.emit(tiles(world, actor))
+	var targets: Array[GridActor] = [null]
+	for ally in world.actors:
+		if ally.alive and ally.summon_kind != "":
+			targets.append(ally)
+	for ally in targets:
+		var target := NpcTarget.new(world, ally)
+		if not target.alive or not threatens(world, actor, target.tile):
+			continue
+		var raw := floori(DAMAGE * actor.melee.damage_multiplier
+			* MeleeRules.level_damage_multiplier(actor.melee.level, target.melee.level))
+		var amount := ClassSpellEffects.absorb(world, ally, raw, false)
+		target.take_damage(amount, &"hit")
+		world.add_message("Fel Breath -> %s: hit, %d damage." % [target.title, amount])
+		if world.check_terminal():
+			world.add_message("You died.")
+			return
+		if target.alive:
+			if target.is_player():
+				ClassToolkitRules.on_damage_taken(world, amount)
+			target.retaliate(actor, amount)
+		if world.is_terminal() or not actor.alive:
+			return

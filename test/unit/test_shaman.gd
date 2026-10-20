@@ -130,6 +130,8 @@ func test_elemental_takes_a_few_stalker_turns_then_attacks_return_to_player() ->
 	var boss: GridActor = world.actors.back()
 	boss.engaged = true
 	# Isolate durability against ordinary landed hits from the live boss profile.
+	# Stand behind the Stalker: elemental taunt does not make the hero immune to its cone.
+	world.player_tile = boss.tile + Vector2i.RIGHT
 	boss.melee.hit = 100.0
 	boss.melee.critical = -100.0
 	world.hero.melee.dodge = 0.0

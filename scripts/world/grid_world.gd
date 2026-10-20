@@ -7,6 +7,7 @@ signal loot_interaction_requested(source: GridActor)
 signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 signal ability_used(skill: SkillDefinition)
 signal consecration_ticked
+signal stalker_breath_released(tiles: Array[Vector2i])
 signal npc_ability_hit(actor: GridActor, family: StringName)
 # A null attacker denotes the player. Presentation never delays combat resolution.
 signal melee_attacked(attacker: GridActor, target_tile: Vector2i)
@@ -934,6 +935,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			add_message(target.title + " dies.")
 			return
 		target.alive = false
+		StalkerBreath.reset(target)
 		target.debuffs.erase(&"judgement_1")
 		target.debuffs.erase(&"heart_of_the_crusader_1")
 		target.engaged = false

@@ -20,8 +20,11 @@ Keep the valley lookup aligned when moving cells. Preserve existing `.import` fi
 when replacing a runtime image. Use nearest filtering; sprite selection lives in
 [GridView](../scripts/world/grid_view.gd).
 
-The two SVGs under [assets/sprites/dev/](../assets/sprites/dev/) supply the temporary
-NPC base heart and Earth Elemental. Living actors use independent base and faction
+The SVGs under [assets/sprites/dev/](../assets/sprites/dev/) supply the temporary
+NPC base heart, Earth Elemental and Fel Breath warnings. Replace `breath_windup_sprite`
+and `breath_tile_sprite` on GridView with final transparent textures; the tile sprite
+blinks under occupants while a steady border preserves the threatened area.
+Living actors use independent base and faction
 textures through `ActorSpriteLayers`. Replace pairs using the GridView node's
 `npc_sprites` or `player_sprites` dictionaries, with matching canvas sizes and positions.
 

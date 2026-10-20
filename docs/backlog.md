@@ -508,6 +508,10 @@ isolated simulations inform it, while real routes and human play decide the resu
   patterns, HP/damage and clone pressure
   against finite route XP/gear and roughly three developed classes. Keep exceptional
   earlier wins possible rather than enforcing class or level victory gates.
+- [x] Implement Stalker's dodgeable Fel Breath with two response turns, a locked
+  three-tile cone, persistent wind-up/tile warnings, and ten normal turns between casts.
+  Final sprites, warning readability and the easier fight from melee pauses need owner
+  playtesting; Enrage and regeneration remain undecided experiments.
 - [ ] **Integration, saves and playtesting:** keep learning and the seed while
   clearing temporary levels/XP, gear, gold, quests, buffs, combat resources and clones
   on death. Check mid-Loop saves at the existing out-of-combat action boundaries,
