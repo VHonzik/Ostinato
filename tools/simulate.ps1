@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
@@ -23,6 +23,7 @@ $scriptsByScenario = @{
   'pull-tuning' = 'pull_tuning.gd'
   accessories = 'accessory_power_sim.gd'; loot = 'itemization_sim.gd'
   'loot-rates' = 'itemization_rates.gd'
+  garrick = 'garrick_sim.gd'
 }
 $runRoot = Join-Path $ProjectRoot 'reports/bench'
 $runDirectory = Join-Path $runRoot ("$Scenario/" + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -31,7 +32,7 @@ $metadata = $null
 $passed = $false
 try {
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
-  if ($Confirm -and $Scenario -ne 'pull-tuning') { throw '-Confirm is only for pull-tuning.' }
+  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick')) { throw '-Confirm is only for pull-tuning or garrick.' }
   if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'priorities', 'pulls', 'pull-tuning')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }

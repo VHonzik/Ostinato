@@ -429,6 +429,14 @@ Playtest keyboard inspection and gear swaps, proc consumption between encounters
 the outdoor camp versus mine, and the stalker arrival. Readability and feel remain
 for owner review.
 
+The next notes add thin hotbar borders for critical/free-use readiness and missing
+maintenance, chest bump loot menus, faster held movement, quality-sorted bag views,
+deliberate Lava Burst targeting, and the abbey contact/passage changes. Maelstrom's
+bar replaces its duplicate aura. Playtest border readability, mixed poison coatings,
+opening/cancelling chest loot, ranged pulls with another engaged enemy, and the
+hidden northeast corner. Garrick's first-Loop tuning aims for a close prepared fight;
+isolated simulations inform it, while real routes and human play decide the result.
+
 ### Implemented playtest follow-up — War Horn
 
 - [x] Replace Booming Shout with Llane's reusable War Horn gift after learning every

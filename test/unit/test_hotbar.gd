@@ -1,6 +1,79 @@
 extends GutTest
 
 
+func test_hotbar_reports_crit_and_free_use_without_spending_procs_and_clears_reassigned_slots() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	assert_true(world.assign_hotbar(0, &"mortal_strike_1"))
+	world.hero.buffs[&"juggernaut_1"] = {"until": 0}
+	world.hero.buffs[&"battle_trance_1"] = {"until": 0}
+	world.hero.learn_skill(SkillDefinition.catalog(&"judgement_1"))
+	world.hero.buffs[&"art_of_war_1"] = {"until": 0, "critical_ready": 1}
+	world.assign_hotbar(1, &"judgement_1")
+	var before := world.hero.buffs.duplicate(true)
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	assert_string_contains(panel.slots[0].tooltip_text, "Guaranteed critical")
+	assert_string_contains(panel.slots[0].tooltip_text, "Free use ready")
+	assert_string_contains(panel.slots[1].tooltip_text, "Guaranteed critical")
+	assert_string_contains(panel.slots[1].tooltip_text, "Free use ready")
+	assert_eq(world.hero.buffs, before)
+	world.hero.buffs.clear()
+	world.hotbar[1] = &""
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	assert_false(panel.slots[0].tooltip_text.contains("Guaranteed critical"))
+	assert_false(panel.slots[0].tooltip_text.contains("Free use ready"))
+	assert_true(panel.slots[1].highlight_colors.is_empty())
+
+
+func test_maintenance_feedback_requires_missing_effect_and_handles_weapon_changes() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	for id: StringName in [&"battle_shout_1", &"lightning_shield_1", &"windfury_weapon_1"]:
+		world.hero.learn_skill(SkillDefinition.catalog(id))
+		world.assign_hotbar(0, id)
+		panel.refresh(world, GlobalOptions.new(), true, true, false)
+		assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+		assert_true(world.cast_skill(id))
+		panel.refresh(world, GlobalOptions.new(), true, true, false)
+		assert_false(panel.slots[0].tooltip_text.contains("Maintenance buff missing"), String(id))
+		# One turn remaining still counts as present.
+		world.hero.buffs[id].until = world.turn_count + 1
+		panel.refresh(world, GlobalOptions.new(), true, true, false)
+		assert_false(panel.slots[0].tooltip_text.contains("Maintenance buff missing"))
+		world.wait_turn()
+		panel.refresh(world, GlobalOptions.new(), true, true, false)
+		assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+	world.hero.buffs[&"windfury_weapon_1"] = {"until": 100, "weapon_id": world.hero.weapon_id()}
+	world.hero.equipment.weapons = ItemData.instance(2092)
+	world.hero.refresh_stats()
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+
+
+func test_poison_maintenance_accepts_mixed_coatings_and_detects_an_expired_hand() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	world.hero.equipment.weapons = ItemData.instance(2092)
+	world.hero.refresh_stats()
+	var panel := HotbarPanel.new()
+	add_child_autofree(panel)
+	for id: StringName in PoisonRules.COATINGS:
+		world.hero.learn_skill(SkillDefinition.catalog(id))
+	world.assign_hotbar(0, &"instant_poison_1")
+	world.assign_hotbar(1, &"deadly_poison_1")
+	assert_true(world.cast_skill(&"instant_poison_1", null, PoisonRules.Hands.MAIN))
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+	assert_true(world.cast_skill(&"deadly_poison_1", null, PoisonRules.Hands.OFF))
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	for slot in [0, 1]:
+		assert_false(panel.slots[slot].tooltip_text.contains("Maintenance buff missing"))
+	world.hero.buffs[&"instant_poison_1"].main_until = world.turn_count
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+
+
 func test_training_prefers_its_row_even_when_locked_and_preserves_full_hotbar() -> void:
 	var session := GameSession.new()
 	session.development_build = false

@@ -31,7 +31,7 @@ static var CONTACTS: Array[NpcDefinition] = [
 		"service": &"Paladin", "sprite": &"sammuel", "trainer_location": "inside the abbey",
 		"greeting": "Hello adventurer. I am Brother Sammuel, follower of the light."}),
 	NpcDefinition.new(900002, {"title": "Farseer Lopaa",
-		"service": &"Shaman", "sprite": &"shaman_mentor", "trainer_location": "east of the abbey",
+		"service": &"Shaman", "sprite": &"shaman_mentor", "trainer_location": "beside the abbey entrance",
 		"refresh_saved_name": true,
 		"greeting": "Hello adventurer, I am Farseer Lopaa, a storm-chaser."}),
 ]

@@ -43,23 +43,29 @@ func test_exploration_credits_mine_entrance_vineyard_approach_and_wolf_area_with
 		return actor.chest).all(func(chest: GridActor) -> bool: return not chest.loot_assigned))
 
 
-func test_closed_chest_blocks_then_bump_collects_loot_without_stepping_inside() -> void:
+func test_chest_bump_requests_loot_without_collecting_or_spending_a_turn() -> void:
 	var session := _session()
 	var world := session.world
 	var chest: GridActor = world.actors.filter(func(actor: GridActor) -> bool:
 		return actor.chest)[0]
 	world.player_tile = chest.tile + Vector2i.DOWN
+	watch_signals(world)
 	assert_false(world.is_open(chest.tile))
 	var before := world.player_tile
 	assert_false(world.move_player(Vector2i.UP))
 	assert_eq(world.player_tile, before)
-	assert_true(chest.loot_assigned)
-	assert_true(chest.loot.is_empty())
-	assert_eq(chest.loot_copper, 0)
-	assert_gt(world.hero.copper, 0)
+	assert_signal_emitted_with_parameters(world, "loot_interaction_requested", [chest])
+	assert_false(chest.loot_assigned, "The menu owns opening and collecting loot.")
+	assert_eq(world.turn_count, 0)
+	assert_true(world.open_loot(chest))
+	var contents := chest.loot.duplicate(true)
+	var money := chest.loot_copper
 	assert_true(world.is_open(chest.tile))
-	assert_true(world.move_player(Vector2i.UP))
-	assert_eq(world.player_tile, chest.tile)
+	assert_false(world.move_player(Vector2i.UP), "Remaining loot reopens the menu on a bump.")
+	assert_eq(chest.loot, contents)
+	assert_eq(chest.loot_copper, money)
+	assert_true(world.loot_all(chest))
+	assert_true(world.move_player(Vector2i.UP), "An empty chest no longer intercepts movement.")
 
 
 func test_bumping_chest_with_full_bags_preserves_items_for_later() -> void:
@@ -69,11 +75,15 @@ func test_bumping_chest_with_full_bags_preserves_items_for_later() -> void:
 	world.player_tile = chest.tile + Vector2i.DOWN
 	world.hero.inventory.fill(ItemData.instance(35))
 	assert_false(world.move_player(Vector2i.UP))
+	assert_true(world.open_loot(chest))
+	world.loot_all(chest)
 	assert_false(chest.loot.is_empty())
 	assert_true(chest.corpse_visible)
 	var contents := chest.loot.duplicate(true)
 	world.hero.inventory[0] = {}
-	assert_true(world.move_player(Vector2i.UP), "An opened chest is passable.")
+	assert_false(world.move_player(Vector2i.UP))
+	assert_eq(chest.loot, contents, "Reopening never transfers items by itself.")
+	assert_true(world.loot_all(chest))
 	assert_true(chest.loot.is_empty())
 	assert_eq(world.hero.inventory[0], contents[0])
 

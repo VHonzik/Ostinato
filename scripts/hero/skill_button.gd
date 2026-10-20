@@ -5,6 +5,14 @@ extends Button
 var skill: SkillDefinition
 var hero: HeroState
 var drag_enabled: bool = false
+var highlight_colors: Array[Color] = []
+
+
+func set_highlights(colors: Array[Color], hints: PackedStringArray) -> void:
+	highlight_colors.assign(colors)
+	if not hints.is_empty():
+		tooltip_text += "\n" + "\n".join(hints)
+	queue_redraw()
 
 
 func describe(skill_data: SkillDefinition, owner_hero: HeroState) -> void:
@@ -41,3 +49,16 @@ func _make_custom_tooltip(for_text: String) -> Object:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_font_size_override("font_size", 18)
 	return label
+
+
+func _draw() -> void:
+	if highlight_colors.is_empty():
+		return
+	# Two-pixel inside border; split its edges when both crit and cost are ready.
+	var rect := Rect2(Vector2(2, 2), size - Vector2(4, 4))
+	var first := highlight_colors[0]
+	var last := highlight_colors[-1]
+	draw_line(rect.position, Vector2(rect.end.x, rect.position.y), first, 2.0)
+	draw_line(Vector2(rect.end.x, rect.position.y), rect.end, first, 2.0)
+	draw_line(rect.end, Vector2(rect.position.x, rect.end.y), last, 2.0)
+	draw_line(Vector2(rect.position.x, rect.end.y), rect.position, last, 2.0)

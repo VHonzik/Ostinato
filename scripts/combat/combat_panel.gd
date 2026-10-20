@@ -273,6 +273,18 @@ func open_spell(world: GridWorld, skill: SkillDefinition) -> void:
 		world.add_message("No valid target for " + skill.title + ".")
 		return
 	selected = _last_spell_target if _candidates.has(_last_spell_target) else _candidates[0]
+	if skill.family == &"lava_burst":
+		if _candidates.size() == 1 and selected.engaged:
+			_last_spell_target = selected
+			_last_target_type = skill.target
+			world.cast_skill(skill.id, selected)
+			close()
+			action_taken.emit()
+			return
+		mode = Mode.SPELL
+		show()
+		_update_selection()
+		return
 	if (skill.target == SkillDefinition.Target.ENEMY and _candidates.size() == 1
 		and selected.relationship == GridActor.Relationship.NEUTRAL
 		and world.tile_distance(world.player_tile, selected.tile) <= 1):

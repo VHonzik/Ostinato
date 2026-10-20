@@ -37,6 +37,70 @@ func after_each() -> void:
 		DirAccess.remove_absolute(_options_path)
 
 
+func test_lava_picker_only_skips_confirmation_for_one_valid_engaged_target() -> void:
+	_game.set_process(false)
+	var world := _game.world
+	world.stalker_schedule = false
+	world.population.clear()
+	world.blocked_tiles.clear()
+	world.sight_blockers.clear()
+	world.hero.learn_skill(SkillDefinition.catalog(&"lava_burst_1"))
+	for scenario in ["neutral", "hostile", "engaged", "multiple", "distant_extra"]:
+		world.actors.clear()
+		world.hero.cooldowns.clear()
+		world.hero.rage = 100
+		_game.combat_panel.clear_spell_target()
+		var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
+		enemy.relationship = (GridActor.Relationship.NEUTRAL if scenario == "neutral"
+			else GridActor.Relationship.HOSTILE)
+		enemy.engaged = scenario in ["engaged", "multiple", "distant_extra"]
+		enemy.health = 1000
+		enemy.max_health = 1000
+		world.actors.append(enemy)
+		world.last_attacked_enemy = enemy if enemy.engaged else null
+		if scenario in ["multiple", "distant_extra"]:
+			var other := GridActor.new(world.player_tile + Vector2i(3 if scenario == "multiple" else 8, 0))
+			other.relationship = GridActor.Relationship.NEUTRAL
+			world.actors.append(other)
+		var before := world.turn_count
+		_game._cast_skill(&"lava_burst_1")
+		if scenario in ["engaged", "distant_extra"]:
+			assert_false(_game.combat_panel.visible, scenario)
+			assert_same(world.pending_target, enemy, scenario)
+		else:
+			assert_true(_game.combat_panel.visible, scenario)
+			assert_null(world.pending_skill, scenario)
+			assert_eq(world.turn_count, before, "Selection spends no time.")
+			if scenario == "multiple":
+				_game.combat_panel.select_tile(world.actors[1].tile)
+				_game.combat_panel.confirm()
+				assert_same(world.pending_target, world.actors[1], "The ranged pull can choose another enemy.")
+		world.cancel_cast()
+		_game.combat_panel.close()
+		# Finish action presentation before testing the next independent input.
+		_game.grid_view._process(10.0)
+
+
+func test_bags_quality_order_preserves_actions_original_slots_and_stack_data() -> void:
+	var hero := _game.world.hero
+	hero.inventory.fill({})
+	hero.inventory[0] = ItemData.instance(35, 1, true)
+	hero.inventory[9] = ItemData.instance(2572)
+	hero.inventory[4] = ItemData.instance(117, 3)
+	hero.inventory[6] = ItemData.instance(118, 2)
+	var original := hero.inventory.duplicate(true)
+	_game.menu.open_bags()
+	var buttons := _game.menu._buttons.duplicate()
+	assert_string_contains(buttons[0].text, ItemData.get_item(2572).title)
+	assert_string_contains(buttons[1].text, "Minor Healing Potion")
+	assert_string_contains(buttons[2].text, "Tough Jerky")
+	assert_string_contains(buttons[3].text, ItemData.get_item(35).title)
+	assert_eq(hero.inventory, original)
+	buttons[0].pressed.emit()
+	assert_eq(_game.menu.page, "item")
+	assert_string_contains((_game.menu._rows.get_child(0) as Label).text, ItemData.get_item(2572).title)
+
+
 func test_war_horn_hotbar_and_bags_start_casts_and_resume_until_completion() -> void:
 	_game.set_process(false)
 	var world := _game.world
@@ -220,6 +284,8 @@ func test_maelstrom_bar_unlocks_fades_after_spending_and_follows_hud_visibility(
 	var empty_alpha := bar.modulate.a
 	_game.world.hero.buffs[&"maelstrom_weapon_1"] = {"until": 0, "armor": 0, "charges": 5}
 	_game.refresh_view()
+	for aura in _game.get_node("HUD/Auras").get_children():
+		assert_false((aura as Control).tooltip_text.contains("Maelstrom"), "The bar replaces the duplicate aura.")
 	assert_gt(bar.modulate.a, empty_alpha)
 	assert_lt(bar.modulate.a, 1.0)
 	_game.menu.open_player()
@@ -327,7 +393,7 @@ func test_key_echo_does_not_advance_time() -> void:
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_held_movement_waits_half_second_then_repeats_each_quarter_second_until_release() -> void:
+func test_held_movement_waits_half_second_then_repeats_every_150ms_until_release() -> void:
 	_prepare_held_movement()
 	_send_key(KEY_D, true)
 	_game._process(0.0)
@@ -337,7 +403,7 @@ func test_held_movement_waits_half_second_then_repeats_each_quarter_second_until
 	_send_key(KEY_D, true, true)
 	_game._process(0.05)
 	assert_eq(_game.world.player_tile, Vector2i(22, 14))
-	_game._process(0.2)
+	_game._process(0.1)
 	assert_eq(_game.world.turn_count, 2)
 	_game._process(0.05)
 	assert_eq(_game.world.turn_count, 3)
@@ -1064,9 +1130,17 @@ func test_supply_chest_keyboard_looting_is_free_and_empty_chest_cannot_duplicate
 	chest.loot = [ItemData.instance(118, 2)]
 	_game.world.player_tile = chest.tile + Vector2i.LEFT
 	_game.refresh_view()
-	await _tap_key(KEY_F)
+	await _tap_key(KEY_D)
 	assert_eq(_game.menu.page, "loot")
 	assert_true(_game.menu.visible)
+	assert_eq(chest.loot_copper, 12)
+	assert_eq(chest.loot, [ItemData.instance(118, 2)])
+	assert_eq(_game.world.hero.copper, 0)
+	assert_eq(_game.world.player_tile, chest.tile + Vector2i.LEFT)
+	await _tap_key(KEY_ESCAPE)
+	assert_false(_game.menu.visible)
+	await _tap_key(KEY_D)
+	assert_eq(_game.menu.page, "loot")
 	var expected := chest.loot_copper
 	assert_gt(expected, 0)
 	await _tap_key(KEY_ENTER)

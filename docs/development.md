@@ -31,7 +31,9 @@ wolf types and outdoor kobold vermin are neutral until attacked; all mine kobold
 bandits are hostile. The road south of the southwestern gate admits timed stalkers beside the guard.
 Outdoor enemies wander locally with random pauses and staggered starts; mine kobolds,
 Garrick and stalkers stay put when idle. Saves retain pending wandering deadlines.
-Closed chests block movement; bumping a chest collects its loot, retaining items when bags are full.
+Closed chests block movement; bumping a chest opens the loot menu without collecting
+anything or spending a turn. Remaining loot reopens the menu on later bumps; empty
+chests no longer intercept movement. Full bags preserve uncollected items.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
 A separate base layer shows health. NPCs temporarily use a corner heart; the player uses
@@ -62,8 +64,11 @@ no level requirement; new actives prefer empty slots in the upper row for mainte
 buffs and the lower row for rotation and situational abilities, using the other row
 when needed. Existing assignments are preserved. Learning is permanent and needs
 no relearning in later Loops. The initial Warrior pair remains known at New Game.
-Farseer Lopaa is the shaman contact.
+Milly now stands inside the abbey, and Farseer Lopaa stands beside its main entrance.
+The northeast corner wall of the northern abbey room is a hidden passable tile,
+retaining the ordinary wall art until a later visual hint is added.
 Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
+Held movement waits 0.5 seconds, then repeats every 0.15 seconds.
 F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
 M opens the player menu.
 Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
@@ -174,6 +179,8 @@ Janos sells common gear, finite healing potions and unlimited food. Quest reward
 the common loadout; the mine and vineyard award final weapons. Mobs can drop poor gear
 or rare uncommon upgrades; each chest guarantees common or uncommon equipment.
 Poor/common/uncommon names appear gray/white/green; other item text stays white.
+Bags and equipment replacement lists display uncommon, common, then poor items,
+alphabetically within each quality. Actions retain the original inventory slots.
 Selecting a replacement for an equipment slot previews stat gains and losses against
 that exact slot, including either ring. Shields contribute armor.
 Common and uncommon accessories have primary and secondary bonuses. Crit and haste
@@ -189,6 +196,9 @@ Ordinary enemy and stalker tuning lives in
 profiles; saved actors keep their recorded stats. The current
 [simulation bench](../bench/README.md) compares kits, weapon setups and encounters
 using the live game model; generated results stay under ignored `reports/bench/`.
+Garrick now has 120 HP and 7–9 base melee damage, retaining his level, armor and
+2.6-turn swing interval. His first-Loop target is a close fight after free gear and
+modest training; stronger preparation can make him reliable in later Loops.
 
 Judgement retains its delayed verdict. It fixes damage and hit/critical results when
 cast, shows a countdown on its target, and delivers the verdict before due weapon swings

@@ -25,6 +25,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 
 | Scenario | Purpose |
 | --- | --- |
+| `garrick` | First-Loop Warrior at levels 3–5, starter/early/trained purchases, travel/free/common gear. Paired isolated live fights compare Garrick profiles; wins and surviving HP are recorded. No potions, kiting, route damage or XP healing. |
 | `warrior` | Full Warrior kit, three weapons, cold/prepared entry, groups and Stalker; paired potion runs for Stalker. Independent pilot seeds select the rotation. Traced damage is reconciled and replayed against plain `GridWorld`. |
 | `warrior-harder` | Harder groups using policies from a previous `warrior` result. Supply `-Baseline reports/bench/warrior/<run>/result.json`. |
 | `paladin` | Full Paladin, Warrior + Paladin and all four kits; single enemies, groups and Stalker, three weapons and cold/prepared entry. Independent pilots select Holy-first, physical-first or Holy-first without ground. Damage reconciles to enemy HP and sample fights replay on plain `GridWorld`. |
@@ -39,6 +40,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `loot-rates` | Compare candidate uncommon drop rates on copied loot tables. These are experimental rates, not live tuning. |
 
 `-Smoke` reduces combat/loot samples for a wiring check, not a design conclusion.
+Garrick's `-Confirm` runs only the live profile on fresh seeds after candidate tuning;
+its normal run compares the live profile with modest trial profiles.
 Omit it for the normal sample counts held in each script. Warrior `-Shard 0/1/2`
 selects two-hand/shield/dual wield; omit it to run all three. A harder run needs a
 baseline covering its selected weapons. Use a non-smoke baseline for design decisions.

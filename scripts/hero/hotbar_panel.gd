@@ -6,6 +6,9 @@ signal skill_dropped(slot: int, identifier: StringName, source_hero: HeroState)
 signal lock_requested
 
 const INSUFFICIENT_RAGE_COLOR := Color("ff6464")
+const CRITICAL_COLOR := Color(1.0, 0.82, 0.25, 0.65)
+const FREE_COST_COLOR := Color(0.3, 0.65, 1.0, 0.65)
+const MISSING_BUFF_COLOR := Color(1.0, 0.58, 0.15, 0.65)
 const LABEL_COLOR_STATES: Array[StringName] = [
 	&"font_color", &"font_hover_color", &"font_pressed_color", &"font_hover_pressed_color",
 	&"font_focus_color", &"font_disabled_color",
@@ -78,6 +81,7 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		elif world.hotbar[index] == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
 			skill = ItemData.ancestral_totem_action()
 		button.describe(skill, world.hero)
+		_refresh_highlights(button, world, skill)
 		var key := options.key_label(StringName("hotbar_%d" % (index + 1))).replace("Shift+", "S+")
 		button.text = "%s\n%s" % [key, "—" if skill == null else skill.title.get_slice(" ", 0)]
 		button.disabled = not (can_activate or (editing_enabled and choosing_slot))
@@ -142,3 +146,44 @@ func _can_drop(_position: Vector2, data: Variant, _slot: int) -> bool:
 func _drop(position: Vector2, data: Variant, slot: int) -> void:
 	if _can_drop(position, data, slot):
 		skill_dropped.emit(slot, data.skill_id, data.hero)
+
+
+func _refresh_highlights(button: SkillButton, world: GridWorld, skill: SkillDefinition) -> void:
+	var colors: Array[Color] = []
+	var hints := PackedStringArray()
+	if skill != null:
+		var hero := world.hero
+		var critical := (skill.family == &"mortal_strike" and hero.buffs.has(&"juggernaut_1"))
+		critical = critical or (skill.family == &"judgement"
+			and int(ClassToolkitRules.effect(hero, &"art_of_war_1").get("critical_ready", 0)) > 0)
+		if critical:
+			colors.append(CRITICAL_COLOR)
+			hints.append("Guaranteed critical on a landed attack.")
+		if skill.rage_cost > 0 and skill.cost(hero) < skill.rage_cost:
+			colors.append(FREE_COST_COLOR)
+			hints.append("Free use ready.")
+		if _maintenance_missing(world, skill):
+			colors.append(MISSING_BUFF_COLOR)
+			hints.append("Maintenance buff missing.")
+	button.set_highlights(colors, hints)
+
+
+func _maintenance_missing(world: GridWorld, skill: SkillDefinition) -> bool:
+	var hero := world.hero
+	if PoisonRules.is_poison(skill):
+		for off_hand in [false, true]:
+			if hero.weapon_id(off_hand) != 0 and PoisonRules.coating(hero, world.turn_count, off_hand) == &"":
+				return true
+		return false
+	if skill.family not in [&"battle_shout", &"lightning_shield", &"windfury_weapon"]:
+		return false
+	var effect := ClassToolkitRules.effect(hero, skill.id)
+	if skill.family == &"windfury_weapon" and hero.weapon_id() == 0:
+		return false
+	if effect.is_empty() or int(effect.get("until", 0)) <= world.turn_count:
+		return true
+	if skill.family == &"lightning_shield":
+		return int(effect.get("charges", 0)) <= 0
+	if skill.family == &"windfury_weapon":
+		return int(effect.get("weapon_id", 0)) != hero.weapon_id()
+	return false

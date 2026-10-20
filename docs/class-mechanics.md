@@ -66,6 +66,14 @@ rage-costing actives, including Judgement. Only the chosen free-use proc is cons
 procs/charges persist until spent or death, including between encounters. Timed buffs
 continue counting down outside combat.
 
+Hotbar buttons use a translucent two-pixel inside border: gold for Juggernaut's
+Mortal Strike or Art of War's Judgement critical readiness, blue for a free-use proc,
+and amber for a missing maintenance buff. Combined critical/free readiness splits the
+border between both colors. Maintenance checks Battle Shout, Lightning Shield,
+Windfury on the equipped weapon, and an uncoated equipped hand for poisons; either
+poison satisfies a hand. Present buffs never warn merely for nearing expiration.
+Tooltips explain the highlighted states without consuming procs.
+
 Weapon damage uses the main hand and Strength-derived weapon power unless specified
 otherwise. Physical attacks use hit, dodge, critical and armor rules. Direct Holy/Fire/Nature
 attacks use hit/critical rules and bypass armor. Level differences and applicable buffs
@@ -152,7 +160,10 @@ Learning Maelstrom Weapon reveals a purple bar below combo points in every class
 Its three cells have widths in a 1:3:1 ratio: stacks fill continuously from zero to
 five, completing the first cell at one stack, the middle at four, and the last at
 five. Like combo points, it uses 20% opacity at zero and 80% with stacks, and follows
-gameplay HUD visibility. The aura and Lava Burst tooltip also show current stacks.
+gameplay HUD visibility. Lava Burst's tooltip also shows current stacks; there is
+no duplicate Maelstrom aura. Lava Burst opens target selection unless exactly one
+enemy is valid and already engaged, allowing deliberate ranged pulls even while
+another enemy is engaged. Selection and cancellation spend no turn.
 
 Earth Elemental is removed from training. After learning all remaining Shaman actives
 and passives, Farseer Lopaa offers Ancestral totem through the shared trainer farewell

@@ -9,7 +9,7 @@ const MOVE_ACTIONS: Array[StringName] = [
 ## Brief presentation gap makes cancellation possible without another confirmation.
 const MELEE_BOUNDARY_SECONDS: float = 0.18
 const MOVE_REPEAT_DELAY_SECONDS: float = 0.5
-const MOVE_REPEAT_INTERVAL_SECONDS: float = 0.25
+const MOVE_REPEAT_INTERVAL_SECONDS: float = 0.15
 
 var world: GridWorld
 var session := GameSession.new()
@@ -349,7 +349,8 @@ func _adopt_world() -> void:
 	active_game = true
 	menu.active_game = true
 	world.message_added.connect(_refresh_chat)
-	world.friendly_interaction_requested.connect(_interact_with_friendly)
+	world.friendly_interaction_requested.connect(_interact_with_actor)
+	world.loot_interaction_requested.connect(_interact_with_actor)
 	grid_view.world = world
 	grid_view.show()
 	hud.show_game()
@@ -380,7 +381,7 @@ func _open_options() -> void:
 	menu.open_options()
 
 
-func _interact_with_friendly(actor: GridActor) -> void:
+func _interact_with_actor(actor: GridActor) -> void:
 	_pending_action = false
 	combat_panel.interact_with(world, actor)
 
@@ -519,6 +520,9 @@ func _cast_skill(identifier: StringName) -> void:
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)
+	elif skill.family == &"lava_burst":
+		hero_panel.close()
+		combat_panel.open_spell(world, skill)
 	elif (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
 		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
 		SkillDefinition.Effect.JUDGEMENT]

@@ -274,7 +274,7 @@ func open_equipment() -> void:
 func open_bags() -> void:
 	_begin("bags", "Bags / " + InventoryRules.money(session.world.hero.copper), open_inventory)
 	var hero := session.world.hero
-	for index in range(40):
+	for index in InventoryRules.sorted_indices(hero.inventory):
 		var item := hero.inventory[index]
 		var title := "Empty" if item.is_empty() else "%s x%d" % [
 			ItemData.get_item(int(item.id)).title, item.quantity]
@@ -299,7 +299,7 @@ func _equipped_detail(slot: String) -> void:
 			_equipped_detail.bind(slot)))
 	_label("Equip from bags:")
 	var eligible := false
-	for index in range(hero.inventory.size()):
+	for index in InventoryRules.sorted_indices(hero.inventory):
 		var candidate := hero.inventory[index]
 		if candidate.is_empty():
 			continue

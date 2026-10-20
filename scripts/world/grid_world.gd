@@ -3,6 +3,7 @@ extends RefCounted
 
 signal message_added(message: String)
 signal friendly_interaction_requested(actor: GridActor)
+signal loot_interaction_requested(source: GridActor)
 signal npc_combat_text(tile: Vector2i, amount: int, result: StringName)
 signal ability_used(skill: SkillDefinition)
 signal consecration_ticked
@@ -328,10 +329,9 @@ func move_player(direction: Vector2i) -> bool:
 		return false
 	for actor in actors:
 		if actor.chest and actor.corpse_visible and actor.tile == player_tile + direction:
-			var was_closed := not actor.loot_assigned
-			loot_all(actor)
-			if was_closed or not actor.loot_assigned:
-				return false
+			_neutral_bump_target = null
+			loot_interaction_requested.emit(actor)
+			return false
 	var occupant := actor_at(player_tile + direction)
 	if occupant != null and occupant.relationship == GridActor.Relationship.FRIENDLY:
 		_neutral_bump_target = null

@@ -54,10 +54,10 @@ const CREATURES: Dictionary = {
 	"103": {
 		"title": "Garrick Padfoot",
 		"level": 5,
-		"health": 80,
+		"health": 120,
 		"armor": 105,
-		"minimum": 6,
-		"maximum": 8,
+		"minimum": 7,
+		"maximum": 9,
 		"power": 0,
 		"interval": 2.6,
 		"copper_min": 4,

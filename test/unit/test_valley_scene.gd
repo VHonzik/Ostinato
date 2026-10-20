@@ -1,6 +1,24 @@
 extends GutTest
 
 
+func test_hidden_northeast_wall_passage_keeps_wall_art_and_connects_inside_to_outside() -> void:
+	var world := ValleyRoute.create_world(619, false)
+	world.actors.clear()
+	world.stalker_schedule = false
+	world.player_tile = Vector2i(32, 33)
+	assert_eq(world.scenery_tiles[Vector2i(33, 32)], &"abbey_wall_straight")
+	assert_true(world.move_player(Vector2i(1, -1)))
+	assert_true(world.move_player(Vector2i(1, -1)))
+	assert_eq(world.player_tile, Vector2i(34, 31))
+	assert_true(world.blocked_tiles.has(Vector2i(32, 32)), "The adjacent wall stays solid.")
+	# Actors were cleared only for the passage movement check.
+	world = ValleyRoute.create_world(619, false)
+	var milly := _actor(world, "fixed/9296")
+	var shaman := _actor(world, "fixed/900002")
+	assert_true(world.indoor_tiles.has(milly.tile))
+	assert_lte(GridWorld.tile_distance(shaman.tile, Vector2i(31, 48)), 2)
+
+
 func test_scene_placements_set_spawn_home_and_wandering_without_changing_loot_identity() -> void:
 	var map := ValleyRoute.instantiate_map()
 	var wolf: ValleyActorSpawn

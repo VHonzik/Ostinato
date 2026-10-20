@@ -7,6 +7,25 @@ const SLOTS: Array[String] = [
 ]
 
 
+## Display order only: actions keep the original slot indices and stack provenance.
+static func sorted_indices(inventory: Array[Dictionary]) -> Array[int]:
+	var indices: Array[int] = []
+	for index in range(inventory.size()):
+		indices.append(index)
+	indices.sort_custom(func(a: int, b: int) -> bool:
+		var first := inventory[a]
+		var second := inventory[b]
+		if first.is_empty() or second.is_empty():
+			return not first.is_empty() if first.is_empty() != second.is_empty() else a < b
+		var first_data := ItemData.get_item(int(first.id))
+		var second_data := ItemData.get_item(int(second.id))
+		if first_data.quality != second_data.quality:
+			return int(first_data.quality) > int(second_data.quality)
+		var comparison := String(first_data.title).naturalnocasecmp_to(String(second_data.title))
+		return comparison < 0 if comparison != 0 else a < b)
+	return indices
+
+
 static func add(inventory: Array[Dictionary], item: Dictionary) -> bool:
 	var next := inventory.duplicate(true)
 	var remaining := int(item.quantity)

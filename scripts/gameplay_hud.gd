@@ -100,17 +100,6 @@ func _refresh_auras(world: GridWorld) -> void:
 					title.left(1) + ("O" if off_hand else "M"))
 			continue
 		_add_aura(world, title, hero.buffs[identifier], false)
-	var maelstrom := hero.find_skill(&"maelstrom_weapon_1")
-	if maelstrom != null:
-		var stacks := ClassToolkitRules.maelstrom_stacks(hero)
-		var lava := hero.find_skill(&"lava_burst_1")
-		var cast_text := "learn Lava Burst to spend" if lava == null else (
-			"instant (one action)" if stacks == maelstrom.maximum else
-			"%d-turn cast" % int(ClassToolkitRules.cast_duration(hero, lava)))
-		_add_aura(world, maelstrom.title, {"until": 0, "charges": stacks,
-			"critical_ready": int(stacks == maelstrom.maximum),
-			"detail": "%d/%d stacks / %s / +%d percentage points Lava crit" % [
-				stacks, maelstrom.maximum, cast_text, stacks * maelstrom.critical_percent]}, false, "MW")
 	for identifier in hero.debuffs:
 		_add_aura(world, String(identifier).capitalize(), hero.debuffs[identifier], true)
 	if WarBannerRules.active(world):
