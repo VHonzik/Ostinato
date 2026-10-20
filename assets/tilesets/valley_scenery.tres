@@ -7,6 +7,7 @@ texture = ExtResource("1_t2bpl")
 4:4/0 = 0
 4:4/0/custom_data_0 = "pine_tree"
 4:4/0/custom_data_1 = true
+0:2/next_alternative_id = 2
 0:2/0 = 0
 0:2/0/custom_data_0 = "abbey_wall_straight"
 0:2/0/custom_data_1 = true
