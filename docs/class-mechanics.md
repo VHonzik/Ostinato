@@ -1,36 +1,27 @@
 # Current class mechanics and abilities
 
-This is the authoritative human-readable reference for the **implemented** class kits,
-including current training prices, tuning and effect art. [Direction](direction.md)
-covers intended design; [the backlog](backlog.md) tracks unfinished work. The taglines
-below summarize current mechanics; they are reference copy, not quotations from an
-in-game class screen. Balance and prices remain provisional. Update this reference
-and the implementation together.
+The authoritative overview of implemented classes, abilities, training and effect art.
+[Direction](direction.md) covers design goals; [the backlog](backlog.md) tracks work.
+
+[Warrior](#warrior) · [Shaman](#shaman) · [Paladin](#paladin) · [Rogue](#rogue) · [Code locations](#implementation-locations)
 
 ## Reading the tables
 
-- Each class has one table containing active and passive abilities, identified in the
-  description. Sort order is level required to learn, copper cost, then name for ties.
-- `-` means not applicable: no passive cast, no ability cooldown, no timed duration
-  for an immediate hit/permanent modifier, or no dedicated effect sprite. `0` rage
-  means a free active that still spends its action.
-- `*` marks mechanics explained in the description: variable costs, travel, charges,
-  delayed effects, passive procs, modified cooldowns/durations, or summon placement.
-- Cast time, cooldown and duration use **world turns**, including source fields named
-  `seconds`. Cast time `1` spends one turn. Durations describe gameplay, not the visual
-  flash. Cooldowns show base values; learned upgrades are explained where marked.
-  Restless Blades can also reduce every running ability cooldown.
-- Range is in grid tiles; diagonals count as one tile (square/Chebyshev distance).
+- Tables include actives and passives, sorted by learning level, copper cost, then name.
+- `-` means not applicable; `0` rage means a free active that still spends its action.
+  `*` marks details explained in the description.
+- Cast time, cooldown and duration use **world turns**. Cast time `1` spends one turn;
+  durations describe gameplay rather than visual flashes. Cooldowns show base values.
+- Range uses grid tiles with diagonals counting as one tile (square/Chebyshev distance).
   `Self` means a self cast. Enemy casts require a living nonfriendly target in range
-  and sight. Passive range is `-` unless it has a separate spatial limit; the
-  triggering ability retains its own range rules.
+  and sight; passive triggers use the triggering ability's range unless specified.
 - Learning costs use copper (`c`): 100c = 1 silver; 10,000c = 1 gold. `0` means free.
-  Starter rows show level 1, the character's minimum level, with no additional gate.
+  Level-1 starters have no additional level gate.
 - Sprite `C(x,y)` is the zero-based column/row of a 16x16 cell in
   [characters.png](../assets/spritesheets/characters.png), editable in
   [characters.aseprite](../art/characters.aseprite). `R(x,y)` uses the same convention
   in [scroolospritescharacters_nobg.png](../assets/spritesheets/scroolospritescharacters_nobg.png).
-  Pixel rectangle is `(16x, 16y, 16, 16)`; the world draws it at 32x32.
+  The world draws each cell at 32x32.
 - Sprite placement describes actual rendering, separately from the gameplay target.
   Most ability sprites briefly replace the player/struck enemy for 1.5 real seconds.
   Whirlwind flashes landed targets, not a whole area. Consecration flashes its fixed
@@ -46,20 +37,18 @@ and the implementation together.
 
 New Game starts as Warrior knowing Mortal Strike and Whirlwind. Loop two offers only
 Warrior at the marshal; from Loop three, choose Warrior, Shaman, Paladin or Rogue
-before accepting quests. Selection
-locks training to that class until death. Trainers are Llane (Warrior), Farseer Lopaa
-(Shaman), Brother Sammuel (Paladin) and Jorik Kerridan (Rogue). Other starter pairs
-are free level-1 trainer purchases. Later purchases require the listed current-Loop
+before accepting quests. Selection locks training to that class until death.
+Trainers are Llane (Warrior), Farseer Lopaa (Shaman), Brother Sammuel (Paladin) and
+Jorik Kerridan (Rogue). Other starter pairs are free level-1 trainer purchases.
+Later purchases require the listed current-Loop
 level and money, without prerequisite purchases or spending XP. Learned actives and
 passives persist across deaths and work in every class, even below their original
 training level. Passives cannot be cast/assigned to the hotbar. All gear is usable
 in every class without learning or level requirements.
 
-The marshal introduces each newly chosen class with its trainer's name and a referral
-to Janos Hammerknuckle for spare equipment. First-choice history persists across
-death and saving independently of training; later choices mention Janos's supplies
-and the matching trainer's class guidance.
-Warrior is already known at New Game.
+Completing a class's training unlocks its trainer gift once each Loop, regardless of
+the selected class. Gifts and their claim state persist through saves and clear on
+death; permanent learning allows another gift in the next Loop.
 
 All classes use rage, capped at 100. Ordinary main-hand swing attempts generate 7 rage
 per turn of the weapon's base interval, independent of haste and hit result. Damaging
@@ -71,9 +60,9 @@ delivered as whole-HP ticks. Food and other healing keep their own rules.
 
 Table rage costs are base costs. Battle Trance makes the next rage-costing active free.
 Execute first uses Sudden Death if ready; otherwise Battle Trance applies to
-rage-costing actives, including Judgement. Only the chosen free-use proc is consumed. Consumable
-procs/charges persist until spent or death, including between encounters. Timed buffs
-continue counting down outside combat.
+rage-costing actives, including Judgement. Only the chosen free-use proc is consumed.
+Consumable procs/charges persist until spent or death, including between encounters.
+Timed buffs continue counting down outside combat.
 
 Vanish pauses automatic swings while their timers keep advancing without banking
 attacks. Moving and waiting preserve concealment. A valid deliberate melee attack
@@ -100,9 +89,9 @@ Direct Holy/Fire/Nature attacks use hit/critical rules and bypass armor and Shie
 Precision prevents misses for weapon and direct magical attacks at every enemy level;
 it does not prevent dodges. Without Precision, miss chance is 5% plus 2 percentage
 points per higher enemy level, capped at 95% before other hit modifiers.
-Level differences and applicable buffs
-still modify listed base damage. Haste changes independent hand swing timers, not action
-count or ability cooldowns. Restless Blades can reduce running cooldowns.
+Level differences and applicable buffs modify listed base damage.
+Haste changes independent hand swing timers, not action count or ability cooldowns.
+Restless Blades can reduce running cooldowns.
 Swing timing continues through abilities, movement and waiting, attacking the committed
 enemy when in melee. Retargeting keeps the remaining swing delay.
 
@@ -112,11 +101,6 @@ Consecration and Deadly Poison resolve, followed by due player swings and enemy 
 Final verdicts/poison ticks are preserved. Terminal death/victory stops further resolution.
 Death clears temporary combat state, summons, coatings, ground and combo points, retaining
 learning. Saves retain implemented mid-Loop effect state, including banked Maelstrom.
-Current saves use revision 1 after the experimental schema squash; other revisions
-are incompatible and left unchanged.
-The catalogue has 33 passives. Folded effects are intrinsic to their parent abilities,
-with the parents' learning levels/prices unchanged; there are no replacement purchases.
-Eviscerate refunds rage after spending, including on a miss, and never refunds points.
 
 Primary attacks are ordinary swings and direct active attacks. Primary physical crits,
 including physical active crits, can trigger Flurry and Wrecking Crew.
@@ -131,27 +115,9 @@ active crits. Eviscerate alone spends combo points; Execute and Judgement do not
 
 **Tagline: Turn pain into rage, strike decisively, and raise a shield when survival matters.**
 
-Physical burst, adjacent cleave, rage preparation, a travel opener and low-health
-execution. Weapon Mastery combines critical chance with undodgeable weapon attacks.
-Enrage rewards taking hits; Death Wish raises damage and risk as health
-falls. Later Shield Block gives equipped shields a passive physical defense, including
-immediately after a combat weapon swap. Mortal Strike is the larger single-target
-spender; Whirlwind gains value against groups. Wrecking Crew strengthens developed
-Whirlwind while its critical buff lasts;
-Sweeping Strikes copies single-target actives only. Victory Rush keeps its full kill
-heal with a shared internal cooldown, limiting healing from large pulls.
-
-Completing all Warrior training unlocks Llane's War Horn gift dialogue once each Loop,
-regardless of the currently selected class. Booming Shout is removed. War Horn is a
-reusable bag item, automatically placed in an empty hotbar slot when available; Bags
-also allows use and hotbar assignment. Its free two-turn cast deals exactly 1 guaranteed
-damage to each living neutral/hostile NPC whose tile is on the current screen and in
-line of sight, engaging them. Chests and friendly actors are excluded. It preserves the
-attack target, grants no attack procs or combo points, and ignores armor and damage
-bonuses. Weapon timers and enemy actions continue during casting; cancellation gives
-no effect or cooldown. Its 30-turn cooldown starts on completion and is not reduced by
-Restless Blades. The item and claim reset on death, so retained Warrior learning allows
-a new gift next Loop. The horn, claim and cooldown persist through mid-Loop saves.
+Physical burst with Mortal Strike, adjacent cleave with Whirlwind, Charge for closing
+distance and Execute for low-health targets. Enrage rewards taking hits; Death Wish
+trades safety for damage as health falls. Shield Block adds passive shield defense.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -161,7 +127,7 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
 | Death Wish | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
-| Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies cannot dodge either hand, physical abilities or bonus weapon strikes. Does not prevent misses. Retained learning works in every class. Replaces Cruelty at the same learning level and price. |
+| Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies cannot dodge either hand, physical abilities or bonus weapon strikes. Does not prevent misses. Retained learning works in every class. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
 | Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
 | Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
@@ -172,37 +138,25 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Wrecking Crew | - | - | - | 10 | - | 5 | 450c | - | - | Passive. Primary physical crits grant +25% physical damage for 10 turns. While active, Whirlwind deals an additional 35% more damage, multiplying its weapon coefficient separately from the shared physical buff. Refreshes without stacking; both bonuses end with the buff. |
 | Juggernaut | - | - | - | * | - | 5 | 495c | - | - | Passive. Charge cooldown falls from 10 to 8 turns; arrival guarantees the next landed Mortal Strike crit until consumed or death. A miss/dodge does not consume it. |
 
+### Trainer gift: War Horn
+
+Llane's War Horn is a reusable bag item, automatically placed in an empty hotbar slot
+when available; Bags also allows use and hotbar assignment.
+Its free two-turn cast deals exactly 1 guaranteed
+damage to each living neutral/hostile NPC whose tile is on the current screen and in
+line of sight, engaging them. Chests and friendly actors are excluded. It preserves the
+attack target, grants no attack procs or combo points, and ignores armor and damage
+bonuses. Weapon timers and enemy actions continue during casting; cancellation gives
+no effect or cooldown. Its 30-turn cooldown starts on completion and is not reduced by
+Restless Blades. Saves retain its cooldown.
+
 ## Shaman
 
 **Tagline: Bank the storm in your weapons, then release it in a burst of fire.**
 
-Free shield/weapon preparation, reactive Nature damage and a banked Fire payoff.
-Lava Burst deals flat damage independent of weapons or Strength, shortened and given
-extra critical chance by Maelstrom Weapon. The Ancestral totem item supplies a lasting
-elemental that redirects engaged enemies; temporary wolves inherently add damage
-and healing. Earth Shock, its interrupt/stun upgrade and Elemental Assault
-are removed. Flurry remains early training; Maelstrom is available at level 2.
-
-Learning Maelstrom Weapon reveals a purple bar below combo points in every class.
-Its three cells have widths in a 1:3:1 ratio: stacks fill continuously from zero to
-five, completing the first cell at one stack, the middle at four, and the last at
-five. Like combo points, it uses 20% opacity at zero and 80% with stacks, and follows
-gameplay HUD visibility. Lava Burst's tooltip also shows current stacks; there is
-no duplicate Maelstrom aura. Lava Burst opens target selection unless exactly one
-enemy is valid and already engaged, allowing deliberate ranged pulls even while
-another enemy is engaged. Selection and cancellation spend no turn.
-
-Earth Elemental is removed from training. After learning all remaining Shaman actives
-and passives, Farseer Lopaa offers Ancestral totem through the shared trainer farewell
-dialogue once per Loop, in any selected class. Use it from Bags or its hotbar shortcut:
-it costs no rage, takes one turn, and consumes the item only on a successful summon.
-There is no cooldown. Blocked adjacent placement or a living elemental rejects use
-without spending the item or a turn. The elemental keeps the former ability's behavior:
-40 health, no expiration, follows you or an engaged hostile, taunts already engaged
-hostiles within 4 tiles and sight of itself, and attacks for 2-4 physical damage every
-2.5 turns. Its actor uses C(3,4) as its health-tinted base, with an empty faction layer.
-Saves retain the unspent item, gift claim, and summoned actor independently of learned
-skills. Death clears the item, summon and claim; retained learning allows a new gift.
+Shield and weapon preparation, reactive Nature damage and a banked Fire payoff.
+Physical hits build Maelstrom to shorten and strengthen Lava Burst. Feral Spirit
+summons wolves whose attacks heal you.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -215,30 +169,35 @@ skills. Death clears the item, summon and claim; retained learning allows a new 
 | Feral Spirit | 25 | 1 | 30 | 12* | 1 (placement)* | 4 | 390c | R(7,4), wolf | Area (summoned actors)* | Active summon. Requires 2 free or replaceable adjacent tiles. Replaces existing wolves with 2 wolves for 12 turns or until killed. Each has 50 health, attacks every 2 turns and snapshots 75% of weapon damage/power at summoning. Follows the selected enemy, otherwise returns to you; can be attacked and grants no XP/rage/points. Each wolf hit inherently heals you for 50% of actual damage dealt, rounded down, excluding overkill; terminal victory/death stops healing. Sprites are the summoned actors. |
 | Toughness | - | - | - | - | - | 5 | 480c | - | - | Passive. +20% armor. |
 
+### Class feedback and targeting
+
+Learning Maelstrom Weapon reveals a purple bar below combo points in every class.
+Its three cells have widths in a 1:3:1 ratio: stacks fill continuously from zero to
+five, completing the first cell at one stack, the middle at four, and the last at
+five. Like combo points, it uses 20% opacity at zero and 80% with stacks, and follows
+gameplay HUD visibility. Lava Burst's tooltip also shows current stacks; there is
+no duplicate Maelstrom aura. Lava Burst opens target selection unless exactly one
+enemy is valid and already engaged, allowing deliberate ranged pulls even while
+another enemy is engaged. Selection and cancellation spend no turn.
+
+### Trainer gift: Ancestral totem
+
+Farseer Lopaa's Ancestral totem summons an Earth Elemental from Bags or the hotbar.
+It costs no rage, takes one turn, and consumes the item only on a successful summon.
+There is no cooldown. Blocked adjacent placement or a living elemental rejects use
+without spending the item or a turn. The elemental has 40 health and no expiration.
+It follows you or an engaged hostile, taunts already engaged
+hostiles within 4 tiles and sight of itself, and attacks for 2-4 physical damage every
+2.5 turns. Its actor uses C(3,4) as its health-tinted base, with an empty faction layer.
+Saves retain the summoned actor; death clears it.
+
 ## Paladin
 
 **Tagline: Carry a lasting seal, commit your verdict, and make your ground holy.**
 
-Holy damage on main-hand swings, a committed delayed verdict and fixed damaging ground.
-Art of War empowers later Judgements with a stronger guaranteed critical. Passive Seal needs no
-maintenance. Heart of the Crusader makes a landed verdict empower the next melee
-strike with bonus Holy damage. Blessing of Kings adds primary stats to Battle Shout; Divine Shield
-trades outgoing damage for immunity.
-
-Completing all Paladin training unlocks Brother Sammuel's Wartorn Banner gift through
-the shared trainer farewell dialogue, once each Loop in any selected class. This
-single-use item costs no rage and takes one turn from Bags or the hotbar. It plants on
-the first free adjacent tile in the normal clockwise placement order; blocked placement
-preserves the item and turn. The banner is a nonblocking, untargetable ground marker
-with a visible range outline. For 10 turns, including its placement turn, the player and
-living friendly summons within 3 tiles (square distance) take 10% less incoming damage.
-Range is checked at each hit without a sight requirement. Protection combines with
-existing mitigation, rounds the final damage up, and never turns a positive hit into
-immunity. Leaving range removes protection immediately; entering restores it. Town NPCs
-and enemies receive no protection. The HUD shows remaining time and whether the player
-is in range. The banner expires before attacks on its expiry boundary. Saves retain
-the unspent item, planted position, expiry and claim; death clears all and permits a
-new gift with retained learning. It does not change any learned Paladin ability.
+Seal of Command adds Holy damage to main-hand swings, Judgement commits a delayed
+verdict, and Consecration damages enemies on fixed Holy ground. Art of War empowers
+Judgement; Divine Shield trades outgoing damage for immunity.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -250,34 +209,32 @@ new gift with retained learning. It does not change any learned Paladin ability.
 | Vengeance | - | - | - | 10 | - | 3 | 170c | - | - | Passive. Primary attack crits grant +3% damage per stack, up to 3 stacks (+9%), for 10 turns. Further primary crits refresh the duration. |
 | Consecration | 5 | 1 | 12 | 6 | 1 | 3 | 200c | C(1,2) | Area (fixed 3x3, excluding player tile visually) | Active. Consecrate the fixed 3x3 area around you for 6 turns, replacing your previous ground. Each turn deals 7.5 + 6% weapon damage as Holy to visible neutral or hostile enemies inside. Damage is fixed when cast; no crits, combo points or attack procs. Ticks begin this turn before weapon swings and enemy actions. Each tick replays the 1.5-second ground flash; the player's current tile always keeps its player art. No damage reduction; one turn. |
 | Divine Shield | 20 | 1 | 30* | 3* | Self | 3 | 200c | C(1,4) | Player | Active self buff. Immune to incoming damage for 3 turns; deal 30% less damage while active. Guardian's Favor changes duration to 4 turns and cooldown from 30 to 20. Weapon timing continues. |
-| Heart of the Crusader | - | - | - | * | - | 4 | 235c | - | - | Passive. Judgement's landed verdict leaves its living target vulnerable until your next landed ordinary melee strike (either hand) or physical melee ability. That strike adds 25% of the striking hand's weapon damage as Holy, bypassing armor and using current damage buffs and level differences; off-hand damage uses its normal 50%/75% penalty. No additional crit roll, rage, combo points, Art of War progress or attack procs. Misses, dodges, ranged attacks, bonus strikes and summons do not consume it. Refreshes without stacking, persists until used or target death, and is saved. Replaces the former critical-chance debuff. |
+| Heart of the Crusader | - | - | - | * | - | 4 | 235c | - | - | Passive. Judgement's landed verdict leaves its living target vulnerable until your next landed ordinary melee strike (either hand) or physical melee ability. That strike adds 25% of the striking hand's weapon damage as Holy, bypassing armor and using current damage buffs and level differences; off-hand damage uses its normal 50%/75% penalty. No additional crit roll, rage, combo points, Art of War progress or attack procs. Misses, dodges, ranged attacks, bonus strikes and summons do not consume it. Refreshes without stacking, persists until used or target death, and is saved. |
 | Pursuit of Justice | - | - | - | - | - | 4 | 305c | - | - | Passive. +20% movement credit: periodically move an extra tile in the chosen direction, stopping at obstacles. |
 | Guardian's Favor | - | - | - | - | - | 5 | 370c | - | - | Passive. Divine Shield cooldown is 10 turns shorter and its duration is 1 turn longer. |
+
+### Trainer gift: Wartorn Banner
+
+Brother Sammuel's Wartorn Banner is a single-use item costing no rage and taking one
+turn from Bags or the hotbar. It plants on the first free adjacent tile in the normal
+clockwise placement order; blocked placement
+preserves the item and turn. The banner is a nonblocking, untargetable ground marker
+with a visible range outline. For 10 turns, including its placement turn, the player and
+living friendly summons within 3 tiles (square distance) take 10% less incoming damage.
+Range is checked at each hit without a sight requirement. Protection combines with
+existing mitigation, rounds the final damage up, and never turns a positive hit into
+immunity. Leaving range removes protection immediately; entering restores it. Town NPCs
+and enemies receive no protection. The HUD shows remaining time and whether the player
+is in range. The banner expires before attacks on its expiry boundary. Saves retain
+its planted position and expiry; death clears the planted banner.
 
 ## Rogue
 
 **Tagline: Build momentum, vanish to reposition, then strike with a finisher.**
 
-Player-held combo points, Eviscerate with an intrinsic rage refund, passive finisher
-haste, dual-wield rewards and poisons. Finishers never refund combo points. Instant Poison supplies immediate damage; Deadly builds stacks. Catalytic Venom
-rewards mixed coatings on unequal-speed weapons. Retained class attacks can also build
-momentum. Vanish adds a brief opportunity to reposition and prepare a stronger
-opening without dropping combat: engaged enemies approach the tile where you
-vanished, hold around it and cannot attack, including against summons. They retain
-threat and engagement even if that tile is unreachable, then resume targeting current
-positions when Vanish ends. Idle enemies cannot spot the concealed player, but can
-still notice summons. Existing poison/ground damage and summons continue acting;
-they do not end Vanish. Terrain and occupied tiles still block movement.
-
-Completing all Rogue training unlocks Jorik's Lucky charm gift through the same farewell
-dialogue as Llane's War Horn, once each Loop and regardless of the selected class.
-It works passively from Bags: a hit that would kill the living player instead leaves
-them at 1 HP and replaces the charm in its bag slot with Broken lucky charm, which has
-no effect. No cast, hotbar assignment or cooldown is involved. The charm prevents only
-that hit; another hit, including later in the same turn, can kill the player. Absorbed,
-missed and nonlethal hits do not break it, and it does not prevent the Development Death
-trigger. Saves retain the intact/broken item and claimed gift. Both item forms and the
-claim clear on death, allowing another gift with retained Rogue learning next Loop.
+Build player-held combo points and spend them on Eviscerate for damage, a rage refund
+and passive haste. Dual-wield rewards and mixed poisons support sustained attacks;
+Vanish allows repositioning and a stronger opening without dropping combat.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -297,32 +254,32 @@ claim clear on death, allowing another gift with retained Rogue learning next Lo
 | Bandit's Guile | - | - | - | 10 | - | 5 | 370c | - | - | Passive. Every 4 qualifying landed direct active attacks grant +5% damage, stacking to +15%. Each qualifying hit refreshes the 10-turn state, including partially built progress. Misses and finishers do not advance it. Retained class attacks qualify. |
 | Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. Weapon/physical and direct Holy/Fire/Nature attacks never miss, including against higher-level enemies. Enemies may still dodge weapon attacks unless Weapon Mastery is learned. |
 
-## Implementation sources and upkeep
+### Vanish interactions
 
-The runtime implementation is the executable source of truth. This is the single
-maintained documentation reference for current class mechanics; correct it alongside
-implementation changes rather than treating a stale row as a design constraint.
+During Vanish, engaged enemies approach the tile where you vanished, hold around it
+and cannot attack, including against summons. They retain
+threat and engagement even if that tile is unreachable, then resume targeting current
+positions when Vanish ends. Idle enemies cannot spot the concealed player, but can
+still notice summons. Existing poison/ground damage and summons continue acting;
+they do not end Vanish. Terrain and occupied tiles still block movement.
 
-- [ClassSkillData](../scripts/hero/class_skill_data.gd) defines starters/Warrior data;
-  [ClassToolkitData](../scripts/hero/class_toolkit_data.gd) supplies the extended catalog;
-  [SkillDefinition](../scripts/hero/skill_definition.gd) merges them and supplies defaults.
-- [GridWorld](../scripts/world/grid_world.gd) owns casting, training, turns and cooldown
-  scheduling; [HeroState](../scripts/hero/hero_state.gd) owns stats, haste, rage and learning.
-- [SkillCost](../scripts/combat/skill_cost.gd),
-  [SkillBehaviors](../scripts/combat/skill_behaviors.gd),
-  [ClassToolkitRules](../scripts/combat/class_toolkit_rules.gd),
-  [AttackEvent](../scripts/combat/attack_event.gd) and
-  [AttackProcs](../scripts/combat/attack_procs.gd) define costs, effects and attack events.
-- [PaladinRules](../scripts/combat/paladin_rules.gd),
-  [PoisonRules](../scripts/combat/poison_rules.gd),
-  [SummonRules](../scripts/combat/summon_rules.gd) and
-  [ClassSpellEffects](../scripts/combat/class_spell_effects.gd) define delayed, periodic,
-  reactive and summon behavior.
-- [GridView](../scripts/world/grid_view.gd) defines effect cells and actual placement;
-  [the art guide](../art/README.md) explains runtime sheets and actor-art overrides.
+### Trainer gift: Lucky charm
 
-For ability additions, removals, renames, tuning or behavior changes, update the affected
-rows, interactions, shared rules and class summary/tagline in the same change. Preserve
-one table per class, both active/passive entries, columns, `-`/`*` notation and ascending
-level/price/name order. Art changes include cell coordinates, missing sprites, trigger
-timing and player/target/area placement. Keep future decisions in direction/backlog.
+Jorik's Lucky charm works passively from Bags: a hit that would kill the living player
+leaves them at 1 HP and replaces the charm in its bag slot with Broken lucky charm, which has
+no effect. No cast, hotbar assignment or cooldown is involved. The charm prevents only
+that hit; another hit, including later in the same turn, can kill the player. Absorbed,
+missed and nonlethal hits do not break it, and it does not prevent the Development Death
+trigger. Both intact and broken forms persist through saves and clear on death.
+
+## Implementation locations
+
+| Looking for | Start in |
+| --- | --- |
+| Ability definitions, tuning and training prices | [ClassSkillData](../scripts/hero/class_skill_data.gd) and [ClassToolkitData](../scripts/hero/class_toolkit_data.gd); merged by [SkillDefinition](../scripts/hero/skill_definition.gd) |
+| Casting, turns and cooldowns | [GridWorld](../scripts/world/grid_world.gd) |
+| Player stats, resources and learning | [HeroState](../scripts/hero/hero_state.gd) |
+| Costs and attack procs | [SkillCost](../scripts/combat/skill_cost.gd), [AttackProcs](../scripts/combat/attack_procs.gd) |
+| Class effects and reactive defenses | [ClassToolkitRules](../scripts/combat/class_toolkit_rules.gd), [ClassSpellEffects](../scripts/combat/class_spell_effects.gd) |
+| Paladin effects, poisons and summons | [PaladinRules](../scripts/combat/paladin_rules.gd), [PoisonRules](../scripts/combat/poison_rules.gd), [SummonRules](../scripts/combat/summon_rules.gd) |
+| Effect sprites and placement | [GridView](../scripts/world/grid_view.gd) |

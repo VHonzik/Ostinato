@@ -19,10 +19,24 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
   renames, tuning, training requirements/prices, proc interactions or effect art/placement.
   Keep both active and passive abilities, one table per class, the existing columns and
   `-`/`*` notation, sorted by learning level, learning cost, then name. Update affected
-  shared rules and class summaries/taglines too; document implemented behavior, not plans.
+  shared rules and class summaries/taglines too. Keep this reference focused on the
+  current class overview, with brief introductions. Describe implemented behavior only;
+  remove obsolete descriptions instead of recording changes, removed abilities,
+  comparisons with earlier versions, or plans. Keep AGENTS.md as current working
+  instructions, without project history or a change log.
   Other docs should hold durable direction and current tasks. No requirement IDs,
   mandatory source audits, additional duplicated ability tables, design reports or
   acceptance paperwork.
+- [docs/npc-dialogue.md](docs/npc-dialogue.md) is the authoritative human-readable
+  reference for implemented quests, dialogue and NPCs in the playable valley. Read it
+  when editing this content and update it alongside changes to quest availability,
+  objectives/rewards, dialogue text/conditions, NPC identities/placements/services,
+  encounter profiles/behavior, story events or related Loop/save rules. Keep the intro
+  brief and the tables central; include exact dialogue and its conditions. Describe
+  current playable content only, replacing obsolete entries without change notes,
+  removed-content lists, earlier-version comparisons or proposed dialogue. Keep ability
+  and trainer-gift effect details in class-mechanics.md and link to them rather than
+  duplicating ability tables. Keep future story/design work in direction/backlog.
 - Research only when it resolves a concrete uncertainty. Vanilla accuracy is optional.
 
 ## Implementation and checks
