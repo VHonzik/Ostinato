@@ -162,7 +162,7 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 | Neutral encounters | Wolves and outdoor Kobold Vermin remain neutral until attacked. Bumping the same stationary neutral twice attacks; deliberate attacks and War Horn can engage neutral NPCs. |
 | Hostile aggro | Mine kobolds and bandits acquire visible targets within 4 tiles; stalkers use 5 tiles. Concealment and summons follow the [class rules](class-mechanics.md). |
 | Wandering | Outdoor wolves, camp kobolds and Defias Thugs wander within two tiles of their home position, with staggered starts and random pauses of 3–10 turns. Pending pauses survive saves. |
-| Pursuit | Engaged enemies pursue and attack in melee. Five consecutive turns with no terrain route to the target start a return home; reaching home restores full health. Vanish pursuit uses its remembered origin instead. |
+| Pursuit | Engaged enemies pursue and attack in melee. Five consecutive turns with no terrain route to the target start a return home; reaching home restores full health. During Vanish they pursue living summons; with none, they hold around the remembered Vanish origin without attacking or losing engagement. See [Vanish interactions](class-mechanics.md#vanish-interactions). |
 | Population | No ordinary NPC respawns within a Loop. Death rebuilds contacts and enemies. Empty corpses disappear; other ordinary corpses hide after 300 turns even with loot. The story guard's corpse remains. Summons leave no visible corpse. |
 | Stalker deadlines | World turns 25, 800, 980, 1,140 and 1,280, measured from the start of the Loop. Blocked entry retries without moving deadlines. |
 | Stalker entry tiles | First available tile in order: (12, 69), (11, 69), (13, 69), (12, 70), (13, 70). |

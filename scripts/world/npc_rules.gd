@@ -29,11 +29,12 @@ static func act(world: GridWorld, actor: GridActor) -> void:
 	if actor.stunned_until > world.turn_count:
 		actor.swing.advance(false, actor.melee.interval)
 		return
-	if actor.engaged and VanishRules.active(world):
+	var selected := SummonRules.enemy_target(world, actor)
+	if actor.engaged and VanishRules.active(world) and selected == null:
 		_pursue(world, actor, VanishRules.origin(world), true)
 		actor.swing.advance(false, actor.melee.interval)
 		return
-	var target := NpcTarget.new(world, SummonRules.enemy_target(world, actor))
+	var target := NpcTarget.new(world, selected)
 	_move(world, actor, target.tile)
 	var in_melee := (actor.engaged and GridWorld.tile_distance(actor.tile, target.tile) == 1
 		and world.has_sight(actor.tile, target.tile))

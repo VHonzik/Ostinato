@@ -95,27 +95,120 @@ func test_enemies_pursue_the_vanish_tile_and_cannot_track_hidden_movement() -> v
 	assert_ne(enemy.tile, enemy_tile, "Pursuit resumes toward the current player tile.")
 
 
-func test_unreachable_vanish_tile_keeps_enemies_engaged_without_attacking_summons() -> void:
+func test_unreachable_vanish_tile_without_summons_keeps_enemies_engaged() -> void:
 	var world := _world()
 	var enemy := _enemy(world, Vector2i(13, 8))
 	enemy.blocked_turns = 4
 	for direction in GridWorld.DIRECTIONS:
 		world.blocked_tiles[enemy.tile + direction] = true
-	var ally := GridActor.new(Vector2i(14, 8))
-	ally.summon_kind = "wolf"
-	ally.health = 100
-	ally.max_health = 100
-	ally.relationship = GridActor.Relationship.FRIENDLY
-	world.actors.append(ally)
-	SummonRules.add_threat(world, enemy, ally, 100)
 	assert_true(world.cast_skill(&"vanish_1"))
 	for index in range(3):
 		world.wait_turn()
 		assert_true(enemy.engaged)
 		assert_false(enemy.returning_home)
 		assert_eq(enemy.blocked_turns, 4)
-		assert_eq(ally.health, 100)
-		assert_eq(SummonRules.enemy_target(world, enemy), ally, "Threat is retained.")
+		assert_null(SummonRules.enemy_target(world, enemy))
+		assert_false(enemy.swing._active)
+
+
+func _summon(world: GridWorld, tile: Vector2i, kind: String = "wolf") -> GridActor:
+	var ally := GridActor.new(tile)
+	ally.summon_kind = kind
+	ally.summon_skill = (ItemData.ANCESTRAL_TOTEM_HOTBAR_ID if kind == "earth_elemental"
+		else &"feral_spirit_1")
+	ally.health = 100
+	ally.max_health = 100
+	ally.melee.dodge = 0.0
+	ally.relationship = GridActor.Relationship.FRIENDLY
+	world.actors.append(ally)
+	return ally
+
+
+func test_vanish_retargets_zero_threat_summons_without_resetting_fractional_swing_delay() -> void:
+	for kind in ["wolf", "earth_elemental"]:
+		var world := _world()
+		var enemy := _enemy(world)
+		var ally := _summon(world, Vector2i(9, 9), kind)
+		SummonRules.add_threat(world, enemy, null, 10000)
+		enemy.melee.interval = 2.5
+		enemy.swing.remaining = 1.5
+		enemy.swing._active = true
+		var health := world.hero.health
+		assert_true(world.cast_skill(&"vanish_1"))
+		assert_same(SummonRules.enemy_target(world, enemy), ally)
+		assert_eq(ally.health, 100, "Retargeting must not create an immediate swing.")
+		assert_almost_eq(enemy.swing.remaining, 0.5, 0.0001)
+		world.wait_turn()
+		assert_lt(ally.health, 100, "The pending swing lands on its original turn.")
+		var after_hit := ally.health
+		assert_almost_eq(enemy.swing.remaining, 2.0, 0.0001)
+		world.wait_turn()
+		assert_eq(ally.health, after_hit)
+		world.wait_turn()
+		assert_lt(ally.health, after_hit, "Normal fractional cadence continues while hidden.")
+		assert_eq(world.hero.health, health)
+		assert_true(VanishRules.active(world))
+		world.wait_turn()
+		assert_false(VanishRules.active(world))
+		if kind == "wolf":
+			assert_null(SummonRules.enemy_target(world, enemy), "Stored player threat returns.")
+		else:
+			assert_same(SummonRules.enemy_target(world, enemy), ally, "Elemental taunt still wins.")
+
+
+func test_hidden_targeting_uses_summon_threat_then_pursues_the_living_summon() -> void:
+	var world := _world()
+	assert_true(world.cast_skill(&"vanish_1"))
+	var enemy := _enemy(world, Vector2i(13, 8))
+	var first := _summon(world, Vector2i(15, 8))
+	var second := _summon(world, Vector2i(16, 8))
+	SummonRules.add_threat(world, enemy, null, 10000)
+	SummonRules.add_threat(world, enemy, first, 5)
+	SummonRules.add_threat(world, enemy, second, 10)
+	assert_same(SummonRules.enemy_target(world, enemy), second)
+	NpcRules.act(world, enemy)
+	assert_eq(enemy.tile.x, 14, "Pursue the summon, away from the Vanish tile.")
+	SummonRules.remove(world, second)
+	assert_same(SummonRules.enemy_target(world, enemy), first)
+
+
+func test_last_summon_dying_stops_extra_swings_and_returns_to_vanish_pursuit() -> void:
+	var world := _world()
+	assert_true(world.cast_skill(&"vanish_1"))
+	var enemy := _enemy(world)
+	var ally := _summon(world, Vector2i(9, 9))
+	ally.health = 1
+	ally.melee.armor = 0
+	enemy.melee.damage_min = 10.0
+	enemy.melee.damage_max = 10.0
+	enemy.melee.interval = 0.25
+	enemy.swing.remaining = 0.25
+	enemy.swing._active = true
+	var health := world.hero.health
+	NpcRules.act(world, enemy)
+	assert_false(ally.alive)
+	assert_eq(world.hero.health, health, "Remaining swings cannot hit the concealed player.")
+	for index in range(2):
+		NpcRules.act(world, enemy)
+		assert_false(enemy.swing._active)
+		assert_eq(enemy.swing.remaining, 0.0, "No attacks bank without a target.")
+		assert_eq(world.hero.health, health)
+		assert_true(enemy.engaged)
+	var replacement := _summon(world, Vector2i(9, 9))
+	NpcRules.act(world, enemy)
+	assert_eq(replacement.health, 90, "Reacquiring a target cannot release banked swings.")
+
+
+func test_expired_summon_is_unavailable_before_enemy_actions_during_vanish() -> void:
+	var world := _world()
+	var enemy := _enemy(world)
+	var ally := _summon(world, Vector2i(9, 9))
+	ally.expires_turn = 1
+	var health := world.hero.health
+	assert_true(world.cast_skill(&"vanish_1"))
+	assert_false(ally.alive)
+	assert_eq(world.hero.health, health)
+	assert_false(enemy.swing._active)
 
 
 func test_collision_and_invalid_abilities_preserve_vanish_without_spending_time() -> void:

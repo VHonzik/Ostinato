@@ -35,6 +35,32 @@ func _announce() -> void:
 	assert_eq(_boss.breath_remaining, 2)
 
 
+func test_vanish_blocks_new_breath_only_until_a_living_summon_is_available() -> void:
+	_world.hero.learn_skill(SkillDefinition.catalog(&"vanish_1"))
+	_boss.breath_normal_turns = StalkerBreath.FIRST_NORMAL_TURNS
+	assert_true(_world.cast_skill(&"vanish_1"))
+	assert_eq(_boss.breath_remaining, 0)
+	var wolf := GridActor.new(Vector2i(8, 9))
+	wolf.summon_kind = "wolf"
+	wolf.summon_skill = &"feral_spirit_1"
+	wolf.health = 100
+	wolf.max_health = 100
+	wolf.melee.level = _world.hero.level
+	_world.actors.append(wolf)
+	SummonRules.add_threat(_world, _boss, null, 10000)
+	_world.wait_turn()
+	assert_eq(_boss.breath_remaining, 2)
+	assert_eq(_boss.breath_origin, wolf.tile)
+	assert_eq(_boss.breath_direction, Vector2i.DOWN)
+	var health := _world.hero.health
+	_world.wait_turn()
+	_world.wait_turn()
+	assert_true(VanishRules.active(_world))
+	assert_eq(_boss.breath_remaining, 0)
+	assert_lt(wolf.health, 100)
+	assert_eq(_world.hero.health, health, "The hidden player is outside the summon's cone.")
+
+
 func test_two_full_response_turns_then_ten_normal_turns_between_casts() -> void:
 	for turn in range(4):
 		_world.wait_turn()

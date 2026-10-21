@@ -246,7 +246,7 @@ Vanish allows repositioning and a stronger opening without dropping combat.
 | Combat Potency | - | - | - | - | - | 3 | 120c | - | - | Passive. Landed ordinary off-hand swings have a 20% chance to grant 5 rage. |
 | Seal Fate | - | - | - | - | - | 3 | 150c | - | - | Passive. Requires learned Relentless Assault. Qualifying landed direct active crits grant 1 additional player-held point, up to 5, even if the base point for the turn was already granted. Finishers and bonus strikes do not qualify. |
 | Main Gauche | - | - | - | - | - | 3 | 190c | - | - | Passive. Landed ordinary main-hand swings have a 15% chance for one strike at 100% of the off-hand damage profile, including its normal 50%/75% damage multiplier. Requires an off-hand weapon; normal hit/armor apply, with no crits, recursive procs, rage or combo points. |
-| Vanish | 0 | 1 | 20 | 4* | Self | 3 | 200c | Current class sprite at 40% opacity | Player | Active. Conceal for 4 turns or until a deliberate melee attack (including bump) or any ability. Movement/waiting preserve it and suppress automatic swings. Engaged enemies pursue the Vanish tile without attacking or losing engagement; they cannot track hidden movement. Normal collision applies. The opening swing/ability gains +50 percentage points of crit, including retained class attacks; non-damaging abilities also consume it. Invalid attempts preserve it. Casts break concealment at start; completion keeps the bonus, cancellation loses it. Independent 20-turn cooldown, matching Evasion; Restless Blades can shorten it. No separate flash sprite; the current class art becomes translucent for the effect. |
+| Vanish | 0 | 1 | 20 | 4* | Self | 3 | 200c | Current class sprite at 40% opacity | Player | Active. Conceal for 4 turns or until a deliberate melee attack (including bump) or any ability. Movement/waiting preserve it and suppress your automatic swings. Engaged enemies retarget living summons with normal swing timing; without a summon they pursue the Vanish tile without attacking or losing engagement. They cannot track hidden movement. Normal collision applies. The opening swing/ability gains +50 percentage points of crit, including retained class attacks; non-damaging abilities also consume it. Invalid attempts preserve it. Casts break concealment at start; completion keeps the bonus, cancellation loses it. Independent 20-turn cooldown, matching Evasion; Restless Blades can shorten it. No separate flash sprite; the current class art becomes translucent for the effect. |
 | Deadly Poison | 0 | 1 | - | * | Self | 4 | 230c | C(2,2) | Player (application) | Active coating. Choose hands as for Instant Poison; each coating lasts 60 turns, replacing only the selected hand's poison. Landed primary physical attacks have a 30% chance to apply a stack. Up to 5 shared stacks per enemy deal 1.5 base Nature damage each per turn for 12 turns. Applications refresh duration without delaying ticks; fractional damage is retained across ticks. No crits/proc chains. Ticks precede swings and enemy actions, including the final tick. Player sprite appears at coating time only. |
 | Instant Poison | 0 | 1 | - | 60* | Self | 4 | 230c | C(2,2) | Player (application) | Active coating. Choose main hand, off hand or both with dual wield; single-weapon setups coat main hand directly. Each hand has its own 60-turn timer; replacing its poison leaves the other hand unchanged. Landed primary physical attacks with a coated hand have a 30% chance to add 8 base Nature damage. No crits or recursive procs; bonus strikes cannot trigger it. Catalytic Venom can add a Deadly stack. Player sprite appears on application only. |
 | Restless Blades | - | - | - | - | - | 4 | 270c | - | - | Passive finisher reward. After Eviscerate spends points, including on a miss, reduce every currently recorded ability cooldown by ceiling(points spent / 2) turns, never below ready now. Includes preparation and summon cooldowns as well as offensive/defensive abilities. |
@@ -256,12 +256,17 @@ Vanish allows repositioning and a stronger opening without dropping combat.
 
 ### Vanish interactions
 
-During Vanish, engaged enemies approach the tile where you vanished, hold around it
-and cannot attack, including against summons. They retain
-threat and engagement even if that tile is unreachable, then resume targeting current
-positions when Vanish ends. Idle enemies cannot spot the concealed player, but can
-still notice summons. Existing poison/ground damage and summons continue acting;
-they do not end Vanish. Terrain and occupied tiles still block movement.
+During Vanish, engaged enemies exclude you from targeting and pursue living summons,
+using elemental taunt first, then the highest summon threat (even zero threat).
+Retargeting preserves remaining swing delay and normal fractional swing timing.
+With no living summon, enemies approach the tile where you vanished and hold around
+it without attacking; swing timers advance inactive without banking attacks.
+They retain threat and engagement even if that remembered tile is unreachable, then
+resume normal targeting when Vanish ends. Idle enemies cannot spot the concealed
+player, but can still notice wolves; the elemental's presence does not pull them.
+Existing poison/ground damage and summons continue acting without ending Vanish.
+Stalkers can start Fel Breath against summons; an already announced breath completes
+and can hit anyone inside its cone. Terrain and occupied tiles still block movement.
 
 ### Trainer gift: Lucky charm
 

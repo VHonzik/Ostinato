@@ -22,13 +22,15 @@ static func act(world: GridWorld, actor: GridActor) -> bool:
 		else:
 			world.stalker_breath_winding.emit(actor)
 		return true
-	if actor.stunned_until > world.turn_count or VanishRules.active(world):
+	var selected := SummonRules.enemy_target(world, actor)
+	if (actor.stunned_until > world.turn_count
+		or (VanishRules.active(world) and selected == null)):
 		return false
 	var delay := NORMAL_TURNS_BETWEEN if actor.breath_started else FIRST_NORMAL_TURNS
 	if actor.breath_normal_turns < delay:
 		actor.breath_normal_turns += 1
 		return false
-	var target := NpcTarget.new(world, SummonRules.enemy_target(world, actor))
+	var target := NpcTarget.new(world, selected)
 	actor.breath_direction = MeleeRules.direction_toward(target.tile - actor.tile)
 	actor.breath_origin = target.tile
 	# Do not announce an unavoidable hit when terrain or occupants box the player in.

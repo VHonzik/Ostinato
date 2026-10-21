@@ -76,15 +76,14 @@ static func enemy_target(world: GridWorld, actor: GridActor) -> GridActor:
 			and world.has_sight(elemental.tile, actor.tile)):
 			return elemental
 	var best: GridActor
-	var score := int(actor.threat.get("-1", 0))
-	for key in actor.threat:
-		var index := int(key)
-		if index < 0 or index >= world.actors.size():
-			continue
+	# Concealment removes the hero from selection, without clearing stored threat.
+	var score := -1 if VanishRules.active(world) else int(actor.threat.get("-1", 0))
+	for index in range(world.actors.size()):
 		var candidate := world.actors[index]
-		if candidate.alive and candidate.summon_kind != "" and int(actor.threat[key]) > score:
+		var threat := int(actor.threat.get(str(index), 0))
+		if candidate.alive and candidate.summon_kind != "" and threat > score:
 			best = candidate
-			score = int(actor.threat[key])
+			score = threat
 	return best
 
 
