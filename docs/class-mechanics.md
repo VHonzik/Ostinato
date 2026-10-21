@@ -84,7 +84,8 @@ Weapon damage uses the main hand and Strength-derived weapon power unless specif
 otherwise. Physical attacks use hit, dodge, critical and armor rules; learned Shield
 Block can partially reduce incoming physical hits while a shield is equipped.
 Dodge is flat in every direction, without a level modifier or front/rear rule.
-Weapon Mastery prevents enemy dodges for both hands, physical abilities and bonus weapon strikes.
+Weapon Mastery reduces enemy dodge by 2.5 percentage points, to a minimum of 0%,
+for both hands, physical abilities and bonus weapon strikes (standard 5% becomes 2.5%).
 Direct Holy/Fire/Nature attacks use hit/critical rules and bypass armor and Shield Block.
 Precision prevents misses for weapon and direct magical attacks at every enemy level;
 it does not prevent dodges. Without Precision, miss chance is 5% plus 2 percentage
@@ -127,7 +128,7 @@ trades safety for damage as health falls. Shield Block adds passive shield defen
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
 | Death Wish | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
-| Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies cannot dodge either hand, physical abilities or bonus weapon strikes. Does not prevent misses. Retained learning works in every class. |
+| Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies have -2.5% chance to dodge your weapon attacks, including either hand, physical abilities and bonus weapon strikes: a flat 2.5 percentage-point reduction, minimum 0% (standard 5% becomes 2.5%). Does not prevent misses. Retained learning works in every class. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
 | Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
 | Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
@@ -252,7 +253,7 @@ Vanish allows repositioning and a stronger opening without dropping combat.
 | Restless Blades | - | - | - | - | - | 4 | 270c | - | - | Passive finisher reward. After Eviscerate spends points, including on a miss, reduce every currently recorded ability cooldown by ceiling(points spent / 2) turns, never below ready now. Includes preparation and summon cooldowns as well as offensive/defensive abilities. |
 | Catalytic Venom | - | - | - | - | - | 5 | 310c | - | - | Passive. While dual wielding, Instant Poison on your faster base-speed weapon also applies one stack of the slower weapon's Deadly Poison. Both coatings must be active. Equal-speed weapons do not catalyze. No extra roll or recursive procs. |
 | Bandit's Guile | - | - | - | 10 | - | 5 | 370c | - | - | Passive. Every 4 qualifying landed direct active attacks grant +5% damage, stacking to +15%. Each qualifying hit refreshes the 10-turn state, including partially built progress. Misses and finishers do not advance it. Retained class attacks qualify. |
-| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. Weapon/physical and direct Holy/Fire/Nature attacks never miss, including against higher-level enemies. Enemies may still dodge weapon attacks unless Weapon Mastery is learned. |
+| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. Weapon/physical and direct Holy/Fire/Nature attacks never miss, including against higher-level enemies. Enemies may still dodge weapon attacks; Weapon Mastery reduces their dodge chance by 2.5 percentage points. |
 
 ### Vanish interactions
 

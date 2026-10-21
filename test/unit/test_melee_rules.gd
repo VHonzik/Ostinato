@@ -31,20 +31,38 @@ func test_controlled_rolls_select_single_attack_table_outcomes() -> void:
 	assert_eq(MeleeRules.outcome(attacker, target, 11.0), &"dodge")
 
 
-func test_dodge_is_flat_and_weapon_mastery_removes_it() -> void:
+func test_weapon_mastery_halves_standard_dodge_for_both_hands_and_keeps_misses() -> void:
 	var hero := HeroState.new()
 	var npc := MeleeProfile.new()
 	npc.level = 10
 	assert_eq(MeleeRules.outcome(npc, hero.melee, 6.0), &"dodge")
+	assert_eq(MeleeRules.outcome(hero.melee, npc, 25.5), &"dodge")
 	hero.learn_skill(SkillDefinition.catalog(&"weapon_mastery_1"))
-	assert_ne(MeleeRules.outcome(hero.melee, npc, 24.0), &"dodge")
-	assert_eq(MeleeRules.outcome(hero.melee, npc, 0.0), &"miss",
-		"Mastery prevents dodges while preserving the miss rule.")
+	for weapon: MeleeProfile in [hero.melee, hero.off_hand_melee()]:
+		assert_eq(MeleeRules.outcome(weapon, npc, 22.99), &"miss")
+		assert_eq(MeleeRules.outcome(weapon, npc, 23.0), &"dodge")
+		assert_eq(MeleeRules.outcome(weapon, npc, 25.49), &"dodge")
+		assert_ne(MeleeRules.outcome(weapon, npc, 25.5), &"dodge")
 	hero.learn_skill(SkillDefinition.catalog(&"precision_1"))
 	assert_eq(MeleeRules.miss_chance(hero.melee, npc), 0.0)
-	assert_ne(MeleeRules.outcome(hero.melee, npc, 0.0), &"miss")
-	assert_true(hero.off_hand_melee().cannot_miss)
-	assert_true(hero.off_hand_melee().ignores_dodge)
+	for weapon: MeleeProfile in [hero.melee, hero.off_hand_melee()]:
+		assert_eq(MeleeRules.outcome(weapon, npc, 0.0), &"dodge",
+			"Precision removes misses but leaves the reduced dodge chance.")
+		assert_eq(MeleeRules.outcome(weapon, npc, 2.49), &"dodge")
+		assert_ne(MeleeRules.outcome(weapon, npc, 2.5), &"dodge")
+
+
+func test_weapon_mastery_subtracts_flat_dodge_and_stops_at_zero() -> void:
+	var hero := HeroState.new()
+	hero.learn_skill(SkillDefinition.catalog(&"weapon_mastery_1"))
+	hero.learn_skill(SkillDefinition.catalog(&"precision_1"))
+	var npc := MeleeProfile.new()
+	npc.dodge = 10.0
+	assert_eq(MeleeRules.outcome(hero.melee, npc, 7.49), &"dodge")
+	assert_ne(MeleeRules.outcome(hero.melee, npc, 7.5), &"dodge")
+	for dodge: float in [0.0, 1.0, 2.5]:
+		npc.dodge = dodge
+		assert_eq(MeleeRules.outcome(hero.melee, npc, 0.0), &"critical")
 
 
 func test_level_differences_keep_misses_dodge_and_crit_without_extra_outcomes() -> void:

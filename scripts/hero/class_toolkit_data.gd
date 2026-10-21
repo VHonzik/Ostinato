@@ -6,7 +6,7 @@ extends RefCounted
 const PASSIVES: Dictionary = {
 	"blessing_of_kings_1": ["Blessing of Kings", "Paladin", 70, 2, 0.0, 0, "While Battle Shout is active, also gain +2 Strength, Agility and Stamina. Requires learned Battle Shout; no extra cast or rage. Learning applies immediately to an existing Shout. Expiry removes the bonus; applying or refreshing does not heal.", 2],
 	"slice_and_dice_1": ["Slice and Dice", "Rogue", 10, 30, 0.0, 5, "Eviscerate grants +30% attack speed for 5 turns plus 3 per combo point spent, even on a miss. Refreshes without stacking. No extra rage or action; ordinary ability cooldowns are unchanged.", 1],
-	"weapon_mastery_1": ["Weapon Mastery", "Warrior", 90, 10, 0.0, 0, "+10 percentage points of weapon and direct Holy/Fire/Nature critical chance. Enemies cannot dodge your weapon attacks, including either hand, physical abilities and bonus weapon strikes. Works in every class once learned; does not prevent misses.", 2],
+	"weapon_mastery_1": ["Weapon Mastery", "Warrior", 90, 10, 0.0, 0, "+10 percentage points of weapon and direct Holy/Fire/Nature critical chance. Enemies have -2.5% chance to dodge your weapon attacks, including either hand, physical abilities and bonus weapon strikes (a flat 2.5 percentage-point reduction, minimum 0%). Works in every class once learned; does not prevent misses.", 2],
 	"enrage_1": ["Enrage", "Warrior", 15, 10, 0.3, 10, "Surviving enemy hits that deal damage have a 30% chance to grant +10% physical damage and +5 percentage points of attack critical chance for 10 turns, at any health. At most one roll per world turn. Refreshes without stacking; misses, dodges and immune hits cannot trigger it.", 1],
 	"recklessness_1": ["Death Wish", "Warrior", 45, 20, 0.0, 0, "As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned.", 2],
 	"battle_trance_1": ["Battle Trance", "Warrior", 250, 0, 0.0, 0, "Direct physical, Holy, Fire and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it.", 4],
@@ -58,6 +58,7 @@ static func skills() -> Dictionary:
 			"duration": row[5], "detail": "Passive: " + row[6],
 			"family": String(identifier).trim_suffix("_1"), "effect": "PASSIVE", "target": "NONE"}
 	result["slice_and_dice_1"].merge({"haste_percent": 30, "duration_per_combo": 3})
+	result["weapon_mastery_1"]["dodge_reduction"] = 2.5
 	result["art_of_war_1"]["critical_damage_percent"] = 225
 	result["heart_of_the_crusader_1"]["weapon_multiplier"] = 0.25
 	result["enrage_1"]["critical_percent"] = 5

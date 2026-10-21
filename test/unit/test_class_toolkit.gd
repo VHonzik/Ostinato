@@ -183,10 +183,14 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 	world.hero.refresh_stats()
 	assert_eq(world.hero.melee.hit, 5.0)
 	assert_almost_eq(world.hero.melee.critical, base_crit + 13, 0.001)
+	assert_eq(MeleeRules.outcome(world.hero.melee, MeleeProfile.new(), 2.49), &"dodge")
+	assert_ne(MeleeRules.outcome(world.hero.melee, MeleeProfile.new(), 2.5), &"dodge")
 	assert_eq(world.hero.melee.armor, floori(base_armor * 1.2))
 	world.hero.refresh_stats()
 	assert_eq(world.hero.melee.hit, 5.0)
 	assert_almost_eq(world.hero.melee.critical, base_crit + 13, 0.001)
+	assert_eq(MeleeRules.outcome(world.hero.melee, MeleeProfile.new(), 2.49), &"dodge")
+	assert_ne(MeleeRules.outcome(world.hero.melee, MeleeProfile.new(), 2.5), &"dodge")
 
 
 func test_holy_and_fire_actives_share_level_penalties_while_bypassing_armor() -> void:

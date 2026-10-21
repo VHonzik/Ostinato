@@ -142,7 +142,8 @@ func refresh_melee_stats() -> void:
 	melee.critical += ClassToolkitRules.magnitude(self, &"weapon_mastery_1")
 	melee.critical += ClassToolkitRules.magnitude(self, &"conviction_1")
 	melee.cannot_miss = find_skill(&"precision_1") != null
-	melee.ignores_dodge = find_skill(&"weapon_mastery_1") != null
+	var mastery := find_skill(&"weapon_mastery_1")
+	melee.dodge_reduction = 0.0 if mastery == null else mastery.dodge_reduction
 	melee.dodge = 3.25 + base_agility_percent + bonus_agility * AGILITY_DODGE_PERCENT
 	melee.damage_min = 1.0
 	melee.damage_max = 2.0
@@ -174,6 +175,7 @@ func off_hand_melee() -> MeleeProfile:
 	weapon.hit = melee.hit
 	weapon.cannot_miss = melee.cannot_miss
 	weapon.ignores_dodge = melee.ignores_dodge
+	weapon.dodge_reduction = melee.dodge_reduction
 	var off_hand_percent := BASE_OFF_HAND_DAMAGE_PERCENT
 	off_hand_percent += ClassToolkitRules.magnitude(self, &"ambidexterity_1")
 	weapon.damage_multiplier = melee.damage_multiplier * off_hand_percent / 100.0

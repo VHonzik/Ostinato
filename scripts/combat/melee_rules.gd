@@ -33,7 +33,8 @@ static func outcome(
 	critical_bonus: int = 0
 ) -> StringName:
 	var miss := miss_chance(attacker, defender)
-	var dodge := 0.0 if attacker.ignores_dodge else defender.dodge
+	var dodge := 0.0 if attacker.ignores_dodge else maxf(0.0,
+		defender.dodge - attacker.dodge_reduction)
 	var critical := critical_chance(attacker, defender) + critical_bonus
 	var threshold := 0.0
 	var chances: Array[float] = [miss, dodge, critical]

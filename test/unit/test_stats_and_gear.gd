@@ -75,6 +75,8 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	assert_eq(restored.hero.health, 10)
 	assert_eq(restored.hero.max_health, game.world.hero.max_health)
 	assert_eq(restored.hero.melee.critical, game.world.hero.melee.critical)
+	assert_eq(MeleeRules.outcome(restored.hero.melee, MeleeProfile.new(), 7.49), &"dodge")
+	assert_ne(MeleeRules.outcome(restored.hero.melee, MeleeProfile.new(), 7.5), &"dodge")
 	assert_eq([restored.hero.swing.remaining, restored.hero.off_hand_swing.remaining], [1.25, 0.75])
 	restored.discard()
 	game.world.hero.health = 0
@@ -83,6 +85,8 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	assert_eq(game.world.hero.equipment.armor.id, 44)
 	assert_almost_eq(game.world.hero.attack_haste(), 1.0, 0.00001)
 	assert_not_null(game.world.hero.find_skill(&"weapon_mastery_1"))
+	assert_eq(MeleeRules.outcome(game.world.hero.melee, MeleeProfile.new(), 7.49), &"dodge")
+	assert_ne(MeleeRules.outcome(game.world.hero.melee, MeleeProfile.new(), 7.5), &"dodge")
 
 
 func test_janos_sells_common_gear_and_finite_health_supplies() -> void:

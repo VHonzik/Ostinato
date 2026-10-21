@@ -106,8 +106,7 @@ balance measurements. Let playtesting determine Loop length.
   Holy, Fire and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
   hit or crit; shields contribute armor and enable learned Warrior Shield Block's
   partial physical defense. These magic schools bypass armor and Shield Block.
-  Dodge is flat in every direction. Weapon Mastery adds critical chance and prevents
-  enemy weapon dodges; Precision prevents all player misses. Higher-level enemies
+  Dodge is flat in every direction. Higher-level enemies
   reduce accuracy without Precision; their percentage penalty to player damage
   matches their percentage increase to incoming damage. A starter Warrior should
   struggle against one enemy two levels higher or a pair near its own level; larger
