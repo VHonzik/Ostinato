@@ -1,9 +1,11 @@
 # Ostinato
 
+The current project target is a playable demo of the full game, focused on the valley.
+
 A keyboard-first, turn-based Godot roguelike about learning across repeated lives,
 inspired by WoW. Explore the valley, complete quests and train Warrior, Shaman,
 Paladin and Rogue abilities that remain learned after death. Defeat every present
-demon stalker to win.
+demon stalker to complete the demo.
 
 From PowerShell 7:
 

@@ -1,6 +1,7 @@
 # Working on Ostinato
 
 This is a hobby roguelike in Godot/GDScript. WoW is inspiration, not a specification.
+The current project target is a playable demo of the full game, focused on the valley.
 Prioritize enjoyable play, readable art/UI, and small playable changes.
 
 ## Context and decisions

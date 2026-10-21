@@ -88,7 +88,7 @@ func _ready() -> void:
 
 func open_main() -> void:
 	active_game = false
-	_begin("main", "OSTINATO", Callable())
+	_begin("main", "Ostinato (Demo)", Callable())
 	_button("New Game", open_world_seeds)
 	_button("Load", open_slots)
 	_button("Options", open_options)

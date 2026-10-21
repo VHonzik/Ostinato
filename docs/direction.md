@@ -4,6 +4,9 @@ Durable design goals and open decisions. Implemented details live in
 [class mechanics](class-mechanics.md) and [quests, dialogue and NPCs](npc-dialogue.md);
 current tasks live in [the backlog](backlog.md).
 
+The current project target is a playable demo of the full game. The valley is the
+demo's playable scope; escaping it completes the demo and points toward the wider world.
+
 ## Game and Loop
 
 A keyboard-first, turn-based grid RPG in a small, finite starting area with one guarded
@@ -18,7 +21,7 @@ Loop and reset on death. There is no permanent equipment.
 A powerful boss arrives early enough that a player heading directly for the exit sees
 it kill the guard. Its first arrival serves that scene. Additional copies arrive on a
 fixed global world-turn schedule. Defeating every currently present stalker immediately
-wins the game. Escape into the world beyond is the story outcome; there is no gate lock
+completes the demo. Escape into the world beyond is the story outcome; there is no gate lock
 or movement requirement. Future copies do not prevent victory.
 The intended route to victory combines roughly three developed classes with near-maximum
 character level for the finite area. Two developed kits should usually struggle against

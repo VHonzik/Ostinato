@@ -4,6 +4,8 @@ Unfinished work, driven by owner playtests and small fixes. Current implementati
 lives in [class mechanics](class-mechanics.md) and [quests, dialogue and NPCs](npc-dialogue.md);
 [direction](direction.md) holds design goals and open choices.
 
+These milestones work toward a playable demo of the full game, focused on the valley.
+
 ## Current milestone — Valley progression and boss pacing
 
 Make the existing loop enjoyable from a weak first life through partial class

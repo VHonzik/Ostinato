@@ -20,13 +20,16 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 
 ## Current build
 
+The project targets a playable demo of the full game. The main menu displays
+**Ostinato (Demo)**; the valley is the demo's playable scope.
+
 **New Game** offers five named world seeds, then launches the valley, the sole playable
 map, as a Warrior with Mortal Strike and Whirlwind. The player menu shows the chosen
 world name. Speak to Marshal McBride north of spawn, ask Janos inside the
 abbey for starter gear, and use quests, trading and training to prepare for the gate.
 Death rebuilds the physical world; learned abilities and hotbar assignments persist.
 Returning Loops begin with class selection; other classes unlock from Loop three.
-Defeat every currently present stalker to win.
+Defeat every currently present stalker to complete the demo.
 
 Use the authoritative references for current content and code entry points:
 
