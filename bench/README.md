@@ -5,12 +5,11 @@ call the current game model; the game never loads the bench. `.gdignore` keeps t
 out of editor imports and normal script validation. The launcher loads them explicitly.
 No separate project, dependency upgrades, or simulation framework.
 
-`stalker-mechanics` and `stalker-patterns` retain their historical pre-Fel-Breath
-control (labelled `live` in their output). They suppress the adopted production breath
-to isolate experimental Enrage, recovery and cone variants. Replays use unobserved
-experimental worlds; the other encounter scenarios continue using current game rules.
-New cone runs reset and pause the Stalker's weapon interval through the breath;
-earlier saved runs let that timer tick, so their win rates describe the older variant.
+`stalker-mechanics` and `stalker-patterns` suppress production Fel Breath to isolate
+experimental Enrage, recovery and cone variants. Their `live` output label denotes
+the experiment's control, not the full production encounter. Replays use unobserved
+experimental worlds. Experimental cones reset and pause the Stalker's weapon interval
+through the breath; other encounter scenarios use current game rules.
 
 From the repository root, after the normal [setup](../docs/development.md):
 
@@ -44,7 +43,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `stalker-passives` | All 15 retained-kit combinations against Stalker, then one-passive removals in its own kit and all four kits. Records actual player healing/losses as well as boss damage. 200 baseline seeds, 100 matched removal seeds, independent 40-seed policy pilots; three weapons and cold/prepared entry. Use shards 0/1/2 sequentially. |
 | `stalker-full` | Current coordinated rotation with all four kits fully learned, against Stalker only. 200 baseline seeds with and without trainer gifts; 100 paired seeds per passive removal with gifts. Three weapons, cold/live prepared entry; use shards 0/1/2 sequentially. |
-| `stalker-mechanics` | Experimental 20%-HP Enrage and one four-turn recovery at 50% HP. Pilots ordinary spending, reacting and several banking policies across all four three-kit builds plus all kits, all weapons. Every build retains the initial Warrior MS/Whirlwind pair; Shaman/Paladin/Rogue has no purchased Warrior skills. Recovery always exceeds the interruption requirement. 30 pilot seeds; `-Confirm` compares ordinary and spell-only banking for live plus 150/180 and 150/240 on 100 fresh seeds (4800000+). Spell banking holds Lava/Judgement from 70% and MS from 60%, preserving their rage costs while keeping finishers/haste and affordable other spending active. Prepared common gear, no gifts. Cone omitted pending cadence/geometry. |
+| `stalker-mechanics` | Experimental 20%-HP Enrage and one four-turn recovery at 50% HP. Pilots ordinary spending, reacting and several banking policies across all four three-kit builds plus all kits, all weapons. Every build retains the initial Warrior MS/Whirlwind pair; Shaman/Paladin/Rogue has no purchased Warrior skills. Recovery always exceeds the interruption requirement. 30 pilot seeds; `-Confirm` compares ordinary and spell-only banking for live plus 150/180 and 150/240 on 100 fresh seeds (4800000+). Spell banking holds Lava/Judgement from 70% and MS from 60%, preserving their rage costs while keeping finishers/haste and affordable other spending active. Prepared common gear, no gifts. Omits cone attacks. |
 | `stalker-patterns` | Isolates Enrage, then adds a locked three-tile cone with two full response turns. Four three-kit paths including Warrior starters, all weapons. Compare early/late sidesteps, saving burst or defenses for Enrage, wider dodges with ranged burst, saving Divine Shield for a cone, and ignoring it. First wind-up after four normal turns, then ten normal turns between casts; casting/channel time excluded. Cone can kill summoned wolves. Includes 150/180 recovery with/without banking; pilots also test eight/twelve-turn gaps. 20 pilot seeds, 60 fresh with `-Confirm`; same gear/preparation as mechanics. |
 | `priorities` | Live requested priorities on starter Shaman, full Shaman/Paladin, all four three-kit combinations and all kits. Five priority alternatives on all kits; ordinary groups, Stalker, ranged pulls and durable-group/banked-stack stress cases. Cold/live prepared entry, 30 seeds per cell, three weapons; sample fights replay against plain `GridWorld`. |
 | `pulls` | Prepared fully retained kits against 1-32 same-level regular thugs, with common/uncommon gear and usual/AoE priorities. Controls cover kobolds, banked entry, Warrior alone and removing Victory Rush. 20 seeds per cell; per-turn incoming damage/healing and plain-world replays. Shards select weapons. |
@@ -59,13 +58,13 @@ prioritize them just after a breath, and avoid wasting defenses during safe cast
 windows. It uses the same fresh seeds with `-Confirm`; combine the two result files
 in the mechanics analyzer for paired comparisons. This strategy sidesteps immediately;
 the focused run adds the matching immediate-sidestep control for the full encounter.
-Pattern policies avoid overlapping active Divine Shield and Evasion. Their fresh
-matched controls therefore matter more than comparisons with older mechanics runs.
+Pattern policies avoid overlapping active Divine Shield and Evasion. Use matched
+controls from the same setup for comparisons.
 
 `-Smoke` reduces combat/loot samples for a wiring check, not a design conclusion.
 Stalker mechanics uses live actions with experiment-local boss changes. The full
-four-turn channel suppresses movement and melee, keeps swing timers ticking and
-counts all actual damage after the triggering boundary through the final response's
+four-turn channel suppresses boss movement and melee while player weapon timers advance.
+It counts all actual damage after the triggering boundary through the final response's
 summons. Success prevents healing at the deadline; it does not end the pause early.
 Thresholds never rearm after healing. Player and boss HP accounting includes recovery;
 control and candidate samples replay on the unobserved experiment.
@@ -82,9 +81,11 @@ selects two-hand/shield/dual wield; omit it to run all three. A harder run needs
 baseline covering its selected weapons. Use a non-smoke baseline for design decisions.
 Paladin also accepts `-Shard 0/1/2` for two-hand/shield/dual wield; omit it for all three.
 Rogue accepts the same shards. Cold entries apply Instant Poison; prepared dual-wield
-entries start with faster-weapon Instant and slower-weapon Deadly. Rogue supports
-the earlier active Slice and Dice kit for paired before/after runs; older builds only
-refresh that active when its haste expires.
+entries start with faster-weapon Instant and slower-weapon Deadly. Eviscerate spends
+at three or more points and applies learned Slice and Dice passively.
+Warrior, Paladin, Rogue and `stalker-passives` construct their prepared entries with
+90 rage and fresh buffs. `priorities`, `stalker-full`, `pulls` and `pull-tuning` use
+live preparation from zero rage. Read each scenario's setup before comparing results.
 `-TimeoutSeconds` controls each child process, up to 600 seconds; shard combat runs
 if necessary. Run launchers sequentially because they share the project import cache.
 
@@ -116,14 +117,11 @@ explicit in code/results. Prefer live actions; explain any shortcuts and verify 
 instrumentation does not change outcomes. Run a smoke case and the normal project
 validation after code changes. Do not turn historical policies into gameplay contracts.
 
-Older one-off experiments remain in ignored `reports/` and may use removed APIs.
-The obsolete October 14 balance snapshot and frozen scripts have been removed;
-use this bench with the current game model. Human playtests still decide feel,
-readability and balance.
+Human playtests decide feel, readability and balance.
 
 ## Stalker passive comparisons
 
-The new scenario uses the current level-8, 600-HP Stalker, level-5 hero, common gear,
+`stalker-passives` uses the current level-8, 600-HP Stalker, level-5 hero, common gear,
 one Minor Healing Potion and a six-tile approach. Known Charge opens normally.
 Prepared entries set 90 rage before resolving maintenance buffs; Battle Shout adds 10
 when known. They start without points/procs/summons.
@@ -164,8 +162,8 @@ lower incoming totals can also mean an earlier death, so read wins, damage and t
 ## Coordinated rotation comparisons
 
 For current full-unlock passive trials, use `stalker-full`. It inherits the production
-`priorities` intent bot and live preparation below, rather than the older shock/seal
-rotation and constructed 90-rage entry in `stalker-passives`. Gift runs carry all four
+`priorities` intent bot and live preparation below. `stalker-passives` uses pilot-selected
+Paladin-style priorities and constructed 90-rage entry. Gift runs carry all four
 already-earned trainer rewards: use the totem then banner after entering melee, carry
 the charm, and leave the single-target-irrelevant horn unused. Removals keep the gifts
 to avoid confounding a lost passive with lost gift eligibility. The no-gift baseline

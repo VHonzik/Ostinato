@@ -1,10 +1,8 @@
 # Game direction
 
-The October 2026 time-loop RPG design snapshot v0.1 guides the current pivot.
-It replaces the old requirements and Vanilla content-completion plan.
-This is intended direction, not a claim about what the current build implements.
-Current work lives in [the backlog](backlog.md). Earlier requirements, research and
-the transitional pivot retrospective remain in Git history.
+Durable design goals and open decisions. Implemented details live in
+[class mechanics](class-mechanics.md) and [quests, dialogue and NPCs](npc-dialogue.md);
+current tasks live in [the backlog](backlog.md).
 
 ## Game and Loop
 
@@ -28,66 +26,26 @@ the boss, three should offer a viable attempt, and the complete set should give 
 chance of victory. Aim for comparable class contributions while allowing modest weapon
 preferences. Exceptional earlier victories should remain possible through skill and
 route optimization. Simulation results are exploratory, not final
-balance measurements; do not impose the old ten-minute first-Loop target.
+balance measurements. Let playtesting determine Loop length.
 
 ## Classes, learning and combat
 
-- Start as warrior with Mortal Strike and Whirlwind. Mortal Strike is the stronger
-  single-target spender; Whirlwind spends spare rage and gains value against adjacent
-  groups. Execute remains a later finisher. Heroic Strike and Incite are removed;
-  further passive development remains open until the revised kit has been playtested.
-  The roster is warrior, shaman, paladin and rogue.
-- Choose the class to train at the marshal before accepting any quest.
-  Warrior is mandatory in the first two Loops; Shaman, Paladin and Rogue are selectable
-  from Loop three. Returning Loops offer class selection first, focusing the previous class; choosing
-  once locks the class until death and immediately reveals quests. Other contacts
-  redirect the player to the marshal until that choice. Selection keeps gear and
-  refers the player to the matching trainer. Keep the initial Warrior pair at New Game.
-  First-time choices of a new class receive the marshal's skeptical introduction
-  and a referral to the trainer and Janos. Remember choices independently of training.
-  Learn other classes' starter skills free at their trainers, with no level requirement.
-  Once learned, skills stay usable across classes and death without relearning;
-  selection does not lock out the retained toolkit.
-- All classes use rage, with no mana or energy. Learned Relentless Assault builds
-  player-held combo points from landed direct active attacks, including retained
-  attacks across classes, and ordinary main-hand hits. Relentless Assault grants at most
-  one base point per world turn; Seal Fate can add its extra active-critical point.
-  Off-hand hits, procs, buffs and misses grant no points.
-  Points persist across targets and encounters and reset on death. Eviscerate is the
-  starter active finisher: it requires a melee target and spends all held points.
-  Learned Slice and Dice passively grants attack haste from the same spent points,
-  including on a missed finisher. Eviscerate's intrinsic rage refund happens once
-  after spending; it never refunds combo points.
-  Judgement retains a delayed verdict without stacks or
-  damage accumulation. It commits damage and hit/critical results on casting and
-  delivers its attack rewards on impact, without retargeting. Consecration adds fixed
-  Holy ground for positional play; its periodic damage has no attack procs or defense bonus.
-  Preserve roughly the current overall damage contribution by redistributing damage
-  rather than adding both abilities at full strength. Seal of Command is an
-  always-on learned passive. Execute and Judgement do not spend combo points.
-- Warrior supplies physical burst, rage, execution and strength through taking damage.
-  Enrage rewards surviving enemy hits; passive Death Wish trades more incoming damage
-  for more physical damage as health falls, with a modest cap. Warrior has no Flurry;
-  Shaman retains its attack-haste passive. A long-cast,
-  damage-only Lava Burst replaces Earth Shock alongside starter Lightning Shield. Maelstrom Weapon builds
-  up to five stacks through weapon combat, shortening Lava Burst to an instant cast
-  at full stacks and increasing its critical chance. The old shock interrupt,
-  stun and dependent passives are removed or replaced. Shaman supplies free
-  weapon/shield preparation, reactive damage and a distinct banked spell payoff.
-  Earth Elemental is a mobile, lasting summon that draws nearby engaged enemies
-  away from the player; only one may be alive. Spirit wolves inherently supply damage
-  and healing. Shield strength, Windfury damage and wolf healing belong to their
-  active abilities rather than separate numerical upgrade passives.
-  Strength of Earth Totem and Elemental Warding are removed.
-  Paladin supplies Holy damage,
-  buffs and guaranteed-critical payoffs. Passive Blessing of Kings replaces Might:
-  active Battle Shout also grants flat Strength, Agility and Stamina.
-  This depends on learned Battle Shout; Seal needs no application or refresh.
-  Judgement includes its flat damage bonus; Art of War includes its stronger
-  empowered critical. Divine Purpose and Eye for an Eye are removed.
-  Rogue supplies combo points, dual wielding,
-  speed, poisons and finishers. Opportunity is removed. Seal Fate and Bandit's Guile
-  reward qualifying retained attacks from other classes. The milestone covers the full v0.1 toolkit.
+- The roster is Warrior, Shaman, Paladin and Rogue. Start as Warrior with Mortal
+  Strike for single-target burst and Whirlwind for adjacent groups.
+- Choose the class to train at the marshal before accepting any quest. Warrior is
+  mandatory in the first two Loops; the other classes unlock from Loop three.
+  Returning Loops focus the previous class; selection locks training until death,
+  keeps gear and refers the player to the trainer and Janos. Remember class choices
+  independently of training. Other contacts redirect the player until selection.
+- All classes use rage. Retained actives and passives work across classes and death.
+  Rogue combo points belong to the player across targets and encounters; Eviscerate
+  spends them for a finisher and learned passive haste. Execute and Judgement use
+  their own gates rather than combo points.
+- Preserve distinct contributions: Warrior offers physical burst, rage and risk from
+  taking damage; Shaman offers weapon/shield preparation, reactive damage, banked
+  Lava Burst and summons; Paladin offers Holy damage, a delayed verdict, fixed ground
+  and defensive buffs; Rogue offers combo points, dual wielding, poisons and finishers.
+  Exact abilities, proc interactions and tuning belong in the class reference.
 - Aim for this typical developed mixed-kit priority: prepare poisons, Windfury, Battle
   Shout and Lightning Shield before pulling; Charge into Mortal Strike; full-stack
   Lava Burst (also a ranged pull when Charge is unavailable); passively empowered
@@ -145,15 +103,15 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Holy, Fire and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
   hit or crit; shields contribute armor and enable learned Warrior Shield Block's
   partial physical defense. These magic schools bypass armor and Shield Block.
-  Dodge is flat in every direction. Weapon Mastery combines the former Cruelty critical bonus
-  with preventing enemy weapon dodges; Precision prevents all player misses. Higher-level
-  enemies reduce accuracy without Precision; their percentage penalty to player damage
-  matches their percentage increase to incoming damage,
-  without the old attack tables. A starter Warrior should struggle against one enemy
-  two levels higher or a pair near its own level; larger pulls should usually kill it.
+  Dodge is flat in every direction. Weapon Mastery adds critical chance and prevents
+  enemy weapon dodges; Precision prevents all player misses. Higher-level enemies
+  reduce accuracy without Precision; their percentage penalty to player damage
+  matches their percentage increase to incoming damage. A starter Warrior should
+  struggle against one enemy two levels higher or a pair near its own level; larger
+  pulls should usually kill it.
   Retained mixed-class learning should eventually make three enemies two levels higher
   manageable. Costs, durations, chances, damage formulas
-  and stat scaling belong in code/data; the snapshot's tuning remains provisional.
+  and stat scaling belong in code/data; tuning remains provisional.
 - Keep the existing session/save structure and bump the save revision when compatibility
   changes. Preserve old files and failed-write/load protections; do not add experimental
   migrations. Keep saving at action boundaries outside combat.
@@ -166,7 +124,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 - Keep temporary equipment, inventory, gold, quests and traders as tactical route
   resources. Use armor, neck, two ring slots and one weapon setup: two-hand,
   main-hand plus shield pair, or dual-wield pair. Weapon names are flavor;
-  Gear has no class, level or learning requirements. Ambidexterity improves
+  gear has no class, level or learning requirements. Ambidexterity improves
   off-hand damage in any class once learned.
   Shields should offer a defensive preference without becoming the strongest
   general-purpose weapon setup.
@@ -190,10 +148,10 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   broader damage/healing scaling
   remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.
-- Merchants have fixed inventory and prices; quest rewards are fixed. Enemy loot is
-  determined by the world seed and stable enemy identity. Chest contents and positions
-  are seeded from predefined spawn points. The same seed recreates the same world
-  across Loops, independently of action order.
+- Merchants have fixed inventory and prices; quest rewards are fixed. Enemy and chest
+  loot is determined by the world seed and stable spawn identity. Chest placements
+  are authored in the valley scene. The same seed recreates loot across Loops,
+  independently of action order.
 - Finite quests and encounters bound character progression. Decide the XP curve,
   level ceiling, level-difference scaling and healing availability through playtesting.
 - Let new Loops reveal dialogue and the player's realization of the Loop. NPCs do not
@@ -206,7 +164,7 @@ balance measurements; do not impose the old ten-minute first-Loop target.
 
 - Use a 1280×720 logical canvas and minimum window, with 32×32 world tiles. Double
   the existing 16px art as a placeholder, preserving the base view's world scale.
-  Reuse the valley and selected art for the new prototype.
+  Keep the valley and selected art consistent with this scale.
 - Keep outdoor ground plain. Show prominent terrain features such as trees, stones,
   flowers, sparse grass tufts, roads and landmarks rather than repeating grass tiles.
   Use fewer grass tufts in wooded areas.
@@ -217,16 +175,16 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   readability through human review, without automated resolution/fit checks.
   Keep the log compact with no separate log screen; menu buttons show their shortcuts.
 
-## Still to decide, when the relevant task starts
+## Open design and playtest questions
 
-- First: unlock ordering and thresholds; character XP/level
-  scaling; boss behavior and clone schedule.
-- Next: Whirlwind versus Mortal Strike rage economy and later passive development;
-  optional combo empowerment for Execute/Judgement; gear ranges, weapon progression,
-  respawns and healing.
-- During the complete-toolkit playtest: revise provisional passive/proc behavior,
-  wolf usefulness, movement credit and the coordinated rotation as needed.
-- Later: additional talents/synergies and leaderboard categories or achievements.
+- Tune training order/prices and progression pace, character XP/level scaling, the
+  finite-area level ceiling, and Stalker pressure from its behavior and arrival schedule.
+- Review Mortal Strike/Whirlwind rage economy, passive contributions, gear ranges,
+  weapon progression, ordinary respawns and healing through playtesting.
+- Keep optional combo empowerment for Execute/Judgement as a future design question.
+- Review wolf usefulness, movement credit and coordinated rotation choices with the
+  complete toolkit. Stalker Enrage and recovery remain experimental ideas.
+- Consider additional talents/synergies and leaderboard categories or achievements later.
 
-Keep answers brief here when they become durable direction. Keep tuning values and
-implemented rules in code/data, not duplicated tables in documentation.
+Keep durable decisions brief here. Keep tuning and implemented rules in code/data
+and their authoritative references; keep playable tasks in the backlog.

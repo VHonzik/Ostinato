@@ -16,7 +16,7 @@ Use the [official GDScript style guide](https://docs.godotengine.org/en/stable/t
 
 Use typed GDScript by default. Declare parameter and return types, including `void`. Use inference when the type is clear at the declaration; otherwise name the type explicitly. Keep `Variant` where the API or data actually requires it.
 
-Prefer clear domain names such as `experience_to_next_level` over abbreviations. Name units where ambiguity matters, for example `cooldown_seconds`.
+Prefer clear domain names such as `experience_to_next_level` over abbreviations. Name units where ambiguity matters, for example `cooldown_turns` for world time and `flash_seconds` for real-time visuals.
 
 Follow existing scene organization. Introduce a helper, Resource type, signal, or additional node only when it makes the current behaviour easier to express or maintain. Do not add a global manager or event bus by default.
 

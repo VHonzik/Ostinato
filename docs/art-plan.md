@@ -1,97 +1,69 @@
-# Reduced valley and sprite plan
+# Valley art direction
 
-Layout guidance for the valley and the owner’s art work. Keep Northshire recognizable
-through the abbey, wolf woods, mine, vineyard and gate. Aim for a few encounters
-with clear silhouettes and space to maneuver. Enemy counts and pacing await play.
+Visual guidance for the playable valley. Use the owner's [map sketch](map.svg) for
+composition and [art workflow](../art/README.md) for editable sources and runtime sheets.
+Current placements and NPC identities live in [the content reference](npc-dialogue.md).
 
-## Valley sketch
+## Valley layout
 
-Use the owner’s [map sketch](map.svg) as the layout reference, replacing the earlier
-text map. The game map now connects the abbey, western wolf woods,
-northern camp and mine, southeastern vineyard, eastern ridge and southwestern gate.
+![Owner's valley map sketch](map.svg)
 
-![Owner’s valley map sketch](map.svg)
+Keep the abbey, western wolf woods, northern kobold camp and Echo Ridge Mine,
+southeastern vineyard, eastern ridge and southwestern gate recognizable. Garrick
+occupies the eastern vineyard; the player starts south of the marshal, and stalkers
+enter by the guard on the gate road. Three chests reward exploration.
 
-The sketch places wolves west of the abbey, easier kobolds to the north and harder
-kobolds farther north in the mine. Bandits occupy the southeastern vineyard, with
-Garrick at the eastern end. The player starts south of the marshal; the guard stands
-at the southwestern gate, with stalkers approaching from outside. Three marked chests
-provide exploration destinations. Use the sketch for approximate relative distances,
-then adjust routes and encounters through play.
+The playable scene is 84×82 tiles, with five tiles between player spawn and marshal.
+The sketch guides proportions and relative distances; the scene holds exact placements.
+Keep both axes at the same scale when adapting the sketch.
 
-Use the nine friendly contacts shown: marshal, Willem, Milly, guard, Llane, Jorrick,
-Sammuel, shaman and trader. Give each a distinctive prop and outline. The shaman’s
-name/story and the trader’s exact services can be settled with their gameplay work.
-The previous stream, bridge and woods-to-mine shortcut are no longer part of this plan.
+- The mine shares the outdoor map, with no scene transition.
+- The abbey entrance is on its south edge; doorways connect usable interior spaces.
+- Trees, walls and vine trellises block movement. Flowers, bushes, decorative rocks
+  and grass remain passable; tile custom data defines movement and sight blocking.
+- Preserve routes to contacts, mine, gate and chests when placing terrain details.
+- Give the ten friendly contacts distinctive outlines or props, including Janos,
+  Khelden and the four named class trainers.
 
-## Scale and blocking
+## Visual direction
 
-The measured sketch bounds are 570×550px; the player-to-marshal vertical distance
-is 34px. Set that distance to about five tiles, giving 6.8 sketch pixels per tile
-and an approximate 84×81-tile map (roughly 80 tiles tall). Scale both axes equally;
-the sketch guides proportions rather than requiring an exact trace of every line.
+Use nearest-neighbor sampling, transparent actor/prop backgrounds and a 32×32 world
+tile. Reference 16×16 art is doubled; valley atlas cells are 32×32. Start with one
+pose per actor; animation is optional. Keep editable sources and runtime atlas
+coordinates aligned when replacing art.
 
-- The mine shares the outdoor map; there is no separate mine scene or transition.
-- The abbey entrance is on its bottom/south edge.
-- The black-and-white interior shapes have blocking perimeters except at entrances.
-  Connect the usable interior spaces through doorways.
-- Add movement-blocking trees across the west, south and north sides. Trees are
-  omitted from the sketch; place them around its routes and encounter areas while
-  preserving access to the gate, NPCs, mine and chests.
+Favor solid silhouettes, sparse interior details and little shading. Friends should
+read as resolute adults; hostile creatures should look dangerous. Distinguish roles
+through outlines and props before relying on color. Use full-body NPCs with visible
+feet and distinctive equipment.
 
-Exact doorway widths, internal connections, tree positions and enemy placements
-can be settled in the first playable map prototype. No further sketch detail is
-needed to start that work.
-
-## First spritesheet
-
-32×32 cells, transparent actor/prop backgrounds, nearest-neighbor sampling. Start
-with one facing/pose per actor; animation is optional later. Buildings assemble from
-tiles and props. Keep the atlas layout flexible until these shapes have been tried
-in game. Keep [editable Aseprite sources and runtime sheets](../art/README.md) aligned
-when replacing art or moving atlas cells.
-
-Favor minimal solid silhouettes, sparse interior details, and very little shading,
-close to the existing reference sheets. Friends should read as resolute adults;
-hostile creatures should look dangerous rather than cute or sad. Distinguish roles
-through their outlines and props before relying on color. Use full-body NPC sprites
-with visible feet and distinct equipment, like the original character sheet.
-
-| Group | Sprites to draw | Distinction to aim for |
+| Group | Art coverage | Visual aim |
 | --- | --- | --- |
-| Player | Warrior, rogue, shaman, paladin | Broad weapon, low hood, totem, shield; recognizable beyond color |
-| Friends | Marshal, Willem, Milly, gate guard, four mentors, trader | Plume/map, robe/book, basket, spear, four class props, trader’s satchel/scales |
-| Enemies | Wolf, kobold miner, harder kobold/foreman, bandit, Garrick, stalker | Animal vs humanoid shapes; leaders differ in silhouette; stalker unmistakable |
-| Remains | Shared corpse | One sprite for all creatures; lootability remains a UI marker |
-| Ground | Plain outdoor background; dirt road, abbey floor, mine floor, tilled soil | No repeating grass tiles; keep surfaces quiet beneath actors |
-| Boundaries | Original abbey wall tiles; cliff faces at valley edges; doorway/corner refinements | Rotate or reuse where lighting permits; add junctions only if the sketch needs them |
-| Nature | Broadleaf tree, pine, bush, boulder, small rock, grass tufts | Trees and boulders block; sparse grass is passable, with fewer tufts in woods |
-| Landmarks and props | Abbey entrance/cross, banner, bench, brazier; mine mouth, timber support, cart, ore; vine trellis, grape basket; gate post, fence/end, signpost | Distinct landmark clusters built from reusable pieces |
-| Interaction props | Closed/open chest, crate, dropped bag | Reuse across branches; keep chest states visibly different |
+| Player | Warrior, Rogue, Shaman, Paladin | Recognizable weapon, hood, totem and shield silhouettes |
+| Contacts | Marshal, Willem, Janos, Khelden, Milly, guard and four trainers | Distinct roles, class props and equipment |
+| Enemies | Young/Timber Wolves, three kobold types, Defias Thug, Garrick, stalker | Readable species and ranks; unmistakable stalker |
+| Remains | Shared corpse art | Lootability communicated by interaction/UI |
+| Ground | Plain outdoors, dirt road, abbey/mine floors, tilled soil | Quiet surfaces beneath actors; no repeating grass field |
+| Boundaries | Abbey walls, cliffs, entrances and corners | Clear blocking and connected walkable interiors |
+| Nature | Trees, bushes, rocks, flowers and sparse grass tufts | Fewer tufts in woods; readable routes |
+| Landmarks | Abbey cross, banner, bench, brazier; mine supports/cart/ore; trellises/baskets; gate/fence/signposts | Recognizable clusters built from reusable props |
+| Interaction props | Closed/open chests, crates and dropped bags | Clear chest states and consistent silhouettes |
 
-The owner-selected characters, abbey entrance/walls, trees, stones, flowers, grass, chests
-and shared corpse use the original scroolo sheets, doubled to the world tile size.
-Other sprites retain the selected valley atlas. NPC facing remains part of combat,
-without a direction line drawn over the sprite. Each tile shows one sprite: the player
-or a living actor covers corpses, chests and terrain; scenery covers ground art.
+## Actor layers and UI
 
-Use shared corpse and prop art rather than a sprite for every historical NPC/item.
-The old mage and other retiring classes keep their placeholder art during the transition.
+Living actors have separate base and faction textures. Base tint shows health;
+faction art uses green for friendly, yellow for neutral and red for hostile actors.
+Most NPCs use a corner heart base; Stalker and Earth Elemental have dedicated bases.
+Quest offers/ready hand-ins alternate faction art with an exclamation mark, and
+engaged hostiles blink a red exclamation mark. The player uses class art without a
+faction layer. Appearance and readability need human review.
 
-## UI and effects
+Living occupants cover terrain decorations, chests and corpses on their tile.
+Ability effects can temporarily replace actor art or flash fixed ground; see
+[class mechanics](class-mechanics.md) for current effect cells, timing and placement.
 
-Ability icons can follow the chosen toolkit as the world art is refined.
-
-Keep panel frames, text, player bars, slot borders and selection markers drawn by Godot.
-Friendly contacts are green. Available quests and ready turn-ins blink between the
-contact and the reference exclamation sprite. Neutral creatures are yellow and hostile
-creatures red, with no relationship underline. Injured enemies blink dark red.
-Use a small shared set of 32px icons initially: weapon strike, bleed, poison,
-wind, lightning shield, blessing/seal, healing and a generic effect fallback.
-Reuse the relevant ability icon for its buff; show remaining turns in text. Final
-ability-specific icons follow the chosen toolkit, rather than the old spell catalog.
-
-The current screen uses text placeholders in slots and for active effects. The next
-art pass should refine player/hostile silhouettes, remains and terrain joins in the
-expanded map. Outdoor ground stays plain, with trees, stones, flowers and sparse
-grass tufts. Use fewer grass tufts in wooded areas.
+Follow the owner's [UI sketch](UI_design.svg). Keep panel frames, text, health/rage/XP
+bars, hotbar borders, selection markers and ground outlines drawn by Godot. Hotbar
+slots and active effects use text labels; icons can be refined alongside the toolkit.
+Prioritize player/enemy silhouettes, terrain joins and clear effects without adding
+visual noise to the plain outdoor ground.

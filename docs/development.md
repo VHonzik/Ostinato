@@ -1,7 +1,6 @@
 # Development
 
-Windows x64, Godot Compatibility renderer, typed GDScript. The current game is in the
-warrior-first pivot; [direction](direction.md) describes planned changes.
+Windows x64, Godot Compatibility renderer, typed GDScript.
 
 ## Setup and launch
 
@@ -21,250 +20,66 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 
 ## Current build
 
-**New Game** launches the sketch-based valley, the sole playable game map.
-The marshal offers the western woods, northern camp and mine objectives; Willem
-asks you to enter the mine, approach the vineyard and explore the wolf woods, and Milly offers the vineyard encounter. The marshal
-includes both young and timber wolves in one western-woods quest. Trees, walls
-and vine trellises block movement; flowers, bushes, small stones and sparse grass tufts are
-decorative. Grass appears less often in wooded areas. Outdoor ground is plain. Both
-wolf types and outdoor kobold vermin are neutral until attacked; all mine kobolds and
-bandits are hostile. The road south of the southwestern gate admits timed stalkers beside the guard.
-Outdoor enemies wander locally with random pauses and staggered starts; mine kobolds,
-Garrick and stalkers stay put when idle. Saves retain pending wandering deadlines.
-Closed chests block movement; bumping a chest opens the loot menu without collecting
-anything or spending a turn. Remaining loot reopens the menu on later bumps; empty
-chests no longer intercept movement. Full bags preserve uncollected items.
-There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
-available quests and ready turn-ins alternate the faction layer with an exclamation mark.
-Engaged hostile enemies blink a red exclamation mark. Quest lists use yellow ! for offers,
-gray ? for unfinished quests and yellow ? for ready turn-ins, with quest-specific
-offer/progress/completion text and objectives/rewards on the detail screen.
-A separate base layer shows health. Most NPCs temporarily use a corner heart; Stalker
-uses its own health/faction pair and Earth Elemental its own health base. The player uses
-its current class artwork with an empty faction layer.
-The upper-right quest tracker lists accepted quests and objective progress, marking
-finished objectives and ready quests completed. Handed-in or abandoned quests disappear.
-The engaged enemy frame shows its name, health and a yellow marker while it is needed
-for an accepted quest objective. Fresh Loops include food with an upper-right hotbar
-shortcut; Eating shows the next healing tick and remaining duration.
-Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
-corpses with items or money remain available for looting; the story guard's corpse remains.
-Bumping a newly killed enemy opens loot until the player next moves; later corpse
-interactions still use F. Inventory turns green while Bags contain a higher-quality
-item for an equipped slot. Empty slots still auto-equip received gear.
-Death rebuilds the
-map, contacts, enemies and chests, preserving learned abilities and hotbar.
-Janos Hammerknuckle supplies starter gear for the selected class and trades. Llane teaches Warrior unlocks;
-Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
-and Rogue kits. Trainers show current level requirements and gold prices, with free
-starter skills and gray learned entries. Unlearned entries come first, then learned entries; each group sorts by required level,
-price and name. Learning is permanent; prices remain provisional.
+**New Game** launches the valley, the sole playable map, as a Warrior with Mortal
+Strike and Whirlwind. Speak to Marshal McBride north of spawn, ask Janos inside the
+abbey for starter gear, and use quests, trading and training to prepare for the gate.
+Death rebuilds the physical world; learned abilities and hotbar assignments persist.
+Returning Loops begin with class selection; other classes unlock from Loop three.
+Defeat every currently present stalker to win.
 
-New Game starts a warrior with rage, Mortal Strike and Whirlwind, wearing travel clothes.
-Ask Janos inside the abbey for spare class gear once each Loop. The marshal offers
-warrior referrals. Loop two offers only Warrior; the other classes become selectable
-from Loop three. Speak to the marshal before accepting any quest.
-Returning Loops show class selection first,
-focusing the previous class; choosing immediately reveals quests and locks the class until death.
-Other NPCs redirect you to the marshal until you choose. Warrior always uses "I am warrior";
-other Loop three choices begin "I am ...." and from Loop four begin "I am". Class choice keeps gear and names the
-matching trainer. The first selection of each new class shows the marshal's skeptical
-introduction naming that trainer and Janos Hammerknuckle; later selections mention
-Janos's supplies and the matching trainer's class guidance. Choice history persists
-across deaths and saves,
-even if no skills were trained; New Game clears it and starts with Warrior known.
-Visit that trainer to learn the class's starter skills for free, with
-no level requirement; new actives prefer empty slots in the upper row for maintenance
-buffs and the lower row for rotation and situational abilities, using the other row
-when needed. Existing assignments are preserved. Learning is permanent and needs
-no relearning in later Loops. The initial Warrior pair remains known at New Game.
-Milly now stands inside the abbey, and Farseer Lopaa uses the placement in the valley scene. Fixed contacts reload scene
-placements when continuing a save; New Game and death reload the scene from disk.
-The northeast corner wall of the northern abbey room is a hidden passable tile,
-retaining the ordinary wall art until a later visual hint is added.
-Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
-Held movement waits 0.5 seconds, then repeats every 0.15 seconds.
-F interacts; I inventory; K spells; J quests; P character; hotbar: 1–6, R, T, G, V; Shift for the upper row.
-M opens the player menu.
-Enter confirms, Escape cancels/opens Options, F11 toggles fullscreen.
-Bump a friendly NPC to interact; bump a stationary neutral enemy twice to attack.
-Mortal Strike uses your last attacked enemy in combat; before your
-first attack, choose an enemy in melee range. Automatic attacks continue on that enemy
-while it remains in melee range, including turns spent moving, waiting and using abilities.
-Whirlwind casts directly from the hotbar against adjacent enemies, preserving the
-selected attack target and ordinary swing timing. Heroic Strike and Incite are removed.
-Early Warrior training adds Enrage from surviving enemy hits and passive Death Wish,
-which increases physical damage dealt and damage taken as health falls. Its aura shows
-the current tradeoff. Warrior Flurry is removed; Shaman retains its own Flurry.
-Cooldown attempts end immediately before target selection and spend no turn.
-The action effect resolves before player swings, followed by enemy actions. No attacks
-are banked out of range and target changes keep the weapon's remaining delay.
-Ordinary player swings and enemy melee attacks against the player show sequential
-bumps, including misses. The action input gate stays closed until the bumps finish;
-pending melee/casts still allow cancellation, except Charge. Bumps spend no extra turns.
+Use the authoritative references for current content and code entry points:
 
-Start with the marshal north of spawn; Willem stands west of the abbey. K → Development provides
-XP, gold, Death trigger, and Kill stalker for quick experiments. The stalker
-arrival schedule lives in the valley data. The first arrival kills the gate guard early
-enough for a direct route to witness it. Defeating every present stalker immediately wins;
-escape beyond the valley is the story outcome, with no gate lock or crossing action.
-Death resets the attempt, preserving
-learned abilities and hotbar. Visit Llane inside the abbey to buy Battle Shout,
-Anger Management, Charge or Execute once your level and gold meet their requirements. Use the spell book to rearrange learned actives.
-Execute uses the committed melee target, requires low target health, and shows current rage spending
-in its tooltip and target picker. Its one-turn attack keeps weapon timing running; optional combo
-empowerment remains for a later slice. Charge's wind-up and automatic
-travel keep the player casting until arrival, blocking other actions and cancellation.
-Charge arrival also allows the ready weapon to attack its target. These are current
-mechanics; tuning and remaining v0.1 mechanics still need playtesting.
-After all Warrior training is learned, Llane offers a reusable War Horn once each Loop.
-Use it from Bags or the hotbar: a two-turn cast pulls neutral and hostile NPCs across
-the current screen, requiring sight, with a 30-turn cooldown after completion. It
-grants no combo points or attack procs and keeps the selected attack target. Death
-removes the horn; retained learning lets you claim another in the next Loop.
-After all Rogue training is learned, Jorik offers Lucky charm through the same farewell
-dialogue once each Loop. Carrying it in Bags passively prevents one lethal hit, leaving
-1 HP and replacing it with an inert Broken lucky charm. A later hit can still kill you.
-Both forms are lost on death; saves retain the item and gift claim.
-After all Paladin training is learned, Brother Sammuel offers Wartorn Banner through
-the same once-per-Loop farewell dialogue. Its free one-turn use plants a nonblocking
-banner beside you for 10 turns, giving you and friendly summons within 3 tiles 10% less
-damage taken. Bags and hotbar support use; the ground outline and HUD show protection.
-Saves retain the item, planted banner and claim. Death clears them and permits a new
-gift with retained learning. The item and its claim persist in current saves.
+- [Class mechanics and abilities](class-mechanics.md): training, costs, combat rules,
+  passives, effects and trainer gifts.
+- [Quests, dialogue and NPCs](npc-dialogue.md): contacts, objectives/rewards, speech,
+  encounter profiles, arrivals and Loop state.
+- [Game direction](direction.md): design goals and open gameplay decisions.
+- [Art workflow](../art/README.md) and [art direction](art-plan.md): sources and presentation.
 
-Shaman starts with Lightning Shield and Lava Burst; Paladin with Seal of
-Command and Judgement; Rogue with Eviscerate and the Relentless Assault passive.
-All use rage. Retained abilities/passives work in every class. Training spends gold,
-requires the current Loop's level, and does not spend player XP. Relentless Assault builds player-held
-combo points from landed direct active attacks and ordinary main-hand hits, across
-classes and targets, with one base point per world turn. Seal Fate can add an extra point
-on an active crit; off-hand hits and bonus damage grant none. Eviscerate needs points
-and a melee target and spends all held points on its physical attack. Learned Slice
-and Dice adds attack haste using those same spent points, even on a miss. Slice and Dice
-cannot be cast or assigned separately. Eviscerate inherently rolls a rage refund after
-spending; combo points are never refunded. Opportunity is removed; Seal Fate and Bandit's Guile
-continue to reward qualifying retained class attacks. Seal of Command is always on
-once learned; it has no cast, refresh or hotbar slot. Blessing of Kings is also passive: active
-Battle Shout grants +2 Strength, Agility and Stamina, without healing when refreshed.
-All four class kits are available, including their actives and passives. The spell book
-describes their provisional mechanics; passives can be focused and inspected but cannot
-be cast or assigned. New catalogue data lives in
-[class_toolkit_data.gd](../scripts/hero/class_toolkit_data.gd), alongside the existing
-[starter and Warrior data](../scripts/hero/class_skill_data.gd).
-Every class can equip any gear without level or learning requirements.
-Ambidexterity improves off-hand damage when learned.
-Lightning Shield and Windfury cost no rage but still use a world turn. Lava Burst
-deals flat Fire damage independent of weapon damage and Strength. Its base cast takes
-three turns. Maelstrom Weapon banks up to five stacks from the first landed primary
-physical attack per action; stacks shorten the cast and improve critical chance. Five
-stacks make it instant, still spending one turn. The HUD shows stack count and the
-tooltip shows current cast time. Reserved stacks are spent only on valid completion,
-including a miss; cancellation preserves them. Earth Shock control effects are removed. Strength of Earth
-Totem and Elemental Warding are removed. Earth Elemental is now summoned by the
-single-use Ancestral totem item, Farseer Lopaa's farewell gift after all Shaman training.
-Use it free in one turn from Bags or the hotbar; failed placement preserves the item.
-The elemental follows the player or an
-engaged target and repeatedly taunts nearby engaged hostiles in sight. It lasts until
-killed or Loop reset and blocks resummoning while alive. The gift is once per Loop;
-death removes the item and summon and permits another gift with retained learning.
-Lightning Shield includes its stronger six charges, and Windfury includes its stronger
-bonus strikes without separate upgrade purchases.
-Hands have independent timers; due swings resolve in time order, with main-hand first
-on ties. Feral Spirit creates a temporary pair of wolves following your selected enemy,
-inherently healing you from their actual damage dealt.
-Instant and Deadly Poison cost no rage and become available together at the Rogue trainer; Catalytic
-Venom unlocks later. Casting either coating with dual wield opens a hand picker:
-directions choose main hand, off hand or both; Enter applies, Escape cancels freely.
-Each hand keeps its own coating and expiration, shown separately in the aura display.
-Single-weapon setups coat the main hand directly. Catalytic Venom rewards Instant
-on the faster base-speed weapon and Deadly on the slower; equal-speed pairs do not
-catalyze. Deadly stacks belong to each enemy and tick at the turn boundary, retaining
-fractional damage across ticks. Saves retain coatings, stacks and pending tick damage.
-Finishers spend all held points before refunds; Execute and Judgement do not spend points.
-Consumable procs wait until used or death. Timed hero buffs expire at the advanced turn
-boundary before player swings and enemy attacks. The same phase expires summons and
-ordinary combat debuffs, then resolves Judgement, Consecration and Deadly
-Poison in that order. Their handlers preserve the final verdict or poison tick.
+### Controls
 
-The character screen shows Strength, Agility, Stamina, Armor, Crit and attack haste,
-with weapon power and dodge as derived values. Gear works equally in all four classes.
-Equipment has five slots: armor, neck, two rings and one weapon setup. Two-hand,
-weapon-and-shield and dual-wield pairs each occupy one inventory/equipment slot.
-Janos sells common gear, finite healing potions and unlimited food. Quest rewards cover
-the common loadout; the mine and vineyard award final weapons. Mobs can drop poor gear
-or rare uncommon upgrades; each chest guarantees common or uncommon equipment.
-Poor/common/uncommon names appear gray/white/green; other item text stays white.
-Bags and equipment replacement lists display uncommon, common, then poor items,
-alphabetically within each quality. Actions retain the original inventory slots.
-Selecting a replacement for an equipment slot previews stat gains and losses against
-that exact slot, including either ring. Shields contribute armor.
-Common and uncommon accessories have primary and secondary bonuses. Crit and haste
-use direct percentage bonuses. Strength increases weapon power; Agility adds crit and
-dodge. Weapon-based physical, Holy and Nature damage keeps fractional power until the
-final integer result, using the existing weapon roll for unbiased rounding.
-Mana, caster stats and the obsolete class catalogues
-are removed, along with parry, glancing, crushing and spell resistance.
-Warrior's later Shield Block passive partially reduces physical hits while a shield
-is equipped, with prevented damage shown in the combat log. Equipment can be replaced
-in combat for one turn; the new setup applies before that turn's swings and enemy attacks.
+Movement, hotbar and menu bindings can be changed in Options → Keybindings.
 
-Ordinary enemy and stalker tuning lives in
-[northshire_data.gd](../scripts/world/northshire_data.gd); level-gap modifiers live in
-[melee_rules.gd](../scripts/combat/melee_rules.gd). New spawns and Loops use the current
-profiles; saved actors keep their recorded stats. The current
-[simulation bench](../bench/README.md) compares kits, weapon setups and encounters
-using the live game model; generated results stay under ignored `reports/bench/`.
-Garrick has 220 HP and 10–13 base melee damage, retaining level 5, 105 armor and
-a 2.6-turn swing interval. The tuning reference is a level-four Warrior with Battle
-Shout, Weapon Mastery, Charge and Execute, common armor/neck/remaining ring, plus a
-green shield setup and one green ring. Isolated fights begin at full health and zero
-rage, prepare Shout live and use no consumables or XP heals. Level-three/common-gear
-controls are harder; level five or additional learning makes the encounter easier.
+| Action | Default input |
+| --- | --- |
+| Move | WASD + QEZC, arrows or numpad |
+| Wait | Period / numpad 5 |
+| Interact | F; bump friendly NPCs; bump a stationary neutral twice to attack |
+| Inventory / spells / quests / character | I / K / J / P |
+| Player menu | M |
+| Lower hotbar | 1–6, R, T, G, V |
+| Upper hotbar | Shift plus the same keys |
+| Confirm / cancel | Enter / Escape |
+| Options / fullscreen | Escape when no action/menu is open / F11 |
 
-Stalker uses [Fel Breath](../scripts/world/stalker_breath.gd): after four normal engaged
-turns it stops and marks a locked 1–3–3 shape. The tip is the target's tile when
-wind-up starts; the next two rows extend away from the Stalker. Diagonal casts use
-diagonal three-tile rows. Only passable terrain in sight receives warning/damage. Two complete player
-response turns follow; release occurs after that turn's player spells and weapon swings.
-It waits ten normal turns between casts; announcement and both response turns replace
-movement and melee. Its weapon timer resets to a full interval and stays paused until
-release; player weapon timers keep ticking while dodging.
-Stuns and Vanish delay new starts; a committed breath still releases. Walls block it,
-and it delays starting if the player has no escape within two ordinary moves.
-The cone deals 60 base Fire damage with level scaling (81 against level five), no
-armor, block, dodge or critical rolls, and the usual explicit damage defenses.
-Friendly summons in the area are hit too. Direction and tip stay fixed while
-the Stalker flashes its wind-up art for 1.5 seconds on each wind-up turn. Cone tiles
-show slightly transparent red art on wind-up turns and release over existing actors;
-countdown and red outlines persist while the player considers a move.
-Enrage and regeneration remain experimental bench variants, outside the live encounter.
+Held movement waits 0.5 seconds, then repeats every 0.15 seconds. Targeted abilities
+use the committed enemy or a target picker according to their rules. Automatic
+swings continue against the selected enemy in melee during movement, waiting and
+abilities. Attack bumps animate sequentially; input waits for them to finish.
+K → Development provides XP, gold, Death trigger and Kill stalker in development builds.
 
-Judgement retains its delayed verdict. It fixes damage and hit/critical results when
-cast, shows a countdown on its target, and delivers the verdict before due weapon swings
-and enemy actions. Impact ignores current range and never changes the selected target;
-a target dying early loses its sentence. It casts on the engaged target and its hotbar
-label turns red without learned Seal of Command. Art of War empowers a stronger critical,
-and Judgement includes its flat
-damage bonus without shortening the fixed base cooldown through haste.
-Divine Purpose, Eye for an Eye and combo-point refunds are removed. Existing Holy/critical rewards happen on impact.
-Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
-Its periodic damage grants no attack procs or combo points and supplies no mitigation.
+### Equipment and interaction
 
-Current saves are `demo` revision 1 after squashing the experimental schema, with
-gear stats rebuilt from equipment on load. Other revisions are incompatible and left
-unchanged; start a fresh game. Saves include the locked breath tip/direction, countdown
-and cadence and the stationary corpse-loot shortcut.
-No save migration is provided.
-Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
-primary-stat buff fields. Failed writes/loads preserve existing player files.
-Existing split wolf-quest records remain finishable; fresh routes offer the combined quest.
-Committed Judgement verdicts and Consecration ground persist across saves;
-both clear with the physical world on death.
-Victory requires defeating all present stalkers.
-Valley saves retain their map identity. Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`;
-global settings are in `options.json` beside that directory. Tests use isolated save locations. Preserve user
-files during failures and declare future compatibility breaks explicitly.
+Equipment uses armor, neck, two rings and one weapon setup. Two-hand, shield-pair
+and dual-wield setups each occupy one slot. All classes can use all gear. Bags sort
+by quality, then name; replacement previews compare the selected equipment slot.
+Empty equipment slots auto-equip received gear. An inventory hint marks higher-quality
+bag items available for equipped slots.
+
+Closed chests block movement. Bumping opens their loot menu without collecting or
+spending a turn; full bags preserve uncollected loot. Bumping a newly killed enemy
+opens loot until the player moves; later corpse interaction uses F. Ordinary
+loot-bearing corpses hide after 300 turns; the guard's corpse remains.
+
+### Saves and settings
+
+Saving requires an action boundary outside combat. Five slots use the `demo` family,
+revision 1; other revisions are incompatible and left untouched. No migration is
+provided. Failed writes/loads preserve existing files and the running world.
+
+Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`; global settings are in
+`options.json` beside that directory. Tests use isolated save locations. See the
+content references above for effect, quest and NPC persistence.
 
 ## Editing the valley
 
@@ -296,8 +111,10 @@ The TileSets under [assets/tilesets](../assets/tilesets/) reference the existing
 sheets directly. Their `sprite`, `blocked` and `indoors` custom data feeds the grid
 model; Godot physics collision shapes are not used for movement.
 
-Start a New Game after layout edits. Existing saves retain their recorded actors,
-collision and indoor state; this conversion preserves the current save format.
+Start a New Game to test the complete edited layout. Saves retain enemy/chest placements,
+collision and indoor state; fixed contacts except the guard follow current scene
+positions on load. The northeast corner of the northern abbey room is passable despite
+its wall art.
 
 ## Checks
 
@@ -346,12 +163,7 @@ successful run for debugging. No written validation report is required.
 - `docs/direction.md`: durable intent; `docs/backlog.md`: local work, separate from design.
 
 Follow [coding-style.md](coding-style.md); preserve `.gd.uid` and asset `.import` files.
-Keep numerical data in code. Refactor a subsystem when its current task benefits, not
-as a prerequisite to the pivot. The existing folder layout needs no wholesale move.
+Keep numerical data in code. Refactor only when it helps the current task.
 
 Work stays local unless requested otherwise. Summarize changes and useful playtest
 steps in chat; create no handoff file. Humans choose what to test and commit.
-
-Natural health regeneration is 1.5 HP per turn at levels 1–2 and 0.3 thereafter,
-only outside combat. The thin yellow XP bar above health shares its width, visibility
-and 80% opacity. Opening chat points to the marshal and changes across returning Loops.

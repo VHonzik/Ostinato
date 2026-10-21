@@ -37,6 +37,9 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
   removed-content lists, earlier-version comparisons or proposed dialogue. Keep ability
   and trainer-gift effect details in class-mechanics.md and link to them rather than
   duplicating ability tables. Keep future story/design work in direction/backlog.
+- Keep supporting guides focused on setup, workflows and durable direction. Link to
+  the authoritative content references instead of repeating their current mechanics,
+  dialogue or tuning. Remove stale implementation claims and project-history recaps.
 - Research only when it resolves a concrete uncertainty. Vanilla accuracy is optional.
 
 ## Implementation and checks
