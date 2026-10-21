@@ -118,6 +118,7 @@ func test_arrival_can_aggro_but_first_moves_or_attacks_in_next_shared_phase() ->
 		assert_eq(stalker.tile, Vector2i(54, 14))
 		assert_eq(world.hero.health, health)
 		assert_eq(stalker.swing.remaining, 0.0)
+		stalker.melee.ignores_dodge = true
 		stalker.melee.hit = 100
 		stalker.melee.critical = 0
 		stalker.melee.damage_min = 1

@@ -33,7 +33,7 @@ func test_new_game_starts_warrior_with_rage_sprite_and_two_abilities() -> void:
 	assert_eq(game.world.hero.learned_skills.size(), 2)
 	assert_null(game.world.hero.find_skill(&"fireball_1"))
 	assert_eq(GridView.class_sprite(game.world.hero.selected_class), Vector2i(0, 0))
-	assert_eq(game.world.actor_at(Vector2i(31, 34)).service, &"Warrior")
+	assert_eq(game.world.actor_at(NpcDefinition.find(911).tile).service, &"Warrior")
 	game.world.hero.health = 0
 	assert_true(game.restart_after_death())
 	assert_false(game.select_class(&"Shaman"))
@@ -711,11 +711,12 @@ func test_charge_hotbar_targets_enemy_and_live_ui_cannot_cancel_or_pause_travel(
 func test_friendly_bump_opens_that_contacts_conversation_without_spending_a_turn() -> void:
 	var world := ValleyRoute.create_world(97, false)
 	world.class_selected = true
-	world.player_tile = Vector2i(30, 34)
-	var trainer := world.actor_at(Vector2i(31, 34))
+	var trainer := world.actor_at(NpcDefinition.find(911).tile)
+	world.player_tile = trainer.tile + Vector2i.LEFT
+	var start_tile := world.player_tile
 	var gameplay := _live_gameplay(world)
 	assert_false(world.move_player(Vector2i.RIGHT))
-	assert_eq(world.player_tile, Vector2i(30, 34))
+	assert_eq(world.player_tile, start_tile)
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.movement_credit, 0.0)
 	assert_eq(gameplay.menu.page, "conversation")

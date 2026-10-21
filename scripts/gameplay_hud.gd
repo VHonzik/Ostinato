@@ -16,7 +16,7 @@ func show_game() -> void:
 
 func hide_game() -> void:
 	for path in ["Top", "Bottom", "PlayerMenu", "Auras", "RageBar", "HealthBar",
-		"ComboPointBar", "MaelstromWeaponBar", "QuestTracker", "Enemy"]:
+		"ComboPointBar", "MaelstromWeaponBar", "QuestTracker", "Enemy", "ExperienceBar"]:
 		(get_node(path) as Control).hide()
 
 
@@ -34,6 +34,12 @@ func refresh(world: GridWorld, loop_count: int, options: GlobalOptions) -> void:
 	$PlayerMenu/Buttons/Character.text = "Character (%s)" % options.key_label(&"character")
 	$PlayerMenu/Buttons/Spells.text = "Spells (%s)" % options.key_label(&"spell_book")
 	$PlayerMenu/Buttons/Inventory.text = "Inventory (%s)" % options.key_label(&"inventory")
+	var upgrade := InventoryRules.has_quality_upgrade(world.hero)
+	for state in HotbarPanel.LABEL_COLOR_STATES:
+		if upgrade:
+			$PlayerMenu/Buttons/Inventory.add_theme_color_override(state, Color("70d779"))
+		else:
+			$PlayerMenu/Buttons/Inventory.remove_theme_color_override(state)
 	$PlayerMenu/Buttons/Interact.text = "Interact (%s)" % options.key_label(&"interact")
 	$PlayerMenu/Buttons/Quests.text = "Quests (%s)" % options.key_label(&"quest_log")
 	var hero := world.hero
@@ -55,6 +61,10 @@ func refresh_resources(world: GridWorld, show_resources: bool) -> void:
 	$HealthBar.modulate.a = 0.8
 	$HealthBar/Fill.max_value = world.hero.max_health
 	$HealthBar/Fill.value = world.hero.health
+	$ExperienceBar.visible = $Auras.visible
+	$ExperienceBar.modulate.a = 0.8
+	$ExperienceBar/Fill.max_value = world.hero.experience_to_next_level()
+	$ExperienceBar/Fill.value = world.hero.experience
 	$RageBar.modulate.a = 0.2 if world.hero.rage == 0 else 0.8
 	$RageBar/Fill.max_value = HeroState.MAX_RAGE
 	$RageBar/Fill.value = world.hero.rage

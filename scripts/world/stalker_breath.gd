@@ -29,11 +29,11 @@ static func act(world: GridWorld, actor: GridActor) -> bool:
 		actor.breath_normal_turns += 1
 		return false
 	var target := NpcTarget.new(world, SummonRules.enemy_target(world, actor))
-	actor.breath_direction = MeleeRules.facing_toward(target.tile - actor.tile)
+	actor.breath_direction = MeleeRules.direction_toward(target.tile - actor.tile)
+	actor.breath_origin = target.tile
 	# Do not announce an unavoidable hit when terrain or occupants box the player in.
 	if not _can_escape(world, actor):
 		return false
-	actor.facing = actor.breath_direction
 	actor.breath_remaining = WINDUP_TURNS
 	actor.breath_normal_turns = 0
 	actor.breath_started = true
@@ -50,23 +50,24 @@ static func reset(actor: GridActor) -> void:
 	actor.breath_normal_turns = 0
 	actor.breath_started = false
 	actor.breath_direction = Vector2i.ZERO
+	actor.breath_origin = Vector2i(-1, -1)
 
 
 static func threatens(world: GridWorld, actor: GridActor, tile: Vector2i) -> bool:
-	var offset := tile - actor.tile
-	var direction := actor.breath_direction
-	var forward := offset.x * direction.x + offset.y * direction.y
-	var side := absi(offset.x * direction.y - offset.y * direction.x)
-	return (world.bounds.has_point(tile) and GridWorld.tile_distance(actor.tile, tile) <= RANGE
-		and forward > 0 and side <= forward and world.has_sight(actor.tile, tile))
+	return tiles(world, actor).has(tile)
 
 
 static func tiles(world: GridWorld, actor: GridActor) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
-	for y in range(-RANGE, RANGE + 1):
-		for x in range(-RANGE, RANGE + 1):
-			var tile := actor.tile + Vector2i(x, y)
-			if threatens(world, actor, tile):
+	var direction := actor.breath_direction
+	if direction == Vector2i.ZERO:
+		return result
+	var side := Vector2i(-direction.y, direction.x)
+	for row in range(RANGE):
+		for column in range(0 if row == 0 else -1, 1 if row == 0 else 2):
+			var tile := actor.breath_origin + direction * row + side * column
+			if (world.bounds.has_point(tile) and not world.blocked_tiles.has(tile)
+				and world.has_sight(actor.tile, tile)):
 				result.append(tile)
 	return result
 

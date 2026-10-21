@@ -1026,7 +1026,7 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	world.hero.learned_skills.clear()
 	for skill in SkillDefinition.starting_skills():
 		world.hero.learn_skill(skill)
-	world.player_tile = Vector2i(30, 33)
+	world.player_tile = NpcDefinition.find(911).tile + Vector2i.UP
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
@@ -1372,7 +1372,7 @@ func test_quest_log_keyboard_accept_hand_in_abandon_and_focus_do_not_advance_tim
 	await _tap_key(KEY_ESCAPE)
 	await _tap_key(KEY_J)
 	assert_eq(_game.menu.page, "quests")
-	assert_string_contains(_game.menu._buttons[0].text, "In progress")
+	assert_string_contains(_game.menu._buttons[0].text, "? ")
 	var position := _game.world.player_tile
 	await _tap_key(KEY_S)
 	assert_eq(_game.world.player_tile, position)
@@ -1409,7 +1409,7 @@ func test_accepting_quests_focuses_the_next_available_quest_until_all_are_accept
 	_game.menu.open_conversation(marshal)
 	for identifier: String in ["valley_wolves", "valley_camp", "valley_mine"]:
 		var focus := _game_viewport.gui_get_focus_owner() as Button
-		assert_string_contains(focus.text, "Available: " + String(QuestData.QUESTS[identifier].title))
+		assert_string_contains(focus.text, "! " + String(QuestData.QUESTS[identifier].title))
 		await _tap_key(KEY_ENTER)
 		assert_eq(_game.menu.page, "quest_detail")
 		await _tap_key(KEY_ENTER)
@@ -1489,7 +1489,6 @@ func test_last_boss_death_during_item_turn_preserves_completion_menu() -> void:
 	stalker.engaged = true
 	stalker.melee.hit = 100
 	stalker.melee.critical = 0
-	world.hero.facing = Vector2i.LEFT
 	world.hero.learn_skill(SkillDefinition.catalog(&"lightning_shield_1"))
 	world.hero.buffs[&"lightning_shield_1"] = {"armor": 0, "charges": 3, "ready": 0, "until": 100}
 	assert_true(InventoryRules.add(world.hero.inventory, ItemData.instance(118)))

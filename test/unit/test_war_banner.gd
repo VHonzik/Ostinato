@@ -96,10 +96,10 @@ func test_placement_turn_is_protected_and_expiry_happens_before_enemy_attacks() 
 	var world := _world()
 	world.hero.equipment.clear()
 	world.hero.refresh_stats()
-	world.hero.facing = Vector2i.LEFT
 	var enemy := _actor(world, world.player_tile + Vector2i.RIGHT, "")
 	enemy.relationship = GridActor.Relationship.HOSTILE
 	enemy.engaged = true
+	enemy.melee.ignores_dodge = true
 	enemy.melee.hit = 1000
 	enemy.melee.critical = 0
 	enemy.melee.damage_min = 20

@@ -111,7 +111,7 @@ Implementation is ready for the owner's playtest, deferred at the owner's reques
 Combat and starter tuning remain provisional; the earlier Warrior playtest is still
 deferred. The Execute slice is implemented below.
 
-- [x] Keep Warrior mandatory in Loop one. From Loop two, choose Warrior, Shaman,
+- [x] Keep Warrior mandatory in Loops one and two. From Loop three, choose Warrior, Shaman,
   Paladin or Rogue at the marshal before accepting any quest. Returning Loops start
   in the previous class; confirm once, including the same class, to lock the track.
   Selection preserves gear and costs no world turn.
@@ -416,6 +416,11 @@ provisional. The [bench](../bench/README.md) now compares production rules.
   free starters and permanent learning. This supersedes the older class-XP slices below.
 - [x] Put class selection before returning-Loop quests, preselect the previous class,
   redirect other NPCs until selection, and advance the choice wording across Loops.
+- [x] Keep Loop two Warrior-only, unlock the other choices from Loop three, and use
+  the owner's revised opening lines through Loop five with a lasting line from six.
+- [x] Introduce each newly chosen class with the marshal's skeptical trainer/vendor
+  referral; remember choices across death and saving even without training. Later
+  picks use the supplies-and-guidance reminder naming Janos and the matching trainer.
 - [x] Apply the next playtest feedback: confident Warrior wording, starter gear for every
   class each Loop, starting food and Eating feedback, passable flowers/bushes, combined
   wolf objectives, gated exploration, an engaged-enemy frame, item comparison previews,
@@ -440,6 +445,18 @@ bar replaces its duplicate aura. Playtest border readability, mixed poison coati
 opening/cancelling chest loot, ranged pulls with another engaged enemy, and the
 hidden northeast corner. Garrick's first-Loop tuning aims for a close prepared fight;
 isolated simulations inform it, while real routes and human play decide the result.
+
+The next feedback batch adds Loop-specific opening copy and quest-specific offer,
+progress and completion screens, slower natural healing, aggro exclamation blinks,
+unlearned-first trainer sorting, immediate cooldown rejection, stationary corpse
+bump-looting, a thin XP bar and a quality-upgrade inventory hint. Fixed contacts now
+follow valley scene placements when loading too. Fel Breath locks a passable 1–3–3
+area from its target's starting tile. Facing is removed from combat; dodge is flat,
+Precision prevents misses and Cruelty becomes Weapon Mastery with dodge prevention.
+The experimental save schema is squashed to revision 1. Review the generated dialogue
+and playtest Garrick at level four with Shout, Mastery, Charge, Execute and green
+shield/ring gear; route damage, consumables and human decisions remain outside the
+isolated tuning fights.
 
 ### Implemented playtest follow-up — War Horn
 

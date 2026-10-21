@@ -45,7 +45,6 @@ func test_weapon_miss_dodge_critical_and_off_hand_emit_separate_results() -> voi
 	assert_eq(_view.combat_text._entries[-1].text, "Miss")
 	_world.hero.melee.hit = 100.0
 	_enemy.melee.dodge = 100.0
-	_enemy.facing = MeleeRules.facing_toward(_world.player_tile - _enemy.tile)
 	_world._player_swing(_enemy)
 	assert_eq(_view.combat_text._entries[-1].text, "Dodge")
 	_enemy.melee.dodge = 0.0

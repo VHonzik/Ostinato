@@ -22,22 +22,29 @@ func test_level_one_warrior_stats_use_the_starter_weapon_and_attributes() -> voi
 func test_controlled_rolls_select_single_attack_table_outcomes() -> void:
 	var attacker := HeroState.new().melee
 	var target := MeleeProfile.new()
-	assert_eq(MeleeRules.outcome(attacker, target, false, 4.99), &"miss")
-	assert_eq(MeleeRules.outcome(attacker, target, false, 5.0), &"dodge")
-	assert_eq(MeleeRules.outcome(attacker, target, false, 10.0), &"critical")
-	assert_eq(MeleeRules.outcome(attacker, target, false, 50.0), &"hit")
+	assert_eq(MeleeRules.outcome(attacker, target, 4.99), &"miss")
+	assert_eq(MeleeRules.outcome(attacker, target, 5.0), &"dodge")
+	assert_eq(MeleeRules.outcome(attacker, target, 10.0), &"critical")
+	assert_eq(MeleeRules.outcome(attacker, target, 50.0), &"hit")
 	target.level = 4
-	assert_eq(MeleeRules.outcome(attacker, target, false, 10.99), &"miss")
-	assert_eq(MeleeRules.outcome(attacker, target, false, 11.0), &"dodge")
+	assert_eq(MeleeRules.outcome(attacker, target, 10.99), &"miss")
+	assert_eq(MeleeRules.outcome(attacker, target, 11.0), &"dodge")
 
 
-func test_rear_attacks_remove_player_dodge_but_keep_npc_dodge() -> void:
-	var hero := HeroState.new().melee
+func test_dodge_is_flat_and_weapon_mastery_removes_it() -> void:
+	var hero := HeroState.new()
 	var npc := MeleeProfile.new()
-	assert_eq(MeleeRules.outcome(npc, hero, false, 6.0), &"dodge")
-	assert_eq(MeleeRules.outcome(npc, hero, true, 6.0), &"critical")
-	assert_eq(MeleeRules.outcome(hero, npc, true, 6.0), &"dodge")
-	assert_eq(MeleeRules.outcome(npc, hero, true, 50.0), &"hit")
+	npc.level = 10
+	assert_eq(MeleeRules.outcome(npc, hero.melee, 6.0), &"dodge")
+	hero.learn_skill(SkillDefinition.catalog(&"weapon_mastery_1"))
+	assert_ne(MeleeRules.outcome(hero.melee, npc, 24.0), &"dodge")
+	assert_eq(MeleeRules.outcome(hero.melee, npc, 0.0), &"miss",
+		"Mastery prevents dodges while preserving the miss rule.")
+	hero.learn_skill(SkillDefinition.catalog(&"precision_1"))
+	assert_eq(MeleeRules.miss_chance(hero.melee, npc), 0.0)
+	assert_ne(MeleeRules.outcome(hero.melee, npc, 0.0), &"miss")
+	assert_true(hero.off_hand_melee().cannot_miss)
+	assert_true(hero.off_hand_melee().ignores_dodge)
 
 
 func test_level_differences_keep_misses_dodge_and_crit_without_extra_outcomes() -> void:
@@ -45,10 +52,10 @@ func test_level_differences_keep_misses_dodge_and_crit_without_extra_outcomes() 
 	var npc := MeleeProfile.new()
 	hero.level = 11
 	npc.level = 11
-	assert_eq(MeleeRules.outcome(hero, npc, false, 15.0), &"critical")
+	assert_eq(MeleeRules.outcome(hero, npc, 15.0), &"critical")
 	npc.level = 14
-	assert_eq(MeleeRules.outcome(npc, hero, false, 15.0), &"hit")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 50.0), &"hit")
+	assert_eq(MeleeRules.outcome(npc, hero, 15.0), &"critical")
+	assert_eq(MeleeRules.outcome(hero, npc, 50.0), &"hit")
 
 
 func test_damage_roll_armor_and_critical_have_independent_numeric_fixtures() -> void:
@@ -75,17 +82,17 @@ func test_higher_levels_reduce_accuracy_avoidance_crit_and_damage_with_precision
 	npc.level = 3
 	npc.damage_min = 100.0
 	npc.damage_max = 100.0
-	assert_eq(MeleeRules.outcome(hero, npc, false, 8.99), &"miss")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 9.0), &"dodge")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 16.0), &"critical")
-	assert_eq(MeleeRules.outcome(hero, npc, false, 19.0), &"hit")
-	assert_eq(MeleeRules.outcome(npc, hero, false, 8.0), &"critical",
-		"The lower-level defender has less dodge; the higher attacker has more crit.")
+	assert_eq(MeleeRules.outcome(hero, npc, 8.99), &"miss")
+	assert_eq(MeleeRules.outcome(hero, npc, 9.0), &"dodge")
+	assert_eq(MeleeRules.outcome(hero, npc, 14.0), &"critical")
+	assert_eq(MeleeRules.outcome(hero, npc, 19.0), &"hit")
+	assert_eq(MeleeRules.outcome(npc, hero, 8.0), &"dodge",
+		"Dodge does not change with level; critical chance still does.")
 	assert_eq(MeleeRules.damage(hero, npc, &"hit", 0.0), 76)
 	assert_eq(MeleeRules.damage(npc, hero, &"hit", 0.0), 124)
 	assert_eq(MeleeRules.damage(hero, npc, &"critical", 0.0), 152)
 	hero.hit = 5.0
-	assert_eq(MeleeRules.outcome(hero, npc, false, 4.0), &"dodge",
+	assert_eq(MeleeRules.outcome(hero, npc, 4.0), &"dodge",
 		"Precision offsets five percentage points of miss chance, including level penalties.")
 	assert_eq(MeleeRules.damage(hero, npc, &"dodge", 0.0), 0)
 
@@ -111,15 +118,6 @@ func test_damage_level_modifiers_use_equal_percentage_increases_and_reductions()
 	assert_eq(MeleeRules.level_damage_multiplier(3, 3), 1.0)
 
 
-func test_all_eight_facings_have_exactly_three_rear_directions() -> void:
-	for facing in GridWorld.DIRECTIONS:
-		var rear_count := 0
-		for direction in GridWorld.DIRECTIONS:
-			if MeleeRules.is_behind(facing, direction):
-				rear_count += 1
-		assert_eq(rear_count, 3)
-	assert_true(MeleeRules.is_behind(Vector2i.RIGHT, Vector2i(-4, 1)))
-	assert_false(MeleeRules.is_behind(Vector2i.RIGHT, Vector2i(4, 1)))
 
 
 func test_kill_xp_level_modifiers_rounding_and_gray_boundaries() -> void:

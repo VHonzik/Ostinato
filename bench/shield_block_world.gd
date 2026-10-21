@@ -76,11 +76,9 @@ func _enemy_act(actor: GridActor) -> void:
 
 
 func _enemy_attack(actor: GridActor, target: NpcTarget) -> void:
-	actor.facing = MeleeRules.facing_toward(target.tile - actor.tile)
 	if target.is_player():
 		melee_attacked.emit(actor, target.tile)
 	var result := MeleeRules.outcome(actor.melee, target.melee,
-		MeleeRules.is_behind(target.facing, actor.tile - target.tile) and not target.has_evasion(),
 		combat_random.randf() * 100.0)
 	var amount := MeleeRules.damage(actor.melee, target.melee, result, combat_random.randf())
 	amount = ClassSpellEffects.absorb(self, target.actor, amount, true)

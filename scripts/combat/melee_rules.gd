@@ -3,13 +3,14 @@ extends RefCounted
 
 ## Physical attack outcomes and weapon damage.
 const LEVEL_MISS_PERCENT: float = 2.0
-const LEVEL_DODGE_PERCENT: float = 1.0
 const LEVEL_CRITICAL_PERCENT: float = 1.0
 const LEVEL_DAMAGE_STEP: float = 0.12
 const MAX_LEVEL_DAMAGE_ADJUSTMENT: float = 0.9
 
 
 static func miss_chance(attacker: MeleeProfile, defender: MeleeProfile) -> float:
+	if attacker.cannot_miss:
+		return 0.0
 	var base := minf(95.0, 5.0 + maxi(0, defender.level - attacker.level) * LEVEL_MISS_PERCENT)
 	return clampf(base - attacker.hit, 0.0, 100.0)
 
@@ -28,13 +29,11 @@ static func level_damage_multiplier(attacker_level: int, defender_level: int) ->
 
 
 static func outcome(
-	attacker: MeleeProfile, defender: MeleeProfile, behind: bool, roll: float,
+	attacker: MeleeProfile, defender: MeleeProfile, roll: float,
 	critical_bonus: int = 0
 ) -> StringName:
 	var miss := miss_chance(attacker, defender)
-	var dodge := defender.dodge + (defender.level - attacker.level) * LEVEL_DODGE_PERCENT
-	if defender.player and behind:
-		dodge = 0.0
+	var dodge := 0.0 if attacker.ignores_dodge else defender.dodge
 	var critical := critical_chance(attacker, defender) + critical_bonus
 	var threshold := 0.0
 	var chances: Array[float] = [miss, dodge, critical]
@@ -106,13 +105,9 @@ static func kill_experience(player_level: int, npc_level: int) -> int:
 	return roundi(base * (1.0 - float(player_level - npc_level) / zero_difference))
 
 
-static func facing_toward(offset: Vector2i) -> Vector2i:
+static func direction_toward(offset: Vector2i) -> Vector2i:
 	if offset == Vector2i.ZERO:
 		return Vector2i.DOWN
 	# Clockwise ties at half-sector boundaries; no random consumption.
 	var sector := posmod(floori(Vector2(offset).angle() / (PI / 4.0) + 0.5), 8)
 	return GridWorld.DIRECTIONS[(sector + 2) % 8]
-
-
-static func is_behind(facing: Vector2i, offset: Vector2i) -> bool:
-	return Vector2(facing).dot(Vector2(facing_toward(offset))) < 0

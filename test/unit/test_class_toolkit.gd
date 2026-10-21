@@ -178,7 +178,7 @@ func test_stat_passives_work_in_other_classes_and_refresh_does_not_stack_them() 
 	var world := _world(&"Paladin")
 	var base_armor := world.hero.melee.armor
 	var base_crit := world.hero.melee.critical
-	_learn(world, [&"cruelty_1", &"conviction_1", &"precision_1", &"toughness_1"])
+	_learn(world, [&"weapon_mastery_1", &"conviction_1", &"precision_1", &"toughness_1"])
 	world.hero.melee.hit = 5.0
 	world.hero.refresh_stats()
 	assert_eq(world.hero.melee.hit, 5.0)
@@ -802,7 +802,7 @@ func test_pursuit_of_justice_accumulates_extra_grid_steps_and_stops_at_obstacles
 	assert_eq(world.player_tile, Vector2i(15, 8))
 
 
-func test_evasion_can_dodge_attacks_from_behind_and_expires() -> void:
+func test_evasion_can_dodge_attacks_and_expires() -> void:
 	var world := _world()
 	_learn(world, [&"evasion_1"])
 	var enemy := _enemy(world, Vector2i(8, 7))
@@ -811,9 +811,7 @@ func test_evasion_can_dodge_attacks_from_behind_and_expires() -> void:
 	enemy.melee.hit = 100
 	enemy.melee.damage_min = 50
 	enemy.melee.damage_max = 50
-	world.hero.facing = Vector2i.DOWN
 	assert_true(world.cast_skill(&"evasion_1"))
-	world.hero.facing = Vector2i.DOWN
 	world.hero.melee.dodge = 100
 	enemy.swing.remaining = 0
 	var health := world.hero.health
@@ -885,7 +883,6 @@ func test_seal_fate_and_bandits_guile_reward_retained_physical_crits_without_fin
 	var world := _world()
 	_learn(world, [&"seal_fate_1", &"bandits_guile_1", &"relentless_assault_1", &"eviscerate_1", &"slice_and_dice_1"])
 	var enemy := _enemy(world)
-	enemy.facing = Vector2i.RIGHT
 	world.hero.melee.critical = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_eq(enemy.health, 9920, "40 damage doubled by a crit; no Opportunity bonus.")

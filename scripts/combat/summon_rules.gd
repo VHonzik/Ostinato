@@ -131,7 +131,7 @@ static func _act_elemental(world: GridWorld, elemental: GridActor) -> void:
 	for index in range(elemental.swing.advance(ready, elemental.melee.interval)):
 		if world.is_terminal() or not target.alive:
 			break
-		var result := MeleeRules.outcome(elemental.melee, target.melee, false,
+		var result := MeleeRules.outcome(elemental.melee, target.melee,
 			world.combat_random.randf() * 100.0)
 		var value := MeleeRules.damage(elemental.melee, target.melee, result,
 			world.combat_random.randf())

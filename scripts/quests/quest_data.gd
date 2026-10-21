@@ -1,6 +1,15 @@
 class_name QuestData
 extends RefCounted
 
+## Offer, unfinished and completed dialogue for the playable valley quests.
+const DIALOGUE: Dictionary = {
+	"valley_wolves": ["The western woods are overrun with wolves. Thin their numbers so our people can use the paths again.", "Are the western paths safer? Watch for the larger timber wolves.", "Good work. Our gatherers can venture west again. Take these supplies."],
+	"valley_camp": ["Kobolds have settled along the northern road. Clear their camp before they grow bolder.", "Have you cleared the kobolds from the northern camp?", "That should keep the northern road open. These supplies are yours."],
+	"valley_mine": ["The kobolds in Echo Ridge are digging deeper. Enter the mine and drive out their workers and laborers.", "What news from Echo Ridge? We need those kobolds driven out.", "You have bought us some breathing room. Take this weapon; you have earned it."],
+	"valley_vineyard": ["Garrick and his thugs have taken my vineyard. Drive them out before there is nothing left to save.", "Is Garrick gone? His thugs will stay while he leads them.", "My vineyard is mine again! Thank you. Please take this hammer and shield."],
+	"valley_explore": ["I need fresh eyes on the valley. Scout Echo Ridge, the vineyard and the western wolf woods, then report back.", "Have you seen all three places? I need the whole picture.", "Kobolds, thieves and wolves. Trouble on every side—but now we know where we stand. Thank you."],
+}
+
 ## Valley objectives and fixed common gear rewards; historical fixture quests below.
 static var QUESTS: Dictionary = {
 	"valley_wolves": {
@@ -323,3 +332,10 @@ static var QUESTS: Dictionary = {
 		"source_item": 0
 	}
 }
+
+
+static func dialogue(identifier: String, stage: int) -> String:
+	if DIALOGUE.has(identifier):
+		return DIALOGUE[identifier][stage]
+	# Historical fixture quests retain their objective-driven detail screens.
+	return ""

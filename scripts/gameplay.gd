@@ -137,7 +137,7 @@ func _process(delta: float) -> void:
 		world.wait_turn()
 		hud.feedback.text = "Waited one turn. The meadow stirs."
 	elif world.move_player(direction):
-		hud.feedback.text = "Action complete."
+		hud.feedback.text = ""
 	else:
 		var contact := world.actor_at(world.player_tile + direction)
 		hud.feedback.text = "Interacted with %s." % contact.title if (
@@ -514,6 +514,11 @@ func _cast_skill(identifier: StringName) -> void:
 		return
 	var skill := world.hero.find_skill(identifier)
 	if skill == null:
+		return
+	if world.turn_count < int(world.hero.cooldowns.get(String(skill.family), 0)):
+		combat_panel.close()
+		world.add_message("%s is on cooldown." % skill.title)
+		refresh_view()
 		return
 	var target := (world.committed_enemy() if skill.effect == SkillDefinition.Effect.JUDGEMENT
 		else world.last_attacked_enemy)

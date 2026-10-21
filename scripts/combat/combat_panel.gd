@@ -258,6 +258,9 @@ func open_spell(world: GridWorld, skill: SkillDefinition) -> void:
 	close()
 	_world = world
 	_skill = skill
+	if world.turn_count < int(world.hero.cooldowns.get(String(skill.family), 0)):
+		world.add_message("%s is on cooldown." % skill.title)
+		return
 	if skill.available_resource(world.hero) < skill.cost(world.hero):
 		world.add_message("Not enough %s for %s: requires %d, have %d." % [
 			skill.resource_name(), skill.title, skill.cost(world.hero), skill.available_resource(world.hero)])

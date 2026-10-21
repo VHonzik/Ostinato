@@ -157,7 +157,6 @@ static func weapon_outcome(world: GridWorld, target: GridActor, skill: SkillDefi
 	if skill != null:
 		critical_bonus += world.ability_critical_bonus
 	var result := MeleeRules.outcome(weapon, target.melee,
-		MeleeRules.is_behind(target.facing, world.player_tile - target.tile),
 		world.combat_random.randf() * 100.0, critical_bonus)
 	var landed := result not in [&"miss", &"dodge"]
 	if (skill != null and landed and skill.family == &"mortal_strike"
@@ -180,7 +179,8 @@ static func magic_attack(world: GridWorld, target: GridActor, skill: SkillDefini
 static func magic_outcome(world: GridWorld, target: GridActor, skill: SkillDefinition,
 	extra: float = 1.0, critical_bonus: int = 0) -> AttackEvent:
 	var hit_chance := 100.0 - MeleeRules.miss_chance(world.hero.melee, target.melee)
-	if world.combat_random.randf() * 100.0 >= hit_chance:
+	var hit_roll := world.combat_random.randf() * 100.0
+	if hit_chance < 100.0 and hit_roll >= hit_chance:
 		world.npc_combat_text.emit(target.tile, 0, &"miss")
 		world.add_message("%s misses %s." % [skill.title, target.title])
 		return AttackEvent.new(target, skill, &"miss", 0, skill.school as AttackEvent.School)
@@ -240,7 +240,7 @@ static func bonus_strike(world: GridWorld, target: GridActor, off_hand: bool,
 		return
 	var weapon := world.hero.off_hand_melee() if off_hand else world.hero.melee
 	var result := MeleeRules.outcome(weapon, target.melee,
-		MeleeRules.is_behind(target.facing, world.player_tile - target.tile), world.combat_random.randf() * 100)
+		world.combat_random.randf() * 100)
 	# Bonus strikes use normal hit/armor but cannot crit or trigger any primary hooks.
 	if result == &"critical":
 		result = &"hit"
@@ -330,7 +330,7 @@ static func act_wolf(world: GridWorld, wolf: GridActor) -> void:
 	for index in range(wolf.swing.advance(ready, wolf.melee.interval)):
 		if world.is_terminal() or not target.alive:
 			break
-		var result := MeleeRules.outcome(wolf.melee, target.melee, false, world.combat_random.randf() * 100)
+		var result := MeleeRules.outcome(wolf.melee, target.melee, world.combat_random.randf() * 100)
 		var value := MeleeRules.damage(wolf.melee, target.melee, result,
 			world.combat_random.randf())
 		var before := target.health

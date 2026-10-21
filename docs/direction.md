@@ -38,12 +38,14 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   further passive development remains open until the revised kit has been playtested.
   The roster is warrior, shaman, paladin and rogue.
 - Choose the class to train at the marshal before accepting any quest.
-  Warrior is mandatory in the first Loop; Shaman, Paladin and Rogue are selectable
-  from Loop two. Returning Loops offer class selection first, focusing the previous class; choosing
+  Warrior is mandatory in the first two Loops; Shaman, Paladin and Rogue are selectable
+  from Loop three. Returning Loops offer class selection first, focusing the previous class; choosing
   once locks the class until death and immediately reveals quests. Other contacts
   redirect the player to the marshal until that choice. Selection keeps gear and
-  refers the player to the matching trainer. Keep the initial Warrior pair at New Game;
-  learn other classes' starter skills free at their trainers, with no level requirement.
+  refers the player to the matching trainer. Keep the initial Warrior pair at New Game.
+  First-time choices of a new class receive the marshal's skeptical introduction
+  and a referral to the trainer and Janos. Remember choices independently of training.
+  Learn other classes' starter skills free at their trainers, with no level requirement.
   Once learned, skills stay usable across classes and death without relearning;
   selection does not lock out the retained toolkit.
 - All classes use rage, with no mana or energy. Learned Relentless Assault builds
@@ -143,7 +145,9 @@ balance measurements; do not impose the old ten-minute first-Loop target.
   Holy, Fire and Nature damage and the explicit class defenses. Attacks can miss, be dodged,
   hit or crit; shields contribute armor and enable learned Warrior Shield Block's
   partial physical defense. These magic schools bypass armor and Shield Block.
-  Higher-level enemies reduce accuracy; their percentage penalty to player damage
+  Dodge is flat in every direction. Weapon Mastery combines the former Cruelty critical bonus
+  with preventing enemy weapon dodges; Precision prevents all player misses. Higher-level
+  enemies reduce accuracy without Precision; their percentage penalty to player damage
   matches their percentage increase to incoming damage,
   without the old attack tables. A starter Warrior should struggle against one enemy
   two levels higher or a pair near its own level; larger pulls should usually kill it.

@@ -344,11 +344,12 @@ func _blink_sprite(effect: Dictionary) -> Texture2D:
 
 
 func _consecration_visible(tile: Vector2i) -> bool:
-	return not _breath_visible(tile) and _area_effect_visible(_consecration_blink, tile)
+	return _area_effect_visible(_consecration_blink, tile)
 
 
 func _breath_visible(tile: Vector2i) -> bool:
-	return _area_effect_visible(_breath_blink, tile)
+	return (not world.blocked_tiles.has(tile) and not _breath_blink.is_empty()
+		and _breath_blink.tiles.has(tile))
 
 
 func _area_effect_visible(effect: Dictionary, tile: Vector2i) -> bool:
@@ -380,8 +381,7 @@ func _sprite_occupants() -> Dictionary[Vector2i, GridActor]:
 
 
 func _terrain_sprite(tile: Vector2i, occupants: Dictionary[Vector2i, GridActor]) -> StringName:
-	if (tile == world.player_tile or occupants.has(tile)
-		or _consecration_visible(tile) or _breath_visible(tile)):
+	if (tile == world.player_tile or occupants.has(tile) or _consecration_visible(tile)):
 		return &""
 	return world.scenery_tiles.get(tile, world.ground_tiles.get(tile, &""))
 
@@ -402,8 +402,7 @@ func _draw() -> void:
 	var occupants := _sprite_occupants()
 	_draw_valley_ground(occupants)
 	for actor: GridActor in occupants.values():
-		if (not actor.alive and actor.corpse_visible
-			and not _consecration_visible(actor.tile) and not _breath_visible(actor.tile)):
+		if (not actor.alive and actor.corpse_visible and not _consecration_visible(actor.tile)):
 			var sprite := &"animal_corpse" if actor.creature_type == "beast" else &"humanoid_corpse"
 			if actor.chest:
 				sprite = &"chest_open" if actor.loot_assigned else &"chest_closed"
@@ -440,17 +439,21 @@ func _draw_war_banner() -> void:
 
 
 func _draw_actor(actor: GridActor) -> void:
-	if _consecration_visible(actor.tile) or _breath_visible(actor.tile):
+	if _consecration_visible(actor.tile):
 		return
 	var sprites := npc_sprite_layers(actor)
 	var effect := _blink_sprite(_npc_blinks.get(actor, {}))
 	var faction := sprites.faction_sprite
 	if _blink_alternate_visible and QuestRules.has_marker(world, actor):
 		faction = _quest_marker_sprite
+	if (_blink_alternate_visible and actor.engaged
+		and actor.relationship == GridActor.Relationship.HOSTILE):
+		faction = _quest_marker_sprite
 	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
 		faction if effect == null else null,
 		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
-		_actor_color(actor), _melee_bump_offset(actor))
+		Color.RED if actor.engaged and actor.relationship == GridActor.Relationship.HOSTILE
+			else _actor_color(actor), _melee_bump_offset(actor))
 	if actor.breath_remaining > 0:
 		var position := Vector2(actor.tile * TILE_SIZE)
 		draw_rect(Rect2(position, Vector2(14, 15)), Color("#172719"))
@@ -494,14 +497,14 @@ func _draw_breath() -> void:
 		for tile: Vector2i in _breath_blink.tiles:
 			marked[tile] = true
 	for tile in marked:
+		if world.blocked_tiles.has(tile):
+			continue
 		var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
 		if _breath_visible(tile):
-			var occupant := world.actor_at(tile)
-			var color := (health_tint(occupant.health, occupant.max_health)
-				if occupant != null else Color.WHITE)
-			_draw_sprite_layers(tile, _ability_sprite(BREATH_TILE_CELL), null, color, Color.WHITE)
+			_draw_sprite_layers(tile, _ability_sprite(BREATH_TILE_CELL), null,
+				Color(1.0, 0.2, 0.2, 0.55), Color.WHITE)
 		# A steady border preserves the warning after the normal sprite flash expires.
-		draw_rect(rectangle.grow(-1), Color("#c5fc87"), false, 1.0)
+		draw_rect(rectangle.grow(-1), Color(1.0, 0.2, 0.2, 0.7), false, 1.0)
 
 
 func _draw_consecration() -> void:

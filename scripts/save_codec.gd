@@ -11,18 +11,18 @@ const HERO_FIELDS: Array[String] = [
 	"combo_points", "rage", "rage_credit", "rage_decay_credit", "last_hit_rage_turn",
 	"last_enrage_roll_turn",
 	"level", "experience", "health", "selected_class", "copper",
-	"casting_credit", "facing", "potion_ready_turn",
+	"casting_credit", "potion_ready_turn",
 ]
 const ACTOR_FIELDS: Array[String] = [
 	"tile", "home_tile", "alive", "wander_area", "title", "relationship", "engaged",
-	"returning_home", "blocked_turns", "aggro_range", "max_health", "health", "facing",
-	"awards_experience", "corpse_visible", "died_on_turn", "service",
+	"returning_home", "blocked_turns", "aggro_range", "max_health", "health",
+	"awards_experience", "corpse_visible", "died_on_turn", "death_player_tile", "service",
 	"movement_credit", "story_guard", "stalker", "spawn_id", "loot_table", "loot_assigned",
 	"loot_copper", "chest", "creature_type",
 	"npc_id", "population_slot",
 	"summon_kind", "summon_skill", "expires_turn",
 	"stunned_until",
-	"breath_normal_turns", "breath_started", "breath_remaining", "breath_direction",
+	"breath_normal_turns", "breath_started", "breath_remaining", "breath_direction", "breath_origin",
 ]
 const MELEE_FIELDS: Array[String] = [
 	"level", "player", "armor", "attack_power", "damage_min", "damage_max",
@@ -36,6 +36,7 @@ static func capture(session: GameSession) -> Dictionary:
 		return {}
 	var data := {
 		"seed": str(session.seed_value), "loop": session.loop_count,
+		"chosen_classes": [],
 		"world": _fields(world, WORLD_FIELDS), "hero": _fields(world.hero, HERO_FIELDS),
 		"random": str(world.random.state), "combat_random": str(world.combat_random.state),
 		"blocked": [], "sight": [], "actors": [], "learned": [],
@@ -61,6 +62,8 @@ static func capture(session: GameSession) -> Dictionary:
 		"war_banner": {},
 		"consecration": {},
 	}
+	for category in world.chosen_classes:
+		data.chosen_classes.append(String(category))
 	if not world.war_banner.is_empty():
 		var banner := world.war_banner
 		data.war_banner = {"tile": [banner.tile.x, banner.tile.y], "until": banner.until}
@@ -144,6 +147,17 @@ static func _valid_envelope(data: Variant) -> bool:
 
 static func _restore_world(world: GridWorld, data: Dictionary) -> bool:
 	if not _restore_fields(world, data.world, WORLD_FIELDS):
+		return false
+	var chosen: Variant = data.get("chosen_classes", ["Warrior"])
+	if not chosen is Array or chosen.size() > ClassSkillData.PLAYABLE_CLASSES.size():
+		return false
+	world.chosen_classes.clear()
+	for category in chosen:
+		if (not category is String or category not in ClassSkillData.PLAYABLE_CLASSES
+			or world.chosen_classes.has(StringName(category))):
+			return false
+		world.chosen_classes.append(StringName(category))
+	if not world.chosen_classes.has(&"Warrior"):
 		return false
 	if not data.get("valley_route", false) is bool:
 		return false
@@ -232,7 +246,13 @@ static func _restore_actors(world: GridWorld, data: Dictionary) -> bool:
 		actor.wander_ready_turn = int(wander_ready)
 		if not _valid_breath(actor):
 			return false
+		if actor.breath_remaining > 0 and not world.bounds.has_point(actor.breath_origin):
+			return false
 		var contact := NpcDefinition.find(actor.npc_id)
+		if world.valley_route and contact != null and not contact.story_guard:
+			# Fixed contacts follow editor placements even when continuing a saved Loop.
+			actor.tile = contact.tile
+			actor.home_tile = actor.tile
 		if world.valley_route and contact != null and contact.refresh_saved_name:
 			actor.title = contact.title
 		if not _restore_fields(actor.melee, record.melee, MELEE_FIELDS):

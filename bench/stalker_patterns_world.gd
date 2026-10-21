@@ -56,8 +56,7 @@ func _advance_player_weapon() -> void:
 		return
 	cone_active = true
 	cone_origin = boss.tile
-	cone_direction = MeleeRules.facing_toward(player_tile - boss.tile)
-	boss.facing = cone_direction
+	cone_direction = MeleeRules.direction_toward(player_tile - boss.tile)
 	cone_deadline = turn_count + 2
 	cone_casts += 1
 	normal_turns = 0

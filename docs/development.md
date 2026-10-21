@@ -36,6 +36,9 @@ anything or spending a turn. Remaining loot reopens the menu on later bumps; emp
 chests no longer intercept movement. Full bags preserve uncollected items.
 There are no within-Loop NPC respawns. Faction layers show friendly contacts in green and neutral/hostile NPCs in yellow/red;
 available quests and ready turn-ins alternate the faction layer with an exclamation mark.
+Engaged hostile enemies blink a red exclamation mark. Quest lists use yellow ! for offers,
+gray ? for unfinished quests and yellow ? for ready turn-ins, with quest-specific
+offer/progress/completion text and objectives/rewards on the detail screen.
 A separate base layer shows health. Most NPCs temporarily use a corner heart; Stalker
 uses its own health/faction pair and Earth Elemental its own health base. The player uses
 its current class artwork with an empty faction layer.
@@ -46,26 +49,37 @@ for an accepted quest objective. Fresh Loops include food with an upper-right ho
 shortcut; Eating shows the next healing tick and remaining duration.
 Occupants hide terrain decorations and corpses beneath them. Empty corpses disappear;
 corpses with items or money remain available for looting; the story guard's corpse remains.
+Bumping a newly killed enemy opens loot until the player next moves; later corpse
+interactions still use F. Inventory turns green while Bags contain a higher-quality
+item for an equipped slot. Empty slots still auto-equip received gear.
 Death rebuilds the
 map, contacts, enemies and chests, preserving learned abilities and hotbar.
 Janos Hammerknuckle supplies starter gear for the selected class and trades. Llane teaches Warrior unlocks;
 Farseer Lopaa, Brother Sammuel and Jorik Kerridan teach the implemented Shaman, Paladin
 and Rogue kits. Trainers show current level requirements and gold prices, with free
-starter skills and gray learned entries. Learning is permanent; prices remain provisional.
+starter skills and gray learned entries. Unlearned entries come first, then learned entries; each group sorts by required level,
+price and name. Learning is permanent; prices remain provisional.
 
 New Game starts a warrior with rage, Mortal Strike and Whirlwind, wearing travel clothes.
 Ask Janos inside the abbey for spare class gear once each Loop. The marshal offers
-warrior referrals, with "Uhm... I seek ... teaching" choices for the other classes from the second Loop. Speak
-to the marshal before accepting any quest. Returning Loops show class selection first,
+warrior referrals. Loop two offers only Warrior; the other classes become selectable
+from Loop three. Speak to the marshal before accepting any quest.
+Returning Loops show class selection first,
 focusing the previous class; choosing immediately reveals quests and locks the class until death.
 Other NPCs redirect you to the marshal until you choose. Warrior always uses "I am warrior";
 other Loop three choices begin "I am ...." and from Loop four begin "I am". Class choice keeps gear and names the
-matching trainer. Visit that trainer to learn the class's starter skills for free, with
+matching trainer. The first selection of each new class shows the marshal's skeptical
+introduction naming that trainer and Janos Hammerknuckle; later selections mention
+Janos's supplies and the matching trainer's class guidance. Choice history persists
+across deaths and saves,
+even if no skills were trained; New Game clears it and starts with Warrior known.
+Visit that trainer to learn the class's starter skills for free, with
 no level requirement; new actives prefer empty slots in the upper row for maintenance
 buffs and the lower row for rotation and situational abilities, using the other row
 when needed. Existing assignments are preserved. Learning is permanent and needs
 no relearning in later Loops. The initial Warrior pair remains known at New Game.
-Milly now stands inside the abbey, and Farseer Lopaa stands beside its main entrance.
+Milly now stands inside the abbey, and Farseer Lopaa uses the placement in the valley scene. Fixed contacts reload scene
+placements when continuing a save; New Game and death reload the scene from disk.
 The northeast corner wall of the northern abbey room is a hidden passable tile,
 retaining the ordinary wall art until a later visual hint is added.
 Movement: WASD + QEZC, arrows, or numpad; wait: period/numpad 5.
@@ -82,6 +96,7 @@ selected attack target and ordinary swing timing. Heroic Strike and Incite are r
 Early Warrior training adds Enrage from surviving enemy hits and passive Death Wish,
 which increases physical damage dealt and damage taken as health falls. Its aura shows
 the current tradeoff. Warrior Flurry is removed; Shaman retains its own Flurry.
+Cooldown attempts end immediately before target selection and spend no turn.
 The action effect resolves before player swings, followed by enemy actions. No attacks
 are banked out of range and target changes keep the weapon's remaining delay.
 Ordinary player swings and enemy melee attacks against the player show sequential
@@ -200,12 +215,17 @@ Ordinary enemy and stalker tuning lives in
 profiles; saved actors keep their recorded stats. The current
 [simulation bench](../bench/README.md) compares kits, weapon setups and encounters
 using the live game model; generated results stay under ignored `reports/bench/`.
-Garrick now has 120 HP and 7–9 base melee damage, retaining his level, armor and
-2.6-turn swing interval. His first-Loop target is a close fight after free gear and
-modest training; stronger preparation can make him reliable in later Loops.
+Garrick has 220 HP and 10–13 base melee damage, retaining level 5, 105 armor and
+a 2.6-turn swing interval. The tuning reference is a level-four Warrior with Battle
+Shout, Weapon Mastery, Charge and Execute, common armor/neck/remaining ring, plus a
+green shield setup and one green ring. Isolated fights begin at full health and zero
+rage, prepare Shout live and use no consumables or XP heals. Level-three/common-gear
+controls are harder; level five or additional learning makes the encounter easier.
 
 Stalker uses [Fel Breath](../scripts/world/stalker_breath.gd): after four normal engaged
-turns it stops and marks a fixed 90-degree cone, three tiles deep. Two complete player
+turns it stops and marks a locked 1–3–3 shape. The tip is the target's tile when
+wind-up starts; the next two rows extend away from the Stalker. Diagonal casts use
+diagonal three-tile rows. Only passable terrain in sight receives warning/damage. Two complete player
 response turns follow; release occurs after that turn's player spells and weapon swings.
 It waits ten normal turns between casts; announcement and both response turns replace
 movement and melee. Its weapon timer resets to a full interval and stays paused until
@@ -214,10 +234,10 @@ Stuns and Vanish delay new starts; a committed breath still releases. Walls bloc
 and it delays starting if the player has no escape within two ordinary moves.
 The cone deals 60 base Fire damage with level scaling (81 against level five), no
 armor, block, dodge or critical rolls, and the usual explicit damage defenses.
-Friendly summons in the cone are hit too. Facing and threatened tiles stay fixed while
+Friendly summons in the area are hit too. Direction and tip stay fixed while
 the Stalker flashes its wind-up art for 1.5 seconds on each wind-up turn. Cone tiles
-flash like Consecration on wind-up turns and release, preserving the player sprite;
-countdown and cone outlines persist while the player considers a move.
+show slightly transparent red art on wind-up turns and release over existing actors;
+countdown and red outlines persist while the player considers a move.
 Enrage and regeneration remain experimental bench variants, outside the live encounter.
 
 Judgement retains its delayed verdict. It fixes damage and hit/critical results when
@@ -231,9 +251,10 @@ Divine Purpose, Eye for an Eye and combo-point refunds are removed. Existing Hol
 Consecration creates visible fixed Holy ground; leaving it does not move or cancel it.
 Its periodic damage grants no attack procs or combo points and supplies no mitigation.
 
-Current saves are `demo` revision 34, with gear stats rebuilt from equipment on load.
-Revision 33 and older saves are incompatible and left unchanged; start a fresh game.
-This revision saves Stalker's pending Fel Breath direction, countdown and cadence.
+Current saves are `demo` revision 1 after squashing the experimental schema, with
+gear stats rebuilt from equipment on load. Other revisions are incompatible and left
+unchanged; start a fresh game. Saves include the locked breath tip/direction, countdown
+and cadence and the stationary corpse-loot shortcut.
 No save migration is provided.
 Kings bonuses are rebuilt from learned Kings plus active Shout, rather than saved
 primary-stat buff fields. Failed writes/loads preserve existing player files.
@@ -330,3 +351,7 @@ as a prerequisite to the pivot. The existing folder layout needs no wholesale mo
 
 Work stays local unless requested otherwise. Summarize changes and useful playtest
 steps in chat; create no handoff file. Humans choose what to test and commit.
+
+Natural health regeneration is 1.5 HP per turn at levels 1–2 and 0.3 thereafter,
+only outside combat. The thin yellow XP bar above health shares its width, visibility
+and 80% opacity. Opening chat points to the marshal and changes across returning Loops.

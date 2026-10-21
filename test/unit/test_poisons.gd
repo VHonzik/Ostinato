@@ -250,10 +250,10 @@ func test_player_death_prevents_future_poison_ticks() -> void:
 	var enemy := _enemy(world)
 	enemy.stunned_until = 0
 	enemy.engaged = true
+	enemy.melee.ignores_dodge = true
 	enemy.melee.hit = 1000
 	enemy.melee.damage_min = 100000
 	enemy.melee.damage_max = 100000
-	world.hero.facing = Vector2i.LEFT
 	world.hero.melee.dodge = 0
 	PoisonRules.apply_deadly(world, enemy)
 	enemy.debuffs[&"deadly_poison_1"].next_tick = 2

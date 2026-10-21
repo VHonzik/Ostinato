@@ -69,7 +69,7 @@ func test_pain_passives_unlock_early_without_becoming_castable() -> void:
 		world.hero.level = skill.training_level
 		world.hero.copper = skill.training_copper
 		assert_true(world.train(&"Warrior", identifier))
-		assert_lt(skill.training_copper, SkillDefinition.catalog(&"cruelty_1").training_copper)
+		assert_lt(skill.training_copper, SkillDefinition.catalog(&"weapon_mastery_1").training_copper)
 		assert_false(world.cast_skill(identifier))
 		assert_false(world.assign_hotbar(0, identifier))
 	assert_null(SkillDefinition.catalog(&"warrior_flurry_1"))

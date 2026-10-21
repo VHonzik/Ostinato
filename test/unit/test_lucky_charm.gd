@@ -4,8 +4,6 @@ extends GutTest
 func _world() -> GridWorld:
 	var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(8, 8), 97, false)
 	InventoryRules.receive(world.hero, ItemData.instance(ItemData.LUCKY_CHARM_ID))
-	# An attack from behind cannot be dodged, including after the turn's stat refresh.
-	world.hero.facing = Vector2i.LEFT
 	return world
 
 
@@ -13,6 +11,7 @@ func _enemy(world: GridWorld) -> GridActor:
 	var enemy := GridActor.new(world.player_tile + Vector2i.RIGHT)
 	enemy.relationship = GridActor.Relationship.HOSTILE
 	enemy.engaged = true
+	enemy.melee.ignores_dodge = true
 	enemy.melee.hit = 1000
 	enemy.melee.critical = 0
 	enemy.melee.damage_min = 10000

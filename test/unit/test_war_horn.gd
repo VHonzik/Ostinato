@@ -83,12 +83,11 @@ func test_enemy_actions_and_weapon_timers_continue_and_death_interrupts_the_cast
 	enemy.stunned_until = 0
 	enemy.relationship = GridActor.Relationship.HOSTILE
 	enemy.engaged = true
+	enemy.melee.ignores_dodge = true
 	enemy.melee.hit = 1000
 	enemy.melee.critical = 0
 	enemy.melee.damage_min = 100
 	enemy.melee.damage_max = 100
-	# Stats refresh before enemy actions; attack from behind to rule out player dodge.
-	world.hero.facing = Vector2i.LEFT
 	world.hero.swing.remaining = 5.0
 	world.hero.swing._active = true
 	world.auto_attack_target = enemy

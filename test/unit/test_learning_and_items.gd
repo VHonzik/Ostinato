@@ -88,7 +88,7 @@ func test_equipment_changes_stats_without_refilling_and_unrestricted_armor_is_us
 	world.hero.health = 10
 	assert_true(world.equip_item(0), "Armor is usable in every class.")
 	assert_eq(world.hero.melee.armor, 90, "One armor outfit replaces travel clothes.")
-	assert_eq(world.hero.health, 10)
+	assert_eq(world.hero.health, 11)
 	assert_eq(world.turn_count, 1)
 	world.hero.inventory[1] = ItemData.instance(2572)
 	var max_health := world.hero.max_health
@@ -96,7 +96,7 @@ func test_equipment_changes_stats_without_refilling_and_unrestricted_armor_is_us
 	assert_true(InventoryRules.equip(world.hero, 1), "Uncommon armor is usable at level one.")
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hero.max_health, max_health + 10)
-	assert_eq(world.hero.health, 10, "Equipment itself never refills.")
+	assert_eq(world.hero.health, 11, "Equipment itself never refills.")
 	assert_true(world.unequip_item("armor"))
 
 
@@ -288,7 +288,7 @@ func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() ->
 	assert_eq(world.turn_count, 0)
 
 
-func test_shield_armor_reduces_damage_from_front_and_rear() -> void:
+func test_shield_armor_reduces_physical_damage() -> void:
 	var defender := HeroState.new().melee
 	defender.dodge = 0
 	defender.armor = 485
@@ -296,8 +296,7 @@ func test_shield_armor_reduces_damage_from_front_and_rear() -> void:
 	attacker.damage_min = 10
 	attacker.damage_max = 10
 	attacker.critical = 0
-	assert_eq(MeleeRules.outcome(attacker, defender, false, 7.0), &"hit")
-	assert_eq(MeleeRules.outcome(attacker, defender, true, 7.0), &"hit")
+	assert_eq(MeleeRules.outcome(attacker, defender, 7.0), &"hit")
 	assert_eq(MeleeRules.damage(attacker, defender, &"hit", 0.0), 5)
 
 

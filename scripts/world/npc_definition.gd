@@ -82,7 +82,19 @@ static func greeting_for(identity: int) -> String:
 static func trainer_referral(category: StringName) -> String:
 	for contact in CONTACTS:
 		if contact.service == category and contact.trainer_location != "":
-			return "Speak with %s %s." % [contact.title, contact.trainer_location]
+			return ("Speak with %s, he always has supplies lying around. "
+				+ "And %s is our own %s if you need some guidance.") % [
+					display_name(JANOS_ID), contact.title, String(category).to_lower()]
+	return ""
+
+
+static func first_class_referral(category: StringName) -> String:
+	for contact in CONTACTS:
+		if contact.service == category and contact.trainer_location != "":
+			return ("You don't look like %s... Anyway, go speak with %s, "
+				+ "they will get you started. And check with %s, "
+				+ "they might have some old equipment lying around.") % [
+					category, contact.title, display_name(JANOS_ID)]
 	return ""
 
 

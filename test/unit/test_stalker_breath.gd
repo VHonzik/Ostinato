@@ -73,7 +73,7 @@ func test_second_response_dodge_keeps_fixed_cone_and_ready_melee_swing() -> void
 	assert_true(_world.move_player(Vector2i(-1, -1)))
 	assert_eq(_world.player_tile, Vector2i(8, 7))
 	assert_eq(_world.hero.health, health)
-	assert_eq(_boss.facing, Vector2i.RIGHT)
+	assert_eq(_boss.breath_direction, Vector2i.RIGHT)
 	assert_eq(StalkerBreath.tiles(_world, _boss), marked)
 	assert_lt(_boss.health, boss_health, "A melee sidestep does not interrupt a due swing.")
 
@@ -101,13 +101,19 @@ func test_leaving_melee_ticks_timer_and_reentry_swings_without_backlog() -> void
 func test_cone_edges_range_and_walls_for_all_eight_facings() -> void:
 	for direction in GridWorld.DIRECTIONS:
 		_boss.breath_direction = direction
-		assert_true(StalkerBreath.threatens(_world, _boss, _boss.tile + direction * 3))
-		assert_false(StalkerBreath.threatens(_world, _boss, _boss.tile + direction * 4))
-		assert_false(StalkerBreath.threatens(_world, _boss, _boss.tile - direction))
-		assert_false(StalkerBreath.threatens(_world, _boss, _boss.tile))
+		_boss.breath_origin = _boss.tile + direction
+		var side := Vector2i(-direction.y, direction.x)
+		var expected: Array[Vector2i] = [_boss.breath_origin]
+		for row in [1, 2]:
+			for column in [-1, 0, 1]:
+				expected.append(_boss.breath_origin + direction * row + side * column)
+		assert_eq(StalkerBreath.tiles(_world, _boss), expected)
+		assert_false(StalkerBreath.threatens(_world, _boss, _boss.breath_origin + side))
+		assert_false(StalkerBreath.threatens(_world, _boss, _boss.breath_origin + direction * 3))
 	_boss.breath_direction = Vector2i.RIGHT
-	assert_true(StalkerBreath.threatens(_world, _boss, Vector2i(11, 5)))
-	assert_false(StalkerBreath.threatens(_world, _boss, Vector2i(9, 6)))
+	_boss.breath_origin = Vector2i(9, 8)
+	_world.blocked_tiles[Vector2i(10, 7)] = true
+	assert_false(StalkerBreath.threatens(_world, _boss, Vector2i(10, 7)))
 	_world.sight_blockers[Vector2i(10, 8)] = true
 	assert_false(StalkerBreath.threatens(_world, _boss, Vector2i(11, 8)))
 
@@ -292,7 +298,7 @@ func test_view_warning_waits_for_turns_and_impact_clears_on_world_replacement() 
 	assert_true(view._npc_blinks.is_empty())
 
 
-func test_breath_area_replaces_ground_and_npcs_but_preserves_player_and_melee_bumps() -> void:
+func test_breath_overlay_marks_passable_tiles_including_player_and_keeps_locked_area() -> void:
 	var view := GridView.new()
 	add_child_autofree(view)
 	view.world = _world
@@ -305,13 +311,13 @@ func test_breath_area_replaces_ground_and_npcs_but_preserves_player_and_melee_bu
 	ally.tile = tile
 	assert_true(view._breath_visible(tile))
 	assert_eq(view._terrain_sprite(tile, view._sprite_occupants()), &"")
-	assert_false(view._breath_visible(_world.player_tile))
+	assert_true(view._breath_visible(_world.player_tile))
 	_world.melee_attacked.emit(ally, _boss.tile)
-	assert_false(view._breath_visible(tile), "Melee bumps reveal actors through the flash.")
+	assert_true(view._breath_visible(tile), "The transparent warning stays during melee bumps.")
 	view._process(GridView.MELEE_BUMP_SECONDS)
 	assert_true(view._breath_visible(tile))
 	_world.player_tile = tile
-	assert_false(view._breath_visible(tile), "Moving into the cone keeps the player art.")
+	assert_true(view._breath_visible(tile), "Moving into the cone keeps the warning overlay.")
 	assert_true(view._breath_visible(Vector2i(9, 8)), "The cone stays fixed when the player moves.")
 	view._process(GridView.ABILITY_BLINK_SECONDS)
 	assert_false(view._breath_visible(Vector2i(9, 8)))

@@ -425,7 +425,7 @@ func test_gear_grant_survives_save_load_and_resets_after_death() -> void:
 
 func test_every_class_gets_its_starter_gear_once_in_any_returning_loop() -> void:
 	var session := _session()
-	for category: StringName in [&"Paladin", &"Rogue", &"Shaman", &"Warrior", &"Paladin"]:
+	for category: StringName in [&"Warrior", &"Paladin", &"Rogue", &"Shaman", &"Warrior", &"Paladin"]:
 		session.world.hero.health = 0
 		assert_true(session.restart_after_death())
 		var world := session.world
@@ -460,7 +460,7 @@ func test_warrior_choice_is_confident_in_every_returning_loop() -> void:
 			if choice.category == &"Warrior":
 				assert_eq(choice.title, "I am warrior")
 			elif loop == 2:
-				assert_true(choice.title.begins_with("Uhm..."))
+				fail_test("Only Warrior should be offered in Loop two.")
 			elif loop == 3:
 				assert_true(choice.title.begins_with("I am ...."))
 
@@ -507,16 +507,28 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	menu.open_conversation(marshal)
 	assert_not_null(_button(menu, "I am warrior"))
 	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
+	assert_null(_button(menu, "I am .... paladin"))
+	_button(menu, "I am warrior").pressed.emit()
+	world.hero.health = 0
+	assert_true(session.restart_after_death())
+	world = session.world
+	marshal = _contact(world, 197)
+	_beside(world, marshal)
+	menu.open_conversation(marshal)
 	var equipment := world.hero.equipment.duplicate(true)
-	_button(menu, "Uhm... I seek paladin teaching").pressed.emit()
+	_button(menu, "I am .... paladin").pressed.emit()
 	assert_eq(menu.page, "conversation")
-	assert_string_contains("\n".join(world.messages), "Speak with Brother Sammuel inside the abbey.")
+	var reply := "You don't look like Paladin... Anyway, go speak with Brother Sammuel, " \
+		+ "they will get you started. And check with Janos Hammerknuckle, " \
+		+ "they might have some old equipment lying around."
+	assert_string_contains("\n".join(world.messages), reply)
+	assert_string_contains(_text(menu), reply)
 	assert_eq(world.hero.selected_class, &"Paladin")
 	assert_eq(world.hero.equipment, equipment)
 	assert_eq(world.turn_count, 0)
 	menu.open_conversation(marshal)
 	assert_null(_button(menu, "It's been a long journey, is there a warrior master?"))
-	assert_null(_button(menu, "Uhm... I seek paladin teaching"))
+	assert_null(_button(menu, "I am .... paladin"))
 	var trainer := _contact(world, 925)
 	_beside(world, trainer)
 	menu.open_conversation(trainer)

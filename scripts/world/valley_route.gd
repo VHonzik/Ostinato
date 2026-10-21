@@ -25,12 +25,14 @@ static var _layout_info: Dictionary = {}
 
 
 static func instantiate_map() -> ValleyMap:
-	var scene := load(SCENE_PATH) as PackedScene
+	var scene := ResourceLoader.load(SCENE_PATH, "PackedScene",
+		ResourceLoader.CACHE_MODE_IGNORE) as PackedScene
 	return scene.instantiate() as ValleyMap
 
 
 static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	var map := instantiate_map()
+	_layout_info = map.layout_info()
 	var world := map.create_world(seed_value, development_build)
 	map.free()
 	return world
@@ -38,6 +40,7 @@ static func create_world(seed_value: int, development_build: bool) -> GridWorld:
 
 static func build_terrain(world: GridWorld) -> void:
 	var map := instantiate_map()
+	_layout_info = map.layout_info()
 	map.apply_terrain(world)
 	map.free()
 

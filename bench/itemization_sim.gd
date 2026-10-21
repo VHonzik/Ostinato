@@ -211,7 +211,7 @@ func _profile(identifiers: Array) -> Dictionary:
 func _swing_expectation(attacker: MeleeProfile, defender: MeleeProfile) -> float:
 	var probabilities: Dictionary = {}
 	for index in range(10000):
-		var outcome := MeleeRules.outcome(attacker, defender, false, (index + 0.5) / 100.0)
+		var outcome := MeleeRules.outcome(attacker, defender, (index + 0.5) / 100.0)
 		probabilities[outcome] = float(probabilities.get(outcome, 0.0)) + 0.0001
 	var bonus := attacker.attack_power / 14.0 * attacker.interval
 	var minimum := floori(attacker.damage_min + bonus)

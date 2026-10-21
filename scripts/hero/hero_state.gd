@@ -30,7 +30,6 @@ var health: int
 var swing := SwingTimer.new()
 var off_hand_swing := SwingTimer.new()
 var melee := MeleeProfile.new()
-var facing := Vector2i.DOWN
 var learned_skills: Array[SkillDefinition] = []
 var selected_class: StringName = &"Warrior"
 var equipment: Dictionary = {}
@@ -43,7 +42,6 @@ var cooldowns: Dictionary = {}
 var potion_ready_turn: int = 0
 var restoration: Dictionary = {}
 var debuffs: Dictionary = {}
-var _passive_hit_bonus: float = 0.0
 
 
 func _init(development_build: bool = OS.is_debug_build()) -> void:
@@ -141,11 +139,10 @@ func refresh_melee_stats() -> void:
 	var bonus_agility := agility - PRIMARY_STAT_BASE
 	melee.critical = BASE_CRITICAL_CHANCE + base_agility_percent
 	melee.critical += bonus_agility * AGILITY_CRIT_PERCENT + critical_bonus
-	melee.critical += ClassToolkitRules.magnitude(self, &"cruelty_1")
+	melee.critical += ClassToolkitRules.magnitude(self, &"weapon_mastery_1")
 	melee.critical += ClassToolkitRules.magnitude(self, &"conviction_1")
-	melee.hit -= _passive_hit_bonus
-	_passive_hit_bonus = ClassToolkitRules.magnitude(self, &"precision_1")
-	melee.hit += _passive_hit_bonus
+	melee.cannot_miss = find_skill(&"precision_1") != null
+	melee.ignores_dodge = find_skill(&"weapon_mastery_1") != null
 	melee.dodge = 3.25 + base_agility_percent + bonus_agility * AGILITY_DODGE_PERCENT
 	melee.damage_min = 1.0
 	melee.damage_max = 2.0
@@ -175,6 +172,8 @@ func off_hand_melee() -> MeleeProfile:
 	weapon.attack_power = melee.attack_power
 	weapon.critical = melee.critical
 	weapon.hit = melee.hit
+	weapon.cannot_miss = melee.cannot_miss
+	weapon.ignores_dodge = melee.ignores_dodge
 	var off_hand_percent := BASE_OFF_HAND_DAMAGE_PERCENT
 	off_hand_percent += ClassToolkitRules.magnitude(self, &"ambidexterity_1")
 	weapon.damage_multiplier = melee.damage_multiplier * off_hand_percent / 100.0

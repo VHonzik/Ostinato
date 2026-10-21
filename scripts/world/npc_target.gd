@@ -9,9 +9,6 @@ var tile: Vector2i:
 var melee: MeleeProfile:
 	get:
 		return _world.hero.melee if is_player() else actor.melee
-var facing: Vector2i:
-	get:
-		return _world.hero.facing if is_player() else actor.facing
 var title: String:
 	get:
 		return "You" if is_player() else actor.title
@@ -28,10 +25,6 @@ func _init(world: GridWorld, selected_actor: GridActor) -> void:
 
 func is_player() -> bool:
 	return actor == null
-
-
-func has_evasion() -> bool:
-	return is_player() and _world.hero.buffs.has(&"evasion_1")
 
 
 func take_damage(amount: int, result: StringName) -> void:

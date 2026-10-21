@@ -16,7 +16,7 @@ func test_hidden_northeast_wall_passage_keeps_wall_art_and_connects_inside_to_ou
 	var milly := _actor(world, "fixed/9296")
 	var shaman := _actor(world, "fixed/900002")
 	assert_true(world.indoor_tiles.has(milly.tile))
-	assert_lte(GridWorld.tile_distance(shaman.tile, Vector2i(31, 48)), 2)
+	assert_eq(shaman.tile, NpcDefinition.find(900002).tile)
 
 
 func test_scene_placements_set_spawn_home_and_wandering_without_changing_loot_identity() -> void:
@@ -76,7 +76,7 @@ func test_painted_scenery_controls_movement_and_sight_and_floor_controls_indoors
 	map.free()
 
 
-func test_contact_and_treasure_placements_override_definitions_and_remain_saved() -> void:
+func test_contacts_reload_scene_positions_and_treasures_retain_saved_positions() -> void:
 	var map := ValleyRoute.instantiate_map()
 	var contact: ValleyActorSpawn
 	var chest: ValleyActorSpawn
@@ -97,7 +97,7 @@ func test_contact_and_treasure_placements_override_definitions_and_remain_saved(
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), false)
 	assert_not_null(restored)
 	if restored != null:
-		assert_eq(_actor(restored, contact.spawn_id).tile, contact.tile())
+		assert_eq(_actor(restored, contact.spawn_id).tile, NpcDefinition.find(contact.npc_id).tile)
 		assert_eq(_actor(restored, chest.spawn_id).tile, chest.tile())
 		assert_eq(_actor(restored, chest.spawn_id).spawn_id, chest.spawn_id)
 	map.free()

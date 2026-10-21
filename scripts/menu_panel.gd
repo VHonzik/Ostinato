@@ -224,7 +224,18 @@ func open_trainer(category: StringName, selected_skill: StringName = &"") -> voi
 	else:
 		_label("Level %d / %s. Learning is permanent; starter skills are free." % [
 			session.world.hero.level, InventoryRules.money(session.world.hero.copper)])
-		for skill in SkillDefinition.trainer_skills(category):
+		var skills := SkillDefinition.trainer_skills(category)
+		skills.sort_custom(func(a: SkillDefinition, b: SkillDefinition) -> bool:
+			var a_known := session.world.hero.find_skill(a.id) != null
+			var b_known := session.world.hero.find_skill(b.id) != null
+			if a_known != b_known:
+				return not a_known
+			if a.training_level != b.training_level:
+				return a.training_level < b.training_level
+			if a.training_copper != b.training_copper:
+				return a.training_copper < b.training_copper
+			return a.title.naturalnocasecmp_to(b.title) < 0)
+		for skill in skills:
 			var known := session.world.hero.find_skill(skill.id) != null
 			var price := "Free" if skill.training_copper == 0 else InventoryRules.money(skill.training_copper)
 			var status := "Learned" if known else price
@@ -731,7 +742,8 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 	if session.select_class(category, marshal):
 		session.world.trainer_referral_received = true
 		refreshed.emit()
-		_show_conversation(marshal)
+		_show_conversation(marshal, false,
+			session.world.messages[-1].trim_prefix("Marshal: "))
 	else:
 		notice("Class choice is unavailable. Speak to the marshal outside combat before accepting a quest.",
 			_show_conversation.bind(marshal))
@@ -768,7 +780,8 @@ func open_conversation(actor: GridActor) -> void:
 	_show_conversation(actor)
 
 
-func _show_conversation(actor: GridActor, prefer_available_quest: bool = false) -> void:
+func _show_conversation(actor: GridActor, prefer_available_quest: bool = false,
+	reply: String = "") -> void:
 	var conversation := NpcConversation.build(session, actor)
 	if conversation == null:
 		close()
@@ -779,7 +792,7 @@ func _show_conversation(actor: GridActor, prefer_available_quest: bool = false) 
 	else:
 		_begin("conversation", actor.title, close)
 		var selected_button: Button
-		_label(conversation.greeting)
+		_label(conversation.greeting if reply == "" else reply)
 		for line in conversation.lines:
 			_label(line)
 		for choice in conversation.choices:
@@ -846,21 +859,21 @@ func open_quest_log() -> void:
 	for identifier in session.world.quests:
 		if not session.world.quests[identifier].handed_in:
 			count += 1
-			_quest_button(identifier, "Ready: " if QuestRules.ready(session.world, identifier)
-				else "In progress: ", _quest_detail.bind(identifier, null))
+			_quest_button(identifier, "? ", _quest_detail.bind(identifier, null))
 	if count == 0:
-		_label("No active quests. Speak to Deputy Willem beside the abbey.")
+		_label("No active quests. Speak to Marshal McBride outside the abbey.")
 	_button("Close (Esc)", close)
 	_finish()
 
 
 func _quest_button(identifier: String, prefix: String, action: Callable) -> void:
 	var quest: Dictionary = QuestData.QUESTS[identifier]
-	var band := QuestRules.difficulty(int(quest.level), session.world.hero.level)
-	var button := _button("%s%s [%s]" % [prefix, quest.title, band], action)
-	var colors := {"Gray": Color.GRAY, "Green": Color("#70d779"),
-		"Yellow": Color("#ffdd66"), "Orange": Color("#ffa34d"), "Red": Color("#ff7777")}
-	button.add_theme_color_override("font_color", colors[band])
+	var button := _button(prefix + String(quest.title), action)
+	var color := Color("ffdd66")
+	if prefix == "? " and not QuestRules.ready(session.world, identifier):
+		color = Color.GRAY
+	for state in HotbarPanel.LABEL_COLOR_STATES:
+		button.add_theme_color_override(state, color)
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 
@@ -869,9 +882,13 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 	var world := session.world
 	var quest: Dictionary = QuestData.QUESTS[identifier]
 	_begin("quest_detail", quest.title, back)
+	var available := QuestRules.available(world, identifier)
+	var ready := QuestRules.ready(world, identifier)
+	_label(QuestData.dialogue(identifier, 0 if available else (2 if ready else 1)))
 	_label("Level %d / %s. Return to %s." % [quest.level,
 		QuestRules.difficulty(int(quest.level), world.hero.level),
 		NpcDefinition.display_name(int(quest.receiver))])
+	_label("Objectives")
 	for index in range(quest.objectives.size()):
 		var objective: QuestObjective = quest.objectives[index]
 		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0
@@ -886,7 +903,7 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 			_label("Objectives complete — ready for hand-in.")
 			if actor != null and actor.npc_id == int(quest.receiver):
 				if quest.choices.is_empty():
-					_button("Hand in", _transaction.bind(
+					_button("Complete", _transaction.bind(
 						QuestRules.hand_in.bind(world, identifier, actor), back))
 				else:
 					for item in quest.choices:
@@ -902,7 +919,7 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 			_item_label(int(item))
 	for item in quest.get("rewards", []):
 		_item_label(int(item))
-	_button("Back (Esc)", back)
+	_button("Cancel (Esc)" if available else "Back (Esc)", back)
 	_finish()
 
 

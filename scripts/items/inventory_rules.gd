@@ -7,6 +7,20 @@ const SLOTS: Array[String] = [
 ]
 
 
+static func has_quality_upgrade(hero: HeroState) -> bool:
+	for item in hero.inventory:
+		if item.is_empty():
+			continue
+		var data := ItemData.get_item(int(item.id))
+		for slot in SLOTS:
+			if not fits_slot(data, slot):
+				continue
+			var equipped: Dictionary = hero.equipment.get(slot, {})
+			if equipped.is_empty() or int(data.quality) > int(ItemData.get_item(int(equipped.id)).quality):
+				return true
+	return false
+
+
 ## Display order only: actions keep the original slot indices and stack provenance.
 static func sorted_indices(inventory: Array[Dictionary]) -> Array[int]:
 	var indices: Array[int] = []

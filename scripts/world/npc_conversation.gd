@@ -35,10 +35,10 @@ static func build(session: GameSession, actor: GridActor) -> NpcConversation:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
 		var prefix := ""
 		if QuestRules.available(world, identifier) and int(quest.giver) == actor.npc_id:
-			prefix = "Available: "
+			prefix = "! "
 		elif (world.quests.has(identifier) and not world.quests[identifier].handed_in
 			and int(quest.receiver) == actor.npc_id):
-			prefix = "Ready: " if QuestRules.ready(world, identifier) else "In progress: "
+			prefix = "? "
 		if prefix != "":
 			var choice := Choice.new(quest.title, Action.QUEST)
 			choice.quest_id = identifier
@@ -95,11 +95,9 @@ class Marshal extends Service:
 		elif session.loop_count > 1 and not session.can_select_class():
 			conversation.lines.append("Return outside combat to choose your class before accepting a quest.")
 		if session.can_select_class():
-			for category: StringName in ClassSkillData.PLAYABLE_CLASSES:
-				var title := "Uhm... I seek %s teaching" % String(category).to_lower()
-				if category == &"Warrior" or session.loop_count >= 4:
-					title = "I am %s" % String(category).to_lower()
-				elif session.loop_count == 3:
+			for category: StringName in session.selectable_classes():
+				var title := "I am %s" % String(category).to_lower()
+				if category != &"Warrior" and session.loop_count == 3:
 					title = "I am .... %s" % String(category).to_lower()
 				var choice := Choice.new(title, Action.SELECT_CLASS)
 				choice.category = category

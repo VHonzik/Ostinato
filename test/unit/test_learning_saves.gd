@@ -123,14 +123,14 @@ func test_invalid_equipment_stacks_effects_and_stock_are_rejected_without_partia
 	assert_null(SaveCodec.restore(bad, true))
 
 
-func test_revision_one_save_is_incompatible_and_preserved_without_renaming() -> void:
+func test_previous_revision_save_is_incompatible_and_preserved_without_renaming() -> void:
 	var directory := "user://test_m5_revision_" + Crypto.new().generate_random_bytes(8).hex_encode()
 	var saves := SaveStore.new(directory)
 	var game := GameSession.new()
 	game.new_game(79)
 	assert_true(saves.save_slot(game, 1), saves.last_error)
 	var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(saves.slot_path(1)))
-	record.revision = 1
+	record.revision = 34
 	var file := FileAccess.open(saves.slot_path(1), FileAccess.WRITE)
 	file.store_string(JSON.stringify(record))
 	file.close()

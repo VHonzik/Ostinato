@@ -14,3 +14,5 @@ var critical: float = 5.0
 var dodge: float = 5.0
 
 var hit: float = 0.0
+var cannot_miss: bool = false
+var ignores_dodge: bool = false

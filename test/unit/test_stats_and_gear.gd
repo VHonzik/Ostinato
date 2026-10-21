@@ -59,7 +59,7 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	game.world.hero._apply_level_stats()
 	game.world.hero.inventory[0] = ItemData.instance(2572)
 	assert_true(InventoryRules.equip(game.world.hero, 0))
-	assert_true(game.world.hero.learn_skill(SkillDefinition.catalog(&"cruelty_1")))
+	assert_true(game.world.hero.learn_skill(SkillDefinition.catalog(&"weapon_mastery_1")))
 	game.world.hero.health = 10
 	game.world.hero.swing.remaining = 1.25
 	game.world.hero.off_hand_swing.remaining = 0.75
@@ -82,7 +82,7 @@ func test_gear_stats_are_rebuilt_on_load_and_lost_on_death_with_learning_retaine
 	assert_eq(game.world.hero.level, 1)
 	assert_eq(game.world.hero.equipment.armor.id, 44)
 	assert_almost_eq(game.world.hero.attack_haste(), 1.0, 0.00001)
-	assert_not_null(game.world.hero.find_skill(&"cruelty_1"))
+	assert_not_null(game.world.hero.find_skill(&"weapon_mastery_1"))
 
 
 func test_janos_sells_common_gear_and_finite_health_supplies() -> void:

@@ -69,6 +69,7 @@ var stalker_schedule: bool = false
 var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
+var chosen_classes: Array[StringName] = [&"Warrior"]
 var starter_gear_received: bool = false
 var war_horn_received: bool = false
 var lucky_charm_received: bool = false
@@ -335,7 +336,9 @@ func move_player(direction: Vector2i) -> bool:
 	if not DIRECTIONS.has(direction) or movement_speed <= 0.0:
 		return false
 	for actor in actors:
-		if actor.chest and actor.corpse_visible and actor.tile == player_tile + direction:
+		if (actor.corpse_visible and actor.tile == player_tile + direction
+			and (actor.chest or (not actor.alive
+				and actor.death_player_tile == player_tile))):
 			_neutral_bump_target = null
 			loot_interaction_requested.emit(actor)
 			return false
@@ -364,8 +367,10 @@ func move_player(direction: Vector2i) -> bool:
 	movement_credit += movement_speed * (1.0 + ClassToolkitRules.magnitude(hero, &"pursuit_of_justice_1") / 100.0)
 	while movement_credit >= 1.0 - 0.000001 and is_open(player_tile + direction):
 		player_tile += direction
+		for corpse in actors:
+			if not corpse.alive:
+				corpse.death_player_tile = Vector2i(-1, -1)
 		QuestRules.visit(self)
-		hero.facing = direction
 		movement_credit = maxf(0.0, movement_credit - 1.0)
 		NpcRules.acquire_hostiles(self)
 	_finish_turn()
@@ -443,8 +448,6 @@ func _begin_cast(skill: SkillDefinition, target: GridActor,
 		target.returning_home = false
 		if skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE, SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT]:
 			auto_attack_target = target
-	if target != null:
-		hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
 	continue_cast()
 
 
@@ -512,8 +515,10 @@ func _continue_charge() -> bool:
 		# The wind-up is followed by automatic travel using its own speed, not movement credit.
 		var steps := mini(skill.travel_speed, route.size() - 1)
 		for index in range(1, steps + 1):
-			hero.facing = MeleeRules.facing_toward(route[index] - player_tile)
 			player_tile = route[index]
+			for corpse in actors:
+				if not corpse.alive:
+					corpse.death_player_tile = Vector2i(-1, -1)
 			QuestRules.visit(self)
 			NpcRules.acquire_hostiles(self)
 		if steps == route.size() - 1:
@@ -777,7 +782,6 @@ func request_melee(target: GridActor) -> bool:
 	target.relationship = GridActor.Relationship.HOSTILE
 	target.engaged = true
 	target.returning_home = false
-	hero.facing = MeleeRules.facing_toward(target.tile - player_tile)
 	hero.restoration.clear()
 	pending_melee = target
 	auto_attack_target = target
@@ -936,6 +940,7 @@ func _check_npc_death(target: GridActor, death_turn: int = -1) -> void:
 			add_message(target.title + " dies.")
 			return
 		target.alive = false
+		target.death_player_tile = player_tile
 		StalkerBreath.reset(target)
 		target.debuffs.erase(&"judgement_1")
 		target.debuffs.erase(&"heart_of_the_crusader_1")
@@ -1007,7 +1012,6 @@ func _move_actor(actor: GridActor, tile: Vector2i) -> void:
 		return
 	if actor == _neutral_bump_target and tile != actor.tile:
 		_neutral_bump_target = null
-	actor.facing = MeleeRules.facing_toward(tile - actor.tile)
 	actor.tile = tile
 
 
@@ -1093,10 +1097,12 @@ func _regenerate() -> void:
 		last_attacked_enemy = null
 		auto_attack_target = null
 		hero.decay_rage()
-	if turn_count % 2 != 0:
-		return
 	if not in_combat():
-		hero.health = mini(hero.max_health, hero.health + 6)
+		# Keep whole HP ticks: 1.5 HP/turn at levels 1-2, 0.3 thereafter.
+		var rate := 1.5 if hero.level <= 2 else 0.3
+		var healing := (floori(turn_count * rate + 0.000001)
+			- floori((turn_count - 1) * rate + 0.000001))
+		hero.health = mini(hero.max_health, hero.health + healing)
 
 
 func _arrive_stalker() -> void:

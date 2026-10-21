@@ -31,13 +31,13 @@ func _enemy(world: GridWorld) -> GridActor:
 	enemy.max_health = 10000
 	enemy.health = enemy.max_health
 	enemy.melee.level = world.hero.level
+	enemy.melee.ignores_dodge = true
 	enemy.melee.hit = 100.0
 	enemy.melee.critical = 0.0
 	enemy.melee.attack_power = 0
 	enemy.melee.damage_min = 20.0
 	enemy.melee.damage_max = 20.0
 	enemy.melee.interval = 2.4
-	world.hero.facing = Vector2i.LEFT # Hit from behind: no random dodge, still blockable.
 	world.actors.append(enemy)
 	return enemy
 
@@ -81,7 +81,7 @@ func test_misses_and_dodges_do_not_consume_a_block_roll() -> void:
 	for missed in [true, false]:
 		var world := _world()
 		var enemy := _enemy(world)
-		world.hero.facing = Vector2i.RIGHT
+		enemy.melee.ignores_dodge = false
 		world.hero.melee.dodge = 100.0
 		if missed:
 			enemy.melee.hit = -1000.0

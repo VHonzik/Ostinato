@@ -20,15 +20,17 @@ func test_returning_loops_gate_other_contacts_and_change_class_choice_wording() 
 		game.world.player_tile = marshal.tile + Vector2i.DOWN
 		assert_true(QuestRules.has_marker(game.world, marshal))
 		var conversation := NpcConversation.build(game, marshal)
-		assert_eq(conversation.choices.size(), 4)
-		var expected: String = ["Uhm... I seek rogue teaching", "I am .... rogue", "I am rogue"][loop_number - 2]
-		assert_eq(conversation.choices[3].title, expected)
+		assert_eq(conversation.choices.size(), 1 if loop_number == 2 else 4)
+		var expected := "I am warrior" if loop_number == 2 else (
+			"I am .... rogue" if loop_number == 3 else "I am rogue")
+		assert_eq(conversation.choices[0 if loop_number == 2 else 3].title, expected)
 		var menu := _menu(game)
 		menu.open_conversation(marshal)
 		assert_eq(get_viewport().gui_get_focus_owner().text, expected)
-		assert_true(game.select_class(&"Rogue", marshal))
+		var category: StringName = &"Warrior" if loop_number == 2 else &"Rogue"
+		assert_true(game.select_class(category, marshal))
 		var trainer: GridActor = game.world.actors.filter(func(actor: GridActor) -> bool:
-			return actor.service == &"Rogue")[0]
+			return actor.service == category)[0]
 		game.world.player_tile = trainer.tile + Vector2i.DOWN
 		assert_true(NpcConversation.build(game, trainer).choices.any(
 			func(choice: NpcConversation.Choice) -> bool: return choice.action == NpcConversation.Action.TRAIN))
@@ -71,12 +73,13 @@ func _marshal(game: GameSession) -> GridActor:
 	return null
 
 
-func _returning_game() -> GameSession:
+func _returning_game(loop_number: int = 3) -> GameSession:
 	var game := GameSession.new()
 	game.development_build = false
 	game.new_game(97)
-	game.world.hero.health = 0
-	assert_true(game.restart_after_death())
+	for loop in range(1, loop_number):
+		game.world.hero.health = 0
+		assert_true(game.restart_after_death())
 	game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 	return game
 
@@ -86,11 +89,16 @@ func _learn_starters(world: GridWorld, category: StringName) -> void:
 		world.hero.learn_skill(skill)
 
 
-func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_training() -> void:
+func test_first_two_loops_require_warrior_and_third_leaves_new_starters_for_training() -> void:
 	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
 		var game := GameSession.new()
 		game.development_build = false
 		game.new_game(97)
+		game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
+		assert_false(game.select_class(category, _marshal(game)))
+		assert_eq(game.world.hero.selected_class, &"Warrior")
+		game.world.hero.health = 0
+		assert_true(game.restart_after_death())
 		game.world.player_tile = _marshal(game).tile + Vector2i.DOWN
 		assert_false(game.select_class(category, _marshal(game)))
 		assert_eq(game.world.hero.selected_class, &"Warrior")
@@ -114,6 +122,84 @@ func test_first_loop_requires_warrior_and_selection_leaves_new_starters_for_trai
 		assert_null(game.world.hero.find_skill(&"lightning_bolt_1"))
 		assert_eq(game.world.hotbar.slice(0, 2), [&"mortal_strike_1", &"whirlwind_1"])
 		assert_false(game.select_class(&"Warrior", _marshal(game)), "Only one choice per Loop.")
+
+
+func test_second_loop_gate_survives_save_then_third_loop_unlocks_other_classes() -> void:
+	var game := _returning_game(2)
+	var snapshot := SaveCodec.capture(game)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	game.restore(restored, game.seed_value, 2)
+	var marshal := _marshal(game)
+	assert_true(game.can_select_class())
+	for category: StringName in [&"Shaman", &"Paladin", &"Rogue"]:
+		assert_false(game.select_class(category, marshal))
+	assert_eq(SaveCodec.capture(game), snapshot, "Rejected classes leave the attempt unchanged.")
+	var choices := NpcConversation.build(game, marshal).choices
+	assert_eq(choices.size(), 1)
+	assert_eq(choices[0].category, &"Warrior")
+	assert_true(game.select_class(&"Warrior", marshal))
+	assert_false(game.can_select_class())
+	game.world.hero.health = 0
+	assert_true(game.restart_after_death())
+	assert_eq(game.loop_count, 3)
+	marshal = _marshal(game)
+	game.world.player_tile = marshal.tile + Vector2i.DOWN
+	choices = NpcConversation.build(game, marshal).choices
+	assert_eq(choices.size(), 4)
+	assert_true(game.select_class(&"Shaman", marshal))
+
+
+func test_first_class_referral_survives_saving_and_switching_without_training() -> void:
+	var game := _returning_game()
+	var marshal := _marshal(game)
+	assert_true(game.select_class(&"Shaman", marshal))
+	assert_eq(game.world.messages[-1], "Marshal: You don't look like Shaman... "
+		+ "Anyway, go speak with Farseer Lopaa, they will get you started. "
+		+ "And check with Janos Hammerknuckle, they might have some old equipment lying around.")
+	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
+	var snapshot := SaveCodec.capture(game)
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	game.restore(restored, game.seed_value, game.loop_count)
+	for category: StringName in [&"Rogue", &"Shaman", &"Warrior"]:
+		game.world.hero.health = 0
+		assert_true(game.restart_after_death())
+		marshal = _marshal(game)
+		game.world.player_tile = marshal.tile + Vector2i.DOWN
+		assert_true(game.select_class(category, marshal))
+		if category == &"Rogue":
+			assert_string_contains(game.world.messages[-1], "You don't look like Rogue...")
+			assert_string_contains(game.world.messages[-1], "go speak with Jorik Kerridan,")
+		else:
+			var trainer := "Farseer Lopaa" if category == &"Shaman" else "Llane Beshere"
+			assert_eq(game.world.messages[-1],
+				("Marshal: Speak with Janos Hammerknuckle, he always has supplies lying around. "
+					+ "And %s is our own %s if you need some guidance.") % [
+						trainer, String(category).to_lower()])
+	assert_eq(snapshot.chosen_classes, ["Warrior", "Shaman"],
+		"Later choices must not mutate a previously captured save.")
+	game.new_game(97)
+	assert_eq(game.world.chosen_classes, [&"Warrior"])
+
+
+func test_saved_class_history_rejects_invalid_values_and_defaults_when_absent() -> void:
+	var game := _returning_game()
+	var snapshot := SaveCodec.capture(game)
+	for history: Variant in [null, "Warrior", [], ["Mage"], ["Warrior", "Warrior"],
+		["Shaman"], ["Warrior", 1]]:
+		var damaged := snapshot.duplicate(true)
+		damaged.chosen_classes = history
+		assert_null(SaveCodec.restore(damaged, false))
+	snapshot.erase("chosen_classes")
+	var restored := SaveCodec.restore(snapshot, false)
+	assert_not_null(restored)
+	if restored != null:
+		assert_eq(restored.chosen_classes, [&"Warrior"])
 
 
 func test_choice_revalidates_range_combat_and_quest_cutoff_without_mutation() -> void:
@@ -402,7 +488,8 @@ func _key(key: Key) -> InputEventKey:
 
 func _class_choice(menu: MenuPanel, category: StringName) -> Button:
 	var title := ("I am warrior" if category == &"Warrior"
-		else "Uhm... I seek %s teaching" % String(category).to_lower())
+		else ("I am .... %s" if menu.session.loop_count == 3 else "I am %s")
+			% String(category).to_lower())
 	for button in menu._buttons:
 		if button.text == title:
 			return button
@@ -509,7 +596,6 @@ func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() 
 	_learn_starters(world, &"Rogue")
 	world.hero.rage = 100
 	var enemy := _enemy(world)
-	enemy.facing = Vector2i.LEFT
 	world.hero.melee.hit = 100.0
 	world.hero.melee.interval = 2.0
 	world.hero.melee.damage_min = 10.0

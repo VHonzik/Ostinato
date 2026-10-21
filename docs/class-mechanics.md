@@ -44,8 +44,9 @@ and the implementation together.
 
 ## Shared mechanics
 
-New Game starts as Warrior knowing Mortal Strike and Whirlwind. From Loop two, choose
-Warrior, Shaman, Paladin or Rogue at the marshal before accepting quests. Selection
+New Game starts as Warrior knowing Mortal Strike and Whirlwind. Loop two offers only
+Warrior at the marshal; from Loop three, choose Warrior, Shaman, Paladin or Rogue
+before accepting quests. Selection
 locks training to that class until death. Trainers are Llane (Warrior), Farseer Lopaa
 (Shaman), Brother Sammuel (Paladin) and Jorik Kerridan (Rogue). Other starter pairs
 are free level-1 trainer purchases. Later purchases require the listed current-Loop
@@ -54,11 +55,19 @@ passives persist across deaths and work in every class, even below their origina
 training level. Passives cannot be cast/assigned to the hotbar. All gear is usable
 in every class without learning or level requirements.
 
+The marshal introduces each newly chosen class with its trainer's name and a referral
+to Janos Hammerknuckle for spare equipment. First-choice history persists across
+death and saving independently of training; later choices mention Janos's supplies
+and the matching trainer's class guidance.
+Warrior is already known at New Game.
+
 All classes use rage, capped at 100. Ordinary main-hand swing attempts generate 7 rage
 per turn of the weapon's base interval, independent of haste and hit result. Damaging
 incoming hits grant 3 rage at most once per world turn. Ordinary off-hand swings and
 bonus strikes generate no baseline rage. Outside combat, rage decays by 2 per turn,
-or 0.5 with Anger Management; fractional rage is retained internally.
+or 0.5 with Anger Management; fractional rage is retained internally. Natural healing
+works only outside combat: 1.5 HP per turn at levels 1–2 and 0.3 HP per turn thereafter,
+delivered as whole-HP ticks. Food and other healing keep their own rules.
 
 Table rage costs are base costs. Battle Trance makes the next rage-costing active free.
 Execute first uses Sudden Death if ready; otherwise Battle Trance applies to
@@ -85,7 +94,12 @@ Tooltips explain the highlighted states without consuming procs.
 Weapon damage uses the main hand and Strength-derived weapon power unless specified
 otherwise. Physical attacks use hit, dodge, critical and armor rules; learned Shield
 Block can partially reduce incoming physical hits while a shield is equipped.
+Dodge is flat in every direction, without a level modifier or front/rear rule.
+Weapon Mastery prevents enemy dodges for both hands, physical abilities and bonus weapon strikes.
 Direct Holy/Fire/Nature attacks use hit/critical rules and bypass armor and Shield Block.
+Precision prevents misses for weapon and direct magical attacks at every enemy level;
+it does not prevent dodges. Without Precision, miss chance is 5% plus 2 percentage
+points per higher enemy level, capped at 95% before other hit modifiers.
 Level differences and applicable buffs
 still modify listed base damage. Haste changes independent hand swing timers, not action
 count or ability cooldowns. Restless Blades can reduce running cooldowns.
@@ -98,10 +112,9 @@ Consecration and Deadly Poison resolve, followed by due player swings and enemy 
 Final verdicts/poison ticks are preserved. Terminal death/victory stops further resolution.
 Death clears temporary combat state, summons, coatings, ground and combo points, retaining
 learning. Saves retain implemented mid-Loop effect state, including banked Maelstrom.
-Current saves use revision 33; earlier revisions are incompatible and left unchanged.
-Revision 33 replaces Heart of the Crusader's timed critical debuff with a persistent,
-single-use melee vulnerability.
-The catalogue has 32 passives. Folded effects are intrinsic to their parent abilities,
+Current saves use revision 1 after the experimental schema squash; other revisions
+are incompatible and left unchanged.
+The catalogue has 33 passives. Folded effects are intrinsic to their parent abilities,
 with the parents' learning levels/prices unchanged; there are no replacement purchases.
 Eviscerate refunds rage after spending, including on a miss, and never refunds points.
 
@@ -119,7 +132,8 @@ active crits. Eviscerate alone spends combo points; Execute and Judgement do not
 **Tagline: Turn pain into rage, strike decisively, and raise a shield when survival matters.**
 
 Physical burst, adjacent cleave, rage preparation, a travel opener and low-health
-execution. Enrage rewards taking hits; Death Wish raises damage and risk as health
+execution. Weapon Mastery combines critical chance with undodgeable weapon attacks.
+Enrage rewards taking hits; Death Wish raises damage and risk as health
 falls. Later Shield Block gives equipped shields a passive physical defense, including
 immediately after a combat weapon swap. Mortal Strike is the larger single-target
 spender; Whirlwind gains value against groups. Wrecking Crew strengthens developed
@@ -147,12 +161,12 @@ a new gift next Loop. The horn, claim and cooldown persist through mid-Loop save
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
 | Death Wish | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
-| Cruelty | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. |
+| Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies cannot dodge either hand, physical abilities or bonus weapon strikes. Does not prevent misses. Retained learning works in every class. Replaces Cruelty at the same learning level and price. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
 | Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
 | Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
 | Victory Rush | - | - | 6* | - | - | 4 | 285c | - | - | Passive. Nonfriendly enemy deaths heal 10% of maximum health, rounded down, including kills by damage effects or summons. All qualifying kills share a 6-turn internal cooldown; further kills during it do not heal. Overhealing also starts the cooldown. Uses the resolved death turn across action and periodic phases; Restless Blades cannot shorten it. Cooldown survives saves and clears on death. Summons dying and friendly actors do not qualify. Terminal victory/death stops further rewards. |
-| Shield Block | - | - | - | - | - | 4 | 320c | - | - | Passive. With a shield equipped, each damaging physical hit independently has a 30% chance to prevent 70% of damage remaining after armor, Death Wish and banner protection. Remaining damage rounds up to at least 1 HP. Includes critical hits and attacks from behind, with no per-turn cap or cooldown. Does not protect summons, block magic or roll on misses, dodges or immune hits. Partial blocks retain incoming-hit rage and eligibility for Enrage and Lightning Shield. Combat log reports prevented damage; no effect sprite. Retained learning works in every class and below its learning level. |
+| Shield Block | - | - | - | - | - | 4 | 320c | - | - | Passive. With a shield equipped, each damaging physical hit independently has a 30% chance to prevent 70% of damage remaining after armor, Death Wish and banner protection. Remaining damage rounds up to at least 1 HP. Includes critical hits, with no per-turn cap or cooldown. Does not protect summons, block magic or roll on misses, dodges or immune hits. Partial blocks retain incoming-hit rage and eligibility for Enrage and Lightning Shield. Combat log reports prevented damage; no effect sprite. Retained learning works in every class and below its learning level. |
 | Sweeping Strikes | - | - | - | - | 1 (secondary target) | 5 | 370c | - | - | Passive. Landed single-target direct physical actives copy 50% of their damage to one other hostile enemy in melee. Whirlwind cannot trigger copies. Copies cannot proc, crit or generate rage/combo points. |
 | Sudden Death | - | - | - | * | - | 5 | 405c | - | - | Passive. Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage. |
 | Wrecking Crew | - | - | - | 10 | - | 5 | 450c | - | - | Passive. Primary physical crits grant +25% physical damage for 10 turns. While active, Whirlwind deals an additional 35% more damage, multiplying its weapon coefficient separately from the shared physical buff. Refreshes without stacking; both bonuses end with the buff. |
@@ -271,7 +285,7 @@ claim clear on death, allowing another gift with retained Rogue learning next Lo
 | Relentless Assault | - | - | - | * | - | 1 | 0 | - | - | Passive. landed direct active attacks and ordinary main-hand hits grant 1 player-held combo point, up to 5, across classes and targets. At most 1 Relentless Assault point per turn. Off-hand hits, procs, buffs and misses grant none. Points reset on death. |
 | Slice and Dice | - | - | - | * | - | 1 | 10c | - | - | Passive finisher upgrade. Eviscerate grants +30% attack haste for 5 + 3 turns per point spent (8-20 turns), even on a miss. Refreshes without stacking. No extra rage/action; cannot be cast/assigned separately. Ordinary ability cooldowns are unchanged. |
 | Ambidexterity | - | - | - | - | - | 2 | 60c | - | - | Passive. Raises off-hand weapon damage from 50% to 75% in any class. Dual-wield pairs are always usable; off-hand swings grant no ordinary rage. |
-| Evasion | 15 | 1 | 20 | 5 | Self | 2 | 90c | C(2,3) | Player | Active. +40% dodge for 5 turns, including attacks from behind. Costs one action. |
+| Evasion | 15 | 1 | 20 | 5 | Self | 2 | 90c | C(2,3) | Player | Active. +40% dodge for 5 turns, in every direction. Costs one action. |
 | Combat Potency | - | - | - | - | - | 3 | 120c | - | - | Passive. Landed ordinary off-hand swings have a 20% chance to grant 5 rage. |
 | Seal Fate | - | - | - | - | - | 3 | 150c | - | - | Passive. Requires learned Relentless Assault. Qualifying landed direct active crits grant 1 additional player-held point, up to 5, even if the base point for the turn was already granted. Finishers and bonus strikes do not qualify. |
 | Main Gauche | - | - | - | - | - | 3 | 190c | - | - | Passive. Landed ordinary main-hand swings have a 15% chance for one strike at 100% of the off-hand damage profile, including its normal 50%/75% damage multiplier. Requires an off-hand weapon; normal hit/armor apply, with no crits, recursive procs, rage or combo points. |
@@ -281,7 +295,7 @@ claim clear on death, allowing another gift with retained Rogue learning next Lo
 | Restless Blades | - | - | - | - | - | 4 | 270c | - | - | Passive finisher reward. After Eviscerate spends points, including on a miss, reduce every currently recorded ability cooldown by ceiling(points spent / 2) turns, never below ready now. Includes preparation and summon cooldowns as well as offensive/defensive abilities. |
 | Catalytic Venom | - | - | - | - | - | 5 | 310c | - | - | Passive. While dual wielding, Instant Poison on your faster base-speed weapon also applies one stack of the slower weapon's Deadly Poison. Both coatings must be active. Equal-speed weapons do not catalyze. No extra roll or recursive procs. |
 | Bandit's Guile | - | - | - | 10 | - | 5 | 370c | - | - | Passive. Every 4 qualifying landed direct active attacks grant +5% damage, stacking to +15%. Each qualifying hit refreshes the 10-turn state, including partially built progress. Misses and finishers do not advance it. Retained class attacks qualify. |
-| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. +5 percentage points of hit chance for weapon/physical and direct Holy/Fire/Nature attacks. |
+| Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. Weapon/physical and direct Holy/Fire/Nature attacks never miss, including against higher-level enemies. Enemies may still dodge weapon attacks unless Weapon Mastery is learned. |
 
 ## Implementation sources and upkeep
 
