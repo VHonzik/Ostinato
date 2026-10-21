@@ -2,7 +2,7 @@ class_name MenuPanel
 extends Control
 
 ## Shared keyboard/mouse menus; only committed equipment/use actions advance simulation.
-signal new_game_requested
+signal new_game_requested(chosen_seed: int)
 signal return_to_menu_requested
 signal refreshed
 signal fullscreen_changed
@@ -89,10 +89,21 @@ func _ready() -> void:
 func open_main() -> void:
 	active_game = false
 	_begin("main", "OSTINATO", Callable())
-	_button("New Game", _new_game)
+	_button("New Game", open_world_seeds)
 	_button("Load", open_slots)
 	_button("Options", open_options)
 	_button("Exit", _exit)
+	_finish()
+
+
+func open_world_seeds() -> void:
+	_begin("world_seeds", "New Game — Choose a world", open_main)
+	_label("Each world has different loot. Its loot repeats across Loops and new games.")
+	_label("HARD: scarce uncommon gear and no uncommon weapon drops.")
+	for candidate in GameSession.WORLD_SEEDS:
+		var title := candidate + (" (HARD)" if candidate == GameSession.HARD_WORLD_SEED else "")
+		_button(title, _new_game.bind(candidate.hash()))
+	_button("Back (Esc)", open_main)
 	_finish()
 
 
@@ -113,6 +124,7 @@ func _completed() -> bool:
 
 func open_player() -> void:
 	_begin("player", "Player menu", close)
+	_label("World: " + session.seed_name())
 	_button("Character (" + options.key_label(&"character") + ")", _open_hero.bind(false))
 	_button("Spell book (" + options.key_label(&"spell_book") + ")", _open_hero.bind(true))
 	_button("Inventory (" + options.key_label(&"inventory") + ")", open_inventory)
@@ -685,9 +697,9 @@ func _finish() -> void:
 			break
 
 
-func _new_game() -> void:
+func _new_game(chosen_seed: int) -> void:
 	_discard("Start a new game?", func() -> void:
-		new_game_requested.emit()
+		new_game_requested.emit(chosen_seed)
 		active_game = true
 		close())
 

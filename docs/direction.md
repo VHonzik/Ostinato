@@ -151,7 +151,10 @@ balance measurements. Let playtesting determine Loop length.
 - Merchants have fixed inventory and prices; quest rewards are fixed. Enemy and chest
   loot is determined by the world seed and stable spawn identity. Chest placements
   are authored in the valley scene. The same seed recreates loot across Loops,
-  independently of action order.
+  independently of action order. New Game offers five fixed, named worlds so players
+  can learn a world's loot routes and replay or share the same choice. Together the
+  choices cover all uncommon weapon setups; one deliberately poor world is marked
+  HARD for scarce uncommon gear and no uncommon weapon drops.
 - Finite quests and encounters bound character progression. Decide the XP curve,
   level ceiling, level-difference scaling and healing availability through playtesting.
 - Let new Loops reveal dialogue and the player's realization of the Loop. NPCs do not

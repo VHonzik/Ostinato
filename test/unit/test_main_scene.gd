@@ -936,8 +936,22 @@ func test_main_menu_keyboard_starts_game_and_menu_actions_never_spend_time() -> 
 	await _tap_key(KEY_PERIOD)
 	assert_false(_game.active_game)
 	await _tap_key(KEY_ENTER)
+	assert_false(_game.active_game)
+	assert_eq(_game.menu.page, "world_seeds")
+	assert_eq(_game.menu._buttons.size(), 6)
+	for index in range(GameSession.WORLD_SEEDS.size()):
+		var candidate := GameSession.WORLD_SEEDS[index]
+		var suffix := " (HARD)" if candidate == GameSession.HARD_WORLD_SEED else ""
+		assert_eq(_game.menu._buttons[index].text, candidate + suffix)
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(_game.menu.page, "main")
+	assert_null(_game.session.world)
+	await _tap_key(KEY_ENTER)
+	await _tap_key(KEY_S)
+	await _tap_key(KEY_ENTER)
 	assert_true(_game.active_game)
 	assert_false(_game.menu.visible)
+	assert_eq(_game.session.seed_name(), GameSession.WORLD_SEEDS[1])
 	assert_eq(_game.session.loop_count, 1)
 	assert_eq(_game.world.turn_count, 0)
 	await _tap_key(KEY_ESCAPE)
@@ -2008,12 +2022,19 @@ func test_interact_button_opens_selection_and_cancels_queued_movement_for_free()
 	assert_null(_game_viewport.gui_get_focus_owner())
 
 
-func test_new_game_launches_the_valley() -> void:
+func test_new_game_launches_the_valley_with_the_hard_worlds_original_seed() -> void:
+	_game._return_to_menu()
 	_game.menu.open_main()
 	_game.menu._buttons[0].pressed.emit()
+	assert_eq(_game.menu.page, "world_seeds")
+	var hard_index := GameSession.WORLD_SEEDS.find(GameSession.HARD_WORLD_SEED)
+	assert_eq(_game.menu._buttons[hard_index].text, "solemnly-moonwell (HARD)")
+	_game.menu._buttons[hard_index].pressed.emit()
 	await get_tree().process_frame
 	assert_true(_game.active_game)
 	assert_false(_game.menu.visible)
+	assert_eq(_game.session.seed_value, GameSession.HARD_WORLD_SEED.hash())
+	assert_eq(_game.session.seed_name(), GameSession.HARD_WORLD_SEED)
 	assert_true(_game.world.valley_route)
 	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
 	assert_true(_game.grid_view.visible)

@@ -182,8 +182,13 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 
 ## Loop and save state
 
+The five New Game worlds cover uncommon two-hand, sword/shield and dual-wield drops.
+`solemnly-moonwell (HARD)` has one uncommon item and no uncommon weapons across enemies
+and chests. The HARD suffix is display-only.
+
 | Content | Saved mid-Loop | On death |
 | --- | --- | --- |
+| World seed | Numeric seed; the player menu resolves the five fixed New Game choices to their names, and displays unlisted seeds numerically | Keeps the chosen seed; enemy and chest loot repeats by spawn identity |
 | Quest route | Accepted quests, counts, hand-ins and quest-acceptance lock | Clears; quests can be taken in the fresh world |
 | Class selection | Selected class, selection lock and classes previously chosen | Requires a fresh selection; remembers the previous class for focus and chosen classes for referral wording |
 | NPC population | Living/dead actors, combat state, loot and wandering deadlines; fixed contacts except the guard follow valley scene positions on load | Rebuilds contacts and enemies from the scene |

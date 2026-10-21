@@ -4,6 +4,12 @@ extends RefCounted
 ## Replace the complete attempt; old references cannot affect the new world.
 signal world_changed
 
+## Fixed names are the seed strings; keep their spelling stable for repeatable worlds.
+const HARD_WORLD_SEED: String = "solemnly-moonwell"
+const WORLD_SEEDS: Array[String] = [
+	"silently-wyrm", "brightly-starfall", "fiercely-ember", HARD_WORLD_SEED, "wildly-runestone",
+]
+
 var world: GridWorld
 var seed_value: int = 0
 var loop_count: int = 1
@@ -13,9 +19,7 @@ var _saved_snapshot: String = ""
 
 func new_game(chosen_seed: int = -1) -> void:
 	_saved_snapshot = ""
-	var generator := RandomNumberGenerator.new()
-	generator.randomize()
-	seed_value = generator.randi() if chosen_seed == -1 else chosen_seed
+	seed_value = WORLD_SEEDS[0].hash() if chosen_seed == -1 else chosen_seed
 	loop_count = 1
 	var fresh := ValleyRoute.create_world(seed_value, development_build)
 	fresh.class_selected = true
@@ -23,6 +27,13 @@ func new_game(chosen_seed: int = -1) -> void:
 	fresh.hotbar[1] = &"whirlwind_1"
 	_replace_world(fresh)
 	world.add_message(opening_text(1))
+
+
+func seed_name() -> String:
+	for candidate in WORLD_SEEDS:
+		if candidate.hash() == seed_value:
+			return candidate
+	return str(seed_value)
 
 
 func restart_after_death() -> bool:

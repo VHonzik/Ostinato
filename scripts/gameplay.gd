@@ -328,12 +328,12 @@ func reset_fixture() -> void:
 	start_new_game()
 
 
-func start_new_game() -> void:
+func start_new_game(chosen_seed: int = -1) -> void:
 	hero_panel.clear_selection()
 	active_game = true
 	menu.active_game = true
 	menu.close()
-	session.new_game()
+	session.new_game(chosen_seed)
 	hud.show_game()
 	grid_view.show()
 	refresh_view()

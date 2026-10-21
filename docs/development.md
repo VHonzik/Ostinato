@@ -20,8 +20,9 @@ installed dependencies. GUT is vendored with its license. CI and exports are not
 
 ## Current build
 
-**New Game** launches the valley, the sole playable map, as a Warrior with Mortal
-Strike and Whirlwind. Speak to Marshal McBride north of spawn, ask Janos inside the
+**New Game** offers five named world seeds, then launches the valley, the sole playable
+map, as a Warrior with Mortal Strike and Whirlwind. The player menu shows the chosen
+world name. Speak to Marshal McBride north of spawn, ask Janos inside the
 abbey for starter gear, and use quests, trading and training to prepare for the gate.
 Death rebuilds the physical world; learned abilities and hotbar assignments persist.
 Returning Loops begin with class selection; other classes unlock from Loop three.
