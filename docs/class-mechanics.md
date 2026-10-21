@@ -55,8 +55,8 @@ per turn of the weapon's base interval, independent of haste and hit result. Dam
 incoming hits grant 3 rage at most once per world turn. Ordinary off-hand swings and
 bonus strikes generate no baseline rage. Outside combat, rage decays by 2 per turn,
 or 0.5 with Anger Management; fractional rage is retained internally. Natural healing
-works only outside combat: 1.5 HP per turn at levels 1–2 and 0.3 HP per turn thereafter,
-delivered as whole-HP ticks. Food and other healing keep their own rules.
+works only outside combat: 1.5 HP per turn at level 1, 0.75 at level 2 and 0.3 from
+level 3 onward, delivered as whole-HP ticks. Food and other healing keep their own rules.
 
 Table rage costs are base costs. Battle Trance makes the next rage-costing active free.
 Execute first uses Sudden Death if ready; otherwise Battle Trance applies to

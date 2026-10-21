@@ -1098,8 +1098,12 @@ func _regenerate() -> void:
 		auto_attack_target = null
 		hero.decay_rage()
 	if not in_combat():
-		# Keep whole HP ticks: 1.5 HP/turn at levels 1-2, 0.3 thereafter.
-		var rate := 1.5 if hero.level <= 2 else 0.3
+		# Keep whole HP ticks: 1.5 HP/turn at level 1, 0.75 at 2, 0.3 thereafter.
+		var rate := 0.3
+		if hero.level == 1:
+			rate = 1.5
+		elif hero.level == 2:
+			rate = 0.75
 		var healing := (floori(turn_count * rate + 0.000001)
 			- floori((turn_count - 1) * rate + 0.000001))
 		hero.health = mini(hero.max_health, hero.health + healing)

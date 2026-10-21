@@ -1,15 +1,16 @@
 extends GutTest
 
 
-func test_regeneration_is_halved_at_early_levels_and_one_tenth_afterwards() -> void:
-	for level in [1, 2, 3, 5]:
+func test_natural_regeneration_uses_level_rates_and_stops_in_combat() -> void:
+	var expected_health := [40, 25, 16, 16, 16]
+	for level in range(1, 6):
 		var world := GridWorld.new(Rect2i(0, 0, 20, 20), Vector2i(5, 5), 97, false)
 		world.hero.level = level
 		world.hero.refresh_stats()
 		world.hero.health = 10
-		for turn in range(10):
+		for turn in range(20):
 			world.wait_turn()
-		assert_eq(world.hero.health, 25 if level <= 2 else 13)
+		assert_eq(world.hero.health, expected_health[level - 1], "Level %d healing." % level)
 		var enemy := GridActor.new(Vector2i(6, 5))
 		enemy.relationship = GridActor.Relationship.HOSTILE
 		enemy.engaged = true
