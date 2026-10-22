@@ -45,18 +45,19 @@ try {
   }
 
   New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
-  $result = Invoke-ToolProcess 'import' $engine @('--headless', '--path', $ProjectRoot, '--import') $logDirectory $TimeoutSeconds
+  $environment = New-ValidationEnvironment $logDirectory
+  $result = Invoke-ToolProcess 'import' $engine @('--headless', '--path', $ProjectRoot, '--import') $logDirectory $TimeoutSeconds -Environment $environment
   Assert-NoUnexpectedDiagnostics $result
   $manifest = Join-Path $logDirectory 'scripts.txt'
   [IO.File]::WriteAllLines($manifest, $scripts)
   $result = Invoke-ToolProcess 'scripts' $engine @(
     '--headless', '--path', $ProjectRoot, '--script', 'res://tools/check_scripts.gd', '--', $manifest
-  ) $logDirectory $TimeoutSeconds
+  ) $logDirectory $TimeoutSeconds -Environment $environment
   Assert-NoUnexpectedDiagnostics $result
   if ($result.Stdout -notmatch "(?m)^Checked $($scripts.Count) scripts\.\r?$") {
     throw 'Script checks did not complete.'
   }
-  $result = Invoke-ToolProcess 'startup' $engine @('--headless', '--path', $ProjectRoot, '--quit-after', '120') $logDirectory $TimeoutSeconds
+  $result = Invoke-ToolProcess 'startup' $engine @('--headless', '--path', $ProjectRoot, '--quit-after', '120') $logDirectory $TimeoutSeconds -Environment $environment
   Assert-NoUnexpectedDiagnostics $result
 
   $testCount = 0
@@ -71,7 +72,7 @@ try {
     $config | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $configPath -Encoding utf8
     $result = Invoke-ToolProcess 'gut' $engine @(
       '--headless', '--path', $ProjectRoot, '--script', 'res://addons/gut/gut_cmdln.gd', "-gconfig=$configPath"
-    ) $logDirectory $TimeoutSeconds -AcceptNonzeroExit
+    ) $logDirectory $TimeoutSeconds -AcceptNonzeroExit -Environment $environment
     $report = Get-Content -LiteralPath (Join-Path $logDirectory 'gut.json') -Raw | ConvertFrom-Json
     $totals = $report.totals
     $testCount = $totals.tests

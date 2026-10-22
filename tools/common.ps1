@@ -19,6 +19,34 @@ function Get-GodotPath {
   return $engine
 }
 
+function New-ValidationEnvironment {
+  param([string]$OutputDirectory)
+  $bundle = Join-Path $ProjectRoot $ToolVersions.ca_bundle.path
+  Assert-FileHash $bundle $ToolVersions.ca_bundle.sha256
+  $runtime = Join-Path $OutputDirectory 'runtime'
+  $environment = @{
+    APPDATA = (Join-Path $runtime 'roaming'); LOCALAPPDATA = (Join-Path $runtime 'local')
+    TEMP = (Join-Path $runtime 'temp'); TMP = (Join-Path $runtime 'temp')
+    GODOT_EDITOR_CUSTOM_FEATURES = 'ostinato_validation'
+  }
+  foreach ($path in @($environment.APPDATA, $environment.LOCALAPPDATA, $environment.TEMP)) {
+    New-Item -ItemType Directory -Path $path -Force | Out-Null
+  }
+  # Import uses editor settings; game startup uses the validation-only project feature.
+  $editorDirectory = Join-Path $environment.APPDATA 'Godot'
+  New-Item -ItemType Directory -Path $editorDirectory -Force | Out-Null
+  $engineVersion = ($ToolVersions.godot.version.Split('.')[0..1]) -join '.'
+  $bundleLiteral = ConvertTo-Json -InputObject $bundle.Replace('\', '/') -Compress
+  $settings = @"
+[gd_resource type="EditorSettings" format=3]
+
+[resource]
+network/tls/editor_tls_certificates = $bundleLiteral
+"@
+  [IO.File]::WriteAllText((Join-Path $editorDirectory "editor_settings-$engineVersion.tres"), $settings + "`n")
+  return $environment
+}
+
 function Invoke-ToolProcess {
   param(
     [string]$Name,

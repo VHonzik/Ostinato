@@ -163,6 +163,19 @@ Output is a short scope/result summary. Logs are temporary and removed on succes
 failures retain them under ignored `reports/validation/`. Use `-KeepLogs` to retain a
 successful run for debugging. No written validation report is required.
 
+Validation runs offline with a fresh Godot profile under that run's
+`reports/validation/<run>/runtime/`, isolating editor settings, user data and temporary
+files from your normal profile. A hash-checked [Mozilla CA bundle](../tools/certs/README.md)
+supplies import and startup certificates, so validation does not need access to the
+Windows certificate store. The launcher enables the `ostinato_validation` custom
+feature only for its child processes; normal editor launches and exports keep their
+usual settings. Sandbox permissions do not need to be relaxed for validation.
+
+Run `pwsh -NoProfile -File tools/test_validation_tools.ps1` after changing the launcher.
+Its real-engine fixtures cover profile isolation, cleanup and failure reporting;
+full CI checks run them too. Fixture diagnostics stay under ignored
+`reports/validation-tools/`.
+
 ## Windows exports
 
 ```powershell

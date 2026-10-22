@@ -70,6 +70,9 @@ jobs:
             }
             default { throw 'Unknown validation scope.' }
           }
+      - name: Test validation tools
+        if: env.CHECK_SCOPE == 'full'
+        run: ./tools/test_validation_tools.ps1
       - name: Test build tools
         if: env.CHECK_SCOPE == 'full'
         run: ./tools/test_build_tools.ps1
@@ -98,6 +101,7 @@ jobs:
           name: check-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             reports/validation/
+            reports/validation-tools/
             reports/exports/
             reports/build-tools/
           if-no-files-found: ignore

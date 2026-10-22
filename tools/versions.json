@@ -12,6 +12,11 @@
     "windows_release_template": "bin/export_templates/windows_release_x86_64.exe",
     "windows_release_sha256": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562"
   },
+  "ca_bundle": {
+    "path": "tools/certs/ca-bundle.crt",
+    "sha256": "33a22c7286f7752131636a11fb9feb3fb12ecd02f1a9b3e54e5901349d37362e",
+    "source_url": "https://raw.githubusercontent.com/godotengine/godot/4.7.2-stable/thirdparty/certs/ca-bundle.crt"
+  },
   "android": {
     "release_template": "bin/export_templates/android_release.apk",
     "release_sha256": "6d1bb2cfa126a1b1c87e064a35b3cbd181bef0ec784dec1efd1d64dffa8be6cb",

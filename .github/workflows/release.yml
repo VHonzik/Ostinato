@@ -51,6 +51,8 @@ jobs:
         run: ./tools/setup.ps1 -ExportTemplates
       - name: Full validation
         run: ./tools/validate.ps1 -Full
+      - name: Test validation tools
+        run: ./tools/test_validation_tools.ps1
       - name: Test build tools
         run: ./tools/test_build_tools.ps1
       - name: Export Windows ZIP
@@ -118,6 +120,7 @@ jobs:
           name: release-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             reports/validation/
+            reports/validation-tools/
             reports/exports/
             reports/build-tools/
           if-no-files-found: ignore

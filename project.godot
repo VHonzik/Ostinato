@@ -101,6 +101,10 @@ interact={
 ]
 }
 
+[network]
+
+tls/certificate_bundle_override.ostinato_validation="res://tools/certs/ca-bundle.crt"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
