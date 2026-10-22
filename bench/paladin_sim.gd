@@ -130,6 +130,8 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		var living := enemies.filter(func(enemy: GridActor) -> bool: return enemy.alive)
 		if living.is_empty():
 			break
+		if StalkerDodge.try_dodge(world):
+			continue
 		if world.pending_skill != null:
 			world.continue_cast()
 			continue
@@ -181,13 +183,14 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			if world.auto_attack_target != target:
 				if not world.request_melee(target):
 					var route := world.charge_route(target)
-					if route.size() > 1:
+					if route.size() > 1 and StalkerDodge.safe_to_move(world, route[1] - world.player_tile):
 						assert(world.move_player(route[1] - world.player_tile))
 					else:
 						world.wait_turn()
 			else:
 				var route := world.charge_route(target)
-				if GridWorld.tile_distance(world.player_tile, target.tile) > 1 and route.size() > 1:
+				if (GridWorld.tile_distance(world.player_tile, target.tile) > 1 and route.size() > 1
+					and StalkerDodge.safe_to_move(world, route[1] - world.player_tile)):
 					assert(world.move_player(route[1] - world.player_tile))
 				else:
 					world.wait_turn()

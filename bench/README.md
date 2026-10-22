@@ -10,12 +10,17 @@ experimental Enrage, recovery and cone variants. Their `live` output label denot
 the experiment's control, not the full production encounter. Replays use unobserved
 experimental worlds. Experimental cones reset and pause the Stalker's weapon interval
 through the breath; other encounter scenarios use current game rules.
+Ordinary live Stalker bots sidestep the marked Fel Breath cone before continuing
+casts or attack commitments. The response spends a real movement action, respects
+movement credit, prefers remaining in melee and avoids walking back into the cone.
+Standing in breath belongs only in an explicitly labelled failure/stress policy.
 
 From the repository root, after the normal [setup](../docs/development.md):
 
 ```powershell
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Smoke
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario shield-block
+pwsh -NoProfile -File tools/simulate.ps1 -Scenario aoe-interactions -Shard 1
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario warrior -Shard 0
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario paladin
 pwsh -NoProfile -File tools/simulate.ps1 -Scenario rogue
@@ -35,6 +40,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 
 | Scenario | Purpose |
 | --- | --- |
+| `restless-stalker`, `restless-pulls` | Focused Restless Blades enabled/removal pairs, 100 shared seed blocks per cell. All four kits, live prepared entry, all three weapons, unchanged coordinated intent policy. Stalker uses L5/common gear/one potion and sidesteps breath; 16-enemy L4 pulls use common and uncommon gear with no consumables. No gifts, Vanish strategy or general kiting. Every fight reconciles damage/HP; three plain-world replays per cell. Stalker smoke checks exercise all eight cone directions, movement credit and cast cancellation; measured fights require zero player exposure at breath release. |
+| `aoe-interactions` | Live Consecration/Vanish/Whirlwind and Shield Block/Evasion interactions. 20 paired seed blocks per cell, common/uncommon gear, 1/8/16/32 L4 thugs plus an eight-enemy 10x-HP cooldown stress case. Warrior/Paladin/Rogue retained; all-kit control at 16 enemies. Compare immediate burst, hiding through ground ticks, and removal of Restless Blades/Seal Fate; shield trials separate Block, Evasion, both and neither. No Divine Shield, summons, gifts or potions. Three plain-world replays per cell; records cooldown reductions, cast intervals, defensive coverage and gross damage taken separately from healing. Shards 0/1/2 select weapons. |
 | `shield-block` | Controlled shield-only 30% chance to remove 70% of a physical hit. Full Warrior against groups and all kits against Stalker; 400 seeds, cold/live preparation, current weapons as controls. Removes learned live Shield Block to avoid double application; the experiment's separate block RNG preserves baseline combat draws. Remaining damage rounds up. No game data changes. |
 | `garrick` | First-Loop Warrior at levels 3–5, the reported Shout/Weapon Mastery/Charge/Execute purchases versus adding Enrage/Death Wish, common gear versus green shield with a Strength or Agility ring. Paired live fights compare Garrick profiles; wins and mean remaining HP including deaths are recorded. No potions, kiting, route damage or XP healing. |
 | `warrior` | Full Warrior kit, three weapons, cold/prepared entry, groups and Stalker; paired potion runs for Stalker. Independent pilot seeds select the rotation. Traced damage is reconciled and replayed against plain `GridWorld`. |
@@ -62,6 +69,25 @@ Pattern policies avoid overlapping active Divine Shield and Evasion. Use matched
 controls from the same setup for comparisons.
 
 `-Smoke` reduces combat/loot samples for a wiring check, not a design conclusion.
+For the focused Restless Blades pair, run `-Scenario restless-stalker` and
+`-Scenario restless-pulls` sequentially. Summarize their result files with
+`python -B bench/analyze_restless.py <stalker/result.json> <pulls/result.json> --casts`.
+Weapon strata are averaged within each shared seed before paired intervals; the
+analyzer adjusts the win/damage-per-turn comparisons together with Holm's method.
+These are effects under a fixed full-kit bot, not optimal play or an unlock-route estimate.
+Stalker results also include timestamped casts, damage/healing events, player/boss HP
+and active defensive states. Use these to distinguish earlier damage from avoiding
+a later enemy attack. Breath release/exposure and dodge counts verify the response.
+The observer replays on plain `GridWorld` without changing combat outcomes or random draws.
+Summarize AoE interaction cells with
+`python -B bench/analyze_aoe_interactions.py <result.json> ...`.
+The default selects 16 regular enemies and Warrior/Paladin/Rogue learning;
+`--count 8 --scale 10` selects durable cooldown stress, `--build All` the full-kit
+control, and `--suite defense` the shield comparisons. Cast gaps include only
+fights that reached another cast; read them with cast counts, wins and fight length.
+Run `-Scenario aoe-interactions -Policy cooldowns -Shard 1` for focused one/three-enemy
+durable controls: longer fights with live player HP, to compare repeat cooldown use
+against single-target combat. These use the same policies and 20 samples per cell.
 Stalker mechanics uses live actions with experiment-local boss changes. The full
 four-turn channel suppresses boss movement and melee while player weapon timers advance.
 It counts all actual damage after the triggering boundary through the final response's

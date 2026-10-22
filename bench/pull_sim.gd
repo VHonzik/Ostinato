@@ -107,12 +107,17 @@ func _priority_choices(world: GridWorld, target: GridActor, living: Array,
 	return choices
 
 
+func _create_pull_world(bounds: Rect2i, center: Vector2i, seed_value: int,
+	traced: bool) -> GridWorld:
+	return (PullWorld.new(bounds, center, seed_value, false)
+		if traced else GridWorld.new(bounds, center, seed_value, false))
+
+
 func _battle(encounter: Dictionary, weapon: int, _prepared: bool, _potion: bool,
 	policy: String, seed_value: int, traced: bool) -> Dictionary:
 	var center := Vector2i(6, 6)
 	var bounds := Rect2i(0, 0, 12, 12)
-	var world: GridWorld = (PullWorld.new(bounds, center, seed_value, false)
-		if traced else GridWorld.new(bounds, center, seed_value, false))
+	var world := _create_pull_world(bounds, center, seed_value, traced)
 	var hero := world.hero
 	var data: Dictionary = NorthshireData.CREATURES[profile]
 	hero.level = int(data.level)
@@ -155,7 +160,7 @@ func _battle(encounter: Dictionary, weapon: int, _prepared: bool, _potion: bool,
 		enemy.relationship = GridActor.Relationship.HOSTILE
 		enemy.engaged = true
 		enemy.awards_experience = false
-		enemy.max_health = int(data.health)
+		enemy.max_health = int(data.health) * int(encounter.get("health_scale", 1))
 		enemy.health = enemy.max_health
 		enemy.melee.level = int(data.level)
 		enemy.melee.armor = int(data.armor)
@@ -194,6 +199,9 @@ func _battle(encounter: Dictionary, weapon: int, _prepared: bool, _potion: bool,
 				acted = true
 				break
 		if not acted:
+			if VanishRules.active(world):
+				world.wait_turn()
+				continue
 			if world.auto_attack_target != target and world.request_melee(target): continue
 			var route := world.charge_route(target)
 			if GridWorld.tile_distance(world.player_tile, target.tile) > 1 and route.size() > 1:
@@ -213,7 +221,8 @@ func _battle(encounter: Dictionary, weapon: int, _prepared: bool, _potion: bool,
 	if traced:
 		var observer := world as PullWorld
 		assert(observer.valid_accounting)
-		assert(observer.damage_total == int(data.health) * int(encounter.count) - enemy_hp)
+		assert(observer.damage_total == int(data.health) * int(encounter.count)
+			* int(encounter.get("health_scale", 1)) - enemy_hp)
 		result.merge(observer.metrics())
 		result.merge({"damage": observer.damage, "damage_total": observer.damage_total,
 			"casts": observer.casts, "decisions": observer.decision_log,

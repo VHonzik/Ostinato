@@ -2,6 +2,7 @@ extends SceneTree
 
 const TracedWorld = preload("res://bench/warrior_identity_world.gd")
 const BenchIO = preload("res://bench/bench_io.gd")
+const StalkerDodge = preload("res://bench/stalker_dodge.gd")
 const WEAPONS: Array[int] = [5579, 5580, 2224]
 const STYLES: Array[String] = ["2H", "Shield", "DW"]
 const CASES: Array[Dictionary] = [
@@ -204,6 +205,8 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		var living := enemies.filter(func(enemy: GridActor) -> bool: return enemy.alive)
 		if living.is_empty():
 			break
+		if StalkerDodge.try_dodge(world):
+			continue
 		if world.pending_skill != null:
 			world.continue_cast()
 			continue
@@ -243,7 +246,13 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 				acted = true
 				break
 		if not acted:
-			if world.auto_attack_target != target:
+			if GridWorld.tile_distance(world.player_tile, target.tile) > 1:
+				var route := world.charge_route(target)
+				if route.size() > 1 and StalkerDodge.safe_to_move(world, route[1] - world.player_tile):
+					assert(world.move_player(route[1] - world.player_tile))
+				else:
+					world.wait_turn()
+			elif world.auto_attack_target != target:
 				assert(world.request_melee(target))
 			else:
 				world.wait_turn()

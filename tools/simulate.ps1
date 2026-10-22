@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block', 'aoe-interactions', 'restless-stalker', 'restless-pulls')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
@@ -28,6 +28,9 @@ $scriptsByScenario = @{
   'loot-rates' = 'itemization_rates.gd'
   garrick = 'garrick_sim.gd'
   'shield-block' = 'shield_block_sim.gd'
+  'aoe-interactions' = 'aoe_interactions_sim.gd'
+  'restless-stalker' = 'restless_stalker_sim.gd'
+  'restless-pulls' = 'restless_pull_sim.gd'
 }
 $runRoot = Join-Path $ProjectRoot 'reports/bench'
 $runDirectory = Join-Path $runRoot ("$Scenario/" + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -35,12 +38,13 @@ $savedEnvironment = @{}
 $metadata = $null
 $passed = $false
 try {
-  if ($Policy -and ($Scenario -ne 'stalker-patterns' -or $Policy -ne 'after-breath')) {
-    throw '-Policy currently supports after-breath for stalker-patterns only.'
+  if ($Policy -and !(($Scenario -eq 'stalker-patterns' -and $Policy -eq 'after-breath') -or
+      ($Scenario -eq 'aoe-interactions' -and $Policy -eq 'cooldowns'))) {
+    throw '-Policy supports after-breath for stalker-patterns or cooldowns for aoe-interactions.'
   }
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
   if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns')) { throw '-Confirm is only for tuning scenarios.' }
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning')) { throw '-Shard is only for combat simulations.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'aoe-interactions')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -183,6 +187,23 @@ try {
     if ($data.rows.Count -ne 56 * $weaponCount) { throw 'Incomplete pull matrix.' }
     foreach ($row in $data.rows) {
       if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete pull sample.' }
+    }
+  }
+  if ($Scenario -eq 'aoe-interactions') {
+    $expectedCells = if ($Shard -eq -1) { 266 } elseif ($Shard -eq 1) { 122 } else { 72 }
+    if ($Policy -eq 'cooldowns') {
+      $expectedCells = if ($Shard -eq -1) { 92 } elseif ($Shard -eq 1) { 44 } else { 24 }
+    }
+    if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete AoE interaction matrix.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete AoE interaction sample.' }
+    }
+  }
+  if ($Scenario -in @('restless-stalker', 'restless-pulls')) {
+    $expectedCells = if ($Scenario -eq 'restless-stalker') { 6 } else { 12 }
+    if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete Restless Blades comparison.' }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Restless Blades sample.' }
     }
   }
   if ($Scenario -eq 'pull-tuning') {

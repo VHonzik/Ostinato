@@ -31,6 +31,9 @@ preferences. Exceptional earlier victories should remain possible through skill 
 route optimization. Simulation results are exploratory, not final
 balance measurements. Let playtesting determine Loop length.
 
+Stalker Fel Breath is a one-action sideways dodge check. Normal combat comparisons
+should assume leaving the marked cone, rather than balancing around taking its hit.
+
 ## Classes, learning and combat
 
 - The roster is Warrior, Shaman, Paladin and Rogue. Start as Warrior with Mortal

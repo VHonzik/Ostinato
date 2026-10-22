@@ -55,7 +55,7 @@ func _run() -> void:
 		"cases": CURRENT_CASES, "expected_cells": expected_cells, "weapons": WEAPONS,
 		"entry": "Cold: zero rage, full health, no buffs. Prepared: cast known poisons, Windfury, Shield, Shout last from zero rage. Real turns, decay and regeneration; no health refill. Mixed coatings for DW. No points/procs/stacks except BankedPull's declared five Maelstrom. Preparation turns saved separately.",
 		"rules": "Live production rules only. Shaman starter knows only its free pair. Other named kits fully learned; initial Warrior learning cleared. Selected class is first named class. Common gear; hero level 3 for thugs and 5 for Stalker. One minor potion only against Stalker. No gift items.",
-		"policies": "Intent: emergency defenses/potion; Charge then Juggernaut MS; full Lava; empowered Judgement on durable target; 5CP Eviscerate; Execute; empty Shield; WW and ground at 3+; MS; other actions. Alternate policies change one priority: MS first, spend Lava at 4+, empowered Judgement before Lava, or 5CP finisher before payoffs when haste is absent. These comparisons run only on All; every build runs intent.",
+		"policies": "Live Stalker: sidestep marked Fel Breath before other actions, cancelling interruptible commitments if needed. Intent: emergency defenses/potion; Charge then Juggernaut MS; full Lava; empowered Judgement on durable target; 5CP Eviscerate; Execute; empty Shield; WW and ground at 3+; MS; other actions. Alternate policies change one priority: MS first, spend Lava at 4+, empowered Judgement before Lava, or 5CP finisher before payoffs when haste is absent. These comparisons run only on All; every build runs intent.",
 		"cases_detail": "Ordinary groups adjacent. Stalker starts six away, Charge if known. Pull starts six away with Charge unavailable. Durable3 triples only thug HP, a synthetic stress case. BankedPull seeds five Maelstrom stacks. Durable3/BankedPull only on All.",
 		"accounting": "Every measured fight reconciles enemy HP and player HP/healing. First ten seeds per cell replay on plain GridWorld, including RNG state. Observer world never changes combat. Preparation and active decisions recorded.",
 		"limitations": "Fixed bots, isolated fights and common gear; no route, reinforcements, XP, level-up healing or uncommon gear. No final balance, visual or human acceptance claim."}
@@ -214,6 +214,8 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 		var living := enemies.filter(func(enemy: GridActor) -> bool: return enemy.alive)
 		if living.is_empty():
 			break
+		if StalkerDodge.try_dodge(world):
+			continue
 		if world.pending_skill != null:
 			world.continue_cast()
 			continue
@@ -247,13 +249,14 @@ func _battle(encounter: Dictionary, weapon: int, prepared: bool, potion: bool,
 			if world.auto_attack_target != target:
 				if not world.request_melee(target):
 					var route := world.charge_route(target)
-					if route.size() > 1:
+					if route.size() > 1 and StalkerDodge.safe_to_move(world, route[1] - world.player_tile):
 						assert(world.move_player(route[1] - world.player_tile))
 					else:
 						world.wait_turn()
 			else:
 				var route := world.charge_route(target)
-				if GridWorld.tile_distance(world.player_tile, target.tile) > 1 and route.size() > 1:
+				if (GridWorld.tile_distance(world.player_tile, target.tile) > 1 and route.size() > 1
+					and StalkerDodge.safe_to_move(world, route[1] - world.player_tile)):
 					assert(world.move_player(route[1] - world.player_tile))
 				else:
 					world.wait_turn()
