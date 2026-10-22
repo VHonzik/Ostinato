@@ -1,4 +1,6 @@
 #requires -Version 7.0
+[CmdletBinding()]
+param([switch]$ExportTemplates)
 . "$PSScriptRoot/common.ps1"
 if (!$IsWindows) { throw 'This initial tool installation supports Windows x64. Add other host pins deliberately.' }
 $cache = Join-Path $ProjectRoot ('bin/cache/install-' + [guid]::NewGuid().ToString('N'))
@@ -36,5 +38,32 @@ if ($gutMetadata -notmatch ('(?m)^version="' + [regex]::Escape($ToolVersions.gut
   throw 'Installed GUT does not match its pin; setup will not overwrite an existing addon.'
 }
 
+if ($ExportTemplates) {
+  $template = Join-Path $ProjectRoot $ToolVersions.godot.windows_release_template
+  if (!(Test-Path -LiteralPath $template)) {
+    $archive = Join-Path $ProjectRoot ('bin/cache/' + [IO.Path]::GetFileName($ToolVersions.godot.export_templates_url))
+    if (!(Test-Path -LiteralPath $archive)) {
+      $download = Join-Path $cache 'templates.tpz'
+      Invoke-WebRequest -Uri $ToolVersions.godot.export_templates_url -OutFile $download -TimeoutSec 600
+      Assert-FileHash $download $ToolVersions.godot.export_templates_sha256
+      Move-Item -LiteralPath $download -Destination $archive
+    }
+    Assert-FileHash $archive $ToolVersions.godot.export_templates_sha256
+    $zip = [IO.Compression.ZipFile]::OpenRead($archive)
+    try {
+      $entry = $zip.GetEntry('templates/windows_release_x86_64.exe')
+      if ($null -eq $entry) { throw 'Windows x64 release template is missing from the archive.' }
+      $unpacked = Join-Path $cache 'windows_release_x86_64.exe'
+      [IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $unpacked)
+      Assert-FileHash $unpacked $ToolVersions.godot.windows_release_sha256
+      New-Item -ItemType Directory -Path (Split-Path -Parent $template) -Force | Out-Null
+      Move-Item -LiteralPath $unpacked -Destination $template
+    } finally {
+      $zip.Dispose()
+    }
+  }
+  Assert-FileHash $template $ToolVersions.godot.windows_release_sha256
+  Write-Host "Windows release template $($ToolVersions.godot.export_templates_version) verified."
+}
+
 Write-Host 'Pinned dependencies are available. Run: pwsh -File tools/validate.ps1'
-Write-Host 'Export templates are deferred until export tooling is established.'

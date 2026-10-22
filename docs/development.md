@@ -16,7 +16,8 @@ pwsh -NoProfile -File tools/godot.ps1
 [tools/versions.json](../tools/versions.json) is the dependency authority:
 Godot `4.7.2.stable.official.ed1daf0bf`, GUT `9.7.1`, matching `4.7.2.stable`
 export templates when exporting. Setup checks hashes and does not overwrite mismatched
-installed dependencies. GUT is vendored with its license. CI and exports are not configured.
+installed dependencies. GUT is vendored with its license. Windows exports and Actions
+use these same pins.
 
 ## Current build
 
@@ -160,6 +161,163 @@ startup checks do not establish visual quality or fun.
 Output is a short scope/result summary. Logs are temporary and removed on success;
 failures retain them under ignored `reports/validation/`. Use `-KeepLogs` to retain a
 successful run for debugging. No written validation report is required.
+
+## Windows exports
+
+```powershell
+pwsh -NoProfile -File tools/setup.ps1 -ExportTemplates
+pwsh -NoProfile -File tools/export.ps1
+# Optional local build label:
+pwsh -NoProfile -File tools/export.ps1 -Version v0.1.0-rc.1
+```
+
+Setup downloads the pinned template archive, checks its SHA-256, and installs only
+the Windows x64 release template under ignored `bin/export_templates/`. The installed
+template is checked against its own pin on every setup/export. No global template
+installation, editor binary in Git, or C# SDK is needed. Existing mismatched files
+cause failure; investigate them before deliberately removing or replacing them.
+
+[export.ps1](../tools/export.ps1) stages `assets/`, `scenes/`, `scripts/` and project
+configuration in a fresh ignored `builds/windows/<run>/project/`. It imports and exports
+with the committed [Windows preset](../export_presets.cfg), then runs the actual release
+executable headlessly. The smoke check verifies version metadata, release mode, absence
+of development abilities, main-menu startup, New Game and save/load. Its roaming/local
+user directories are isolated under `reports/exports/<run>/runtime/`.
+
+Each successful attempt prints its ZIP path and writes a neighboring `.zip.sha256`
+file. Extract the ZIP and run `Ostinato.exe` inside its folder; keep `Ostinato.pck` and
+`licenses/` with it. Godot need not be installed. The package contains runtime resources,
+including the valley JSON atlas, and Godot/third-party notices. Tests, GUT, benchmarks,
+tooling and editable art sources are excluded. Unsigned Windows x64 is the current target.
+
+The menu shows the embedded version and short commit. Unlabelled local builds use
+`dev-<commit>` with `-dirty` when there are uncommitted changes; `build_info.json` also
+records the full commit, dirty state and engine version. Editor launches keep their
+development version display. Staging never modifies source project settings or requires
+`.git` in the package. Build logs remain under ignored `reports/exports/`; failed runs
+have their own directories and cannot return an earlier ZIP. To allow a slower machine,
+pass `-TimeoutSeconds 600`; the default is 240 seconds per process.
+
+## GitHub Actions
+
+Both workflows use GitHub-hosted `windows-2025` x64 runners and PowerShell 7. Actions
+are pinned to full commit hashes. Editor/template caches use the runner OS and the hash
+of `tools/versions.json`; setup verifies restored binaries, and cache misses download
+the same pinned dependencies. Downloaded archives and generated `.godot` imports
+are not cached. Update dependency pins and action revisions deliberately.
+
+| Trigger | Checks workflow behavior |
+| --- | --- |
+| Push to a feature branch | Quick import, script-loading and startup checks. |
+| Pull request targeting `main` | Full validation and build-tool tests. |
+| Push to `main` | Full validation and build-tool tests. |
+| Manual run | Choose quick/full/targeted scope; optionally export a Windows release ZIP. |
+
+In Actions → Checks → Run workflow, choose a branch and scope. `targeted` requires
+comma-separated discovered test paths, for example
+`test/unit/test_build_version.gd,test/unit/test_saves.gd`. Each path is validated by
+the local validator. The workflow must first exist on the default branch for the manual
+button to appear; write access is required. The CLI equivalent is:
+
+```powershell
+gh workflow run checks.yml --ref feature/my-change -f scope=full -f build=true
+```
+
+Download requested ZIPs from the run's Artifacts section. Artifacts and failure logs
+expire after seven days. New check runs cancel obsolete runs for the same event and
+branch/PR. An open PR can have both its quick push run and its full PR run. A manual
+ZIP uses the chosen validation scope; it does not create a GitHub Release. Checks and
+build jobs have read-only repository permissions.
+
+The local tooling tests can also be run independently:
+
+```powershell
+pwsh -NoProfile -File tools/test_build_tools.ps1
+```
+
+These use isolated fixtures for tag parsing/ancestry, fresh and warm dependency setup,
+corrupt downloads, installed mismatches and failed exports. They need the pinned editor
+but no network or installed export template, and create no repository commits or tags.
+
+### Repository setup and everyday operation
+
+Land the workflow files through the repository's normal branch/PR process and keep
+`main` as the default development branch. In Settings → Actions → General, enable
+Actions and allow the GitHub-created `actions/checkout`, `actions/cache`,
+`actions/upload-artifact` and `actions/download-artifact` actions. No custom runner,
+repository secrets, variables, Environment or Pages setup is required. The default
+token setting can remain restricted/read-only: the publish job explicitly requests
+`contents: write`. Repository/organization policies must permit these workflows and
+the requested job permissions. For private repositories, check Actions usage/budget
+and fork-workflow availability. See GitHub's [Actions settings guide](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository).
+
+After a first check run, configure a `main` branch rule if merges should require a PR
+and the passing `validate` job from Checks. Workflows alone do not prohibit merging a
+failed PR. For maintainer-controlled releases, add a `v*` tag ruleset restricting
+creation to the intended maintainers and protecting existing tags from updates or
+deletion. Without tag restrictions, anyone who can push tags upstream can initiate
+publishing for a qualifying commit. Rule availability depends on the repository's
+plan/visibility; see [protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+and [tag rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets).
+
+Contributors work on a branch, run local checks appropriate to the change, push the
+branch, and open a PR targeting `main`. A push in this repository runs quick checks;
+a push to a fork runs there only when its Actions are enabled. The upstream PR runs
+the full checks, including on subsequent commits. Fix failed checks by pushing another
+commit to the same branch. No release tag or manual version edit is needed for an
+ordinary contribution.
+
+Maintainers review the PR and its full result, approve any pending fork-workflow run
+after reviewing its changes, and merge through the PR. GitHub then validates the new
+`main` commit again. Fork approval policy is configured in Actions settings; read-only
+checks need no fork secrets or write tokens. See [approving fork runs](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/approve-runs-from-forks).
+
+For a playable test build, a maintainer or contributor with upstream write access can
+run Checks manually on a repository branch with `scope=full` and `build=true`. Download
+the artifact and playtest the included ZIP. The manual selector does not select a
+branch living only in another user's fork; that contributor can use local export/their
+own fork, or a maintainer can arrange a reviewed upstream branch. Tests do not replace
+the review of gameplay and presentation.
+
+### Publishing a release
+
+Keep `main` as development. Push a deliberately chosen tag for a commit already in
+`main` history: `v0.1.0` creates a normal release; `v0.1.0-rc.1` creates a prerelease.
+Only `vMAJOR.MINOR.PATCH` and `vMAJOR.MINOR.PATCH-rc.N` are accepted, with no leading
+zeros and RC numbering starting at 1. Other `v*` tags fail validation; other tags do
+not trigger the workflow. Tags can identify older commits in `main` history.
+
+The maintainer first selects a successful `main` commit and playtests a full manual
+build of that commit. Fetch current history, create an annotated version tag on the
+chosen commit, and push that tag explicitly. Pushing the tag is the publish action:
+there is no further manual release approval in this workflow. Do not create a release
+on GitHub first; the workflow creates it after the checks. Start with an RC tag to
+verify the complete hosted path. For a stable release, push the stable version tag on
+the chosen commit; it runs validation and export again. No release branch or manual
+version-file change is needed.
+
+The release workflow fetches history and tags, requires a clean checkout at the tagged
+commit, runs full validation and tooling tests, rechecks the checkout, and exports that
+commit. A separate publish job downloads the validated ZIP/checksum, verifies the hash
+and that the remote tag still resolves to the same commit, then creates a release with
+generated notes and both files. Only this job receives `contents: write` through
+`GITHUB_TOKEN`; no personal access token or repository checkout is used for publishing.
+RC releases are marked prerelease and not Latest. Publishing is serialized per tag.
+
+For `v0.1.0`, the attached files are `Ostinato-v0.1.0-windows-x64.zip` and
+`Ostinato-v0.1.0-windows-x64.zip.sha256`. A tag must contain the workflow files for this
+automation to run. GitHub-hosted execution and publishing need verification on the
+actual repository; local validation alone does not verify them.
+
+For a failed run, inspect its step logs and diagnostic artifact, fix the cause, and
+rerun the failed job(s) or the full workflow as appropriate. An existing release,
+including a draft left by a failed upload, stops publishing. Review and deliberately
+remove an unfinished draft before retrying; the workflow never overwrites published
+assets or creates a missing tag. Fix a published build with a new version tag.
+
+Before sharing, extract a manual ZIP outside the checkout and play on Windows: check
+version display, New Game, movement/combat, save/load and absence of Development tools.
+Headless checks establish behavior; humans judge appearance, readability and feel.
 
 ## Where things live
 

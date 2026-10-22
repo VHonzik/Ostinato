@@ -81,7 +81,7 @@ func _ready() -> void:
 	copyright.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_footer.add_child(copyright)
 	var version := Label.new()
-	version.text = "0.1." + BuildVersion.short_commit()
+	version.text = BuildVersion.display_text()
 	_footer.add_child(version)
 	hide()
 

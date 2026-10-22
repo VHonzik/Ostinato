@@ -12,6 +12,8 @@ func _ready() -> void:
 	get_window().min_size = BASE_SIZE
 	resized.connect(_resize_viewport)
 	_resize_viewport()
+	if "--smoke-test" in OS.get_cmdline_user_args():
+		ExportSmoke.run.call_deferred(self)
 
 
 func _resize_viewport() -> void:

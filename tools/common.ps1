@@ -26,12 +26,14 @@ function Invoke-ToolProcess {
     [string[]]$Arguments,
     [string]$OutputDirectory,
     [ValidateRange(1, 600)][int]$TimeoutSeconds = 120,
-    [switch]$AcceptNonzeroExit
+    [switch]$AcceptNonzeroExit,
+    [hashtable]$Environment = @{},
+    [string]$WorkingDirectory = $ProjectRoot
   )
   New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
   $startInfo = [Diagnostics.ProcessStartInfo]::new()
   $startInfo.FileName = $FilePath
-  $startInfo.WorkingDirectory = $ProjectRoot
+  $startInfo.WorkingDirectory = $WorkingDirectory
   $startInfo.UseShellExecute = $false
   $startInfo.CreateNoWindow = $true
   $startInfo.RedirectStandardOutput = $true
@@ -39,6 +41,9 @@ function Invoke-ToolProcess {
   $startInfo.StandardOutputEncoding = [Text.Encoding]::UTF8
   $startInfo.StandardErrorEncoding = [Text.Encoding]::UTF8
   $startInfo.Environment['OSTINATO_REPORT_DIR'] = $OutputDirectory
+  foreach ($entry in $Environment.GetEnumerator()) {
+    $startInfo.Environment[$entry.Key] = [string]$entry.Value
+  }
   foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
   $process = [Diagnostics.Process]::new()
   $process.StartInfo = $startInfo

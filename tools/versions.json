@@ -6,7 +6,11 @@
     "console_executable": "bin/Godot_v4.7.2-stable_win64_console.exe",
     "console_sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
     "download_url": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip",
-    "export_templates_version": "4.7.2.stable"
+    "export_templates_version": "4.7.2.stable",
+    "export_templates_url": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz",
+    "export_templates_sha256": "f298490b8d44d934be425a5a65a51bf15f422428b229a06a6e11d9ffea248011",
+    "windows_release_template": "bin/export_templates/windows_release_x86_64.exe",
+    "windows_release_sha256": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562"
   },
   "gut": {
     "version": "9.7.1",

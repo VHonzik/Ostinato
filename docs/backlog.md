@@ -42,6 +42,22 @@ concerns during fixes; use the checks in [development](development.md).
 | Level and healing limits | Tune attainable levels, level-gap difficulty and recovery against finite quests/encounters. An explicit level cap remains a design choice. |
 | Additional mechanics | Schedule further passives, Execute/Judgement combo empowerment, broader damage/healing scaling or experimental Stalker Enrage/recovery only for a concrete gameplay goal. Keep the choices in [direction](direction.md). |
 
+## Tooling follow-up — Hosted checks and first release
+
+Use the local export and Actions workflows described in
+[development](development.md#windows-exports). Remaining work requires GitHub rollout
+and human playtesting:
+
+- [ ] When committing/pushing is requested, exercise branch/PR/main checks and manual
+  quick/full/targeted/build runs on GitHub. Confirm failures block publishing and
+  malformed or off-main tags cannot publish releases.
+- [ ] Extract a manual ZIP outside the checkout and play on Windows without Godot
+  installed: verify version display, New Game, movement/combat, save/load and absence
+  of development controls. Human review decides presentation and feel.
+- [ ] When the owner requests the first release tag, verify the prerelease path and
+  downloadable ZIP/checksum before using the normal release path. Local checks do
+  not establish hosted Actions correctness or human acceptance.
+
 ## Later milestones
 
 | Milestone | Scope |

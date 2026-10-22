@@ -1,0 +1,104 @@
+name: Checks
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: Validation scope
+        type: choice
+        options: [quick, full, targeted]
+        default: full
+      tests:
+        description: Comma-separated test paths (required for targeted)
+        type: string
+        default: ''
+      build:
+        description: Export and smoke-test a Windows release ZIP
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  validate:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      CHECK_SCOPE: ${{ github.event_name == 'workflow_dispatch' && inputs.scope || ((github.event_name == 'pull_request' || github.ref == 'refs/heads/main') && 'full' || 'quick') }}
+      TEST_PATHS: ${{ inputs.tests }}
+      BUILD_ZIP: ${{ inputs.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Restore editor
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: bin/Godot*.exe
+          key: godot-editor-${{ runner.os }}-${{ hashFiles('tools/versions.json') }}
+      - name: Restore export template
+        if: inputs.build
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: bin/export_templates
+          key: godot-template-${{ runner.os }}-${{ hashFiles('tools/versions.json') }}
+      - name: Verify pinned dependencies
+        run: ./tools/setup.ps1 -ExportTemplates:($env:BUILD_ZIP -eq 'true')
+      - name: Validate
+        run: |
+          switch ($env:CHECK_SCOPE) {
+            quick { ./tools/validate.ps1 }
+            full { ./tools/validate.ps1 -Full }
+            targeted {
+              $tests = @($env:TEST_PATHS.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+              if (!$tests.Count) { throw 'Targeted validation requires test paths.' }
+              ./tools/validate.ps1 -Test $tests
+            }
+            default { throw 'Unknown validation scope.' }
+          }
+      - name: Test build tools
+        if: env.CHECK_SCOPE == 'full'
+        run: ./tools/test_build_tools.ps1
+      - name: Export Windows ZIP
+        if: inputs.build
+        id: export
+        run: |
+          $build = ./tools/export.ps1
+          "zip=$($build.Zip)" >> $env:GITHUB_OUTPUT
+          "checksum=$($build.Checksum)" >> $env:GITHUB_OUTPUT
+      - name: Upload Windows ZIP
+        if: inputs.build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: windows-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.export.outputs.zip }}
+            ${{ steps.export.outputs.checksum }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: check-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            reports/validation/
+            reports/exports/
+            reports/build-tools/
+          if-no-files-found: ignore
+          retention-days: 7
