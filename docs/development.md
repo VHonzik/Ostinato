@@ -231,12 +231,14 @@ Passwords remain in ignored local credentials and process environment, outside p
 and build logs.
 
 Exports go to a fresh `builds/android/<run>/` directory. The launcher prints the APK and
-checksum paths after verifying the signature, ARM64 architecture, package identity,
-SDK levels, landscape-only orientation and release manifest. It embeds version metadata and licenses. An APK build
-does not certify startup or touch behavior on Android. Install the APK on an ARM64 phone
+ZIP paths after verifying the signature, ARM64 architecture, package identity,
+SDK levels, landscape-only orientation and release manifest. The ZIP contains the signed
+APK, its checksum, build metadata and licenses; a neighboring `.zip.sha256` verifies the
+archive. An APK build does not certify startup or touch behavior on Android.
+Install the APK on an ARM64 phone
 (Android 7 or newer), or use `adb install -r <apk>` from the SDK's platform-tools directory.
 Google Play/AAB publishing, cloud saves and cross-device save transfer are outside this
-local workflow. Hosted Actions currently build Windows only.
+local workflow. Tagged releases also build the Android ZIP in Actions.
 
 The mobile interface uses eight arrows around Wait, the existing two hotbar rows,
 and Menu/Interact. Hold an arrow to repeat; Wait is tap-only. Ability taps consume the
@@ -298,8 +300,9 @@ Land the workflow files through the repository's normal branch/PR process and ke
 `main` as the default development branch. In Settings → Actions → General, enable
 Actions and allow the GitHub-created `actions/checkout`, `actions/cache`,
 `actions/upload-artifact` and `actions/download-artifact` actions. No custom runner,
-repository secrets, variables, Environment or Pages setup is required. The default
-token setting can remain restricted/read-only: the publish job explicitly requests
+variables, Environment or Pages setup is required. Android releases need the two signing
+secrets described below. The default token setting can remain restricted/read-only:
+the publish job explicitly requests
 `contents: write`. Repository/organization policies must permit these workflows and
 the requested job permissions. For private repositories, check Actions usage/budget
 and fork-workflow availability. See GitHub's [Actions settings guide](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/enabling-features-for-your-repository/managing-github-actions-settings-for-a-repository).
@@ -332,6 +335,29 @@ branch living only in another user's fork; that contributor can use local export
 own fork, or a maintainer can arrange a reviewed upstream branch. Tests do not replace
 the review of gameplay and presentation.
 
+### Android release signing
+
+Configure these repository Actions secrets from the existing ignored
+`bin/android_signing/` identity before pushing a release tag:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | Base64 encoding of the bytes of `ostinato.keystore`. |
+| `ANDROID_KEYSTORE_CREDENTIALS` | Complete contents of `credentials.json`, including `alias` and `password`. |
+
+Keep using the same key for local and hosted APKs so Android can install updates over
+the smoke-tested build. Back up the original key and credentials. The workflow restores
+them only on the hosted runner; they are excluded from caches, artifacts and diagnostics.
+Missing secrets fail the release rather than creating a replacement identity. Ordinary
+Checks runs and their optional Windows ZIP need no signing secrets.
+
+[setup_android_ci.ps1](../tools/setup_android_ci.ps1) downloads isolated JDK and SDK
+archives with the URLs and SHA-256 pins in `tools/versions.json`, verifies them, and
+checks the installed versions using the same toolchain rules as local export. Android
+version names use the release tag; version codes use the Release workflow's increasing
+`github.run_number` (reruns keep the same code). Keep any local update version codes
+aligned with that sequence, and preserve the workflow's run numbering for later releases.
+
 ### Publishing a release
 
 Keep `main` as development. Push a deliberately chosen tag for a commit already in
@@ -351,16 +377,19 @@ version-file change is needed.
 
 The release workflow fetches history and tags, requires a clean checkout at the tagged
 commit, runs full validation and tooling tests, rechecks the checkout, and exports that
-commit. A separate publish job downloads the validated ZIP/checksum, verifies the hash
-and that the remote tag still resolves to the same commit, then creates a release with
-generated notes and both files. Only this job receives `contents: write` through
-`GITHUB_TOKEN`; no personal access token or repository checkout is used for publishing.
+commit for Windows and Android. A separate publish job downloads both ZIP/checksum
+pairs, verifies both hashes and that the remote tag still resolves to the same commit,
+then creates a release with generated notes and all four files. Both exports must
+succeed before publishing.
+Only this job receives `contents: write` through `GITHUB_TOKEN`; no personal access
+token or repository checkout is used for publishing.
 RC releases are marked prerelease and not Latest. Publishing is serialized per tag.
 
-For `v0.1.0`, the attached files are `Ostinato-v0.1.0-windows-x64.zip` and
-`Ostinato-v0.1.0-windows-x64.zip.sha256`. A tag must contain the workflow files for this
-automation to run. GitHub-hosted execution and publishing need verification on the
-actual repository; local validation alone does not verify them.
+For `v0.1.0`, the attached archives are `Ostinato-v0.1.0-windows-x64.zip` and
+`Ostinato-v0.1.0-android-arm64.zip`, each with a matching `.zip.sha256` file.
+A tag must contain the workflow files for this automation to run.
+GitHub-hosted execution and publishing need verification on the actual repository;
+local validation alone does not verify them.
 
 For a failed run, inspect its step logs and diagnostic artifact, fix the cause, and
 rerun the failed job(s) or the full workflow as appropriate. An existing release,
@@ -371,6 +400,9 @@ assets or creates a missing tag. Fix a published build with a new version tag.
 Before sharing, extract a manual ZIP outside the checkout and play on Windows: check
 version display, New Game, movement/combat, save/load and absence of Development tools.
 Headless checks establish behavior; humans judge appearance, readability and feel.
+For Android, extract its ZIP and install the APK over the existing app on the phone;
+check version display, retained saves, New Game and touch controls. Hosted export checks
+the APK signature and manifest; it does not run an Android device smoke test.
 
 ## Where things live
 

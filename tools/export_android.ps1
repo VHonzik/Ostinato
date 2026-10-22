@@ -71,9 +71,11 @@ try {
   Assert-AndroidLandscapeManifest $result.Stdout
   $checksum = $apk + '.sha256'
   [IO.File]::WriteAllText($checksum, ((Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($apk) + "`n"))
+  $package = New-AndroidReleasePackage $apk (Join-Path $staging 'build_info.json') (Join-Path $ProjectRoot 'licenses')
   Write-Host "PASS: signed Android ARM64 release APK ($Version). Device playtest still required."
   Write-Host "APK: $apk"
-  [pscustomobject]@{ Apk = $apk; Checksum = $checksum; Version = $Version; Commit = $commit }
+  Write-Host "ZIP: $($package.Zip)"
+  [pscustomobject]@{ Apk = $apk; Checksum = $checksum; Zip = $package.Zip; ZipChecksum = $package.Checksum; Version = $Version; Commit = $commit }
 } catch {
   Write-Host "Android export failed; diagnostics: $logs" -ForegroundColor Red
   throw

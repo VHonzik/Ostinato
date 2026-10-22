@@ -1,4 +1,4 @@
-name: Windows release
+name: Release
 
 on:
   push:
@@ -18,7 +18,7 @@ defaults:
 jobs:
   build:
     runs-on: windows-2025
-    timeout-minutes: 30
+    timeout-minutes: 45
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       prerelease: ${{ steps.release.outputs.prerelease }}
@@ -70,6 +70,47 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+      - name: Set up pinned Android toolchain
+        id: android-tools
+        run: |
+          $toolchain = ./tools/setup_android_ci.ps1
+          "java=$($toolchain.Java)" >> $env:GITHUB_OUTPUT
+          "sdk=$($toolchain.Sdk)" >> $env:GITHUB_OUTPUT
+      - name: Restore Android signing identity
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_CREDENTIALS: ${{ secrets.ANDROID_KEYSTORE_CREDENTIALS }}
+        run: |
+          if (!$env:ANDROID_KEYSTORE_BASE64 -or !$env:ANDROID_KEYSTORE_CREDENTIALS) {
+            throw 'Configure ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_CREDENTIALS repository secrets from the existing Android signing identity.'
+          }
+          $credentials = $env:ANDROID_KEYSTORE_CREDENTIALS | ConvertFrom-Json
+          if (!$credentials.alias -or !$credentials.password) { throw 'Android signing credentials require alias and password.' }
+          $signing = Join-Path $env:GITHUB_WORKSPACE 'bin/android_signing'
+          New-Item -ItemType Directory -Path $signing -Force | Out-Null
+          [IO.File]::WriteAllBytes((Join-Path $signing 'ostinato.keystore'), [Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64))
+          [IO.File]::WriteAllText((Join-Path $signing 'credentials.json'), $env:ANDROID_KEYSTORE_CREDENTIALS)
+      - name: Export Android ZIP
+        id: android
+        env:
+          JAVA_SDK_PATH: ${{ steps.android-tools.outputs.java }}
+          ANDROID_SDK_PATH: ${{ steps.android-tools.outputs.sdk }}
+        run: |
+          ./tools/check_release.ps1 -Tag $env:RELEASE_TAG | Out-Null
+          ./tools/setup_android.ps1 -JavaSdkPath $env:JAVA_SDK_PATH -AndroidSdkPath $env:ANDROID_SDK_PATH
+          $build = ./tools/export_android.ps1 -Version $env:RELEASE_TAG -VersionCode $env:GITHUB_RUN_NUMBER -JavaSdkPath $env:JAVA_SDK_PATH -AndroidSdkPath $env:ANDROID_SDK_PATH
+          "zip=$($build.Zip)" >> $env:GITHUB_OUTPUT
+          "checksum=$($build.ZipChecksum)" >> $env:GITHUB_OUTPUT
+      - name: Upload Android release files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-android
+          path: |
+            ${{ steps.android.outputs.zip }}
+            ${{ steps.android.outputs.checksum }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
       - name: Upload failure diagnostics
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -95,19 +136,28 @@ jobs:
       BUILD_COMMIT: ${{ needs.build.outputs.commit }}
       PRERELEASE: ${{ needs.build.outputs.prerelease }}
     steps:
-      - name: Download validated release files
+      - name: Download validated Windows release files
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: release-windows
           path: release
+      - name: Download validated Android release files
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-android
+          path: release
       - name: Verify assets and publish
         run: |
           $ErrorActionPreference = 'Stop'
-          $zip = "release/Ostinato-$env:RELEASE_TAG-windows-x64.zip"
-          $checksum = "$zip.sha256"
-          $expected = (Get-Content -LiteralPath $checksum -Raw).Trim()
-          $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($zip)
-          if ($expected -cne $actual) { throw 'Release ZIP checksum does not match.' }
+          $assets = @()
+          foreach ($platform in @('windows-x64', 'android-arm64')) {
+            $zip = "release/Ostinato-$env:RELEASE_TAG-$platform.zip"
+            $checksum = "$zip.sha256"
+            $expected = (Get-Content -LiteralPath $checksum -Raw).Trim()
+            $actual = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($zip)
+            if ($expected -cne $actual) { throw "Release ZIP checksum does not match: $platform." }
+            $assets += @($zip, $checksum)
+          }
           $remoteCommit = gh api "repos/$env:GH_REPO/commits/$env:RELEASE_TAG" --jq .sha
           if ($LASTEXITCODE -ne 0 -or $remoteCommit -cne $env:BUILD_COMMIT) {
             throw 'The remote tag no longer identifies the validated commit.'
@@ -116,7 +166,7 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             throw 'Release already exists. Published assets are never replaced. Review and remove an unfinished draft before retrying.'
           }
-          $arguments = @('release', 'create', $env:RELEASE_TAG, $zip, $checksum, '--verify-tag', '--generate-notes')
+          $arguments = @('release', 'create', $env:RELEASE_TAG) + $assets + @('--verify-tag', '--generate-notes')
           if ($env:PRERELEASE -eq 'true') { $arguments += @('--prerelease', '--latest=false') }
           gh @arguments
           if ($LASTEXITCODE -ne 0) { throw 'Release publishing failed. Inspect any draft before retrying.' }

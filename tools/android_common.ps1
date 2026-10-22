@@ -85,3 +85,18 @@ function Assert-AndroidLandscapeManifest {
     throw 'APK activities must use landscape-only orientation.'
   }
 }
+
+function New-AndroidReleasePackage {
+  param([string]$Apk, [string]$Metadata, [string]$Licenses)
+  $package = Join-Path (Split-Path -Parent $Apk) ([IO.Path]::GetFileNameWithoutExtension($Apk))
+  New-Item -ItemType Directory -Path $package -ErrorAction Stop | Out-Null
+  foreach ($path in @($Apk, ($Apk + '.sha256'), $Metadata, $Licenses)) {
+    Copy-Item -LiteralPath $path -Destination $package -Recurse
+  }
+  $zip = $package + '.zip'
+  Compress-Archive -LiteralPath $package -DestinationPath $zip -CompressionLevel Optimal
+  $checksum = $zip + '.sha256'
+  [IO.File]::WriteAllText($checksum, ((Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant() +
+    '  ' + [IO.Path]::GetFileName($zip) + "`n"))
+  return [pscustomobject]@{ Zip = $zip; Checksum = $checksum }
+}

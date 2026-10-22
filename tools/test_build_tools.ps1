@@ -177,6 +177,37 @@ try {
     $androidPreset.Contains('architectures/arm64-v8a=true') -and
     $androidPreset.Contains('architectures/armeabi-v7a=false') -and
     $androidPreset -notmatch 'gradle_build/(min_sdk|target_sdk)=') 'The prebuilt Android preset has incompatible options.'
+  $androidPayload = Join-Path $run 'android-package'
+  $androidLicenses = Join-Path $androidPayload 'licenses'
+  New-Item -ItemType Directory -Path $androidLicenses -Force | Out-Null
+  $apk = Join-Path $androidPayload 'Ostinato-v0.1.0-android-arm64.apk'
+  [IO.File]::WriteAllText($apk, 'signed APK fixture')
+  $apkHash = (Get-FileHash -LiteralPath $apk).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($apk) + "`n"
+  [IO.File]::WriteAllText(($apk + '.sha256'), $apkHash)
+  $metadata = Join-Path $androidPayload 'build_info.json'
+  [IO.File]::WriteAllText($metadata, '{"version":"v0.1.0"}')
+  [IO.File]::WriteAllText((Join-Path $androidLicenses 'notice.txt'), 'license fixture')
+  [IO.File]::WriteAllText((Join-Path $androidPayload 'credentials.json'), 'must stay outside the ZIP')
+  $package = New-AndroidReleasePackage $apk $metadata $androidLicenses
+  $zip = [IO.Compression.ZipFile]::OpenRead($package.Zip)
+  try {
+    $entries = @($zip.Entries | Where-Object { $_.Name } | ForEach-Object { $_.FullName.Replace('\', '/') } | Sort-Object)
+    $prefix = 'Ostinato-v0.1.0-android-arm64/'
+    $expected = @('Ostinato-v0.1.0-android-arm64.apk', 'Ostinato-v0.1.0-android-arm64.apk.sha256',
+      'build_info.json', 'licenses/notice.txt') | ForEach-Object { $prefix + $_ } | Sort-Object
+    Assert-BuildCheck (($entries -join "`n") -ceq ($expected -join "`n")) 'Android ZIP omitted runtime files or included unrelated files.'
+    $entry = $zip.GetEntry($prefix + [IO.Path]::GetFileName($apk))
+    $reader = [IO.StreamReader]::new($entry.Open())
+    try {
+      Assert-BuildCheck ($reader.ReadToEnd() -ceq 'signed APK fixture') 'Packaging changed the signed APK.'
+    } finally { $reader.Dispose() }
+  } finally { $zip.Dispose() }
+  $expectedHash = (Get-FileHash -LiteralPath $package.Zip).Hash.ToLowerInvariant() + '  ' + [IO.Path]::GetFileName($package.Zip) + "`n"
+  Assert-BuildCheck ([IO.File]::ReadAllText($package.Checksum) -ceq $expectedHash) 'Android ZIP checksum does not identify the archive.'
+  Assert-Rejected { New-AndroidReleasePackage $apk $metadata $androidLicenses } 'Android packaging overwrote an earlier package.'
+  $missingApk = Join-Path $androidPayload 'missing.apk'
+  Assert-Rejected { New-AndroidReleasePackage $missingApk $metadata $androidLicenses } 'Missing APK was packaged successfully.'
+  Assert-BuildCheck (!(Test-Path -LiteralPath ($missingApk.Replace('.apk', '.zip')))) 'Failed Android packaging produced a ZIP.'
   Write-Host "PASS: $checks build-tool checks."
   # Expected native git failures must not leak into GitHub's PowerShell step exit code.
   exit 0
