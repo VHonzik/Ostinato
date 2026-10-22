@@ -19,6 +19,23 @@ function Get-GodotPath {
   return $engine
 }
 
+function Get-ExportTemplateArchive {
+  $archive = Join-Path $ProjectRoot ('bin/cache/' + [IO.Path]::GetFileName($ToolVersions.godot.export_templates_url))
+  if (!(Test-Path -LiteralPath $archive)) {
+    New-Item -ItemType Directory -Path (Split-Path -Parent $archive) -Force | Out-Null
+    $download = $archive + '.' + [guid]::NewGuid().ToString('N') + '.tmp'
+    try {
+      Invoke-WebRequest -Uri $ToolVersions.godot.export_templates_url -OutFile $download -TimeoutSec 600
+      Assert-FileHash $download $ToolVersions.godot.export_templates_sha256
+      Move-Item -LiteralPath $download -Destination $archive
+    } finally {
+      if (Test-Path -LiteralPath $download) { Remove-Item -LiteralPath $download }
+    }
+  }
+  Assert-FileHash $archive $ToolVersions.godot.export_templates_sha256
+  return $archive
+}
+
 function New-ValidationEnvironment {
   param([string]$OutputDirectory)
   $bundle = Join-Path $ProjectRoot $ToolVersions.ca_bundle.path

@@ -235,7 +235,8 @@ pwsh -NoProfile -File tools/export_android.ps1 -Version demo-android-2 -VersionC
 pwsh -NoProfile -File tools/godot.ps1 res://mobile/main.tscn
 ```
 
-Setup verifies the existing template archive and installs its pinned Android templates.
+Setup downloads the pinned template archive when absent, verifies it, and installs its
+pinned Android templates independently of any installed Windows template.
 It checks SDK/JDK versions and creates a local testing signing identity under ignored
 `bin/android_signing/`. Keep that directory backed up to sign compatible updates; setup
 does not replace incomplete or existing keys. Export uses an isolated editor copy and

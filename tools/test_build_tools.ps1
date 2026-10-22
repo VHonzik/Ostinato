@@ -31,12 +31,17 @@ function New-SetupFixture {
   $Pins | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $fixture 'tools/versions.json')
   # Replace only the transport. Real setup still checks hashes, extracts and installs.
   @'
-param([switch]$ExportTemplates)
+param([switch]$ExportTemplates, [switch]$TemplateArchive)
 function Invoke-WebRequest {
   param([string]$Uri, [string]$OutFile, [int]$TimeoutSec)
   Copy-Item -LiteralPath $Uri -Destination $OutFile
 }
-. "$PSScriptRoot/tools/setup.ps1" -ExportTemplates:$ExportTemplates
+if ($TemplateArchive) {
+  . "$PSScriptRoot/tools/common.ps1"
+  Get-ExportTemplateArchive | Out-Null
+} else {
+  . "$PSScriptRoot/tools/setup.ps1" -ExportTemplates:$ExportTemplates
+}
 '@ | Set-Content -LiteralPath (Join-Path $fixture 'install.ps1')
   return $fixture
 }
@@ -98,6 +103,24 @@ try {
   $warmPins | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $fixture 'tools/versions.json')
   $result = Invoke-ToolProcess 'warm-setup' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'install.ps1'), '-ExportTemplates') $run
   Assert-BuildCheck ($result.ExitCode -eq 0) 'Warm dependency setup attempted a download.'
+  # Actions restores extracted templates without the archive needed for Android setup.
+  $cachedArchive = Join-Path $fixture 'bin/cache/templates.tpz'
+  Move-Item -LiteralPath $cachedArchive -Destination (Join-Path $fixture 'previous-templates.tpz')
+  $result = Invoke-ToolProcess 'restored-template-setup' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'install.ps1'), '-ExportTemplates') $run
+  Assert-BuildCheck ($result.ExitCode -eq 0 -and !(Test-Path -LiteralPath $cachedArchive)) 'Restored Windows templates unnecessarily required an archive.'
+  $pins | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $fixture 'tools/versions.json')
+  $result = Invoke-ToolProcess 'recover-template-archive' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'install.ps1'), '-TemplateArchive') $run
+  Assert-BuildCheck ($result.ExitCode -eq 0 -and (Get-FileHash -LiteralPath $cachedArchive).Hash -eq $pins.godot.export_templates_sha256) 'Android template archive acquisition failed with restored Windows templates.'
+  $archiveWarmPins = $pins | ConvertTo-Json -Depth 4 | ConvertFrom-Json -AsHashtable
+  $archiveWarmPins.godot.export_templates_url = Join-Path $fixture 'unavailable/templates.tpz'
+  $archiveWarmPins | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $fixture 'tools/versions.json')
+  $result = Invoke-ToolProcess 'warm-template-archive' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'install.ps1'), '-TemplateArchive') $run
+  Assert-BuildCheck ($result.ExitCode -eq 0) 'An existing verified template archive attempted a download.'
+  [IO.File]::WriteAllText($cachedArchive, 'mismatched cached archive')
+  $result = Invoke-ToolProcess 'mismatched-template-archive' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'install.ps1'), '-TemplateArchive') $run -AcceptNonzeroExit
+  Assert-BuildCheck ($result.ExitCode -ne 0 -and $result.Stderr.Contains('checksum mismatch')) 'A mismatched cached archive was accepted.'
+  Assert-BuildCheck ([IO.File]::ReadAllText($cachedArchive) -ceq 'mismatched cached archive') 'Archive acquisition overwrote a mismatched archive.'
+  $warmPins | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $fixture 'tools/versions.json')
   foreach ($path in @('bin/editor.exe', 'bin/export_templates/windows_release_x86_64.exe')) {
     $installed = Join-Path $fixture $path
     $original = [IO.File]::ReadAllBytes($installed)

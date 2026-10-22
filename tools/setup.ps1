@@ -41,14 +41,7 @@ if ($gutMetadata -notmatch ('(?m)^version="' + [regex]::Escape($ToolVersions.gut
 if ($ExportTemplates) {
   $template = Join-Path $ProjectRoot $ToolVersions.godot.windows_release_template
   if (!(Test-Path -LiteralPath $template)) {
-    $archive = Join-Path $ProjectRoot ('bin/cache/' + [IO.Path]::GetFileName($ToolVersions.godot.export_templates_url))
-    if (!(Test-Path -LiteralPath $archive)) {
-      $download = Join-Path $cache 'templates.tpz'
-      Invoke-WebRequest -Uri $ToolVersions.godot.export_templates_url -OutFile $download -TimeoutSec 600
-      Assert-FileHash $download $ToolVersions.godot.export_templates_sha256
-      Move-Item -LiteralPath $download -Destination $archive
-    }
-    Assert-FileHash $archive $ToolVersions.godot.export_templates_sha256
+    $archive = Get-ExportTemplateArchive
     $zip = [IO.Compression.ZipFile]::OpenRead($archive)
     try {
       $entry = $zip.GetEntry('templates/windows_release_x86_64.exe')

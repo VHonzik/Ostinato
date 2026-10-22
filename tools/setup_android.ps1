@@ -4,9 +4,7 @@ param([string]$JavaSdkPath = '', [string]$AndroidSdkPath = '')
 . "$PSScriptRoot/android_common.ps1"
 if (!$IsWindows) { throw 'Android export setup currently supports a Windows host.' }
 $toolchain = Resolve-AndroidToolchain $JavaSdkPath $AndroidSdkPath
-$archive = Join-Path $ProjectRoot ('bin/cache/' + [IO.Path]::GetFileName($ToolVersions.godot.export_templates_url))
-if (!(Test-Path -LiteralPath $archive)) { & "$PSScriptRoot/setup.ps1" -ExportTemplates }
-Assert-FileHash $archive $ToolVersions.godot.export_templates_sha256
+$archive = Get-ExportTemplateArchive
 $zip = [IO.Compression.ZipFile]::OpenRead($archive)
 try {
   foreach ($flavor in @('release', 'debug')) {
