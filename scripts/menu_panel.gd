@@ -1,7 +1,7 @@
 class_name MenuPanel
 extends Control
 
-## Shared keyboard/mouse menus; only committed equipment/use actions advance simulation.
+## Shared menus; only committed equipment/use actions advance simulation.
 signal new_game_requested(chosen_seed: int)
 signal return_to_menu_requested
 signal refreshed
@@ -679,7 +679,7 @@ func _button(text: String, action: Callable, parent: Node = null) -> Button:
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.pressed.connect(func() -> void:
 		if _buttons.has(button):
-			action.call())
+			activate_button(button, action))
 	# Defer until container layout settles, including a wrap from first to last.
 	button.focus_entered.connect(func() -> void:
 		_show_preview(button)
@@ -688,6 +688,10 @@ func _button(text: String, action: Callable, parent: Node = null) -> Button:
 	(parent if parent != null else _rows).add_child(button)
 	_buttons.append(button)
 	return button
+
+
+func activate_button(_button: Button, action: Callable) -> void:
+	action.call()
 
 
 func _finish() -> void:

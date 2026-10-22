@@ -48,14 +48,20 @@ func save_slot(session: GameSession, slot: int, confirmed: bool = false) -> bool
 		return _fail("Saving requires an action boundary outside combat.")
 	if metadata(slot).status != "Empty" and not confirmed:
 		return _fail("Confirm overwrite before saving to this slot.")
+	return save_path(session, slot_path(slot))
+
+
+func save_path(session: GameSession, path: String) -> bool:
+	last_error = ""
+	if session.world == null or not session.world.can_save():
+		return _fail("Saving requires an action boundary outside combat.")
 	var state := SaveCodec.capture(session)
 	if SaveCodec.restore(state, session.development_build) == null:
 		return _fail("Current game could not be validated; previous save preserved.")
 	var record := {"family": "demo", "revision": REVISION,
 		"timestamp": Time.get_datetime_string_from_system(true) + "Z", "data": state}
-	if DirAccess.make_dir_recursive_absolute(directory) != OK:
+	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		return _fail("Cannot create save directory. Previous save preserved.")
-	var path := slot_path(slot)
 	var temporary := path + ".tmp"
 	var file := FileAccess.open(temporary, FileAccess.WRITE)
 	if file == null:
@@ -69,7 +75,7 @@ func save_slot(session: GameSession, slot: int, confirmed: bool = false) -> bool
 	var check := _read(temporary)
 	if check.is_empty() or SaveCodec.restore(check.get("data"), session.development_build) == null:
 		return _fail("Save verification failed. Previous save preserved.")
-	# Godot's Windows rename replaces an existing destination in one OS operation.
+	# Replace only after validation; supported desktop/Android filesystems rename atomically.
 	if DirAccess.rename_absolute(temporary, path) != OK:
 		return _fail("Cannot replace save. Previous save preserved.")
 	return true
@@ -79,7 +85,11 @@ func load_slot(session: GameSession, slot: int) -> bool:
 	last_error = ""
 	if slot < 1 or slot > SLOT_COUNT:
 		return _fail("Invalid save slot.")
-	var path := slot_path(slot)
+	return load_path(session, slot_path(slot))
+
+
+func load_path(session: GameSession, path: String) -> bool:
+	last_error = ""
 	if not FileAccess.file_exists(path):
 		return _fail("No save in this slot.")
 	var record := _read(path)

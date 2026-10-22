@@ -6,10 +6,12 @@ current tasks live in [the backlog](backlog.md).
 
 The current project target is a playable demo of the full game. The valley is the
 demo's playable scope; escaping it completes the demo and points toward the wider world.
+PC is the primary platform; Android is a secondary build for portable play and testing.
 
 ## Game and Loop
 
-A keyboard-first, turn-based grid RPG in a small, finite starting area with one guarded
+A turn-based grid RPG, with keyboard-first desktop controls and a separate landscape
+touch interface, in a small, finite starting area with one guarded
 exit. Keep the sense of a familiar human starting zone threatened by an invasion.
 WoW supplies flavor and ideas, not binding formulas or content inventories.
 
@@ -170,18 +172,25 @@ should assume leaving the marked cone, rather than balancing around taking its h
 
 ## Presentation
 
-- Use a 1280×720 logical canvas and minimum window, with 32×32 world tiles. Double
+- On desktop, use a 1280×720 logical canvas and minimum window, with 32×32 world tiles. Double
   the existing 16px art as a placeholder, preserving the base view's world scale.
   Keep the valley and selected art consistent with this scale.
 - Keep outdoor ground plain. Show prominent terrain features such as trees, stones,
   flowers, sparse grass tufts, roads and landmarks rather than repeating grass tiles.
   Use fewer grass tufts in wooded areas.
-- Follow the owner's [UI sketch](UI_design.svg): compact player frame at upper left,
+- On desktop, follow the owner's [UI sketch](UI_design.svg): compact player frame at upper left,
   a scrolling combat log at lower left, two centered hotbar rows, player menus at lower right,
   and buffs/debuffs below the player. Ten slots per row: 1–6, R, T, G, V on the
   bottom row; Shift plus the same keys on the upper row. Judge layout and text
   readability through human review, without automated resolution/fit checks.
   Keep the log compact with no separate log screen; menu buttons show their shortcuts.
+- Android uses landscape touch controls: eight lower-left arrows around tap-only Wait,
+  both ten-slot hotbar rows, and Menu/Interact buttons. Hold arrows to repeat; an ability
+  tap consumes the hold. Keep ability inspection in the spell book and recent messages
+  in the player menu. Place auras beneath the upper-left player info and larger resource
+  bars just above the hotbar. Share game rules and content while separating platform input,
+  layout, lifecycle handling and export entry points. Human phone playtesting decides
+  control fit, readability and feel.
 
 ## Open design and playtest questions
 

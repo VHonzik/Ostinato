@@ -197,6 +197,12 @@ and chests. The HARD suffix is display-only.
 | Gate scene | Arrival count, deadlines, guard state and stalkers, including pending breath | Restarts schedule and restores guard |
 | Service grants | Granted items, Janos's starter-gear claim and each trainer's gift claim | Clears claims and items; learned abilities remain |
 
+Android also keeps a separate recovery save at completed action boundaries outside
+combat, including the fresh world after death. Continue restores that safe snapshot,
+including the quest/NPC state above; it does not resume unfinished combat or casts.
+Backgrounding freezes the running attempt until Resume. Completing the demo clears
+recovery. The five manual slots and their save revision remain independent.
+
 ## Implementation locations
 
 | Looking for | Start in |

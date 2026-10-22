@@ -18,7 +18,7 @@ static func run(main: Node) -> void:
 	if BuildVersion.display_text() != expected_version:
 		_fail(main, "Exported version metadata is missing or incorrect.")
 		return
-	for excluded in ["res://test", "res://bench", "res://tools", "res://addons", "res://.git"]:
+	for excluded in ["res://test", "res://bench", "res://tools", "res://addons", "res://.git", "res://mobile"]:
 		if DirAccess.dir_exists_absolute(excluded):
 			_fail(main, "Development content included: " + excluded)
 			return

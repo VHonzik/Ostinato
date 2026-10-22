@@ -58,6 +58,23 @@ and human playtesting:
   downloadable ZIP/checksum before using the normal release path. Local checks do
   not establish hosted Actions correctness or human acceptance.
 
+## Android follow-up — First phone playtest
+
+First target: Samsung Galaxy Z Flip6, unfolded inner screen in landscape. Review its
+wide layout and both landscape orientations on the device; cover-screen play is deferred.
+
+- [ ] Install the signed local APK using the [Android workflow](development.md#android-exports-and-touch-preview).
+  Play a valley route with both hotbar rows populated. Review arrow reach, accidental
+  turns, target selection, menu scrolling and text on the owner's phone. Accept the
+  marshal's quests, tap Leave and check that movement is available again.
+  Review the larger resource bars above the hotbar and auras below player info during
+  combat, including retained combo points and Maelstrom Weapon stacks.
+- [ ] Exercise app switching during an encounter, process termination followed by
+  Continue, folding/locking and reopening the phone, and death into a new Loop.
+  Review the safe-save recovery limitation in play.
+- [ ] Make the smallest layout/control adjustment exposed by that playtest before
+  expanding device coverage or considering Google Play distribution.
+
 ## Later milestones
 
 | Milestone | Scope |

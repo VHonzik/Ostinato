@@ -1,6 +1,8 @@
 class_name Gameplay
 extends Node2D
 
+signal view_refreshed
+
 const MOVE_ACTIONS: Array[StringName] = [
 	&"move_north", &"move_northeast", &"move_east", &"move_southeast",
 	&"move_south", &"move_southwest", &"move_west", &"move_northwest",
@@ -16,14 +18,12 @@ var session := GameSession.new()
 var menu: MenuPanel
 var hotbar_panel: HotbarPanel
 var active_game: bool = false
+var input_adapter: GameplayInput
+var suspended: bool = false
 var _pending_action: bool = false
 var _pending_direction := Vector2i.ZERO
 var _pending_arrow: bool = false
 var _melee_delay_seconds: float = 0.0
-var _held_move_keys: Dictionary[Key, Vector2i] = {}
-var _repeat_key: Key = KEY_NONE
-var _repeat_seconds: float = 0.0
-var _repeat_arrow: bool = false
 
 @onready var hud: GameplayHud = $HUD
 @onready var grid_view: GridView = $GridView
@@ -33,8 +33,10 @@ var _repeat_arrow: bool = false
 
 
 func _ready() -> void:
+	input_adapter = create_input()
+	input_adapter.game = self
 	grid_view.melee_bumps_finished.connect(_refresh_hotbar)
-	hotbar_panel = HotbarPanel.new()
+	hotbar_panel = create_hotbar()
 	hotbar_panel.theme = hero_panel.theme
 	$HUD.add_child(hotbar_panel)
 	hotbar_panel.slot_pressed.connect(_hotbar_slot_pressed)
@@ -43,7 +45,7 @@ func _ready() -> void:
 	hero_panel.slot_chosen.connect(_hotbar_slot_pressed)
 	hero_panel.assignment_changed.connect(_refresh_hotbar)
 	hero_panel.lock_requested.connect(_toggle_hotbar_lock)
-	menu = MenuPanel.new()
+	menu = create_menu()
 	menu.session = session
 	$HUD.add_child(menu)
 	menu.theme = hero_panel.theme
@@ -84,7 +86,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if not active_game or menu.visible or world.is_terminal():
+	if suspended or not active_game or menu.visible or world.is_terminal():
 		_clear_movement_hold()
 		return
 	world.screen_size_tiles = get_viewport_rect().size / camera.zoom / GridView.TILE_SIZE
@@ -110,29 +112,15 @@ func _process(delta: float) -> void:
 		return
 	if (world.is_terminal() or world.pending_melee != null
 		or world.pending_skill != null or combat_panel.visible or hero_panel.visible
-		or get_viewport().gui_get_focus_owner() != null):
+		or hud.get_viewport().gui_get_focus_owner() != null):
 		_pending_action = false
 		_clear_movement_hold()
 		return
-	if not _pending_action and _repeat_key != KEY_NONE:
-		_repeat_seconds -= delta
-		if _repeat_seconds <= 0.0 or is_zero_approx(_repeat_seconds):
-			_pending_direction = _held_move_keys[_repeat_key]
-			_pending_arrow = _repeat_arrow
-			_pending_action = true
-			# Never catch up with a burst of turns after a stalled frame.
-			_repeat_seconds = MOVE_REPEAT_INTERVAL_SECONDS
+	input_adapter.process_movement(delta)
 	if not _pending_action:
 		return
 	_pending_action = false
-	var direction := _pending_direction
-	if _pending_arrow:
-		var arrows := Vector2i(
-			int(_held_move_keys.has(KEY_RIGHT)) - int(_held_move_keys.has(KEY_LEFT)),
-			int(_held_move_keys.has(KEY_DOWN)) - int(_held_move_keys.has(KEY_UP))
-		)
-		if arrows != Vector2i.ZERO:
-			direction = arrows
+	var direction := input_adapter.resolve_direction(_pending_direction)
 	if direction == Vector2i.ZERO:
 		world.wait_turn()
 		hud.feedback.text = "Waited one turn. The meadow stirs."
@@ -146,181 +134,9 @@ func _process(delta: float) -> void:
 	refresh_view()
 
 
-func _input(event: InputEvent) -> void:
-	if event is InputEventKey and not event.is_pressed():
-		_release_movement_key(event.physical_keycode)
-	if active_game and world.is_charging():
-		_pending_action = false
-		get_viewport().set_input_as_handled()
-		return
-	if active_game and grid_view.is_melee_bumping():
-		_pending_action = false
-		if event is InputEventKey:
-			if event.is_action_pressed("ui_cancel") and (
-				world.pending_melee != null or world.pending_skill != null):
-				_cancel_pending_melee()
-			get_viewport().set_input_as_handled()
-		return
-	if event is InputEventKey and event.is_pressed() and not event.is_echo():
-		var movement_key := false
-		for action in MOVE_ACTIONS:
-			if event.is_action_pressed(action, false, true):
-				movement_key = true
-				break
-		if not movement_key:
-			_clear_movement_hold()
-		if event.is_action_pressed("fullscreen", false, true) and menu._capture_action == &"":
-			menu.toggle_fullscreen()
-			get_viewport().set_input_as_handled()
-			return
-		if menu.visible:
-			_pending_action = false
-			menu.handle_key(event)
-			get_viewport().set_input_as_handled()
-			return
-	if menu.visible or not active_game or world.is_terminal():
-		return
-	if world.pending_skill != null:
-		_pending_action = false
-		if event is InputEventKey and event.is_pressed():
-			if not event.is_echo() and event.is_action_pressed("ui_cancel", false, true):
-				world.cancel_cast()
-				refresh_view()
-			get_viewport().set_input_as_handled()
-		return
-	if world.pending_melee != null:
-		_pending_action = false
-		if event is InputEventKey and event.is_pressed():
-			if not event.is_echo() and event.is_action_pressed("ui_cancel", false, true):
-				_cancel_pending_melee()
-			get_viewport().set_input_as_handled()
-		return
-	if combat_panel.visible:
-		_handle_combat_input(event)
-		return
-	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
-		return
-	if hero_panel.visible:
-		_pending_action = false
-		if hero_panel.handle_assignment_key(event):
-			get_viewport().set_input_as_handled()
-			return
-		if event.is_action_pressed("ui_cancel", false, true) or event.is_action_pressed("spell_book", false, true):
-			hero_panel.close()
-		elif event.is_action_pressed("character", false, true):
-			_open_hero_panel(false)
-		elif event.is_action_pressed("ui_focus_next", false, true):
-			hero_panel.navigate(true, true)
-		elif event.is_action_pressed("ui_focus_prev", false, true):
-			hero_panel.navigate(false, true)
-		elif event.is_action_pressed("move_east", false, true):
-			hero_panel.change_tab(1)
-		elif event.is_action_pressed("move_west", false, true):
-			hero_panel.change_tab(-1)
-		elif event.is_action_pressed("wait", false, true):
-			pass
-		else:
-			var matched := false
-			for index in range(MOVE_ACTIONS.size()):
-				if event.is_action_pressed(MOVE_ACTIONS[index], false, true):
-					hero_panel.navigate(index in [3, 4, 5])
-					matched = true
-					break
-			if not matched:
-				return
-		get_viewport().set_input_as_handled()
-	elif not world.is_terminal() and get_viewport().gui_get_focus_owner() == null:
-		if event.is_action_pressed("character", false, true) or event.is_action_pressed("spell_book", false, true):
-			_open_hero_panel(event.is_action_pressed("spell_book", false, true))
-			get_viewport().set_input_as_handled()
-
-
-func _unhandled_key_input(event: InputEvent) -> void:
-	if menu.visible or not active_game or world.is_terminal() or grid_view.is_melee_bumping():
-		return
-	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
-		return
-	if event.is_action_pressed("ui_cancel", false, true):
-		var focused := get_viewport().gui_get_focus_owner()
-		if focused != null:
-			focused.release_focus()
-		else:
-			_open_options()
-		_pending_action = false
-		get_viewport().set_input_as_handled()
-		return
-	if (world.is_terminal() or world.pending_melee != null
-		or world.pending_skill != null or combat_panel.visible or hero_panel.visible
-		or get_viewport().gui_get_focus_owner() != null):
-		return
-	for index in range(world.hotbar.size()):
-		if event.is_action_pressed("hotbar_%d" % (index + 1), false, true):
-			_hotbar_slot_pressed(index)
-			get_viewport().set_input_as_handled()
-			return
-	if event.is_action_pressed("player_menu", false, true):
-		_open_player_menu()
-		get_viewport().set_input_as_handled()
-		return
-	if event.is_action_pressed("options", false, true):
-		_open_options()
-		get_viewport().set_input_as_handled()
-		return
-	if event.is_action_pressed("quest_log", false, true):
-		_pending_action = false
-		menu.open_quest_log()
-		get_viewport().set_input_as_handled()
-		return
-	if event.is_action_pressed("inventory", false, true):
-		_open_inventory()
-		get_viewport().set_input_as_handled()
-		return
-	if event.is_action_pressed("interact", false, true):
-		_open_interaction()
-		get_viewport().set_input_as_handled()
-		return
-	if event.is_action_pressed("wait", false, true):
-		_pending_direction = Vector2i.ZERO
-		_pending_arrow = false
-		_pending_action = true
-	else:
-		var matched := false
-		for index in range(MOVE_ACTIONS.size()):
-			if event.is_action_pressed(MOVE_ACTIONS[index], false, true):
-				_pending_direction = GridWorld.DIRECTIONS[index]
-				_pending_arrow = (event.physical_keycode in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
-						and _default_arrow_bindings())
-				_pending_action = true
-				_held_move_keys[event.physical_keycode] = _pending_direction
-				_repeat_key = event.physical_keycode
-				_repeat_arrow = _pending_arrow
-				_repeat_seconds = MOVE_REPEAT_DELAY_SECONDS
-				matched = true
-				break
-		if not matched:
-			return
-	# Collect same-frame arrow presses into a single diagonal action.
-	get_viewport().set_input_as_handled()
-
-
 func _clear_movement_hold() -> void:
-	_held_move_keys.clear()
-	_repeat_key = KEY_NONE
-	_repeat_seconds = 0.0
-	_repeat_arrow = false
-
-
-func _release_movement_key(key: Key) -> void:
-	_held_move_keys.erase(key)
-	if key != _repeat_key:
-		return
-	if _held_move_keys.is_empty():
-		_clear_movement_hold()
-	else:
-		_repeat_key = _held_move_keys.keys()[-1]
-		_repeat_arrow = (_repeat_key in [KEY_UP, KEY_RIGHT, KEY_DOWN, KEY_LEFT]
-			and _default_arrow_bindings())
-		_repeat_seconds = MOVE_REPEAT_DELAY_SECONDS
+	if input_adapter != null:
+		input_adapter.clear()
 
 
 func reset_fixture() -> void:
@@ -426,6 +242,7 @@ func refresh_view() -> void:
 		grid_view.queue_redraw()
 		if menu.active_game or not menu.visible:
 			menu.open_completion()
+		view_refreshed.emit()
 		return
 	if world.attempt_state == GridWorld.AttemptState.PLAYER_DIED:
 		_pending_action = false
@@ -459,6 +276,7 @@ func refresh_view() -> void:
 	hero_panel.refresh()
 	_refresh_hotbar()
 	hud.refresh(world, session.loop_count, menu.options)
+	view_refreshed.emit()
 
 
 func _open_player_menu() -> void:
@@ -562,26 +380,6 @@ func _select_actor(actor: GridActor) -> void:
 	grid_view.queue_redraw()
 
 
-func _handle_combat_input(event: InputEvent) -> void:
-	_pending_action = false
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var tile := Vector2i((get_global_mouse_position() / GridView.TILE_SIZE).floor())
-		combat_panel.select_tile(tile)
-		return
-	if not event is InputEventKey or not event.is_pressed() or event.is_echo():
-		return
-	if event.is_action_pressed("ui_cancel", false, true):
-		combat_panel.cancel()
-	elif event.is_action_pressed("ui_accept", false, true):
-		combat_panel.confirm()
-	else:
-		for index in range(MOVE_ACTIONS.size()):
-			if event.is_action_pressed(MOVE_ACTIONS[index], false, true):
-				combat_panel.navigate(GridWorld.DIRECTIONS[index])
-				break
-	get_viewport().set_input_as_handled()
-
-
 func _on_combat_panel_visibility_changed() -> void:
 	hud.refresh_overlay(active_game, hero_panel.visible, combat_panel.visible)
 	_refresh_hotbar()
@@ -597,18 +395,6 @@ func _cancel_pending_melee() -> void:
 	hud.feedback.text = "Attack canceled. Elapsed turns remain spent."
 	refresh_view()
 
-
-
-func _default_arrow_bindings() -> bool:
-	for pair in [[&"move_north", KEY_UP], [&"move_east", KEY_RIGHT],
-		[&"move_south", KEY_DOWN], [&"move_west", KEY_LEFT]]:
-		var bound := false
-		for event in InputMap.action_get_events(pair[0]):
-			if event is InputEventKey and event.physical_keycode == pair[1]:
-				bound = true
-		if not bound:
-			return false
-	return true
 
 
 func _actions_blocked() -> bool:
@@ -642,7 +428,7 @@ func _hotbar_slot_pressed(slot: int) -> void:
 			_assign_hotbar(slot, hero_panel.assignment_id, world.hero)
 		return
 	# Slot buttons do not take focus or bypass an existing UI owner.
-	var focused := get_viewport().gui_get_focus_owner()
+	var focused := hud.get_viewport().gui_get_focus_owner()
 	if focused != null:
 		return
 	_cast_skill(world.hotbar[slot])
@@ -665,3 +451,62 @@ func _toggle_hotbar_lock() -> void:
 	else:
 		hotbar_panel.lock_button.release_focus()
 	_refresh_hotbar()
+
+
+func create_input() -> GameplayInput:
+	return DesktopGameplayInput.new()
+
+
+func create_menu() -> MenuPanel:
+	return MenuPanel.new()
+
+
+func create_hotbar() -> HotbarPanel:
+	return HotbarPanel.new()
+
+
+func _input(event: InputEvent) -> void:
+	if not suspended and input_adapter != null:
+		input_adapter.handle_input(event)
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if not suspended and input_adapter != null:
+		input_adapter.handle_key(event)
+
+
+func can_move() -> bool:
+	return (not suspended and _hotbar_can_edit() and not hero_panel.visible
+		and hud.get_viewport().gui_get_focus_owner() == null)
+
+
+func request_move(direction: Vector2i) -> bool:
+	if not can_move() or _pending_action or absi(direction.x) > 1 or absi(direction.y) > 1:
+		return false
+	_pending_direction = direction
+	_pending_arrow = false
+	_pending_action = true
+	return true
+
+
+func stop_movement() -> void:
+	_pending_action = false
+	_clear_movement_hold()
+
+
+func request_slot(slot: int) -> void:
+	stop_movement()
+	if not suspended:
+		_hotbar_slot_pressed(slot)
+
+
+func request_menu() -> void:
+	stop_movement()
+	if not suspended:
+		_open_player_menu()
+
+
+func request_interact() -> void:
+	stop_movement()
+	if not suspended:
+		_open_interaction()

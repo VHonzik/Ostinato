@@ -12,6 +12,17 @@
     "windows_release_template": "bin/export_templates/windows_release_x86_64.exe",
     "windows_release_sha256": "d34d36f3be1a6c49c56525ae86469b92e4f417ddf0b43cf00dd80c385c4b0562"
   },
+  "android": {
+    "release_template": "bin/export_templates/android_release.apk",
+    "release_sha256": "6d1bb2cfa126a1b1c87e064a35b3cbd181bef0ec784dec1efd1d64dffa8be6cb",
+    "debug_template": "bin/export_templates/android_debug.apk",
+    "debug_sha256": "59e0073f0fa59f552684a861d8f4266b0b34b488a140d6657eac7dd70d1a0a0d",
+    "java_version": "17.0.3.1",
+    "build_tools_version": "36.0.0",
+    "platform_tools_version": "35.0.2",
+    "min_sdk": 24,
+    "target_sdk": 36
+  },
   "gut": {
     "version": "9.7.1",
     "download_url": "https://github.com/bitwes/Gut/archive/refs/tags/v9.7.1.zip",

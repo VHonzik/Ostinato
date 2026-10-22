@@ -1,6 +1,7 @@
 #requires -Version 7.0
 # Small integration fixtures; no network, repository commits or player data changes.
 . "$PSScriptRoot/release_common.ps1"
+. "$PSScriptRoot/android_common.ps1"
 $sourceRoot = $ProjectRoot
 $run = Join-Path $ProjectRoot ('reports/build-tools/' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $run -Force | Out-Null
@@ -149,6 +150,33 @@ try {
   Assert-BuildCheck ([IO.File]::ReadAllText($stale).StartsWith('old output')) 'Failed export modified existing output.'
   $result = Invoke-ToolProcess 'invalid-version' $pwsh @('-NoProfile', '-File', (Join-Path $fixture 'tools/export.ps1'), '-Version', '../escape') $run -AcceptNonzeroExit
   Assert-BuildCheck ($result.ExitCode -ne 0 -and $result.Stderr.Contains('safe filename')) 'An unsafe export version was accepted.'
+  $sdkFixture = Join-Path $run 'sdk-package'
+  New-Item -ItemType Directory -Path $sdkFixture -Force | Out-Null
+  $properties = Join-Path $sdkFixture 'source.properties'
+  [IO.File]::WriteAllText($properties, "#Pkg.Revision=999`nPkg.Revision = 36.0.0`n")
+  Assert-BuildCheck ((Get-AndroidSdkRevision $sdkFixture) -ceq '36.0.0') 'SDK revision parsing accepted a comment or lost the version.'
+  [IO.File]::WriteAllText($properties, "Pkg.Revision=36.0.0`nPkg.Revision=35.0.0`n")
+  Assert-Rejected { Get-AndroidSdkRevision $sdkFixture } 'Ambiguous SDK metadata was accepted.'
+  Assert-Rejected { Get-AndroidSdkRevision (Join-Path $sdkFixture 'missing') } 'Missing SDK package was accepted.'
+  $desktopProject = Get-Content -LiteralPath (Join-Path $sourceRoot 'project.godot') -Raw
+  $androidProject = Get-AndroidProjectConfiguration $desktopProject
+  Assert-BuildCheck ($desktopProject.Contains('run/main_scene="res://scenes/main.tscn"')) 'Android staging changed the desktop source.'
+  Assert-BuildCheck ($androidProject.Contains('run/main_scene="res://mobile/main.tscn"') -and
+    $androidProject.Contains('config/quit_on_go_back=false') -and
+    $androidProject.Contains('window/handheld/orientation=4') -and
+    $androidProject.Contains('textures/vram_compression/import_etc2_astc=true') -and
+    !$androidProject.Contains('[editor_plugins]')) 'Android staging lost required settings or included editor plugins.'
+  Assert-Rejected { Get-AndroidProjectConfiguration $androidProject } 'An unexpected startup configuration was silently restaged.'
+  Assert-AndroidLandscapeManifest 'A: android:screenOrientation(0x0101001e)=(type 0x10)0xb'
+  $checks++
+  Assert-Rejected { Assert-AndroidLandscapeManifest 'A: android:screenOrientation(0x0101001e)=(type 0x10)0xd' } 'A portrait-capable APK orientation was accepted.'
+  Assert-Rejected { Assert-AndroidLandscapeManifest 'A: android:screenOrientation(0x0101001e)=(type 0x10)0x1' } 'A portrait APK orientation was accepted.'
+  Assert-Rejected { Assert-AndroidLandscapeManifest '' } 'An APK without an orientation declaration was accepted.'
+  $androidPreset = Get-Content -LiteralPath (Join-Path $sourceRoot 'mobile/export_presets.cfg') -Raw
+  Assert-BuildCheck ($androidPreset.Contains('gradle_build/use_gradle_build=false') -and
+    $androidPreset.Contains('architectures/arm64-v8a=true') -and
+    $androidPreset.Contains('architectures/armeabi-v7a=false') -and
+    $androidPreset -notmatch 'gradle_build/(min_sdk|target_sdk)=') 'The prebuilt Android preset has incompatible options.'
   Write-Host "PASS: $checks build-tool checks."
   # Expected native git failures must not leak into GitHub's PowerShell step exit code.
   exit 0

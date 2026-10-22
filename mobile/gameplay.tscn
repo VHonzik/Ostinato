@@ -1,0 +1,22 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/gameplay.tscn" id="1"]
+[ext_resource type="Script" path="res://mobile/mobile_gameplay.gd" id="2"]
+[ext_resource type="Script" path="res://mobile/mobile_hero_panel.gd" id="3"]
+[ext_resource type="Script" path="res://mobile/mobile_hud.gd" id="4"]
+
+[sub_resource type="Theme" id="Theme_mobile"]
+default_font_size = 24
+
+[node name="Gameplay" instance=ExtResource("1")]
+script = ExtResource("2")
+
+[node name="HUD" parent="." index="2"]
+script = ExtResource("4")
+
+[node name="HeroPanel" parent="HUD" index="12"]
+script = ExtResource("3")
+theme = SubResource("Theme_mobile")
+
+[node name="CombatPanel" parent="HUD" index="13"]
+theme = SubResource("Theme_mobile")

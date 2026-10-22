@@ -1,6 +1,7 @@
 # Development
 
-Windows x64, Godot Compatibility renderer, typed GDScript.
+Windows x64 is the primary platform, with a secondary Android ARM64 build.
+Godot Compatibility renderer, typed GDScript.
 
 ## Setup and launch
 
@@ -197,6 +198,58 @@ development version display. Staging never modifies source project settings or r
 `.git` in the package. Build logs remain under ignored `reports/exports/`; failed runs
 have their own directories and cannot return an earlier ZIP. To allow a slower machine,
 pass `-TimeoutSeconds 600`; the default is 240 seconds per process.
+
+## Android exports and touch preview
+
+Android runtime code and scenes live under [mobile/](../mobile/). The default entry
+scene and Windows package retain desktop controls; Windows staging and its packaged
+smoke check exclude mobile content. Both interfaces use the same game rules and save
+codec. The Android exporter selects the mobile entry scene only in its staged copy.
+
+Install the JDK and Android SDK packages matching the Android pins in
+[tools/versions.json](../tools/versions.json). The standard prebuilt APK workflow uses
+SDK platform-tools and build-tools; it does not compile Java/native engine code or
+require Gradle, NDK or CMake. The scripts discover Java from `JAVA_HOME` or `java`,
+and the SDK from `ANDROID_HOME` or `%LOCALAPPDATA%/Android/Sdk`. Supply `-JavaSdkPath`
+and `-AndroidSdkPath` when necessary.
+
+```powershell
+pwsh -NoProfile -File tools/setup_android.ps1
+pwsh -NoProfile -File tools/export_android.ps1
+# Increment the Android version code when preparing a later update:
+pwsh -NoProfile -File tools/export_android.ps1 -Version demo-android-2 -VersionCode 2
+# Preview the touch interface using a mouse; this is not a device playtest:
+pwsh -NoProfile -File tools/godot.ps1 res://mobile/main.tscn
+```
+
+Setup verifies the existing template archive and installs its pinned Android templates.
+It checks SDK/JDK versions and creates a local testing signing identity under ignored
+`bin/android_signing/`. Keep that directory backed up to sign compatible updates; setup
+does not replace incomplete or existing keys. Export uses an isolated editor copy and
+settings under `bin/android_editor/`, leaving the normal editor configuration alone.
+Passwords remain in ignored local credentials and process environment, outside presets
+and build logs.
+
+Exports go to a fresh `builds/android/<run>/` directory. The launcher prints the APK and
+checksum paths after verifying the signature, ARM64 architecture, package identity,
+SDK levels, landscape-only orientation and release manifest. It embeds version metadata and licenses. An APK build
+does not certify startup or touch behavior on Android. Install the APK on an ARM64 phone
+(Android 7 or newer), or use `adb install -r <apk>` from the SDK's platform-tools directory.
+Google Play/AAB publishing, cloud saves and cross-device save transfer are outside this
+local workflow. Hosted Actions currently build Windows only.
+
+The mobile interface uses eight arrows around Wait, the existing two hotbar rows,
+and Menu/Interact. Hold an arrow to repeat; Wait is tap-only. Ability taps consume the
+movement hold. Inspect abilities in Menu → Spells, then Use or Assign; assignment also
+supports usable bag items. Menu → Log shows recent messages. Android Back cancels or
+returns through the current UI. Backgrounding freezes the attempt until Resume.
+
+Mobile recovery uses `user://recovery/recovery.json`, separate from the five manual
+slots. Continue returns to the last completed safe save outside combat, which may
+precede an interrupted encounter. See [Loop and save state](npc-dialogue.md#loop-and-save-state).
+Files live in Android's app-private storage; uninstalling removes them. Test route
+movement, target selection, spell/item assignment, trading, a death/Loop, and
+background/resume on a real phone. Human playtesting decides control fit and readability.
 
 ## GitHub Actions
 

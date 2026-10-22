@@ -1,7 +1,7 @@
 class_name HeroPanel
 extends Control
 
-## Keyboard/mouse character and learned-skill view; no simulation runs in this panel.
+## Character and learned-skill view; no simulation runs in this panel.
 signal cast_requested(identifier: StringName)
 signal assignment_changed
 signal slot_chosen(slot: int)
@@ -10,6 +10,7 @@ signal lock_requested
 var choosing_slot: bool = false
 var assignment_id: StringName = &""
 var layout_locked: bool = false
+var select_before_use: bool = false
 
 var _hero: HeroState
 var _tabs: TabContainer
@@ -215,6 +216,8 @@ func _request_cast(identifier: StringName) -> void:
 		_remember_spell(skill.class_tab, identifier)
 		if skill.effect == SkillDefinition.Effect.PASSIVE:
 			return
+	if select_before_use:
+		return
 	cast_requested.emit(identifier)
 	refresh()
 
