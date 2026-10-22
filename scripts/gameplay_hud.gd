@@ -43,9 +43,10 @@ func refresh(world: GridWorld, loop_count: int, options: GlobalOptions) -> void:
 	$PlayerMenu/Buttons/Interact.text = "Interact (%s)" % options.key_label(&"interact")
 	$PlayerMenu/Buttons/Quests.text = "Quests (%s)" % options.key_label(&"quest_log")
 	var hero := world.hero
-	_hero_status.text = "HP %d/%d   Rage %d/%d\nLv %d  XP %d/%d" % [
+	_hero_status.text = "HP %d/%d   Rage %d/%d\nLv %d  XP %d/%d   %s" % [
 		hero.health, hero.max_health, hero.rage, HeroState.MAX_RAGE,
 		hero.level, hero.experience, hero.experience_to_next_level(),
+		InventoryRules.money(hero.copper),
 	]
 	if hero.find_skill(&"relentless_assault_1") != null:
 		_hero_status.text += "   CP %d/%d" % [hero.combo_points, HeroState.MAX_COMBO_POINTS]

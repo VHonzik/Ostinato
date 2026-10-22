@@ -570,6 +570,20 @@ func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> voi
 	assert_eq(world.turn_count, 0)
 
 
+func test_first_loop_marshal_mentions_free_gear_until_it_is_received() -> void:
+	var session := _session()
+	var world := session.world
+	var marshal := _contact(world, NpcDefinition.MARSHAL_ID)
+	_beside(world, marshal)
+	var hint := "Janos Hammerknuckle inside the abbey can give you spare arms and armor for free."
+	assert_true(NpcConversation.build(session, marshal).lines.has(hint))
+	world.starter_gear_received = true
+	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
+	world.starter_gear_received = false
+	session.loop_count = 2
+	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
+
+
 func test_contacts_without_services_log_their_new_greetings() -> void:
 	var session := _session()
 	var menu := _menu(session)

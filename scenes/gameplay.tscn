@@ -259,7 +259,7 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -125.0
-offset_top = -289.0
+offset_top = -293.0
 offset_right = 125.0
 offset_bottom = -282.0
 mouse_filter = 2
@@ -267,6 +267,7 @@ theme_override_styles/panel = SubResource("Style_rage_border")
 
 [node name="Fill" type="ProgressBar" parent="HUD/ExperienceBar"]
 layout_mode = 2
+size_flags_vertical = 1
 mouse_filter = 2
 theme_override_styles/background = SubResource("Style_rage_empty")
 theme_override_styles/fill = SubResource("Style_experience_fill")

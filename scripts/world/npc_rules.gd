@@ -13,6 +13,8 @@ static func acquire_hostiles(world: GridWorld) -> void:
 			actor.engaged = true
 			SummonRules.add_threat(world, actor, null, 1)
 			world.add_message("%s engages you." % actor.title)
+			if GridWorld.tile_distance(actor.tile, world.player_tile) > 1:
+				world.hostile_spotted_player.emit(actor)
 		else:
 			for ally in world.actors:
 				if (ally.alive and ally.summon_kind not in ["", "earth_elemental"]

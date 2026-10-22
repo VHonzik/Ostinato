@@ -1,6 +1,130 @@
 extends GutTest
 
 
+func test_potion_pickup_and_purchase_fill_only_the_empty_slot_left_of_food() -> void:
+	var session := GameSession.new()
+	session.development_build = false
+	session.new_game(97)
+	var world := session.world
+	var janos := world.actor_at(NpcDefinition.find(NpcDefinition.JANOS_ID).tile)
+	world.player_tile = janos.tile + Vector2i.DOWN
+	world.hero.copper = 100
+	world.hotbar_locked = true
+	assert_true(world.buy_item(janos, 118, 1))
+	assert_eq(world.hotbar[18], ItemData.POTION_HOTBAR_ID)
+	assert_eq(world.hotbar[19], GridWorld.FOOD_HOTBAR_ID)
+	world.hotbar_locked = false
+	assert_true(world.assign_hotbar(18, &"mortal_strike_1"))
+	assert_true(world.buy_item(janos, 118, 1))
+	assert_eq(world.hotbar[18], &"mortal_strike_1", "Never replace an occupied neighbor.")
+	assert_false(world.hotbar.has(ItemData.POTION_HOTBAR_ID))
+	assert_true(world.assign_hotbar(3, ItemData.POTION_HOTBAR_ID))
+	assert_true(world.assign_hotbar(18, &""))
+	assert_true(world.buy_item(janos, 118, 1))
+	assert_eq(world.hotbar[18], &"", "A custom potion shortcut prevents duplicates.")
+	assert_eq(world.hotbar.count(ItemData.POTION_HOTBAR_ID), 1)
+	assert_true(world.assign_hotbar(3, &""))
+	var chest := GridActor.new(world.player_tile + Vector2i.RIGHT)
+	chest.chest = true
+	chest.alive = false
+	chest.loot_assigned = true
+	chest.loot.append(ItemData.instance(118))
+	world.actors.append(chest)
+	assert_true(world.loot_item(chest, 0))
+	assert_eq(world.hotbar[18], ItemData.POTION_HOTBAR_ID)
+	assert_eq(world.turn_count, 0)
+
+
+func test_item_assignment_ui_and_save_preserve_custom_and_cleared_shortcuts() -> void:
+	var session := GameSession.new()
+	session.development_build = false
+	session.new_game(97)
+	var world := session.world
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(118)))
+	var menu := MenuPanel.new()
+	menu.session = session
+	add_child_autofree(menu)
+	for item_id in [117, 118, 2070, 4536, 4540]:
+		if item_id not in [117, 118]:
+			assert_true(InventoryRules.receive(world.hero, ItemData.instance(item_id)))
+		var index := -1
+		for slot in range(world.hero.inventory.size()):
+			if world.hero.inventory[slot].get("id", 0) == item_id:
+				index = slot
+		menu._item_detail(index)
+		var assign: Button
+		for button in menu._buttons:
+			if button.text == "Assign to hotbar":
+				assign = button
+		assert_not_null(assign)
+		if assign == null:
+			return
+		assign.pressed.emit()
+		assert_eq(menu.page, "item_hotbar")
+		var destination := 3 if item_id == 117 else (4 if item_id == 118 else 5)
+		menu._buttons[destination].pressed.emit()
+		assert_eq(world.hotbar[destination], ItemData.hotbar_id(item_id))
+	assert_eq(world.hotbar[3], GridWorld.FOOD_HOTBAR_ID)
+	assert_eq(world.hotbar[4], ItemData.POTION_HOTBAR_ID)
+	assert_true(world.assign_hotbar(19, &""))
+	assert_true(world.assign_hotbar(18, &""))
+	world.hotbar_locked = true
+	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	assert_eq(restored.hotbar, world.hotbar, "Loading keeps empty convenience slots empty.")
+	assert_true(restored.hotbar_locked)
+	assert_eq(restored.turn_count, 0)
+	world.hotbar_locked = false
+	world.assign_hotbar(4, &"")
+	restored = SaveCodec.restore(SaveCodec.capture(session), false)
+	assert_not_null(restored)
+	if restored != null:
+		assert_false(restored.hotbar.has(ItemData.POTION_HOTBAR_ID),
+			"Loading never recreates a shortcut the player cleared.")
+
+
+func test_live_potion_shortcut_heals_and_reports_cooldown_without_extra_use() -> void:
+	var game := (load("res://scenes/gameplay.tscn") as PackedScene).instantiate() as Gameplay
+	add_child_autofree(game)
+	game.set_process(false)
+	game.start_new_game()
+	var world := game.world
+	world.stalker_schedule = false
+	world.actors.clear()
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(118, 2)))
+	assert_true(world.assign_hotbar(4, ItemData.POTION_HOTBAR_ID))
+	world.hero.health = 1
+	game._hotbar_slot_pressed(4)
+	assert_gt(world.hero.health, 1)
+	assert_eq(world.turn_count, 1)
+	var cooldown := game.hotbar_panel.slots[4].get_node("Cooldown") as Label
+	assert_true(cooldown.visible)
+	assert_eq(cooldown.text, "120")
+	assert_string_contains(game.hotbar_panel.slots[4].text, "Potion x1")
+	game._hotbar_slot_pressed(4)
+	assert_eq(world.turn_count, 1, "A potion on cooldown spends no turn or charge.")
+	assert_string_contains(game.hotbar_panel.slots[4].text, "Potion x1")
+	world.hotbar_locked = true
+	assert_false(world.assign_hotbar(5, ItemData.POTION_HOTBAR_ID))
+
+
+func test_looted_food_shortcut_uses_its_own_stack_and_restoration() -> void:
+	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(4536)))
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(117)))
+	var identifier := ItemData.hotbar_id(4536)
+	assert_true(world.assign_hotbar(3, identifier))
+	assert_true(world.consume_hotbar_item(identifier))
+	assert_eq(world.hero.restoration.food.total, 50)
+	assert_eq(world.hero.restoration.food.duration, 10)
+	assert_eq(world.turn_count, 1)
+	assert_false(world.consume_hotbar_item(identifier), "The shortcut never substitutes another food.")
+	assert_eq(world.turn_count, 1)
+	assert_eq(world.hotbar[3], identifier, "An exhausted stack keeps its assignment.")
+
+
 func test_hotbar_reports_crit_and_free_use_without_spending_procs_and_clears_reassigned_slots() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
 	var panel := HotbarPanel.new()

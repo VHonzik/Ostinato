@@ -98,8 +98,7 @@ func open_main() -> void:
 
 func open_world_seeds() -> void:
 	_begin("world_seeds", "New Game — Choose a world", open_main)
-	_label("Each world has different loot. Its loot repeats across Loops and new games.")
-	_label("HARD: scarce uncommon gear and no uncommon weapon drops.")
+	_label("Choose one world seed, they differ in available loot:")
 	for candidate in GameSession.WORLD_SEEDS:
 		var title := candidate + (" (HARD)" if candidate == GameSession.HARD_WORLD_SEED else "")
 		_button(title, _new_game.bind(candidate.hash()))
@@ -363,10 +362,11 @@ func _item_detail(index: int) -> void:
 			var use_text := "Use (2-turn cast)" if data.use == "war_horn" else "Use once (1 turn)"
 			_button(use_text, _transaction.bind(
 				session.world.consume_item.bind(index), close))
-			var assign := _button("Assign to hotbar", _assign_active_item.bind(index))
-			assign.disabled = session.world.hotbar_locked
 		else:
 			_button("Use one (1 turn)", _transaction.bind(session.world.consume_item.bind(index), open_bags))
+		if ItemData.hotbar_id(int(item.id)) != &"":
+			var assign := _button("Assign to hotbar", _assign_active_item.bind(index))
+			assign.disabled = session.world.hotbar_locked
 	_button("Move / split stack", func() -> void:
 		_quantity = 1
 		_quantity_menu("Move quantity", int(item.quantity), _move_destination.bind(index),
@@ -377,23 +377,14 @@ func _item_detail(index: int) -> void:
 
 func _assign_active_item(index: int) -> void:
 	var item_id := int(session.world.hero.inventory[index].id)
-	var item_identifier := (ItemData.WAR_HORN_HOTBAR_ID if item_id == ItemData.WAR_HORN_ID
-		else ItemData.ANCESTRAL_TOTEM_HOTBAR_ID)
-	if item_id == ItemData.WAR_BANNER_ID:
-		item_identifier = ItemData.WAR_BANNER_HOTBAR_ID
+	var item_identifier := ItemData.hotbar_id(item_id)
 	_begin("item_hotbar", "Assign " + ItemData.get_item(item_id).title, _item_detail.bind(index))
 	for slot in range(session.world.hotbar.size()):
 		var identifier := session.world.hotbar[slot]
 		var skill := session.world.hero.find_skill(identifier)
 		var title := "Empty" if skill == null else skill.title
-		if identifier == GridWorld.FOOD_HOTBAR_ID:
-			title = "Food"
-		elif identifier == ItemData.WAR_HORN_HOTBAR_ID:
-			title = "War Horn"
-		elif identifier == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
-			title = "Ancestral totem"
-		elif identifier == ItemData.WAR_BANNER_HOTBAR_ID:
-			title = "Wartorn Banner"
+		if ItemData.HOTBAR_ITEMS.has(identifier):
+			title = ItemData.get_item(ItemData.HOTBAR_ITEMS[identifier]).title
 		var key := options.key_label(StringName("hotbar_%d" % (slot + 1)))
 		_button("%s: %s" % [key, title], _transaction.bind(
 			session.world.assign_hotbar.bind(slot, item_identifier),
@@ -472,7 +463,13 @@ func open_buy(merchant: GridActor) -> void:
 			"Unlimited" if stock == -1 else str(stock) + " left"],
 			_buy_options.bind(int(key)))
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_item_color(button, int(key))
+		var affordable := session.world.hero.copper >= MerchantData.unit_price(merchant.npc_id, int(key))
+		if affordable:
+			_item_color(button, int(key))
+		else:
+			_item_preview(button, int(key))
+			for state in HotbarPanel.LABEL_COLOR_STATES:
+				button.add_theme_color_override(state, Color("ff7777"))
 		button.disabled = stock == 0
 	_button("Back (Esc)", open_trade.bind(merchant))
 	_finish()
@@ -536,6 +533,9 @@ func _buy_options(identifier: int) -> void:
 				open_buy.bind(merchant)))
 		button.disabled = (stock >= 0 and stock < quantity) or (
 			session.world.hero.copper < unit_price * quantity)
+		if session.world.hero.copper < unit_price * quantity:
+			for state in HotbarPanel.LABEL_COLOR_STATES:
+				button.add_theme_color_override(state, Color("ff7777"))
 	_button("Back (Esc)", open_buy.bind(merchant))
 	_finish()
 
@@ -764,9 +764,31 @@ func _select_class(category: StringName, marshal: GridActor) -> void:
 func _train(identifier: StringName) -> void:
 	if session.world.training_failure(_trainer, SkillDefinition.catalog(identifier)) != "":
 		return
-	session.world.train(_trainer, identifier)
+	if not session.world.train(_trainer, identifier):
+		return
+	var next_skill := _next_training_skill(identifier)
 	refreshed.emit()
-	open_trainer(_trainer, identifier)
+	open_trainer(_trainer, next_skill)
+
+
+func _next_training_skill(learned: StringName) -> StringName:
+	var origin := -1
+	for index in range(_buttons.size()):
+		if _buttons[index].get_meta("skill_id", &"") == learned:
+			origin = index
+			break
+	# Inspect the old display order before the newly learned skill moves to the bottom.
+	for require_available in [true, false]:
+		for direction: int in [1, -1]:
+			var index := origin + direction
+			while index >= 0 and index < _buttons.size():
+				var id: StringName = _buttons[index].get_meta("skill_id", &"")
+				if id != &"" and session.world.hero.find_skill(id) == null:
+					var skill := SkillDefinition.catalog(id)
+					if not require_available or session.world.training_failure(_trainer, skill) == "":
+						return id
+				index += direction
+	return learned
 
 
 func _toggle_palette() -> void:
@@ -896,43 +918,71 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 	_begin("quest_detail", quest.title, back)
 	var available := QuestRules.available(world, identifier)
 	var ready := QuestRules.ready(world, identifier)
+	var primary: Button
 	_label(QuestData.dialogue(identifier, 0 if available else (2 if ready else 1)))
-	_label("Level %d / %s. Return to %s." % [quest.level,
-		QuestRules.difficulty(int(quest.level), world.hero.level),
-		NpcDefinition.display_name(int(quest.receiver))])
+	_rows.add_child(HSeparator.new())
 	_label("Objectives")
 	for index in range(quest.objectives.size()):
 		var objective: QuestObjective = quest.objectives[index]
 		var amount := QuestRules.progress(world, identifier, index) if world.quests.has(identifier) else 0
-		_label("%s: %d/%d" % [objective.label(), amount, objective.count])
-	_label("Reward: %d XP, %s." % [QuestRules.experience(int(quest.xp),
-		int(quest.level), world.hero.level), InventoryRules.money(int(quest.copper))])
+		_quest_list_entry("• %s: %d/%d" % [objective.label(), amount, objective.count])
+	_label("Rewards")
+	_quest_list_entry("• %d XP" % QuestRules.experience(int(quest.xp),
+		int(quest.level), world.hero.level))
+	_quest_list_entry("• " + InventoryRules.money(int(quest.copper)))
+	if not quest.choices.is_empty():
+		_quest_list_entry("Choose one:")
+		for item in quest.choices:
+			_quest_reward_name(int(item))
+	for item in quest.get("rewards", []):
+		_quest_reward_name(int(item))
 	if QuestRules.available(world, identifier) and actor != null:
-		_button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor),
+		primary = _button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor),
 			_show_conversation.bind(actor, true)))
 	elif world.quests.has(identifier) and not world.quests[identifier].handed_in:
 		if QuestRules.ready(world, identifier):
 			_label("Objectives complete — ready for hand-in.")
 			if actor != null and actor.npc_id == int(quest.receiver):
 				if quest.choices.is_empty():
-					_button("Complete", _transaction.bind(
+					primary = _button("Complete", _transaction.bind(
 						QuestRules.hand_in.bind(world, identifier, actor), back))
 				else:
 					for item in quest.choices:
 						_button("Choose " + String(ItemData.get_item(int(item)).title),
 							_transaction.bind(QuestRules.hand_in.bind(
 								world, identifier, actor, int(item)), back))
-		_button("Abandon", func() -> void:
+						if primary == null:
+							primary = _buttons.back()
+		var abandon := _button("Abandon", func() -> void:
 			confirm("Abandon " + String(quest.title) + "? Quest items and progress will be removed.",
 				_transaction.bind(QuestRules.abandon.bind(world, identifier), back),
 				_quest_detail.bind(identifier, actor)))
-	if not quest.choices.is_empty():
-		for item in quest.choices:
-			_item_label(int(item))
-	for item in quest.get("rewards", []):
-		_item_label(int(item))
+		if primary == null:
+			primary = abandon
 	_button("Cancel (Esc)" if available else "Back (Esc)", back)
 	_finish()
+	if primary != null:
+		primary.grab_focus()
+
+
+func _quest_list_entry(text: String) -> void:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	_rows.add_child(margin)
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	margin.add_child(label)
+
+
+func _quest_reward_name(identifier: int) -> void:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	_rows.add_child(margin)
+	var button := _button(ItemData.get_item(identifier).title, func() -> void: pass, margin)
+	button.flat = true
+	button.tooltip_text = ItemData.describe(identifier)
+	_item_color(button, identifier, false)
 
 
 func _item_label(identifier: int) -> void:
@@ -946,7 +996,7 @@ func _item_label(identifier: int) -> void:
 	_rows.add_child(label)
 
 
-func _item_color(button: Button, identifier: int) -> void:
+func _item_color(button: Button, identifier: int, centered: bool = true) -> void:
 	_item_preview(button, identifier)
 	# Keep the native button text for its sizing and accessible name.
 	for state in HotbarPanel.LABEL_COLOR_STATES:
@@ -962,7 +1012,9 @@ func _item_color(button: Button, identifier: int) -> void:
 	text.offset_right = -6
 	text.offset_top = 4
 	text.offset_bottom = -4
-	text.text = "[center]" + ItemData.color_name(button.text, identifier) + "[/center]"
+	text.text = ItemData.color_name(button.text, identifier)
+	if centered:
+		text.text = "[center]" + text.text + "[/center]"
 	text.modulate.a = 0.5 if button.disabled else 1.0
 	button.add_child(text)
 

@@ -143,6 +143,55 @@ func test_trainer_puts_unlearned_skills_before_known_starters_and_orders_unlocks
 	assert_eq(ids.slice(-3), [&"mortal_strike_1", &"whirlwind_1", &"charge_1"])
 
 
+func test_training_focus_prefers_available_below_then_above_and_inspects_locked_skills() -> void:
+	var session := GameSession.new()
+	session.development_build = false
+	session.new_game(97)
+	session.world.hero.level = 5
+	session.world.hero.copper = 10000
+	var menu := MenuPanel.new()
+	menu.session = session
+	add_child_autofree(menu)
+	menu.open_trainer(&"Warrior")
+	var order: Array[StringName] = []
+	for button in menu._buttons:
+		var id: StringName = button.get_meta("skill_id", &"")
+		if id != &"" and session.world.hero.find_skill(id) == null:
+			order.append(id)
+	menu._train(order[1])
+	assert_eq(get_viewport().gui_get_focus_owner().get_meta("skill_id"), order[2],
+		"Learning moves focus down despite moving the learned row to the bottom.")
+	menu.open_trainer(&"Warrior")
+	menu._train(order[-1])
+	assert_eq(get_viewport().gui_get_focus_owner().get_meta("skill_id"), order[-2],
+		"At the bottom, choose the nearest available skill above.")
+	# Only the purchase itself is affordable; inspect the next unlearned requirements.
+	session.world.hero.copper = SkillDefinition.catalog(order[0]).training_copper
+	menu.open_trainer(&"Warrior")
+	menu._train(order[0])
+	assert_eq(get_viewport().gui_get_focus_owner().get_meta("skill_id"), order[2])
+	assert_eq(session.world.turn_count, 0)
+
+
+func test_reward_names_offer_keyboard_details_without_accepting_the_quest() -> void:
+	var session := GameSession.new()
+	session.new_game(97)
+	var marshal := session.world.actor_at(NpcDefinition.find(NpcDefinition.MARSHAL_ID).tile)
+	session.world.player_tile = marshal.tile + Vector2i.DOWN
+	var menu := MenuPanel.new()
+	menu.session = session
+	add_child_autofree(menu)
+	menu._quest_detail("valley_wolves", marshal)
+	assert_same(get_viewport().gui_get_focus_owner(), _button(menu, "Accept"))
+	var item_id: int = QuestData.QUESTS.valley_wolves.rewards[0]
+	var reward := _button(menu, ItemData.get_item(item_id).title)
+	reward.grab_focus()
+	assert_eq(menu._preview.text, ItemData.describe_rich(item_id))
+	reward.pressed.emit()
+	assert_false(session.world.quests.has("valley_wolves"))
+	assert_eq(session.world.turn_count, 0)
+
+
 func _button(menu: MenuPanel, text: String) -> Button:
 	for button in menu._buttons:
 		if button.text == text:

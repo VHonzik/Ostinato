@@ -108,6 +108,7 @@ var world: GridWorld:
 			world.stalker_breath_released.disconnect(_show_breath)
 			world.npc_ability_hit.disconnect(_show_npc_ability)
 			world.melee_attacked.disconnect(_queue_melee_bump)
+			world.hostile_spotted_player.disconnect(_show_aggro)
 		world = value
 		_melee_bumps.clear()
 		_melee_bump_elapsed = 0.0
@@ -116,6 +117,7 @@ var world: GridWorld:
 		_npc_blinks.clear()
 		_consecration_blink.clear()
 		_breath_blink.clear()
+		_aggro_blinks.clear()
 		if world != null:
 			world.npc_combat_text.connect(combat_text.spawn)
 			world.ability_used.connect(_show_player_ability)
@@ -124,6 +126,7 @@ var world: GridWorld:
 			world.stalker_breath_released.connect(_show_breath)
 			world.npc_ability_hit.connect(_show_npc_ability)
 			world.melee_attacked.connect(_queue_melee_bump)
+			world.hostile_spotted_player.connect(_show_aggro)
 			for actor in world.actors:
 				if actor.alive and actor.breath_remaining > 0:
 					_show_breath_windup(actor)
@@ -142,6 +145,7 @@ var _ability_sprites: Dictionary[Vector2i, AtlasTexture] = {}
 var _melee_bumps: Array[Dictionary] = []
 var _melee_bump_elapsed: float = 0.0
 var _breath_blink: Dictionary = {}
+var _aggro_blinks: Dictionary[GridActor, Dictionary] = {}
 
 
 func _init() -> void:
@@ -224,6 +228,12 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_advance_melee_bumps(delta)
+	if not _aggro_blinks.is_empty():
+		for actor: GridActor in _aggro_blinks.keys():
+			_advance_ability_blink(_aggro_blinks[actor], delta)
+			if not actor.alive or not actor.engaged or _aggro_blinks[actor].is_empty():
+				_aggro_blinks.erase(actor)
+		queue_redraw()
 	var had_breath_flash := not _breath_blink.is_empty()
 	_advance_ability_blink(_breath_blink, delta)
 	if world != null and (had_breath_flash or world.actors.any(
@@ -320,6 +330,11 @@ func _show_npc_ability(actor: GridActor, family: StringName) -> void:
 		_npc_blinks[actor] = {"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0,
 			"color": Color("ff7733") if family == &"lava_burst" else Color.WHITE}
 		queue_redraw()
+
+
+func _show_aggro(actor: GridActor) -> void:
+	_aggro_blinks[actor] = {"elapsed": 0.0}
+	queue_redraw()
 
 
 func _replace_ground_effect_tile(tile: Vector2i) -> void:
@@ -446,14 +461,12 @@ func _draw_actor(actor: GridActor) -> void:
 	var faction := sprites.faction_sprite
 	if _blink_alternate_visible and QuestRules.has_marker(world, actor):
 		faction = _quest_marker_sprite
-	if (_blink_alternate_visible and actor.engaged
-		and actor.relationship == GridActor.Relationship.HOSTILE):
+	if _aggro_blinks.has(actor):
 		faction = _quest_marker_sprite
 	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
 		faction if effect == null else null,
 		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
-		Color.RED if actor.engaged and actor.relationship == GridActor.Relationship.HOSTILE
-			else _actor_color(actor), _melee_bump_offset(actor))
+		_actor_color(actor), _melee_bump_offset(actor))
 	if actor.breath_remaining > 0:
 		var position := Vector2(actor.tile * TILE_SIZE)
 		draw_rect(Rect2(position, Vector2(14, 15)), Color("#172719"))

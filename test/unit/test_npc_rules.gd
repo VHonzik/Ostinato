@@ -5,6 +5,31 @@ func _world() -> GridWorld:
 	return GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
 
 
+func test_only_new_ranged_detection_announces_the_engage_flash() -> void:
+	var world := _world()
+	var spotted: Array[GridActor] = []
+	world.hostile_spotted_player.connect(func(actor: GridActor) -> void: spotted.append(actor))
+	var distant := GridActor.new(Vector2i(8, 5))
+	var adjacent := GridActor.new(Vector2i(6, 5))
+	for actor in [distant, adjacent]:
+		actor.relationship = GridActor.Relationship.HOSTILE
+		world.actors.append(actor)
+	NpcRules.acquire_hostiles(world)
+	assert_true(distant.engaged)
+	assert_true(adjacent.engaged)
+	assert_eq(spotted, [distant])
+	NpcRules.acquire_hostiles(world)
+	assert_eq(spotted, [distant], "Continuing combat never repeats detection.")
+	var pulled := GridActor.new(Vector2i(5, 8))
+	pulled.relationship = GridActor.Relationship.HOSTILE
+	world.actors.append(pulled)
+	world.hero.learn_skill(SkillDefinition.catalog(&"lava_burst_1"))
+	world.hero.rage = 100
+	assert_true(world.cast_skill(&"lava_burst_1", pulled))
+	NpcRules.acquire_hostiles(world)
+	assert_eq(spotted, [distant], "A player-initiated ranged pull does not announce detection.")
+
+
 func _enemy(world: GridWorld) -> GridActor:
 	var enemy := GridActor.new(Vector2i(6, 5))
 	enemy.relationship = GridActor.Relationship.HOSTILE

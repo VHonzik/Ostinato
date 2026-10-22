@@ -384,7 +384,8 @@ func test_warrior_trainer_menu_buys_execute_and_spell_book_can_assign_it() -> vo
 	assert_not_null(game.world.hero.find_skill(&"execute_1"))
 	assert_false(_trainer_button(menu, "Execute / Learned").disabled)
 	assert_same(menu.get_viewport().gui_get_focus_owner(),
-		_trainer_button(menu, "Execute / Learned"))
+		_trainer_button(menu, "Battle Trance"), "Focus advances to the next available skill.")
+	_trainer_button(menu, "Execute / Learned").grab_focus()
 	assert_string_contains(menu._preview.text, "at or below 20%")
 	assert_eq(game.world.turn_count, 0)
 	assert_true(game.world.hotbar.has(&"execute_1"), "Learned actives fill an empty slot.")

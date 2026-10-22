@@ -61,7 +61,7 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | Acceptance | Requires the minimum current-Loop player level and the nearby living giver. Accepting sets objective counts to zero and immediately checks the player's current exploration region. |
 | Kill credit | Only accepted, unhanded quests advance. Earlier kills do not count; counts stop at each objective's requirement. |
 | Exploration credit | Only accepted quests advance. Visiting before acceptance does not bank credit; accepting while inside a required region credits that region. |
-| Available quest | A yellow `!` precedes its title. The detail screen shows the offer, objectives, difficulty, receiver and rewards, with Accept / Cancel choices at the giver. |
+| Available quest | A yellow `!` precedes its title. The detail screen separates the offer from indented objectives and rewards with a divider. Gear appears above Accept as quality-colored names; hover or keyboard focus shows details. Accept / Cancel choices appear at the giver. Reward choices are selected at hand-in. |
 | Accepted quest | A gray `?` marks incomplete objectives; a yellow `?` marks a ready hand-in. The detail screen shows the matching quest speech. The quest log can display the ready speech away from the giver too. |
 | Hand-in | Requires all objectives and the nearby living receiver. Complete grants all listed items, money and XP once. Insufficient bag space leaves the quest and rewards unclaimed. |
 | Abandon | Requires confirmation; removes quest progress and associated quest items. An eligible quest can be accepted again. Accepting any quest locks class selection for that Loop even if it is abandoned. |
@@ -90,6 +90,7 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | Loop / condition | Player choice / interface text | Result |
 | --- | --- | --- |
 | New Game | Warrior is selected | Starts knowing Mortal Strike and Whirlwind; quests and services are available. |
+| Loop 1, before receiving starter gear | Janos Hammerknuckle inside the abbey can give you spare arms and armor for free. | Appears alongside the marshal's greeting and choices. |
 | Loop 2, before choosing | I am warrior | Selects Warrior and unlocks quests/services. |
 | Loop 3, before choosing | I am warrior; I am .... shaman; I am .... paladin; I am .... rogue | Selects the chosen class and unlocks quests/services. |
 | Loop 4 onward, before choosing | I am warrior; I am shaman; I am paladin; I am rogue | Selects the chosen class and unlocks quests/services. |
@@ -161,6 +162,7 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 | --- | --- |
 | Neutral encounters | Wolves and outdoor Kobold Vermin remain neutral until attacked. Bumping the same stationary neutral twice attacks; deliberate attacks and War Horn can engage neutral NPCs. |
 | Hostile aggro | Mine kobolds and bandits acquire visible targets within 4 tiles; stalkers use 5 tiles. Concealment and summons follow the [class rules](class-mechanics.md). |
+| Engage marker | A hostile spotting the player more than one tile away shows `!` once for 1.5 seconds, matching ability flashes. Adjacent detection, player-initiated attacks and ongoing engagement do not trigger it. Engagement preserves the NPC's faction color. |
 | Wandering | Outdoor wolves, camp kobolds and Defias Thugs wander within two tiles of their home position, with staggered starts and random pauses of 3–10 turns. Pending pauses survive saves. |
 | Pursuit | Engaged enemies pursue and attack in melee. Five consecutive turns with no terrain route to the target start a return home; reaching home restores full health. During Vanish they pursue living summons; with none, they hold around the remembered Vanish origin without attacking or losing engagement. See [Vanish interactions](class-mechanics.md#vanish-interactions). |
 | Population | No ordinary NPC respawns within a Loop. Death rebuilds contacts and enemies. Empty corpses disappear; other ordinary corpses hide after 300 turns even with loot. The story guard's corpse remains. Summons leave no visible corpse. |

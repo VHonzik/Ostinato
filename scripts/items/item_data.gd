@@ -9,9 +9,17 @@ const ANCESTRAL_TOTEM_ID: int = 71004
 const ANCESTRAL_TOTEM_HOTBAR_ID: StringName = &"item_ancestral_totem"
 const WAR_BANNER_ID: int = 71005
 const WAR_BANNER_HOTBAR_ID: StringName = &"item_war_banner"
+const POTION_HOTBAR_ID: StringName = &"potion_118"
+const HOTBAR_ITEMS: Dictionary[StringName, int] = {
+	&"food_117": 117, POTION_HOTBAR_ID: 118,
+	&"food_2070": 2070, &"food_4536": 4536, &"food_4540": 4540,
+	WAR_HORN_HOTBAR_ID: WAR_HORN_ID, ANCESTRAL_TOTEM_HOTBAR_ID: ANCESTRAL_TOTEM_ID,
+	WAR_BANNER_HOTBAR_ID: WAR_BANNER_ID,
+}
 const ELEMENTAL_DAMAGE_MIN: float = 2.0
 const ELEMENTAL_DAMAGE_MAX: float = 4.0
 const ELEMENTAL_SWING_TURNS: float = 2.5
+
 
 ## Compact equipment setups and valley supplies.
 const ITEMS: Dictionary = {
@@ -251,6 +259,18 @@ const ITEMS: Dictionary = {
 		"off_maximum": 6, "off_interval": 1.6,
 	},
 }
+
+
+static func hotbar_id(item_id: int) -> StringName:
+	for identifier in HOTBAR_ITEMS:
+		if HOTBAR_ITEMS[identifier] == item_id:
+			return identifier
+	return &""
+
+
+static func is_consumable_hotbar(identifier: StringName) -> bool:
+	return (HOTBAR_ITEMS.has(identifier)
+		and get_item(HOTBAR_ITEMS[identifier]).use in ["food", "health"])
 
 
 static func ancestral_totem_action() -> SkillDefinition:

@@ -710,6 +710,33 @@ class RecordingGridView:
 		drawn_faction_color = faction_color
 
 
+func test_ranged_engage_marker_expires_with_ability_effects_and_keeps_faction_color() -> void:
+	var view := RecordingGridView.new()
+	add_child_autofree(view)
+	view.set_process(false)
+	view.world = GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
+	var enemy := GridActor.new(Vector2i(8, 5))
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	view.world.actors.append(enemy)
+	view._draw_actor(enemy)
+	var color := view.drawn_faction_color
+	var faction := view.drawn_faction
+	NpcRules.acquire_hostiles(view.world)
+	view._draw_actor(enemy)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	assert_eq(view.drawn_faction_color, color)
+	view._process(GridView.ABILITY_BLINK_SECONDS)
+	view._draw_actor(enemy)
+	assert_same(view.drawn_faction, faction)
+	assert_eq(view.drawn_faction_color, color)
+	NpcRules.acquire_hostiles(view.world)
+	view._process(GridView.BLINK_SECONDS * 2)
+	view._draw_actor(enemy)
+	assert_same(view.drawn_faction, faction, "Engagement never restarts the old repeating marker.")
+	assert_eq(view.drawn_faction_color, color)
+	assert_eq(view.world.turn_count, 0)
+
+
 func test_flowers_and_bushes_allow_movement_without_blocking_sight() -> void:
 	var world := _session().world
 	world.actors.clear()

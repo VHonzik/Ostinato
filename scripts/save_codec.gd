@@ -470,10 +470,7 @@ static func _restore_ui(world: GridWorld, data: Dictionary, learned: Array[Strin
 	for identifier in data.hotbar:
 		if not identifier is String:
 			return false
-		if (identifier != "" and identifier != String(GridWorld.FOOD_HOTBAR_ID)
-			and identifier != String(ItemData.WAR_HORN_HOTBAR_ID)
-			and identifier != String(ItemData.ANCESTRAL_TOTEM_HOTBAR_ID)
-			and identifier != String(ItemData.WAR_BANNER_HOTBAR_ID)
+		if (identifier != "" and not ItemData.HOTBAR_ITEMS.has(StringName(identifier))
 			and not learned.has(identifier)
 			and world.hero.find_skill(StringName(identifier)) == null):
 			return false

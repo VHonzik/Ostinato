@@ -508,8 +508,8 @@ func _cast_skill(identifier: StringName) -> void:
 		world.use_war_horn()
 		refresh_view()
 		return
-	if identifier == GridWorld.FOOD_HOTBAR_ID:
-		world.consume_hotbar_food()
+	if ItemData.is_consumable_hotbar(identifier):
+		world.consume_hotbar_item(identifier)
 		refresh_view()
 		return
 	var skill := world.hero.find_skill(identifier)

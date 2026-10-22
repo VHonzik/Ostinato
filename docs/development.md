@@ -70,6 +70,11 @@ by quality, then name; replacement previews compare the selected equipment slot.
 Empty equipment slots auto-equip received gear. An inventory hint marks higher-quality
 bag items available for equipped slots.
 
+Usable bag items offer **Assign to hotbar** while the layout is unlocked. Receiving a
+healing potion assigns it immediately left of Food when that slot is empty in the same
+row and no potion shortcut exists. Saves retain the player's exact assignments, including
+empty slots; loading does not auto-assign items.
+
 Closed chests block movement. Bumping opens their loot menu without collecting or
 spending a turn; full bags preserve uncollected loot. Bumping a newly killed enemy
 opens loot until the player moves; later corpse interaction uses F. Ordinary

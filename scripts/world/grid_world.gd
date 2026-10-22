@@ -10,6 +10,7 @@ signal consecration_ticked
 signal stalker_breath_winding(actor: GridActor)
 signal stalker_breath_released(tiles: Array[Vector2i])
 signal npc_ability_hit(actor: GridActor, family: StringName)
+signal hostile_spotted_player(actor: GridActor)
 # A null attacker denotes the player. Presentation never delays combat resolution.
 signal melee_attacked(attacker: GridActor, target_tile: Vector2i)
 
@@ -115,7 +116,7 @@ func _init(
 
 
 func assign_hotbar(slot: int, identifier: StringName) -> bool:
-	# Store an explicit learned skill; layout editing never spends time.
+	# Layout editing never spends time. Item assignments can outlive their last charge.
 	if is_terminal() or hotbar_locked or slot < 0 or slot >= hotbar.size():
 		return false
 	if identifier == ItemData.WAR_HORN_HOTBAR_ID:
@@ -127,7 +128,7 @@ func assign_hotbar(slot: int, identifier: StringName) -> bool:
 	elif identifier == ItemData.WAR_BANNER_HOTBAR_ID:
 		if not has_war_banner():
 			return false
-	elif identifier != &"" and identifier != FOOD_HOTBAR_ID:
+	elif identifier != &"" and not ItemData.HOTBAR_ITEMS.has(identifier):
 		var skill := hero.find_skill(identifier)
 		if skill == null or skill.effect == SkillDefinition.Effect.PASSIVE:
 			return false
@@ -136,11 +137,35 @@ func assign_hotbar(slot: int, identifier: StringName) -> bool:
 
 
 func consume_hotbar_food() -> bool:
+	return consume_hotbar_item(FOOD_HOTBAR_ID)
+
+
+func consume_hotbar_item(identifier: StringName) -> bool:
+	var item_id: int = ItemData.HOTBAR_ITEMS.get(identifier, 0)
+	if item_id == 0:
+		return false
 	for index in range(hero.inventory.size()):
-		if not hero.inventory[index].is_empty() and hero.inventory[index].id == SPAWN_FOOD_ID:
+		if not hero.inventory[index].is_empty() and hero.inventory[index].id == item_id:
 			return consume_item(index)
-	add_message("No Tough Jerky left.")
+	add_message("No %s left." % ItemData.get_item(item_id).title)
 	return false
+
+
+func _auto_assign_potion(item_id: int) -> void:
+	if item_id != ItemData.HOTBAR_ITEMS[ItemData.POTION_HOTBAR_ID]:
+		return
+	if hotbar.has(ItemData.POTION_HOTBAR_ID):
+		return
+	var food_slot := hotbar.find(FOOD_HOTBAR_ID)
+	if food_slot == -1:
+		for slot in range(hotbar.size()):
+			if (ItemData.is_consumable_hotbar(hotbar[slot])
+				and ItemData.get_item(ItemData.HOTBAR_ITEMS[hotbar[slot]]).use == "food"):
+				food_slot = slot
+				break
+	# Stay in the same row; never displace the player's layout.
+	if food_slot > 0 and food_slot % HOTBAR_ROW_SIZE > 0 and hotbar[food_slot - 1] == &"":
+		hotbar[food_slot - 1] = ItemData.POTION_HOTBAR_ID
 
 
 func has_war_horn() -> bool:
@@ -1202,6 +1227,7 @@ func loot_item(source: GridActor, index: int) -> bool:
 		add_message("Inventory full. Loot remains at its source.")
 		return false
 	add_message("Looted %s x%d." % [ItemData.get_item(int(item.id)).title, item.quantity])
+	_auto_assign_potion(int(item.id))
 	source.loot.remove_at(index)
 	_hide_empty_corpse(source)
 	return true
@@ -1280,6 +1306,7 @@ func buy_item(merchant: GridActor, identifier: int, quantity: int) -> bool:
 		add_message("Purchase rejected: inventory full.")
 		return false
 	hero.copper -= cost
+	_auto_assign_potion(identifier)
 	if int(stock[key]) >= 0:
 		stock[key] -= quantity
 	add_message("Bought %s x%d from %s for %s." % [ItemData.get_item(identifier).title,

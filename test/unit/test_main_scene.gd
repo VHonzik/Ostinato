@@ -1064,7 +1064,8 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 			button.grab_focus()
 	await _tap_key(KEY_ENTER)
 	assert_not_null(world.hero.find_skill(&"anger_management_1"))
-	assert_eq(_game_viewport.gui_get_focus_owner().get_meta("skill_id"), &"anger_management_1")
+	assert_eq(_game_viewport.gui_get_focus_owner().get_meta("skill_id"), &"weapon_mastery_1",
+		"With no affordable unlocks left, inspect the next unlearned skill below.")
 	assert_string_contains(_game.menu._preview.text, "Passive")
 	assert_eq(world.turn_count, 0)
 

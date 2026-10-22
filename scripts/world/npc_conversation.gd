@@ -89,6 +89,8 @@ class Marshal extends Service:
 	func append_choices(conversation: NpcConversation, session: GameSession,
 		_actor: GridActor) -> void:
 		var world := session.world
+		if session.loop_count == 1 and not world.starter_gear_received:
+			conversation.lines.append("Janos Hammerknuckle inside the abbey can give you spare arms and armor for free.")
 		if session.loop_count > 1 and (world.class_selected or world.ever_accepted_quest):
 			conversation.lines.append("Advancing %s this Loop. Class choice is locked until death."
 				% world.hero.selected_class)

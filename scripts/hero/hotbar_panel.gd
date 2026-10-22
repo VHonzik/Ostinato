@@ -107,16 +107,25 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		cooldown.text = str(remaining) if remaining > 0 else ""
 		cooldown.visible = remaining > 0
 		if skill == null:
-			button.tooltip_text = "Slot %d (%s): empty. Assign a skill from the spell book." % [index + 1, key]
-		if world.hotbar[index] == GridWorld.FOOD_HOTBAR_ID:
+			button.tooltip_text = "Slot %d (%s): empty. Assign a skill from the spell book or an item from Bags." % [index + 1, key]
+		if ItemData.is_consumable_hotbar(world.hotbar[index]):
+			var item_id: int = ItemData.HOTBAR_ITEMS[world.hotbar[index]]
 			var quantity := 0
 			for item in world.hero.inventory:
-				if not item.is_empty() and item.id == GridWorld.SPAWN_FOOD_ID:
+				if not item.is_empty() and item.id == item_id:
 					quantity += int(item.quantity)
-			var food := ItemData.get_item(GridWorld.SPAWN_FOOD_ID)
-			button.text = "%s\nFood x%d" % [key, quantity]
-			button.tooltip_text = "%s x%d\nHeals %d HP over %d turns. Movement or combat ends eating." % [
-				food.title, quantity, food.restore, food.duration]
+			var data := ItemData.get_item(item_id)
+			var potion := world.hotbar[index] == ItemData.POTION_HOTBAR_ID
+			button.text = "%s\n%s x%d" % [key, "Potion" if potion else "Food", quantity]
+			if potion:
+				button.tooltip_text = "%s x%d\nHeals %d–%d HP. Cooldown: %d turns." % [
+					data.title, quantity, data.restore_min, data.restore_max, data.cooldown]
+				remaining = maxi(0, world.hero.potion_ready_turn - world.turn_count)
+				cooldown.text = str(remaining) if remaining > 0 else ""
+				cooldown.visible = remaining > 0
+			else:
+				button.tooltip_text = "%s x%d\nHeals %d HP over %d turns. Movement or combat ends eating." % [
+					data.title, quantity, data.restore, data.duration]
 		elif world.hotbar[index] == ItemData.WAR_HORN_HOTBAR_ID:
 			button.text = "%s\nHorn" % key
 			button.tooltip_text = ItemData.describe(ItemData.WAR_HORN_ID)
