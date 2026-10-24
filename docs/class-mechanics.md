@@ -26,12 +26,20 @@ The authoritative overview of implemented classes, abilities, training and effec
   Most ability sprites briefly replace the player/struck enemy for 1.5 real seconds.
   Whirlwind flashes landed targets, not a whole area. Consecration flashes its fixed
   ground tiles for 1.5 real seconds on each damage tick, including NPC occupants but
-  always excluding the player's current tile. Later ability effects replace that
-  tile's flash until the next tick; leaving the ground does not move it.
+  always excluding the player's current tile. Leaving the ground does not move it.
+  Character effects compete by the priority below.
   An enemy's melee bump briefly reveals its actor through a Consecration flash.
   Summon art is a world actor, not an overlay. Passives add no dedicated effect sprite;
-  upgraded actives retain their own art. `-` does not exclude aura text, combat numbers
-  or other shared UI. These are default mappings; GridView allows actor-art overrides.
+  upgraded actives retain their own art. Poison procs use a shared enemy flash.
+  `-` does not exclude aura text, combat numbers or other shared UI. These are default mappings; GridView allows actor-art overrides.
+
+Character sprite priority, highest first: melee bump, Fel Breath wind-up, Fel Breath
+release, Mortal Strike, Judgement, Eviscerate, Lava Burst, Evasion, Divine Shield,
+Vanish, aggro marker, Whirlwind, Charge, Battle Shout, Lightning Shield, poison coating,
+Windfury, Consecration, poison trigger, quest marker. Competing flashes age independently;
+an unexpired lower effect appears when the winner ends. Repeating an effect refreshes
+its 1.5-second flash. Vanish selects the translucent class sprite at its priority.
+Health/faction tint, damage numbers, countdowns and cone borders remain independent.
 
 ## Shared mechanics
 
@@ -74,8 +82,10 @@ follow-up automatic swings, summons, periodic damage and bonus strikes gain none
 
 Hotbar buttons use a translucent two-pixel inside border: gold for Juggernaut's
 Mortal Strike or Art of War's Judgement critical readiness, blue for a free-use proc,
-and amber for a missing maintenance buff. Combined critical/free readiness splits the
-border between both colors. Maintenance checks Battle Shout, Lightning Shield,
+and amber for a missing maintenance buff. Five held combo points also highlight
+Eviscerate in gold. Combined gold/free readiness splits the border between both colors.
+Free-use highlights appear only when the cast is usable, including cooldown, target,
+range, sight and ability-specific requirements. Maintenance checks Battle Shout, Lightning Shield,
 Windfury on the equipped weapon, and an uncoated equipped hand for poisons; either
 poison satisfies a hand. Present buffs never warn merely for nearing expiration.
 Tooltips explain the highlighted states without consuming procs.
@@ -94,7 +104,12 @@ Level differences and applicable buffs modify listed base damage.
 Haste changes independent hand swing timers, not action count or ability cooldowns.
 Restless Blades can reduce running cooldowns.
 Swing timing continues through abilities, movement and waiting, attacking the committed
-enemy when in melee. Retargeting keeps the remaining swing delay.
+enemy when in melee. With no valid commitment, the first enemy attempting an attack
+against the player becomes committed, even on a miss/dodge. Melee bumps can change it.
+Retargeting keeps the remaining swing delay. The white, borderless 3px swing bar sits
+centered on the rage bar's top border and fills left to right using fractional main-hand
+turn delay: full when ready, empty after a full-interval swing reset. It follows resource
+visibility on desktop and mobile and does not advance with real time.
 
 The committed action resolves before the turn advances. At the advanced turn boundary,
 timed hero buffs, summons and ordinary debuffs expire, then Judgement,
@@ -108,9 +123,11 @@ including physical active crits, can trigger Flurry and Wrecking Crew.
 Finishers still qualify for these critical buffs and Vengeance, but cannot build points,
 advance Bandit's Guile, or trigger Battle Trance. Bonus strikes/copies, seal damage,
 poison, ground and reactive damage do not recursively enter the primary attack pipeline.
-With Relentless Assault, points belong to the player across targets/encounters, capped
-at five, with at most one base point per world turn. Seal Fate can add points on qualifying
-active crits. Eviscerate alone spends combo points; Execute and Judgement do not.
+With Relentless Assault, landed Mortal Strike, Execute, Lava Burst and Judgement build
+player-held points across targets/encounters, capped at five. Combat Potency adds a
+main-hand auto-attack chance, sharing the one-base-point-per-turn cap. Seal Fate adds
+points only on qualifying crits of those four abilities. Eviscerate alone spends
+combo points; Execute and Judgement do not.
 
 ## Warrior
 
@@ -123,7 +140,7 @@ trades safety for damage as health falls. Shield Block adds passive shield defen
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Mortal Strike | 30 | 1 | 4 | - | 1 | 1 | 0 | C(0,1) | Target | Active physical attack. Deals 200% weapon damage. A learned Juggernaut charge guarantees the next landed Mortal Strike crit and is then consumed. |
-| Whirlwind | 15 | 1 | - | - | 1 | 1 | 0 | C(0,2) | Targets (each landed hit) | Active. 70% weapon damage to each adjacent neutral or hostile enemy in sight (3x3 area), in stable actor order. One turn, no cooldown; weapon timing continues. Wrecking Crew adds 35% more Whirlwind damage while its buff is active. Each landed hit can crit/proc, but cannot trigger Sweeping Strikes; Relentless Assault grants at most one base point per turn. Keeps your selected attack target. Stops on terminal death. |
+| Whirlwind | 15 | 1 | - | - | 1 | 1 | 0 | C(0,2) | Targets (each landed hit) | Active. 70% weapon damage to each adjacent neutral or hostile enemy in sight (3x3 area), in stable actor order. One turn, no cooldown; weapon timing continues. Wrecking Crew adds 35% more Whirlwind damage while its buff is active. Each landed hit can crit/proc, but cannot trigger Sweeping Strikes or build combo points. Keeps your selected attack target. Stops on terminal death. |
 | Enrage | - | - | - | 10 | - | 1 | 15c | - | - | Passive proc. Surviving damaging enemy hits have a 30% chance for +10% physical damage and +5 percentage points of attack critical chance for 10 turns, at any health. At most one roll per world turn. Refreshes without stacking; misses, dodges and immune hits cannot trigger it. |
 | Battle Shout | 0 | 1 | 30 | 60 | Self | 1 | 30c | C(0,4) | Player | Active. Increases physical damage by 10% for 60 turns and instantly generates 10 rage. 30-turn cooldown. |
 | Death Wish | - | - | - | - | - | 2 | 45c | - | - | Passive. As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned. |
@@ -233,25 +250,25 @@ its planted position and expiry; death clears the planted banner.
 
 **Tagline: Build momentum, vanish to reposition, then strike with a finisher.**
 
-Build player-held combo points and spend them on Eviscerate for damage, a rage refund
-and passive haste. Dual-wield rewards and mixed poisons support sustained attacks;
+Build player-held combo points and spend rage on Eviscerate for damage and passive
+haste. Dual-wield rewards and mixed poisons support sustained attacks;
 Vanish allows repositioning and a stronger opening without dropping combat.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Eviscerate | 15 | 1 | - | - | 1 | 1 | 0 | C(2,1) | Target | Active. Requires a melee target and at least 1 combo point. Spend all held points for 50% weapon damage plus 4 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. After spending, has a 20% chance per point spent to refund 15 rage, guaranteed at 5 points, including on a miss. Refunds happen once; no combo points are refunded. Builds no attack points. One turn, no cooldown; weapon timing continues. |
-| Relentless Assault | - | - | - | * | - | 1 | 0 | - | - | Passive. landed direct active attacks and ordinary main-hand hits grant 1 player-held combo point, up to 5, across classes and targets. At most 1 Relentless Assault point per turn. Off-hand hits, procs, buffs and misses grant none. Points reset on death. |
-| Slice and Dice | - | - | - | * | - | 1 | 10c | - | - | Passive finisher upgrade. Eviscerate grants +30% attack haste for 5 + 3 turns per point spent (8-20 turns), even on a miss. Refreshes without stacking. No extra rage/action; cannot be cast/assigned separately. Ordinary ability cooldowns are unchanged. |
-| Ambidexterity | - | - | - | - | - | 2 | 60c | - | - | Passive. Raises off-hand weapon damage from 50% to 75% in any class. Dual-wield pairs are always usable; off-hand swings grant no ordinary rage. |
+| Eviscerate | 15 | 1 | - | - | 1 | 1 | 0 | C(2,1) | Target | Active. Requires a melee target and at least 1 combo point. Spend all held points for (75% weapon damage + 4) per point as physical damage; five points deal 375% weapon damage + 20. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. Builds no attack points. One turn, no cooldown; weapon timing continues. |
+| Relentless Assault | - | - | - | * | - | 1 | 0 | - | - | Passive. Landed Mortal Strike, Execute, Lava Burst and Judgement grant 1 player-held combo point, up to 5, across classes and targets. At most 1 base point per turn, shared with Combat Potency. Other attacks, off-hand hits, procs, buffs and misses grant none. Points reset on death. |
+| Slice and Dice | - | - | - | * | - | 1 | 10c | - | - | Passive finisher upgrade. Eviscerate grants +30% attack haste for 5 + 3 turns per point spent (8-20 turns), even on a miss. Refreshes without stacking. No extra rage/action; cannot be cast/assigned separately. |
+| Ambidexterity | - | - | - | - | - | 2 | 60c | - | - | Passive. Raises off-hand weapon damage from 50% to 75% in any class. Off-hand swings grant no ordinary rage. |
 | Evasion | 15 | 1 | 20 | 5 | Self | 2 | 90c | C(2,3) | Player | Active. +40% dodge for 5 turns, in every direction. Costs one action. |
-| Combat Potency | - | - | - | - | - | 3 | 120c | - | - | Passive. Landed ordinary off-hand swings have a 20% chance to grant 5 rage. |
-| Seal Fate | - | - | - | - | - | 3 | 150c | - | - | Passive. Requires learned Relentless Assault. Qualifying landed direct active crits grant 1 additional player-held point, up to 5, even if the base point for the turn was already granted. Finishers and bonus strikes do not qualify. |
+| Combat Potency | - | - | - | - | - | 3 | 120c | - | - | Passive. Landed ordinary off-hand swings have a 20% chance to grant 5 rage. With learned Relentless Assault, landed ordinary main-hand swings have a 30% chance to grant 1 combo point, sharing its one-base-point-per-turn cap. |
+| Seal Fate | - | - | - | - | - | 3 | 150c | - | - | Passive. Requires learned Relentless Assault. Landed Mortal Strike, Execute, Lava Burst and Judgement crits grant 1 additional player-held point, up to 5, even if the base point for the turn was already granted. Finishers and bonus strikes do not qualify. |
 | Main Gauche | - | - | - | - | - | 3 | 190c | - | - | Passive. Landed ordinary main-hand swings have a 15% chance for one strike at 100% of the off-hand damage profile, including its normal 50%/75% damage multiplier. Requires an off-hand weapon; normal hit/armor apply, with no crits, recursive procs, rage or combo points. |
 | Vanish | 0 | 1 | 20 | 4* | Self | 3 | 200c | Current class sprite at 40% opacity | Player | Active. Conceal for 4 turns or until a deliberate melee attack (including bump) or any ability. Movement/waiting preserve it and suppress your automatic swings. Engaged enemies retarget living summons with normal swing timing; without a summon they pursue the Vanish tile without attacking or losing engagement. They cannot track hidden movement. Normal collision applies. The opening swing/ability gains +50 percentage points of crit, including retained class attacks; non-damaging abilities also consume it. Invalid attempts preserve it. Casts break concealment at start; completion keeps the bonus, cancellation loses it. Independent 20-turn cooldown, matching Evasion; Restless Blades can shorten it. No separate flash sprite; the current class art becomes translucent for the effect. |
-| Deadly Poison | 0 | 1 | - | * | Self | 4 | 230c | C(2,2) | Player (application) | Active coating. Choose hands as for Instant Poison; each coating lasts 60 turns, replacing only the selected hand's poison. Landed primary physical attacks have a 30% chance to apply a stack. Up to 5 shared stacks per enemy deal 1.5 base Nature damage each per turn for 12 turns. Applications refresh duration without delaying ticks; fractional damage is retained across ticks. No crits/proc chains. Ticks precede swings and enemy actions, including the final tick. Player sprite appears at coating time only. |
-| Instant Poison | 0 | 1 | - | 60* | Self | 4 | 230c | C(2,2) | Player (application) | Active coating. Choose main hand, off hand or both with dual wield; single-weapon setups coat main hand directly. Each hand has its own 60-turn timer; replacing its poison leaves the other hand unchanged. Landed primary physical attacks with a coated hand have a 30% chance to add 8 base Nature damage. No crits or recursive procs; bonus strikes cannot trigger it. Catalytic Venom can add a Deadly stack. Player sprite appears on application only. |
+| Deadly Poison | 0 | 1 | - | * | Self | 4 | 230c | C(2,2), C(2,4) | Player (coating); target (proc) | Active coating. Choose hands as for Instant Poison; each coating lasts 60 turns, replacing only the selected hand's poison. Landed primary physical attacks have a 30% chance to apply a stack. Up to 5 shared stacks per enemy deal 1.5 base Nature damage each per turn for 12 turns. Applications refresh duration without delaying ticks; fractional damage is retained across ticks. No crits/proc chains. Ticks precede swings and enemy actions, including the final tick. Player flashes at coating time; successful stack applications flash the enemy with C(2,4). Periodic ticks do not restart the flash. |
+| Instant Poison | 0 | 1 | - | 60* | Self | 4 | 230c | C(2,2), C(2,4) | Player (coating); target (proc) | Active coating. Choose main hand, off hand or both with dual wield; single-weapon setups coat main hand directly. Each hand has its own 60-turn timer; replacing its poison leaves the other hand unchanged. Landed primary physical attacks with a coated hand have a 30% chance to add 8 base Nature damage. No crits or recursive procs; bonus strikes cannot trigger it. Catalytic Venom can add a Deadly stack. Player flashes on coating application; successful procs flash the enemy with C(2,4). |
 | Restless Blades | - | - | - | - | - | 4 | 270c | - | - | Passive finisher reward. After Eviscerate spends points, including on a miss, reduce every currently recorded ability cooldown by ceiling(points spent / 2) turns, never below ready now. Includes preparation and summon cooldowns as well as offensive/defensive abilities. |
-| Catalytic Venom | - | - | - | - | - | 5 | 310c | - | - | Passive. While dual wielding, Instant Poison on your faster base-speed weapon also applies one stack of the slower weapon's Deadly Poison. Both coatings must be active. Equal-speed weapons do not catalyze. No extra roll or recursive procs. |
+| Catalytic Venom | - | - | - | - | - | 5 | 310c | - | - | Passive. While dual wielding with active Instant and Deadly Poison on opposite hands, each Instant proc also applies one Deadly stack regardless of weapon speeds. No extra roll or recursive procs. |
 | Bandit's Guile | - | - | - | 10 | - | 5 | 370c | - | - | Passive. Every 4 qualifying landed direct active attacks grant +5% damage, stacking to +15%. Each qualifying hit refreshes the 10-turn state, including partially built progress. Misses and finishers do not advance it. Retained class attacks qualify. |
 | Precision | - | - | - | - | - | 5 | 430c | - | - | Passive. Weapon/physical and direct Holy/Fire/Nature attacks never miss, including against higher-level enemies. Enemies may still dodge weapon attacks; Weapon Mastery reduces their dodge chance by 2.5 percentage points. |
 

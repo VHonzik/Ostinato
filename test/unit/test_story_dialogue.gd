@@ -465,6 +465,35 @@ func test_warrior_choice_is_confident_in_every_returning_loop() -> void:
 				assert_true(choice.title.begins_with("I am ...."))
 
 
+func test_class_choice_wording_tracks_each_class_across_saves_and_deaths_without_tooltips() -> void:
+	var session := _session()
+	session.loop_count = 4
+	session.world.class_selected = false
+	var marshal := _contact(session.world, NpcDefinition.MARSHAL_ID)
+	_beside(session.world, marshal)
+	for choice in NpcConversation.build(session, marshal).choices:
+		if choice.action == NpcConversation.Action.SELECT_CLASS:
+			assert_eq(choice.tooltip, "")
+			assert_eq(choice.title, "I am warrior" if choice.category == &"Warrior"
+				else "I am .... %s" % String(choice.category).to_lower())
+	assert_true(session.select_class(&"Paladin", marshal))
+	var restored := SaveCodec.restore(SaveCodec.capture(session), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	session.restore(restored, session.seed_value, 4)
+	session.world.hero.health = 0
+	assert_true(session.restart_after_death())
+	marshal = _contact(session.world, NpcDefinition.MARSHAL_ID)
+	_beside(session.world, marshal)
+	for choice in NpcConversation.build(session, marshal).choices:
+		if choice.action == NpcConversation.Action.SELECT_CLASS:
+			assert_eq(choice.tooltip, "")
+			var confident := choice.category in [&"Warrior", &"Paladin"]
+			assert_eq(choice.title, ("I am %s" if confident else "I am .... %s")
+				% String(choice.category).to_lower())
+
+
 func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected() -> void:
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(SaveCodec.capture(_session())))
 	snapshot.erase("starter_gear_received")

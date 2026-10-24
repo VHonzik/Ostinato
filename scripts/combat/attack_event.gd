@@ -59,6 +59,11 @@ func can_build_combo() -> bool:
 		and (is_direct() or (school == School.PHYSICAL and hand == Hand.MAIN)))
 
 
+func is_combo_ability() -> bool:
+	return can_build_combo() and is_direct() and skill.family in [
+		&"mortal_strike", &"execute", &"lava_burst", &"judgement"]
+
+
 func can_trigger_weapon_procs() -> bool:
 	return is_primary() and landed() and school == School.PHYSICAL
 

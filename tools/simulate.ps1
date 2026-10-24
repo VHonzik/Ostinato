@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block', 'aoe-interactions', 'restless-stalker', 'restless-pulls')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'rogue-feedback', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block', 'aoe-interactions', 'restless-stalker', 'restless-pulls')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
@@ -17,6 +17,7 @@ $scriptsByScenario = @{
   warrior = 'warrior_identity_sim.gd'; 'warrior-harder' = 'warrior_identity_harder.gd'
   paladin = 'paladin_sim.gd'
   rogue = 'rogue_sim.gd'
+  'rogue-feedback' = 'rogue_feedback_sim.gd'
   'stalker-passives' = 'stalker_passive_sim.gd'
   'stalker-full' = 'stalker_full_sim.gd'
   'stalker-mechanics' = 'stalker_mechanics_sim.gd'
@@ -43,8 +44,8 @@ try {
     throw '-Policy supports after-breath for stalker-patterns or cooldowns for aoe-interactions.'
   }
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
-  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns')) { throw '-Confirm is only for tuning scenarios.' }
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'aoe-interactions')) { throw '-Shard is only for combat simulations.' }
+  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns', 'rogue-feedback')) { throw '-Confirm is only for tuning scenarios.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'rogue-feedback', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'aoe-interactions')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)

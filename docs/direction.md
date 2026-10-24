@@ -66,8 +66,8 @@ should assume leaving the marked cone, rather than balancing around taking its h
   together so the choices earn their positions. Do not implement an automatic rotation
   or ability locks to enforce a preferred ordering.
 - Poisons cost no rage and offer a preparation choice: Instant rewards short fights, while Deadly
-  builds sustained damage. A later Rogue passive rewards mixed coatings with Instant
-  on the faster weapon and Deadly on the slower. Its extra stack is a deliberate
+  builds sustained damage. A later Rogue passive rewards active Instant
+  and Deadly coatings on opposite hands regardless of weapon speeds. Its extra stack is a deliberate
   interaction; poison damage does not trigger further attack procs. Keep finishers
   from bypassing Deadly's buildup for free.
 - Training requires the current Loop's character level and charges gold per skill;
@@ -83,8 +83,9 @@ should assume leaving the marked cone, rather than balancing around taking its h
   Keep friendly-bump interaction and the existing second-bump protection for neutral
   enemies; hostile enemies are attacked on the first bump. A fresh weapon is ready.
   Resolve the action's effect, then due player swings, then enemy actions. Continue
-  attacking the selected enemy in melee range; never silently retarget or bank swings
-  while out of range. Retargeting retains remaining weapon delay. Resolve multiple
+  attacking the selected enemy in melee range; keep a valid commitment and never bank swings
+  while out of range. With no valid commitment, an enemy attempting to attack the player
+  becomes committed; melee bumps can select another. Retargeting retains remaining weapon delay. Resolve multiple
   due swings in order and stop on death. Playtest this ordering and control rhythm.
 - Developed characters should gain efficient large-pull clearing through area damage.
   Evaluate these fights with normal maintenance buffs prepared. Roughly sixteen

@@ -135,6 +135,10 @@ func test_hotbar_reports_crit_and_free_use_without_spending_procs_and_clears_rea
 	world.hero.learn_skill(SkillDefinition.catalog(&"judgement_1"))
 	world.hero.buffs[&"art_of_war_1"] = {"until": 0, "critical_ready": 1}
 	world.assign_hotbar(1, &"judgement_1")
+	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
+	var enemy := GridActor.new(Vector2i(6, 5))
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	world.actors.append(enemy)
 	var before := world.hero.buffs.duplicate(true)
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	assert_string_contains(panel.slots[0].tooltip_text, "Guaranteed critical")
@@ -189,6 +193,11 @@ func test_poison_maintenance_accepts_mixed_coatings_and_detects_an_expired_hand(
 	assert_true(world.cast_skill(&"instant_poison_1", null, PoisonRules.Hands.MAIN))
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+	assert_true(world.cast_skill(&"instant_poison_1", null, PoisonRules.Hands.BOTH))
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	for slot in [0, 1]:
+		assert_false(panel.slots[slot].tooltip_text.contains("Maintenance buff missing"),
+			"Instant on both hands also satisfies Deadly's maintenance check.")
 	assert_true(world.cast_skill(&"deadly_poison_1", null, PoisonRules.Hands.OFF))
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	for slot in [0, 1]:

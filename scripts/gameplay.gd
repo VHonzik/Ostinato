@@ -338,8 +338,7 @@ func _cast_skill(identifier: StringName) -> void:
 		world.add_message("%s is on cooldown." % skill.title)
 		refresh_view()
 		return
-	var target := (world.committed_enemy() if skill.effect == SkillDefinition.Effect.JUDGEMENT
-		else world.last_attacked_enemy)
+	var target := world.committed_enemy()
 	if PoisonRules.is_poison(skill) and world.hero.has_off_hand_weapon():
 		hero_panel.close()
 		combat_panel.open_poison(world, skill)

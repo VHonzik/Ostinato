@@ -444,6 +444,7 @@ func test_execute_hotbar_uses_the_committed_target_in_combat() -> void:
 	committed.engaged = true
 	var other := _enemy(world, Vector2i(5, 6))
 	world.last_attacked_enemy = committed
+	world.auto_attack_target = committed
 	assert_true(world.assign_hotbar(0, &"execute_1"))
 	var panel := HotbarPanel.new()
 	add_child_autofree(panel)
@@ -453,6 +454,8 @@ func test_execute_hotbar_uses_the_committed_target_in_combat() -> void:
 		"A different low-health enemy cannot make the committed Execute eligible.")
 	assert_same(world.last_attacked_enemy, committed)
 	world.last_attacked_enemy = other
+	other.engaged = true
+	world.auto_attack_target = other
 	panel.refresh(world, options, true, true, false)
 	assert_false(panel.slots[0].has_theme_color_override("font_color"))
 	assert_eq(world.turn_count, 0)

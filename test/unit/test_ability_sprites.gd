@@ -51,15 +51,15 @@ func test_player_effect_lasts_one_and_a_half_seconds_without_spending_turns() ->
 	assert_eq(_world.turn_count, turn)
 
 
-func test_new_player_effect_replaces_previous_and_restarts_its_duration() -> void:
+func test_higher_player_effect_survives_a_newer_lower_effect() -> void:
 	assert_true(_world.cast_skill(&"battle_shout_1"))
 	_view._process(0.75)
 	assert_true(_world.cast_skill(&"lightning_shield_1"))
 	_view._draw_player()
-	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 32, 16, 16))
+	assert_eq((_view.base as AtlasTexture).region, Rect2(0, 64, 16, 16))
 	_view._process(0.5)
 	assert_false(_view._player_blink.is_empty())
-	assert_eq(float(_view._player_blink.elapsed), 0.5)
+	assert_eq(float(_view._player_blink[&"lightning_shield"].elapsed), 0.5)
 	_view._process(1.0)
 	assert_true(_view._player_blink.is_empty())
 
@@ -201,7 +201,7 @@ func test_stalker_health_and_faction_layers_tint_independently_and_elemental_use
 	assert_null(_view.faction)
 
 
-func test_enemy_effect_replacement_resets_time_and_other_actors_keep_their_own_timer() -> void:
+func test_enemy_priority_preserves_older_hit_until_expiry_then_reveals_newer_hit() -> void:
 	var other := GridActor.new(Vector2i(10, 8))
 	_world.actors.append(other)
 	_world.npc_ability_hit.emit(other, &"mortal_strike")
@@ -209,18 +209,20 @@ func test_enemy_effect_replacement_resets_time_and_other_actors_keep_their_own_t
 	_view._process(1.25)
 	_world.npc_ability_hit.emit(_enemy, &"lava_burst")
 	_view._draw_actor(_enemy)
-	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 48, 16, 16))
+	assert_eq((_view.base as AtlasTexture).region, Rect2(0, 16, 16, 16))
 	_view._process(0.25)
 	assert_false(_view._npc_blinks.has(other))
-	assert_eq(float(_view._npc_blinks[_enemy].elapsed), 0.25)
+	assert_eq(float(_view._npc_blinks[_enemy][&"lava_burst"].elapsed), 0.25)
+	_view._draw_actor(_enemy)
+	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 48, 16, 16))
 	_view._process(1.25)
 	assert_true(_view._npc_blinks.is_empty())
 
 
-func test_sentence_shows_at_cast_and_again_at_impact_then_windfury_can_replace_it() -> void:
+func test_sentence_shows_at_cast_and_impact_and_takes_priority_over_windfury() -> void:
 	_world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
 	assert_true(_world.cast_skill(&"judgement_1", _enemy))
-	assert_eq((_view._npc_blinks[_enemy].sprite as AtlasTexture).region,
+	assert_eq((_view._npc_blinks[_enemy][&"judgement"].sprite as AtlasTexture).region,
 		Rect2(16, 16, 16, 16))
 	_view._process(1.5)
 	assert_true(_view._npc_blinks.is_empty())
@@ -232,8 +234,8 @@ func test_sentence_shows_at_cast_and_again_at_impact_then_windfury_can_replace_i
 	ClassToolkitRules.bonus_strike(_world, _enemy, false, 1.0, "Windfury",
 		SkillDefinition.catalog(&"windfury_weapon_1"))
 	_view._draw_actor(_enemy)
-	assert_eq((_view.base as AtlasTexture).region, Rect2(48, 16, 16, 16))
-	assert_eq(float(_view._npc_blinks[_enemy].elapsed), 0.0)
+	assert_eq((_view.base as AtlasTexture).region, Rect2(16, 16, 16, 16))
+	assert_eq(float(_view._npc_blinks[_enemy][&"windfury_weapon"].elapsed), 0.0)
 
 
 func test_whirlwind_shows_on_each_landed_enemy_and_never_the_player() -> void:
@@ -269,7 +271,7 @@ func test_consecration_shows_open_tiles_for_one_and_a_half_seconds_then_restores
 	assert_false(_view._consecration_visible(wall))
 	assert_eq(_view._terrain_sprite(flowers, occupants), &"")
 	_view._draw_consecration()
-	assert_eq(_view.effect_tiles.size(), 7)
+	assert_eq(_view.effect_tiles.size(), 6)
 	_view._process(0.125)
 	assert_true(_view._consecration_visible(flowers))
 	assert_eq(_view._terrain_sprite(flowers, occupants), &"")
@@ -324,7 +326,7 @@ func test_world_replacement_clears_blinks_and_disconnects_old_world() -> void:
 	assert_true(_view._npc_blinks.is_empty())
 
 
-func test_new_effect_replaces_consecration_on_its_tile_and_recasting_resets_the_area() -> void:
+func test_direct_hit_takes_priority_over_new_consecration_until_hit_expires() -> void:
 	assert_true(_world.cast_skill(&"consecration_1"))
 	_view._process(1.0)
 	_world.npc_ability_hit.emit(_enemy, &"mortal_strike")
@@ -333,13 +335,76 @@ func test_new_effect_replaces_consecration_on_its_tile_and_recasting_resets_the_
 	assert_eq((_view.base as AtlasTexture).region, Rect2(0, 16, 16, 16))
 	_world.hero.cooldowns.clear()
 	assert_true(_world.cast_skill(&"consecration_1"))
-	assert_true(_view._consecration_visible(_enemy.tile))
-	assert_true(_view._npc_blinks.is_empty())
+	assert_false(_view._consecration_visible(_enemy.tile))
+	assert_false(_view._npc_blinks.is_empty())
 	assert_eq(float(_view._consecration_blink.elapsed), 0.0)
 	_view._process(1.0)
 	assert_false(_view._consecration_blink.is_empty())
 	_view._process(0.5)
 	assert_true(_view._consecration_blink.is_empty())
+
+
+func test_priority_is_independent_of_trigger_order_and_hidden_effects_keep_aging() -> void:
+	for families in [[&"mortal_strike", &"judgement"], [&"judgement", &"mortal_strike"]]:
+		_view._npc_blinks.clear()
+		for family: StringName in families:
+			_world.npc_ability_hit.emit(_enemy, family)
+		assert_eq(_view.character_effect(_enemy).family, &"mortal_strike")
+	_view._process(1.0)
+	_world.npc_ability_hit.emit(_enemy, &"judgement")
+	_view._process(0.5)
+	assert_eq(_view.character_effect(_enemy).family, &"judgement")
+	_view._process(1.0)
+	assert_true(_view.character_effect(_enemy).is_empty())
+
+
+func test_melee_bump_beats_windup_and_aggro_beats_whirlwind() -> void:
+	_enemy.breath_remaining = 2
+	_view._show_breath_windup(_enemy)
+	_world.npc_ability_hit.emit(_enemy, &"mortal_strike")
+	assert_eq(_view.character_effect(_enemy).family, &"breath_windup")
+	_world.melee_attacked.emit(_enemy, _world.player_tile)
+	assert_eq(_view.character_effect(_enemy).family, &"melee_bump")
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_eq(_view.character_effect(_enemy).family, &"breath_windup")
+	_view._npc_blinks.clear()
+	_enemy.breath_remaining = 0
+	_view._show_aggro(_enemy)
+	_world.npc_ability_hit.emit(_enemy, &"whirlwind")
+	assert_eq(_view.character_effect(_enemy).family, &"aggro")
+	_view._draw_actor(_enemy)
+	assert_eq((_view.faction as AtlasTexture).region, Rect2(80, 0, 16, 16))
+
+
+func test_vanish_and_self_effects_follow_priority() -> void:
+	_world.hero.learn_skill(SkillDefinition.catalog(&"vanish_1"))
+	assert_true(_world.cast_skill(&"vanish_1"))
+	_view._show_player_ability(SkillDefinition.catalog(&"lightning_shield_1"))
+	assert_eq(_view.character_effect().family, &"vanish")
+	_view._show_player_ability(SkillDefinition.catalog(&"divine_shield_1"))
+	assert_eq(_view.character_effect().family, &"divine_shield")
+	_view._show_player_ability(SkillDefinition.catalog(&"evasion_1"))
+	assert_eq(_view.character_effect().family, &"evasion")
+	_view._process(1.5)
+	assert_eq(_view.character_effect().family, &"vanish")
+	_view._draw_player()
+	assert_almost_eq(_view.base_color.a, 0.4, 0.000001)
+
+
+func test_poison_trigger_uses_new_art_without_tick_refresh_and_loses_to_ground() -> void:
+	_world.hero.learn_skill(SkillDefinition.catalog(&"deadly_poison_1"))
+	PoisonRules.apply_deadly(_world, _enemy)
+	_view._draw_actor(_enemy)
+	assert_eq((_view.base as AtlasTexture).region, Rect2(32, 64, 16, 16))
+	_view._process(1.0)
+	_world.wait_turn()
+	assert_almost_eq(float(_view._npc_blinks[_enemy][&"poison_trigger"].elapsed), 1.0, 0.000001)
+	assert_true(_world.cast_skill(&"consecration_1"))
+	assert_eq(_view.character_effect(_enemy).family, &"consecration")
+	PoisonRules.apply_deadly(_world, _enemy)
+	assert_eq(_view.character_effect(_enemy).family, &"consecration")
+	_view._process(1.5)
+	assert_true(_view._npc_blinks.is_empty())
 
 
 class RecordingGridView:

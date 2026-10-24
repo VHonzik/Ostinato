@@ -106,7 +106,7 @@ func test_single_weapon_rejects_offhand_without_cost_and_both_coats_only_main() 
 		assert_eq(PoisonRules.coating(world.hero, world.turn_count, true), &"")
 
 
-func test_catalyst_requires_fast_instant_slow_deadly_and_draws_only_one_roll() -> void:
+func test_catalyst_accepts_either_orientation_and_equal_speeds_with_only_one_roll() -> void:
 	for weapon in [2224, 2139]:
 		for correct_orientation in [true, false]:
 			var world := _world(weapon)
@@ -120,7 +120,7 @@ func test_catalyst_requires_fast_instant_slow_deadly_and_draws_only_one_roll() -
 			PoisonRules.on_hit(world, enemy, correct_orientation)
 			assert_eq(world.combat_random.state, generator.state)
 			assert_eq(enemy.health, 9992)
-			assert_eq(enemy.debuffs.has(&"deadly_poison_1"), weapon == 2224 and correct_orientation)
+			assert_eq(enemy.debuffs.has(&"deadly_poison_1"), true)
 			assert_eq(world.hero.combo_points, 0)
 			assert_eq(world.hero.rage, 100)
 			assert_false(world.hero.buffs.has(&"sudden_death_1"))
@@ -185,7 +185,7 @@ func test_targets_keep_separate_stacks_and_reapplication_after_expiry_starts_fre
 	assert_true(first.debuffs.is_empty())
 
 
-func test_catalyst_stops_without_passive_or_when_slower_coating_expires() -> void:
+func test_catalyst_stops_without_passive_or_when_other_coating_expires() -> void:
 	var world := _world()
 	PoisonRules.coat(world, world.hero.find_skill(&"deadly_poison_1"), PoisonRules.Hands.MAIN)
 	world.wait_turn()

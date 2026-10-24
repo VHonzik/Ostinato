@@ -91,6 +91,9 @@ static func _pursue(world: GridWorld, actor: GridActor, target: Vector2i,
 
 static func _attack(world: GridWorld, actor: GridActor, target: NpcTarget) -> void:
 	if target.is_player():
+		if world.committed_enemy() == null:
+			world.auto_attack_target = actor
+			world.last_attacked_enemy = actor
 		world.melee_attacked.emit(actor, target.tile)
 	var result := MeleeRules.outcome(actor.melee, target.melee,
 		world.combat_random.randf() * 100.0)

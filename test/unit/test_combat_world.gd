@@ -171,6 +171,7 @@ func test_pursuit_takes_shortest_terrain_route_even_when_it_initially_moves_away
 
 
 func test_crowded_pursuers_fill_available_melee_tiles_without_overlap_or_leash() -> void:
+	_world.hero.swing.remaining = 1000.0
 	# Keep movement checks independent of damage tuning and the health cap on refresh.
 	_world.hero.level = 20
 	_world.hero._apply_level_stats()

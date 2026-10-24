@@ -81,6 +81,7 @@ func test_missed_auto_attack_still_generates_normalized_rage() -> void:
 
 func test_multiple_enemies_and_fast_hits_generate_only_three_rage_per_turn() -> void:
 	var world := _world()
+	world.hero.swing.remaining = 1000.0
 	var first := _enemy(world)
 	var second := _enemy(world, Vector2i(4, 5))
 	for enemy in [first, second]:

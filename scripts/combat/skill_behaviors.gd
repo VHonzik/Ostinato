@@ -219,7 +219,7 @@ class Eviscerate extends PhysicalAttack:
 		var points := world.hero.combo_points
 		world.hero.combo_points = 0
 		ClassToolkitRules.physical_attack(world, cast.target, cast.skill,
-			cast.skill.minimum * points, false)
+			cast.skill.minimum * points, false, true, points)
 		ClassToolkitRules.slice_and_dice(world, points)
 		ClassToolkitRules.finish(world, points, cast.skill)
 

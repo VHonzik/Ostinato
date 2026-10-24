@@ -92,8 +92,9 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | New Game | Warrior is selected | Starts knowing Mortal Strike and Whirlwind; quests and services are available. |
 | Loop 1, before receiving starter gear | Janos Hammerknuckle inside the abbey can give you spare arms and armor for free. | Appears alongside the marshal's greeting and choices. |
 | Loop 2, before choosing | I am warrior | Selects Warrior and unlocks quests/services. |
-| Loop 3, before choosing | I am warrior; I am .... shaman; I am .... paladin; I am .... rogue | Selects the chosen class and unlocks quests/services. |
-| Loop 4 onward, before choosing | I am warrior; I am shaman; I am paladin; I am rogue | Selects the chosen class and unlocks quests/services. |
+| Loop 3 onward, class never selected | I am .... {class} | Selecting this class unlocks quests/services and permanently changes only its choice wording. |
+| Returning Loop, class previously selected | I am {class} | Selects this class and unlocks quests/services. Warrior counts as selected at New Game. |
+| Class-choice tooltips | None | Choices display their dialogue text only. |
 | Class-choice focus | Previous class is focused | Selection is available outside combat before any quest acceptance. |
 | Returning Loop after choosing or accepting a quest | Advancing {Class} this Loop. Class choice is locked until death. | The marshal offers eligible quests. |
 | Returning Loop, choice blocked by combat before choosing | Return outside combat to choose your class before accepting a quest. | Class choices are unavailable until eligible. |
@@ -162,7 +163,7 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 | --- | --- |
 | Neutral encounters | Wolves and outdoor Kobold Vermin remain neutral until attacked. Bumping the same stationary neutral twice attacks; deliberate attacks and War Horn can engage neutral NPCs. |
 | Hostile aggro | Mine kobolds and bandits acquire visible targets within 4 tiles; stalkers use 5 tiles. Concealment and summons follow the [class rules](class-mechanics.md). |
-| Engage marker | A hostile spotting the player more than one tile away shows `!` once for 1.5 seconds, matching ability flashes. Adjacent detection, player-initiated attacks and ongoing engagement do not trigger it. Engagement preserves the NPC's faction color. |
+| Engage marker | A hostile spotting the player more than one tile away shows the C(5,0) exclamation once for 1.5 seconds, matching ability flashes. Quest markers use the same sprite with their existing blink cadence. Adjacent detection, player-initiated attacks and ongoing engagement do not trigger it. Engagement preserves the NPC's faction color. With no valid player commitment, the first enemy attempting an attack against the player becomes committed, including misses/dodges; melee bumps can choose another enemy without resetting swing delay. |
 | Wandering | Outdoor wolves, camp kobolds and Defias Thugs wander within two tiles of their home position, with staggered starts and random pauses of 3–10 turns. Pending pauses survive saves. |
 | Pursuit | Engaged enemies pursue and attack in melee. Five consecutive turns with no terrain route to the target start a return home; reaching home restores full health. During Vanish they pursue living summons; with none, they hold around the remembered Vanish origin without attacking or losing engagement. See [Vanish interactions](class-mechanics.md#vanish-interactions). |
 | Population | No ordinary NPC respawns within a Loop. Death rebuilds contacts and enemies. Empty corpses disappear; other ordinary corpses hide after 300 turns even with loot. The story guard's corpse remains. Summons leave no visible corpse. |

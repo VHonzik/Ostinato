@@ -31,7 +31,7 @@ const ENEMY_ABILITIES: Dictionary[StringName, Vector2i] = {
 	&"mortal_strike": Vector2i(0, 1), &"judgement": Vector2i(1, 1),
 	&"eviscerate": Vector2i(2, 1), &"windfury_weapon": Vector2i(3, 1),
 	&"lava_burst": Vector2i(3, 3),
-	&"whirlwind": Vector2i(0, 2),
+	&"whirlwind": Vector2i(0, 2), &"poison_trigger": Vector2i(2, 4),
 }
 const ABILITY_BLINK_SECONDS: float = 1.5
 const CONSECRATION_CELL := Vector2i(1, 2)
@@ -88,7 +88,12 @@ const REFERENCE_ENVIRONMENT: Dictionary[StringName, Vector2i] = {
 }
 
 const BLINK_SECONDS: float = 2.0
-const QUEST_MARKER_REGION := Rect2(160, 208, 16, 16)
+const EFFECT_PRIORITY: Array[StringName] = [
+	&"melee_bump", &"breath_windup", &"breath_release", &"mortal_strike", &"judgement",
+	&"eviscerate", &"lava_burst", &"evasion", &"divine_shield", &"vanish", &"aggro",
+	&"whirlwind", &"charge", &"battle_shout", &"lightning_shield", &"poison_coating",
+	&"windfury_weapon", &"consecration", &"poison_trigger", &"quest",
+]
 
 ## NPC keys match valley sprite names; summons use earth_elemental or wolf,
 ## and fallback characters use character_<column>_<row>.
@@ -223,7 +228,7 @@ func _ready() -> void:
 	for name in catalog.sprites:
 		var entry: Dictionary = catalog.sprites[name]
 		_valley_regions[StringName(name)] = Rect2(entry.x, entry.y, entry.width, entry.height)
-	_quest_marker_sprite = _atlas_sprite(ENVIRONMENT, QUEST_MARKER_REGION)
+	_quest_marker_sprite = _ability_sprite(Vector2i(5, 0))
 
 
 func _process(delta: float) -> void:
@@ -241,10 +246,10 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if (not _player_blink.is_empty() or not _npc_blinks.is_empty()
 		or not _consecration_blink.is_empty()):
-		_advance_ability_blink(_player_blink, delta)
+		_advance_character_blinks(_player_blink, delta)
 		_advance_ability_blink(_consecration_blink, delta)
 		for actor: GridActor in _npc_blinks.keys():
-			_advance_ability_blink(_npc_blinks[actor], delta)
+			_advance_character_blinks(_npc_blinks[actor], delta)
 			if not actor.alive or _npc_blinks[actor].is_empty():
 				_npc_blinks.erase(actor)
 		queue_redraw()
@@ -307,27 +312,23 @@ func _show_consecration() -> void:
 				and PaladinRules.covers(world, tile)):
 				tiles.append(tile)
 	_consecration_blink = {"tiles": tiles, "elapsed": 0.0}
-	for tile: Vector2i in tiles:
-		if not _breath_blink.is_empty():
-			_breath_blink.tiles.erase(tile)
-	for actor: GridActor in _npc_blinks.keys():
-		if tiles.has(actor.tile):
-			_npc_blinks.erase(actor)
 	queue_redraw()
 
 
 func _show_player_ability(skill: SkillDefinition) -> void:
 	if PLAYER_ABILITIES.has(skill.family):
-		_replace_ground_effect_tile(world.player_tile)
-		_player_blink = {"sprite": _ability_sprite(PLAYER_ABILITIES[skill.family]),
-			"elapsed": 0.0}
+		var family := &"poison_coating" if PoisonRules.is_poison(skill) else skill.family
+		_player_blink[family] = {"family": family,
+			"sprite": _ability_sprite(PLAYER_ABILITIES[skill.family]), "elapsed": 0.0}
 		queue_redraw()
 
 
 func _show_npc_ability(actor: GridActor, family: StringName) -> void:
 	if ENEMY_ABILITIES.has(family):
-		_replace_ground_effect_tile(actor.tile)
-		_npc_blinks[actor] = {"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0,
+		if not _npc_blinks.has(actor):
+			_npc_blinks[actor] = {}
+		_npc_blinks[actor][family] = {"family": family,
+			"sprite": _ability_sprite(ENEMY_ABILITIES[family]), "elapsed": 0.0,
 			"color": Color("ff7733") if family == &"lava_burst" else Color.WHITE}
 		queue_redraw()
 
@@ -337,11 +338,11 @@ func _show_aggro(actor: GridActor) -> void:
 	queue_redraw()
 
 
-func _replace_ground_effect_tile(tile: Vector2i) -> void:
-	if not _consecration_blink.is_empty():
-		_consecration_blink.tiles.erase(tile)
-	if not _breath_blink.is_empty():
-		_breath_blink.tiles.erase(tile)
+func _advance_character_blinks(effects: Dictionary, delta: float) -> void:
+	for family: StringName in effects.keys():
+		_advance_ability_blink(effects[family], delta)
+		if effects[family].is_empty():
+			effects.erase(family)
 
 
 func _advance_ability_blink(effect: Dictionary, delta: float) -> void:
@@ -352,29 +353,50 @@ func _advance_ability_blink(effect: Dictionary, delta: float) -> void:
 		effect.clear()
 
 
-func _blink_sprite(effect: Dictionary) -> Texture2D:
-	if effect.is_empty():
-		return null
-	return effect.sprite
+## One winner per character; presentation queries never alter effect lifetimes.
+func character_effect(actor: GridActor = null) -> Dictionary:
+	return _effect_at(world.player_tile if actor == null else actor.tile, actor, actor == null)
+
+
+func _effect_at(tile: Vector2i, actor: GridActor, is_player: bool) -> Dictionary:
+	var effects: Dictionary = _player_blink if is_player else _npc_blinks.get(actor, {})
+	var candidates: Array = effects.values()
+	if is_melee_bumping() and (is_player or actor != null) and _melee_bumps[0].attacker == actor:
+		candidates.append({"family": &"melee_bump"})
+	if is_player and VanishRules.active(world):
+		candidates.append({"family": &"vanish"})
+	if actor != null:
+		if _aggro_blinks.has(actor):
+			candidates.append({"family": &"aggro"})
+		if _blink_alternate_visible and QuestRules.has_marker(world, actor):
+			candidates.append({"family": &"quest"})
+	if (tile != world.player_tile and not _consecration_blink.is_empty()
+		and _consecration_blink.tiles.has(tile)):
+		candidates.append({"family": &"consecration", "sprite": _ability_sprite(CONSECRATION_CELL)})
+	if (not world.blocked_tiles.has(tile) and not _breath_blink.is_empty()
+		and _breath_blink.tiles.has(tile)):
+		candidates.append({"family": &"breath_release", "sprite": _ability_sprite(BREATH_TILE_CELL),
+			"color": Color(1.0, 0.2, 0.2, 0.55)})
+	var winner: Dictionary = {}
+	var priority := EFFECT_PRIORITY.size()
+	for candidate: Dictionary in candidates:
+		var rank := EFFECT_PRIORITY.find(candidate.family)
+		if rank >= 0 and rank < priority:
+			winner = candidate
+			priority = rank
+	return winner
+
+
+func _tile_effect(tile: Vector2i) -> Dictionary:
+	return _effect_at(tile, world.actor_at(tile), tile == world.player_tile)
 
 
 func _consecration_visible(tile: Vector2i) -> bool:
-	return _area_effect_visible(_consecration_blink, tile)
+	return _tile_effect(tile).get("family", &"") == &"consecration"
 
 
 func _breath_visible(tile: Vector2i) -> bool:
-	return (not world.blocked_tiles.has(tile) and not _breath_blink.is_empty()
-		and _breath_blink.tiles.has(tile))
-
-
-func _area_effect_visible(effect: Dictionary, tile: Vector2i) -> bool:
-	var occupant := world.actor_at(tile)
-	if occupant != null and occupant.breath_remaining > 0:
-		return false
-	var attacker: GridActor = _melee_bumps[0].attacker if is_melee_bumping() else null
-	return (tile != world.player_tile and not effect.is_empty()
-		and effect.tiles.has(tile)
-		and (attacker == null or attacker.tile != tile))
+	return _tile_effect(tile).get("family", &"") == &"breath_release"
 
 
 func _ability_sprite(cell: Vector2i) -> AtlasTexture:
@@ -454,19 +476,8 @@ func _draw_war_banner() -> void:
 
 
 func _draw_actor(actor: GridActor) -> void:
-	if _consecration_visible(actor.tile):
-		return
-	var sprites := npc_sprite_layers(actor)
-	var effect := _blink_sprite(_npc_blinks.get(actor, {}))
-	var faction := sprites.faction_sprite
-	if _blink_alternate_visible and QuestRules.has_marker(world, actor):
-		faction = _quest_marker_sprite
-	if _aggro_blinks.has(actor):
-		faction = _quest_marker_sprite
-	_draw_sprite_layers(actor.tile, sprites.base_sprite if effect == null else effect,
-		faction if effect == null else null,
-		health_tint(actor.health, actor.max_health) * _npc_blinks.get(actor, {}).get("color", Color.WHITE),
-		_actor_color(actor), _melee_bump_offset(actor))
+	_draw_character(actor.tile, npc_sprite_layers(actor), character_effect(actor),
+		health_tint(actor.health, actor.max_health), _actor_color(actor), _melee_bump_offset(actor))
 	if actor.breath_remaining > 0:
 		var position := Vector2(actor.tile * TILE_SIZE)
 		draw_rect(Rect2(position, Vector2(14, 15)), Color("#172719"))
@@ -482,8 +493,10 @@ func _draw_actor(actor: GridActor) -> void:
 
 func _show_breath_windup(actor: GridActor) -> void:
 	_show_breath(StalkerBreath.tiles(world, actor))
-	_replace_ground_effect_tile(actor.tile)
-	_npc_blinks[actor] = {"sprite": _ability_sprite(BREATH_WINDUP_CELL), "elapsed": 0.0}
+	if not _npc_blinks.has(actor):
+		_npc_blinks[actor] = {}
+	_npc_blinks[actor][&"breath_windup"] = {"family": &"breath_windup",
+		"sprite": _ability_sprite(BREATH_WINDUP_CELL), "elapsed": 0.0}
 	queue_redraw()
 
 
@@ -494,9 +507,10 @@ func _show_breath(tiles: Array[Vector2i]) -> void:
 	else:
 		_breath_blink = {"tiles": tiles.duplicate(), "elapsed": 0.0, "turn": world.turn_count}
 	for actor: GridActor in _npc_blinks.keys():
-		if (tiles.has(actor.tile) or (actor.breath_remaining == 0
-			and _npc_blinks[actor].sprite == _ability_sprite(BREATH_WINDUP_CELL))):
-			_npc_blinks.erase(actor)
+		if actor.breath_remaining == 0:
+			_npc_blinks[actor].erase(&"breath_windup")
+			if _npc_blinks[actor].is_empty():
+				_npc_blinks.erase(actor)
 	queue_redraw()
 
 
@@ -513,7 +527,8 @@ func _draw_breath() -> void:
 		if world.blocked_tiles.has(tile):
 			continue
 		var rectangle := Rect2(Vector2(tile * TILE_SIZE), Vector2.ONE * TILE_SIZE)
-		if _breath_visible(tile):
+		if (_breath_visible(tile) and world.actor_at(tile) == null
+			and tile != world.player_tile):
 			_draw_sprite_layers(tile, _ability_sprite(BREATH_TILE_CELL), null,
 				Color(1.0, 0.2, 0.2, 0.55), Color.WHITE)
 		# A steady border preserves the warning after the normal sprite flash expires.
@@ -524,7 +539,8 @@ func _draw_consecration() -> void:
 	if _consecration_blink.is_empty():
 		return
 	for tile: Vector2i in _consecration_blink.tiles:
-		if not _consecration_visible(tile):
+		if (not _consecration_visible(tile) or world.actor_at(tile) != null
+			or tile == world.player_tile):
 			continue
 		var color := Color.WHITE
 		var actor := world.actor_at(tile)
@@ -534,19 +550,26 @@ func _draw_consecration() -> void:
 
 
 func _draw_player() -> void:
-	if _consecration_visible(world.player_tile):
-		return
-	var sprites := player_sprite_layers(world.hero.selected_class)
-	var effect := _blink_sprite(_player_blink)
-	var tint := health_tint(world.hero.health, world.hero.max_health)
-	if VanishRules.active(world):
+	_draw_character(world.player_tile, player_sprite_layers(world.hero.selected_class),
+		character_effect(), health_tint(world.hero.health, world.hero.max_health),
+		Color.WHITE, _melee_bump_offset(null))
+
+
+func _draw_character(tile: Vector2i, sprites: ActorSpriteLayers, effect: Dictionary,
+	tint: Color, faction_tint: Color, offset: Vector2) -> void:
+	var base := sprites.base_sprite
+	var faction := sprites.faction_sprite
+	var family: StringName = effect.get("family", &"")
+	if family in [&"aggro", &"quest"]:
+		faction = _quest_marker_sprite
+	elif family == &"vanish":
 		tint.a = 0.4
-		# Vanish reveals the translucent class sprite even during a previous ability flash.
-		effect = null
-	_draw_sprite_layers(world.player_tile, sprites.base_sprite if effect == null else effect,
-		sprites.faction_sprite if effect == null else null,
-		tint, Color(1.0, 1.0, 1.0, tint.a),
-		_melee_bump_offset(null))
+		faction_tint.a = 0.4
+	elif effect.has("sprite"):
+		base = effect.sprite
+		faction = null
+	_draw_sprite_layers(tile, base, faction, tint * effect.get("color", Color.WHITE),
+		faction_tint, offset)
 
 
 # Both textures use the entire tile, so matching asset pixels stay aligned.
