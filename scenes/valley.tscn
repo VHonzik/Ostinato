@@ -15,8 +15,8 @@ atlas = ExtResource("2_m3qr3")
 region = Rect2(0, 0, 32, 32)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8sbk8"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(16, 0, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(112, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_feil3"]
 atlas = ExtResource("2_m3qr3")
@@ -36,7 +36,7 @@ region = Rect2(32, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_pxm12"]
 atlas = ExtResource("6_4fish")
-region = Rect2(0, 0, 16, 16)
+region = Rect2(112, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_jiitp"]
 atlas = ExtResource("6_4fish")
@@ -51,8 +51,12 @@ atlas = ExtResource("6_4fish")
 region = Rect2(48, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_evdjq"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(112, 64, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(96, 0, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_timber_wolf"]
+atlas = ExtResource("6_4fish")
+region = Rect2(96, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_lua78"]
 atlas = ExtResource("5_8ppb4")
@@ -311,7 +315,7 @@ wander_radius = 2
 [node name="21_TimberWolf" type="Sprite2D" parent="Actors" unique_id=303873947]
 position = Vector2(240, 1136)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/0"
@@ -321,7 +325,7 @@ wander_radius = 2
 [node name="22_TimberWolf" type="Sprite2D" parent="Actors" unique_id=1544521315]
 position = Vector2(400, 1040)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/1"
@@ -331,7 +335,7 @@ wander_radius = 2
 [node name="23_TimberWolf" type="Sprite2D" parent="Actors" unique_id=2035220005]
 position = Vector2(464, 912)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/2"
@@ -341,7 +345,7 @@ wander_radius = 2
 [node name="24_TimberWolf" type="Sprite2D" parent="Actors" unique_id=1336509351]
 position = Vector2(592, 976)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/3"
@@ -351,7 +355,7 @@ wander_radius = 2
 [node name="25_TimberWolf" type="Sprite2D" parent="Actors" unique_id=1462220352]
 position = Vector2(208, 1264)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/4"
@@ -361,7 +365,7 @@ wander_radius = 2
 [node name="26_TimberWolf" type="Sprite2D" parent="Actors" unique_id=1872717111]
 position = Vector2(336, 1360)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/5"
@@ -371,7 +375,7 @@ wander_radius = 2
 [node name="27_TimberWolf" type="Sprite2D" parent="Actors" unique_id=782739988]
 position = Vector2(656, 1200)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/6"
@@ -381,7 +385,7 @@ wander_radius = 2
 [node name="28_TimberWolf" type="Sprite2D" parent="Actors" unique_id=504372085]
 position = Vector2(528, 1456)
 scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_evdjq")
+texture = SubResource("AtlasTexture_timber_wolf")
 script = ExtResource("4_je011")
 npc_id = 69
 spawn_id = "valley/timber_wolf/7"

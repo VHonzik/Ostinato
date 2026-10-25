@@ -394,22 +394,25 @@ func test_battle_trance_free_attack_consumes_once_and_rejected_use_keeps_proc() 
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
 
-func test_sudden_death_allows_one_free_execute_at_full_health_and_does_not_spend_extra_rage() -> void:
-	var world := _world()
-	_learn(world, [&"execute_1", &"sudden_death_1"])
-	var enemy := _enemy(world)
-	assert_false(world.cast_skill(&"execute_1", enemy))
-	ClassToolkitRules.apply(world, &"sudden_death_1", {"charges": 1})
-	world.hero.melee.critical = 0
-	world.hero.melee.damage_min = 20
-	world.hero.melee.damage_max = 20
-	world.hero.melee.attack_power = 0
-	world.hero.find_skill(&"sudden_death_1").coefficient = 1
-	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 9945)
-	assert_eq(world.hero.rage, 100)
-	assert_false(world.hero.buffs.has(&"sudden_death_1"))
-	assert_false(world.cast_skill(&"execute_1", enemy))
+func test_sudden_death_allows_one_execute_at_full_health_with_normal_spending_and_damage() -> void:
+	for rage in [15, 22, 30, 100]:
+		var world := _world()
+		_learn(world, [&"execute_1", &"sudden_death_1"])
+		var enemy := _enemy(world)
+		assert_false(world.cast_skill(&"execute_1", enemy))
+		ClassToolkitRules.apply(world, &"sudden_death_1", {"charges": 1})
+		world.hero.melee.critical = 0
+		world.hero.melee.damage_min = 20
+		world.hero.melee.damage_max = 20
+		world.hero.melee.attack_power = 0
+		world.hero.rage = rage
+		world.hero.find_skill(&"sudden_death_1").coefficient = 1
+		var spent := mini(rage, 30)
+		assert_true(world.cast_skill(&"execute_1", enemy))
+		assert_eq(enemy.health, 10000 - (55 + (spent - 15) * 2))
+		assert_eq(world.hero.rage, rage - spent)
+		assert_false(world.hero.buffs.has(&"sudden_death_1"))
+		assert_false(world.cast_skill(&"execute_1", enemy))
 
 
 func test_paid_execute_cannot_trigger_sudden_death() -> void:
@@ -1222,7 +1225,7 @@ func test_passive_is_keyboard_focusable_and_inspectable_without_casting_or_assig
 		return
 	passive.grab_focus()
 	assert_same(panel.get_viewport().gui_get_focus_owner(), passive)
-	assert_string_contains(panel._details.text, "allow one free Execute")
+	assert_string_contains(panel._details.text, "allow one Execute at any health")
 	assert_true(panel._assign.disabled)
 	passive.pressed.emit()
 	assert_signal_not_emitted(panel, "cast_requested")

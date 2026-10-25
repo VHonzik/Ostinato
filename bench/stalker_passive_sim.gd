@@ -83,7 +83,7 @@ func _run() -> void:
 		"policies": "40 independent pilot seeds choose holy, physical, no_ground or spend. Existing Paladin priorities plus single-target Whirlwind (reserve 30 rage, or spend freely). Same selected policy for baseline/removal. Sidestep marked production Fel Breath with live movement before other actions; no general kiting. One Minor Healing Potion at 40 missing HP.",
 		"seeds": "Pilot 1750000+index. Measurement 1760000+index, same seeds per cell and removal; ablations match the first baseline seeds. Combat streams may diverge after removal.",
 		"metrics": "Effective boss HP removed, effective healing by source (overheal excluded), effective player HP lost and raw post-mitigation incoming damage including fatal overkill, turns, casts, damage sources. HP conservation checked every fight.",
-		"limits": "Isolated level-8 600-HP Stalker; common gear, full learned kits, no reinforcements/route, no kill XP/level healing. No retuning or reoptimizing the bot after removal. Effects are conditional and non-additive. No human balance acceptance."}
+		"limits": "Isolated production Stalker; common gear, full learned kits, no reinforcements/route, no kill XP/level healing. No retuning or reoptimizing the bot after removal. Effects are conditional and non-additive. No human balance acceptance."}
 	if not BenchIO.write_result({"setup": setup, "pilots": pilots, "rows": rows,
 		"replayed": replayed, "seconds": (Time.get_ticks_msec() - started) / 1000.0}):
 		quit(1)

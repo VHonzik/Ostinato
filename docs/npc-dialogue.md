@@ -65,7 +65,7 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | Accepted quest | A gray `?` marks incomplete objectives; a yellow `?` marks a ready hand-in. The detail screen shows the matching quest speech. The quest log can display the ready speech away from the giver too. |
 | Hand-in | Requires all objectives and the nearby living receiver. Complete grants all listed items, money and XP once. Insufficient bag space leaves the quest and rewards unclaimed. |
 | Abandon | Requires confirmation; removes quest progress and associated quest items. An eligible quest can be accepted again. Accepting any quest locks class selection for that Loop even if it is abandoned. |
-| Tracker and markers | Accepted quests and objective counts appear in the upper-right tracker; completed objectives and ready quests are marked completed. Handed-in or abandoned quests leave it. Friendly NPCs alternate their faction art with `!` for an available quest or ready hand-in; needed enemies have a yellow marker in the engaged-enemy frame. |
+| Tracker and markers | Accepted quests and objective counts appear in the upper-right tracker; completed objectives and ready quests are marked completed. Handed-in or abandoned quests leave it. Friendly NPCs alternate both health and faction art with `!` for an available quest or ready hand-in; the marker retains faction tint. Needed enemies have a yellow marker in the engaged-enemy frame. |
 | XP scaling | Full base XP through 5 levels above quest level; 80%, 60%, 40%, 20% at 6, 7, 8, 9 levels above; 10% at 10 or more. Round up. |
 | Saves and death | Saves retain accepted quests, objective counts and hand-ins. Death clears them and rebuilds the quest route. |
 
@@ -116,7 +116,7 @@ is the matching trainer in the contact table. Warrior counts as chosen at New Ga
 | Janos: spare gear | Do you have any spare gear for {class}? | Once per Loop after class selection. Exchanges starter-marked gear for the chosen class's outfit, preserving acquired gear. Fails without claiming the grant if inventory space is insufficient. |
 | Janos: gear response | I can find some left overs if you are not picky. | Appears after a successful gear grant. |
 | Janos: shop | Trade | Opens buy/sell controls with stock and prices; no further authored speech. |
-| All four trainers | Train | Opens that trainer's class catalog. Only the selected class can be learned; starters are free, later skills require current-Loop level and money. Learning persists across death and works in every class. |
+| All four trainers | Train | Offered while at least one active or passive in that trainer's class catalog remains unlearned. Opens that catalog. Only the selected class can be learned; starters are free, later skills require current-Loop level and money. Learning persists across death and works in every class. |
 | Trainer for another class | Select {Class} before learning here. Retained skills remain usable. | Status text in that trainer's menu. |
 | Trainer: completed class training | I have nothing to teach you anymore you have to venture forth. Here is a small something for your journey... | The farewell is both a choice and the logged response to claiming the trainer's gift. Requires every active and passive in that trainer's catalog, a class chosen this Loop, and being outside combat. Available once per trainer per Loop in any selected class; full bags preserve the offer. |
 
@@ -155,7 +155,7 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 | Kobold Laborer | 80 | 2 | Echo Ridge Mine; hostile, stationary when idle | 3 | 60 | 65 | 4–6 | 2 |
 | Defias Thug | 38 | 4 | Vineyard; hostile, wanders | 4 | 70 | 85 | 5–7 | 2.4 |
 | Garrick Padfoot | 103 | 1 | Far eastern vineyard; hostile, stationary when idle; (78, 66) | 5 | 220 | 105 | 10–13 | 2.6 |
-| Demon stalker | - | Up to 5 timed arrivals | Gate road; hostile, stationary when idle | 8 | 600 | 240 | 14–18 | 2.5 |
+| Demon stalker | - | Up to 5 timed arrivals | Gate road; hostile, stationary when idle | 8 | 800 | 240 | 18–24 | 2.5 |
 
 ### Encounter behavior and story events
 
@@ -163,7 +163,7 @@ before hit, armor and level modifiers; intervals use world turns. `-` means no N
 | --- | --- |
 | Neutral encounters | Wolves and outdoor Kobold Vermin remain neutral until attacked. Bumping the same stationary neutral twice attacks; deliberate attacks and War Horn can engage neutral NPCs. |
 | Hostile aggro | Mine kobolds and bandits acquire visible targets within 4 tiles; stalkers use 5 tiles. Concealment and summons follow the [class rules](class-mechanics.md). |
-| Engage marker | A hostile spotting the player more than one tile away shows the C(5,0) exclamation once for 1.5 seconds, matching ability flashes. Quest markers use the same sprite with their existing blink cadence. Adjacent detection, player-initiated attacks and ongoing engagement do not trigger it. Engagement preserves the NPC's faction color. With no valid player commitment, the first enemy attempting an attack against the player becomes committed, including misses/dodges; melee bumps can choose another enemy without resetting swing delay. |
+| Engage marker | A hostile spotting the player more than one tile away shows the C(5,0) exclamation once for 1.5 seconds, replacing both health and faction sprites and retaining faction tint. Quest markers use the same sprite with their existing blink cadence. Adjacent detection, player-initiated attacks and ongoing engagement do not trigger it. With no valid player commitment, the first enemy attempting an attack against the player becomes committed, including misses/dodges; melee bumps can choose another enemy without resetting swing delay. |
 | Wandering | Outdoor wolves, camp kobolds and Defias Thugs wander within two tiles of their home position, with staggered starts and random pauses of 3–10 turns. Pending pauses survive saves. |
 | Pursuit | Engaged enemies pursue and attack in melee. Five consecutive turns with no terrain route to the target start a return home; reaching home restores full health. During Vanish they pursue living summons; with none, they hold around the remembered Vanish origin without attacking or losing engagement. See [Vanish interactions](class-mechanics.md#vanish-interactions). |
 | Population | No ordinary NPC respawns within a Loop. Death rebuilds contacts and enemies. Empty corpses disappear; other ordinary corpses hide after 300 turns even with loot. The story guard's corpse remains. Summons leave no visible corpse. |

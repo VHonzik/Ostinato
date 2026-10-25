@@ -91,10 +91,10 @@ const CREATURES: Dictionary = {
 
 const STALKER: Dictionary = {
 	"level": 8,
-	"health": 600,
+	"health": 800,
 	"armor": 240,
-	"minimum": 14,
-	"maximum": 18,
+	"minimum": 18,
+	"maximum": 24,
 	"power": 0,
 	"interval": 2.5,
 }

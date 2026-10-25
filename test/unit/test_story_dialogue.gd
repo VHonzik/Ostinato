@@ -62,6 +62,42 @@ func _text(menu: MenuPanel) -> String:
 	return text
 
 
+func test_train_choice_hides_only_after_all_class_training_and_stays_hidden_after_gift() -> void:
+	for identity in [911, 915, 900002, 925]:
+		var session := _session()
+		var world := session.world
+		var trainer := _contact(world, identity)
+		_beside(world, trainer)
+		var menu := _menu(session)
+		menu.open_conversation(trainer)
+		assert_not_null(_button(menu, "Train"), trainer.title)
+		var skills := SkillDefinition.trainer_skills(trainer.service)
+		var missing_passive: SkillDefinition
+		for skill in skills:
+			if skill.effect == SkillDefinition.Effect.PASSIVE:
+				missing_passive = skill
+				break
+		assert_not_null(missing_passive)
+		if missing_passive == null:
+			continue
+		for skill in skills:
+			if skill.id != missing_passive.id:
+				world.hero.learn_skill(skill)
+		menu.open_conversation(trainer)
+		assert_not_null(_button(menu, "Train"), "An unlearned passive keeps training available.")
+		world.hero.learn_skill(missing_passive)
+		menu.open_conversation(trainer)
+		assert_null(_button(menu, "Train"), trainer.title)
+		var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+		assert_not_null(gift, "Completed training still offers the gift in any selected class.")
+		if gift == null:
+			continue
+		gift.pressed.emit()
+		assert_null(_button(menu, "Train"), "Claiming the gift does not restore training.")
+		assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+		assert_eq(world.turn_count, 0)
+
+
 func test_warrior_farewell_requires_all_training_and_awards_horn_once() -> void:
 	var session := _session()
 	var world := session.world

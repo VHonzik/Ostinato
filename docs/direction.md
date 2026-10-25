@@ -35,6 +35,8 @@ balance measurements. Let playtesting determine Loop length.
 
 Stalker Fel Breath is a one-action sideways dodge check. Normal combat comparisons
 should assume leaving the marked cone, rather than balancing around taking its hit.
+Keep its warning, response window and melee pause; tune boss health and melee damage
+for encounter difficulty.
 
 ## Classes, learning and combat
 

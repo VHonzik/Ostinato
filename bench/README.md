@@ -40,6 +40,7 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 
 | Scenario | Purpose |
 | --- | --- |
+| `rage` | Read-only rage pressure with full Warrior, partial/full Warrior+Rogue, two three-kit paths and all kits. Live preparation, common gear, 1/3/4 L4 thugs and L5 Stalker with one potion and real breath dodges; partial/all-kit banked-entry controls. 100 seeds per cell and three plain-world replays. Records accepted sources, cap losses, costs/free casts, turn rage and otherwise-valid decisions blocked by rage. `-Policy spend` adds affordable single-target Whirlwind; default retains the 45-rage threshold. Shards select weapons; `-Confirm` uses a fresh seed block. |
 | `restless-stalker`, `restless-pulls` | Focused Restless Blades enabled/removal pairs, 100 shared seed blocks per cell. All four kits, live prepared entry, all three weapons, unchanged coordinated intent policy. Stalker uses L5/common gear/one potion and sidesteps breath; 16-enemy L4 pulls use common and uncommon gear with no consumables. No gifts, Vanish strategy or general kiting. Every fight reconciles damage/HP; three plain-world replays per cell. Stalker smoke checks exercise all eight cone directions, movement credit and cast cancellation; measured fights require zero player exposure at breath release. |
 | `aoe-interactions` | Live Consecration/Vanish/Whirlwind and Shield Block/Evasion interactions. 20 paired seed blocks per cell, common/uncommon gear, 1/8/16/32 L4 thugs plus an eight-enemy 10x-HP cooldown stress case. Warrior/Paladin/Rogue retained; all-kit control at 16 enemies. Compare immediate burst, hiding through ground ticks, and removal of Restless Blades/Seal Fate; shield trials separate Block, Evasion, both and neither. No Divine Shield, summons, gifts or potions. Three plain-world replays per cell; records cooldown reductions, cast intervals, defensive coverage and gross damage taken separately from healing. Shards 0/1/2 select weapons. |
 | `shield-block` | Controlled shield-only 30% chance to remove 70% of a physical hit. Full Warrior against groups and all kits against Stalker; 400 seeds, cold/live preparation, current weapons as controls. Removes learned live Shield Block to avoid double application; the experiment's separate block RNG preserves baseline combat draws. Remaining damage rounds up. No game data changes. |
@@ -48,6 +49,8 @@ pwsh -NoProfile -File tools/simulate.ps1 -Scenario loot-rates -Smoke
 | `warrior-harder` | Harder groups using policies from a previous `warrior` result. Supply `-Baseline reports/bench/warrior/<run>/result.json`. |
 | `paladin` | Full Paladin, Warrior + Paladin and all four kits; single enemies, groups and Stalker, three weapons and cold/prepared entry. Independent pilots select Holy-first, physical-first or Holy-first without ground. Damage reconciles to enemy HP and sample fights replay on plain `GridWorld`. |
 | `rogue-feedback` | Matched Stalker comparisons for full Rogue, Warrior + Rogue and all kits, all weapons, spending at 1/3/5 points. Fixed physical-first policy, 100 seeds per cell, common gear, prepared 90-rage entry, one potion and live breath dodging; records damage, casts, points and gross rage spent. Native Rogue clears Warrior starters as in the inherited bench; this is a diagnostic control, not a first Rogue Loop. Ten samples per cell replay on plain GridWorld. `-Confirm` compares the fixed 50%-per-point control with live tuning. |
+| `stalker-balance` | Level-5 partial-learning audit: Warrior plus Rogue missing its last 1–3 purchases, full two/three/four-kit controls, all common weapons. Live preparation from zero rage, one potion, real breath sidesteps, no gifts or Vanish. 200 paired seeds per cell; DW missing-two controls remove Evasion, potion, Restless Blades or breath, or spend finishers at one point. Postponing breath keeps ordinary melee active to measure the safe-window effect. Every fight reconciles HP; three plain-world replays per cell. |
+| `stalker-stats` | HP/base-melee candidates with production Fel Breath timing and melee pause. Level 5/common gear/live preparation/one potion; partial and full Warrior+Rogue, all four three-kit combinations, and all kits, across three weapons. Initial Warrior starters remain learned. Pilot: 30 paired seeds per cell, no gifts. `-Confirm` tests current production stats on 100 fresh seeds per cell, pairing full builds with/without earned trainer gifts (totem then banner in melee, passive charm). No Vanish or general kiting. HP reconciliation, zero breath exposure and three unobserved replays per cell. |
 | `rogue` | Full Rogue, Warrior + Rogue and all four kits, using the same encounters, gear, entry states, pilot priorities and replay checks as `paladin`. Spend at 3+ points, including while passive haste is active. |
 | `stalker-passives` | All 15 retained-kit combinations against Stalker, then one-passive removals in its own kit and all four kits. Records actual player healing/losses as well as boss damage. 200 baseline seeds, 100 matched removal seeds, independent 40-seed policy pilots; three weapons and cold/prepared entry. Use shards 0/1/2 sequentially. |
 | `stalker-full` | Current coordinated rotation with all four kits fully learned, against Stalker only. 200 baseline seeds with and without trainer gifts; 100 paired seeds per passive removal with gifts. Three weapons, cold/live prepared entry; use shards 0/1/2 sequentially. |
@@ -146,9 +149,19 @@ validation after code changes. Do not turn historical policies into gameplay con
 
 Human playtests decide feel, readability and balance.
 
+Run `pwsh -NoProfile -File tools/simulate.ps1 -Scenario rage -Shard 2` for the
+rage audit, then `node bench/analyze_rage.mjs <result.json>`.
+Use `--case 4xL4`, `--weapon DW`, `--build "WR partial"`, `--banked` or `--sources`
+to inspect specific cells and payments. Win intervals are exploratory paired
+seed-block bootstraps, pooling weapon strata within seeds; no multiplicity correction.
+The audit uses production prices and proc rules without overrides. Each weapon has
+28 cells and 2,800 measured fights. `-Confirm` selects a fresh seed block;
+`-Policy spend` uses the aggressive Whirlwind policy. Use weapon shards for full
+samples to stay within the per-process timeout.
+
 ## Stalker passive comparisons
 
-`stalker-passives` uses the current level-8, 600-HP Stalker, level-5 hero, common gear,
+`stalker-passives` uses the current production Stalker, level-5 hero, common gear,
 one Minor Healing Potion and a six-tile approach. Known Charge opens normally.
 Prepared entries set 90 rage before resolving maintenance buffs; Battle Shout adds 10
 when known. They start without points/procs/summons.

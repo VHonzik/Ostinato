@@ -36,7 +36,7 @@ func test_repeated_cost_previews_preserve_resources_procs_and_randomness() -> vo
 	var buffs := world.hero.buffs.duplicate(true)
 	var random_state := world.combat_random.state
 	for index in range(3):
-		assert_eq(world.hero.find_skill(&"execute_1").cost(world.hero), 0)
+		assert_eq(world.hero.find_skill(&"execute_1").cost(world.hero), 30)
 		assert_eq(world.hero.find_skill(&"mortal_strike_1").cost(world.hero), 0)
 	assert_eq(world.hero.rage, 30)
 	assert_eq(world.hero.buffs, buffs)
@@ -44,11 +44,11 @@ func test_repeated_cost_previews_preserve_resources_procs_and_randomness() -> vo
 	assert_eq(world.turn_count, 0)
 
 
-func test_execute_uses_specific_free_proc_and_preserves_generic_proc_for_next_attack() -> void:
+func test_execute_pays_rage_consumes_sudden_death_and_preserves_trance_for_next_attack() -> void:
 	var world := _world()
 	_free_proc(world, &"sudden_death_1")
 	_free_proc(world, &"battle_trance_1")
-	world.hero.rage = 0
+	world.hero.rage = 30
 	assert_true(world.cast_skill(&"execute_1", world.actors[0]))
 	assert_eq(world.hero.rage, 0)
 	assert_false(world.hero.buffs.has(&"sudden_death_1"))
@@ -56,6 +56,73 @@ func test_execute_uses_specific_free_proc_and_preserves_generic_proc_for_next_at
 	assert_true(world.cast_skill(&"mortal_strike_1", world.actors[0]))
 	assert_eq(world.hero.rage, 0)
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
+
+
+func test_sudden_death_and_trance_cannot_bypass_execute_minimum_rage() -> void:
+	var world := _world()
+	_free_proc(world, &"sudden_death_1")
+	_free_proc(world, &"battle_trance_1")
+	world.hero.rage = 14
+	var random_state := world.combat_random.state
+	assert_false(world.cast_skill(&"execute_1", world.actors[0]))
+	assert_eq(world.hero.rage, 14)
+	assert_eq(world.turn_count, 0)
+	assert_eq(world.actors[0].health, 10000)
+	assert_eq(world.combat_random.state, random_state)
+	assert_true(world.hero.buffs.has(&"sudden_death_1"))
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
+
+
+func test_missed_sudden_death_execute_still_pays_and_preserves_trance() -> void:
+	var world := _world()
+	_free_proc(world, &"sudden_death_1")
+	_free_proc(world, &"battle_trance_1")
+	world.hero.melee.hit = -1000.0
+	world.hero.rage = 22
+	assert_true(world.cast_skill(&"execute_1", world.actors[0]))
+	assert_eq(world.hero.rage, 0)
+	assert_eq(world.actors[0].health, 10000)
+	assert_false(world.hero.buffs.has(&"sudden_death_1"))
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
+
+
+func test_trance_pays_each_core_attack_at_zero_rage() -> void:
+	for id: StringName in [&"mortal_strike_1", &"judgement_1", &"lava_burst_1", &"eviscerate_1"]:
+		var world := _world()
+		if world.hero.find_skill(id) == null:
+			world.hero.learn_skill(SkillDefinition.catalog(id))
+		_free_proc(world, &"battle_trance_1")
+		world.hero.rage = 0
+		world.hero.combo_points = 5
+		assert_true(world.cast_skill(id, world.actors[0]), String(id))
+		while world.pending_skill != null:
+			world.hero.melee.critical = 0.0
+			world.continue_cast()
+		assert_eq(world.hero.rage, 0, String(id))
+		assert_false(world.hero.buffs.has(&"battle_trance_1"), String(id))
+
+
+func test_other_paid_abilities_require_rage_and_preserve_trance() -> void:
+	for setup: Array in [
+		[&"execute_1", 30], [&"whirlwind_1", 15], [&"evasion_1", 15],
+		[&"divine_shield_1", 20], [&"consecration_1", 5], [&"feral_spirit_1", 25],
+	]:
+		var world := _world()
+		var id: StringName = setup[0]
+		if world.hero.find_skill(id) == null:
+			world.hero.learn_skill(SkillDefinition.catalog(id))
+		_free_proc(world, &"battle_trance_1")
+		world.actors[0].health = 2000
+		var skill := world.hero.find_skill(id)
+		var target: GridActor = world.actors[0] if skill.target == SkillDefinition.Target.ENEMY else null
+		world.hero.rage = 0
+		assert_false(world.cast_skill(id, target), String(id))
+		assert_eq(world.turn_count, 0, String(id))
+		assert_true(world.hero.buffs.has(&"battle_trance_1"), String(id))
+		world.hero.rage = 90
+		assert_true(world.cast_skill(id, target), String(id))
+		assert_eq(world.hero.rage, 90 - int(setup[1]), String(id))
+		assert_true(world.hero.buffs.has(&"battle_trance_1"), String(id))
 
 
 func test_judgement_consumes_battle_trance_and_next_cast_pays_normal_cost() -> void:
@@ -140,7 +207,7 @@ func test_execute_spends_completion_rage_up_to_cap_instead_of_initial_quote() ->
 	assert_string_contains("\n".join(world.messages), "Execute: spent 30 rage.")
 
 
-func test_free_whirlwind_preserves_proc_on_rejection_and_consumes_it_once_for_all_targets() -> void:
+func test_whirlwind_pays_once_for_all_targets_and_preserves_trance() -> void:
 	var world := _world()
 	world.hero.rage = 7
 	_free_proc(world, &"battle_trance_1")
@@ -159,9 +226,13 @@ func test_free_whirlwind_preserves_proc_on_rejection_and_consumes_it_once_for_al
 	second.stunned_until = 999
 	second.melee.dodge = 0.0
 	world.actors.append(second)
+	assert_false(world.cast_skill(&"whirlwind_1"), "Trance cannot cover the missing rage.")
+	assert_eq(world.turn_count, 0)
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
+	world.hero.rage = 30
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(world.hero.rage, 7)
-	assert_false(world.hero.buffs.has(&"battle_trance_1"))
+	assert_eq(world.hero.rage, 15)
+	assert_true(world.hero.buffs.has(&"battle_trance_1"))
 	assert_lt(first.health, 10000)
 	assert_lt(second.health, 10000)
 	assert_eq(world.turn_count, 1)

@@ -90,7 +90,7 @@ const SKILLS: Dictionary = {
 		"family": "execute", "effect": "EXECUTE", "target": "ENEMY",
 		"weapon_multiplier": 1.5, "minimum": 25, "execute_health_percent": 20,
 		"execute_rage_cap": 30, "execute_damage_per_rage": 2,
-		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 150% weapon damage + 25 + 2 damage per rage above 15. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
+		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 150% weapon damage + 25 + 2 damage per rage above 15. Sudden Death allows any target health with the same rage spending and damage scaling. Preserves Battle Trance. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
 	},
 }
 

@@ -28,6 +28,9 @@ The authoritative overview of implemented classes, abilities, training and effec
   ground tiles for 1.5 real seconds on each damage tick, including NPC occupants but
   always excluding the player's current tile. Leaving the ground does not move it.
   Character effects compete by the priority below.
+  Effect sprites, including quest and aggro markers, replace both NPC health and
+  faction sprites while visible. Markers retain faction tint; ability flashes retain
+  health tint.
   An enemy's melee bump briefly reveals its actor through a Consecration flash.
   Summon art is a world actor, not an overlay. Passives add no dedicated effect sprite;
   upgraded actives retain their own art. Poison procs use a shared enemy flash.
@@ -66,9 +69,11 @@ or 0.5 with Anger Management; fractional rage is retained internally. Natural he
 works only outside combat: 1.5 HP per turn at level 1, 0.75 at level 2 and 0.3 from
 level 3 onward, delivered as whole-HP ticks. Food and other healing keep their own rules.
 
-Table rage costs are base costs. Battle Trance makes the next rage-costing active free.
-Execute first uses Sudden Death if ready; otherwise Battle Trance applies to
-rage-costing actives, including Judgement. Only the chosen free-use proc is consumed.
+Table rage costs are base costs. Battle Trance makes the next Mortal Strike,
+Judgement, Lava Burst or Eviscerate free; other abilities preserve the proc.
+Sudden Death allows one Execute at any target health, with its normal 15-30 rage
+spending and extra-rage damage. Execute consumes Sudden Death when ready and
+preserves Battle Trance. Rejected casts spend no rage or procs.
 Consumable procs/charges persist until spent or death, including between encounters.
 Timed buffs continue counting down outside combat.
 
@@ -134,8 +139,9 @@ combo points; Execute and Judgement do not.
 **Tagline: Turn pain into rage, strike decisively, and raise a shield when survival matters.**
 
 Physical burst with Mortal Strike, adjacent cleave with Whirlwind, Charge for closing
-distance and Execute for low-health targets. Enrage rewards taking hits; Death Wish
-trades safety for damage as health falls. Shield Block adds passive shield defense.
+distance and Execute for low-health targets or Sudden Death openings. Battle Trance
+banks a free core attack. Enrage rewards taking hits; Death Wish trades safety for
+damage as health falls. Shield Block adds passive shield defense.
 
 | Name | Rage cost | Cast time | Cooldown | Duration | Range | Level required to learn | Cost to learn | Sprite used for effect | Sprite placement (player / target / area) | Description |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -147,12 +153,12 @@ trades safety for damage as health falls. Shield Block adds passive shield defen
 | Anger Management | - | - | - | - | - | 2 | 60c | - | - | Passive. out-of-combat rage decay becomes 0.5 per turn. Retained across Loops. |
 | Weapon Mastery | - | - | - | - | - | 2 | 90c | - | - | Passive. +10 percentage points of critical chance through the shared attack profile, including physical and direct Holy/Fire/Nature attacks. Enemies have -2.5% chance to dodge your weapon attacks, including either hand, physical abilities and bonus weapon strikes: a flat 2.5 percentage-point reduction, minimum 0% (standard 5% becomes 2.5%). Does not prevent misses. Retained learning works in every class. |
 | Charge | 0 | * | 10* | - | 2-9* | 3 | 120c | C(0,3) | Player (arrival) | Active movement. Wind up for 1 turn, then travel up to 4 path tiles per turn to a reachable empty melee tile. Holds the target in place until arrival; cannot act or cancel. Arrival generates 10 rage and allows a ready ordinary swing. Base 10-turn cooldown starts on arrival; Juggernaut reduces it to 8 and readies a Mortal Strike crit. Player sprite flashes on arrival. |
-| Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows a free use at any health with no extra-rage damage; Battle Trance makes it free but keeps the health gate. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
-| Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it. |
+| Execute | 15-30* | 1 | - | - | 1 | 3 | 210c | - | - | Active physical attack. Requires a melee target at or below 20% health and at least 15 rage. Spends current rage up to 30 for 150% weapon damage + 25 + 2 damage per rage above 15. Misses spend rage. Sudden Death allows one use at any health with the same rage spending and damage scaling. Preserves Battle Trance. No cooldown; weapon timing continues. A landed hit may build points; spends none. No dedicated effect sprite. |
+| Battle Trance | - | - | - | * | - | 4 | 250c | - | - | Passive. Direct physical, Holy, Fire and Nature active crits make the next Mortal Strike, Judgement, Lava Burst or Eviscerate free until used. Other abilities preserve the proc. Finishers cannot trigger it. |
 | Victory Rush | - | - | 6* | - | - | 4 | 285c | - | - | Passive. Nonfriendly enemy deaths heal 10% of maximum health, rounded down, including kills by damage effects or summons. All qualifying kills share a 6-turn internal cooldown; further kills during it do not heal. Overhealing also starts the cooldown. Uses the resolved death turn across action and periodic phases; Restless Blades cannot shorten it. Cooldown survives saves and clears on death. Summons dying and friendly actors do not qualify. Terminal victory/death stops further rewards. |
 | Shield Block | - | - | - | - | - | 4 | 320c | - | - | Passive. With a shield equipped, each damaging physical hit independently has a 30% chance to prevent 70% of damage remaining after armor, Death Wish and banner protection. Remaining damage rounds up to at least 1 HP. Includes critical hits, with no per-turn cap or cooldown. Does not protect summons, block magic or roll on misses, dodges or immune hits. Partial blocks retain incoming-hit rage and eligibility for Enrage and Lightning Shield. Combat log reports prevented damage; no effect sprite. Retained learning works in every class and below its learning level. |
 | Sweeping Strikes | - | - | - | - | 1 (secondary target) | 5 | 370c | - | - | Passive. Landed single-target direct physical actives copy 50% of their damage to one other hostile enemy in melee. Whirlwind cannot trigger copies. Copies cannot proc, crit or generate rage/combo points. |
-| Sudden Death | - | - | - | * | - | 5 | 405c | - | - | Passive. Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage. |
+| Sudden Death | - | - | - | * | - | 5 | 405c | - | - | Passive. Landed direct physical active attacks other than Execute have a 20% chance to allow one Execute at any health until used. The attack still requires at least 15 rage and spends current rage up to 30, with normal extra-rage damage. Auto-attacks and bonus damage cannot trigger it. |
 | Wrecking Crew | - | - | - | 10 | - | 5 | 450c | - | - | Passive. Primary physical crits grant +25% physical damage for 10 turns. While active, Whirlwind deals an additional 35% more damage, multiplying its weapon coefficient separately from the shared physical buff. Refreshes without stacking; both bonuses end with the buff. |
 | Juggernaut | - | - | - | * | - | 5 | 495c | - | - | Passive. Charge cooldown falls from 10 to 8 turns; arrival guarantees the next landed Mortal Strike crit until consumed or death. A miss/dodge does not consume it. |
 

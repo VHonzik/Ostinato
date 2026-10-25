@@ -418,7 +418,9 @@ func test_execute_hotbar_tracks_health_proc_and_rage_eligibility_without_spendin
 		[2001, 100, false, true],
 		[2000, 15, false, false],
 		[2000, 14, false, true],
-		[10000, 0, true, false],
+		[10000, 0, true, true],
+		[10000, 14, true, true],
+		[10000, 15, true, false],
 		[10000, 100, false, true],
 	]:
 		enemy.health = state[0]

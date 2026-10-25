@@ -12,12 +12,13 @@ static func quote(hero: HeroState, skill: SkillDefinition) -> SkillCost:
 		return payment
 	if skill.family == &"execute" and hero.buffs.has(&"sudden_death_1"):
 		payment.consumed_proc = &"sudden_death_1"
-	elif skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1"):
+	elif (skill.family in [&"mortal_strike", &"judgement", &"lava_burst", &"eviscerate"]
+		and skill.rage_cost > 0 and hero.buffs.has(&"battle_trance_1")):
 		payment.consumed_proc = &"battle_trance_1"
-	else:
-		payment.rage_cost = skill.rage_cost
-		if skill.effect == SkillDefinition.Effect.EXECUTE:
-			payment.rage_cost = clampi(hero.rage, skill.rage_cost, skill.execute_rage_cap)
+		return payment
+	payment.rage_cost = skill.rage_cost
+	if skill.effect == SkillDefinition.Effect.EXECUTE:
+		payment.rage_cost = clampi(hero.rage, skill.rage_cost, skill.execute_rage_cap)
 	return payment
 
 

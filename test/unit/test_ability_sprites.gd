@@ -373,6 +373,7 @@ func test_melee_bump_beats_windup_and_aggro_beats_whirlwind() -> void:
 	_world.npc_ability_hit.emit(_enemy, &"whirlwind")
 	assert_eq(_view.character_effect(_enemy).family, &"aggro")
 	_view._draw_actor(_enemy)
+	assert_null(_view.base)
 	assert_eq((_view.faction as AtlasTexture).region, Rect2(80, 0, 16, 16))
 
 

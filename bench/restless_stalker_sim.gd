@@ -42,7 +42,8 @@ func _run() -> void:
 				if index >= 3: fight.erase("decisions")
 				fights.append(fight)
 			rows.append({"case": "Stalker", "weapon": STYLES[weapon], "quality": "common",
-				"policy": "intent", "restless": enabled, "initial_enemy_hp": 600, "fights": fights})
+				"policy": "intent", "restless": enabled,
+				"initial_enemy_hp": int(NorthshireData.STALKER.health), "fights": fights})
 	if not BenchIO.write_result({"setup": {"samples": samples, "seed_base": 6300000,
 		"breath_response": "sidestep",
 		"entry": "Live L5 hero against production L8 Stalker, all four kits, complete common gear, live zero-rage preparation, Charge from six tiles. One minor healing potion; no gifts, banked points/stacks or XP.",

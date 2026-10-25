@@ -131,6 +131,9 @@ class Trainer extends Service:
 			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.ANCESTRAL_TOTEM))
 		elif session.world.can_receive_war_banner(actor):
 			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.WAR_BANNER))
-		var choice := Choice.new("Train", Action.TRAIN)
-		choice.category = actor.service
-		conversation.choices.append(choice)
+		for skill in SkillDefinition.trainer_skills(actor.service):
+			if session.world.hero.find_skill(skill.id) == null:
+				var choice := Choice.new("Train", Action.TRAIN)
+				choice.category = actor.service
+				conversation.choices.append(choice)
+				break

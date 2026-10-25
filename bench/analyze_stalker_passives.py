@@ -85,12 +85,12 @@ def win_estimate(values):
 
 
 def metrics(fight):
-    return dict(boss_damage=600 - fight["enemy_hp"],
+    return dict(boss_damage=fight["damage_total"],
                 healing=fight["healing_total"],
                 class_healing=fight["healing_total"] - fight["healing"].get("Potion", 0)
                 - fight["healing"].get("Out-of-combat regeneration", 0),
                 damage_taken=fight["damage_taken"], raw_damage_taken=fight["raw_damage_taken"],
-                turns=fight["turns"], damage_per_turn=(600 - fight["enemy_hp"]) / fight["turns"],
+                turns=fight["turns"], damage_per_turn=fight["damage_total"] / fight["turns"],
                 win_percent=100 * int(fight["win"]), end_hp=fight["hp"])
 
 

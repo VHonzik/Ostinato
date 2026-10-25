@@ -9,7 +9,7 @@ Edit the sources manually and export the corresponding runtime sheet.
 
 The game uses four sheets under [assets/spritesheets/](../assets/spritesheets/):
 
-- `characters.png`: current classes, trainers, Stalker layers, Earth Elemental and ability effects.
+- `characters.png`: current classes, trainers, wolves, Deputy Willem, Stalker layers, Earth Elemental and ability effects.
 - `scroolospritescharacters_nobg.png`: other reference characters and creatures.
 - `scroolospritesenvironment_nobg.png`: reference terrain, chests and corpses.
 - `valley/sprites.png`: remaining contacts, terrain and props.

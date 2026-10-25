@@ -40,6 +40,11 @@ const STALKER_FACTION_CELL := Vector2i(4, 1)
 const BREATH_WINDUP_CELL := Vector2i(4, 2)
 const BREATH_TILE_CELL := Vector2i(4, 3)
 const EARTH_ELEMENTAL_CELL := Vector2i(3, 4)
+# Health cells in characters.png; each faction layer is directly below its health layer.
+const NPC_LAYER_CELLS: Dictionary[StringName, Vector2i] = {
+	&"wolf": Vector2i(6, 0), &"timber_wolf": Vector2i(6, 2),
+	&"llane": Vector2i(7, 0), &"willem": Vector2i(7, 2),
+}
 # Source NPC identity keeps species silhouettes independent of relationship colors.
 const ENEMY_SPRITES: Dictionary[int, Vector2i] = {
 	299: Vector2i(7, 4), # Young Wolf
@@ -61,7 +66,7 @@ const NPC_BASE_SPRITE: Texture2D = preload("res://assets/sprites/dev/npc_base.sv
 
 const VALLEY_ATLAS: Texture2D = preload("res://assets/spritesheets/valley/sprites.png")
 const VALLEY_ACTORS: Dictionary[int, StringName] = {
-	299: &"wolf", 69: &"wolf", 6: &"kobold_miner", 257: &"kobold_worker",
+	299: &"wolf", 69: &"timber_wolf", 6: &"kobold_miner", 257: &"kobold_worker",
 	80: &"kobold_foreman", 38: &"bandit", 103: &"garrick",
 }
 const VALLEY_CLASSES: Dictionary[StringName, StringName] = {
@@ -201,7 +206,10 @@ func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 	if not npc_sprites.has(key):
 		var base: Texture2D = NPC_BASE_SPRITE
 		var faction: Texture2D
-		if key == &"stalker":
+		if NPC_LAYER_CELLS.has(key):
+			base = _ability_sprite(NPC_LAYER_CELLS[key])
+			faction = _ability_sprite(NPC_LAYER_CELLS[key] + Vector2i.DOWN)
+		elif key == &"stalker":
 			base = _ability_sprite(STALKER_BASE_CELL)
 			faction = _ability_sprite(STALKER_FACTION_CELL)
 		elif key == &"earth_elemental":
@@ -561,6 +569,7 @@ func _draw_character(tile: Vector2i, sprites: ActorSpriteLayers, effect: Diction
 	var faction := sprites.faction_sprite
 	var family: StringName = effect.get("family", &"")
 	if family in [&"aggro", &"quest"]:
+		base = null
 		faction = _quest_marker_sprite
 	elif family == &"vanish":
 		tint.a = 0.4
