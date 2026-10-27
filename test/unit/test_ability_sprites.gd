@@ -377,6 +377,41 @@ func test_melee_bump_beats_windup_and_aggro_beats_whirlwind() -> void:
 	assert_eq((_view.faction as AtlasTexture).region, Rect2(80, 0, 16, 16))
 
 
+func test_friendly_quest_marker_yields_to_ground_effects_and_melee_bump() -> void:
+	_world.valley_route = true
+	var marshal := GridActor.new(Vector2i(7, 8))
+	marshal.npc_id = NpcDefinition.MARSHAL_ID
+	_world.actors.append(marshal)
+	_view._process(GridView.BLINK_SECONDS)
+	assert_eq(_view.character_effect(marshal).family, &"quest")
+	_view._consecration_blink = {"tiles": [marshal.tile], "elapsed": 0.0}
+	assert_eq(_view.character_effect(marshal).family, &"consecration")
+	_view._show_breath([marshal.tile])
+	assert_eq(_view.character_effect(marshal).family, &"breath_release")
+	_world.melee_attacked.emit(marshal, _enemy.tile)
+	assert_eq(_view.character_effect(marshal).family, &"melee_bump")
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_eq(_view.character_effect(marshal).family, &"breath_release")
+	_view._process(GridView.ABILITY_BLINK_SECONDS)
+	assert_eq(_view.character_effect(marshal).family, &"quest")
+	assert_eq(_world.turn_count, 0)
+
+
+func test_player_breath_effect_yields_to_melee_and_reveals_unexpired_self_effect() -> void:
+	_view._show_breath([_world.player_tile])
+	_view._show_player_ability(SkillDefinition.catalog(&"divine_shield_1"))
+	assert_eq(_view.character_effect().family, &"breath_release")
+	_world.melee_attacked.emit(null, _enemy.tile)
+	assert_eq(_view.character_effect().family, &"melee_bump")
+	_view._process(GridView.MELEE_BUMP_SECONDS)
+	assert_eq(_view.character_effect().family, &"breath_release")
+	_view._process(0.5)
+	_view._show_player_ability(SkillDefinition.catalog(&"divine_shield_1"))
+	_view._process(1.0)
+	assert_eq(_view.character_effect().family, &"divine_shield")
+	assert_eq(_world.turn_count, 0)
+
+
 func test_vanish_and_self_effects_follow_priority() -> void:
 	_world.hero.learn_skill(SkillDefinition.catalog(&"vanish_1"))
 	assert_true(_world.cast_skill(&"vanish_1"))

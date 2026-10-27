@@ -187,7 +187,7 @@ func test_potion_cooldown_is_shared_and_rejected_use_is_free() -> void:
 	assert_true(world.consume_item(1))
 
 
-func test_apple_heals_five_per_wait_for_ten_turns_and_save_preserves_remaining_meal() -> void:
+func test_jerky_heals_sixty_one_over_eighteen_turns_and_save_preserves_remaining_meal() -> void:
 	var game := GameSession.new()
 	game.development_build = false
 	game.world = GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
@@ -199,14 +199,15 @@ func test_apple_heals_five_per_wait_for_ten_turns_and_save_preserves_remaining_m
 	control.hero.refresh_stats()
 	world.hero.health = 1
 	control.hero.health = 1
-	world.hero.inventory[0] = ItemData.instance(4536)
+	world.hero.inventory[0] = ItemData.instance(117)
 	assert_true(world.consume_item(0))
 	control.wait_turn()
 	assert_eq(world.hero.health, control.hero.health, "Eating starts the next turn.")
-	for elapsed in range(1, 11):
+	var healing := [3, 6, 10, 13, 16, 20, 23, 27, 30, 33, 37, 40, 44, 47, 50, 54, 57, 61]
+	for elapsed in range(1, 19):
 		world.wait_turn()
 		control.wait_turn()
-		assert_eq(world.hero.health - control.hero.health, elapsed * 5)
+		assert_eq(world.hero.health - control.hero.health, healing[elapsed - 1])
 		if elapsed == 4:
 			var restored := SaveCodec.restore(SaveCodec.capture(game), false)
 			assert_not_null(restored)
@@ -217,12 +218,12 @@ func test_apple_heals_five_per_wait_for_ten_turns_and_save_preserves_remaining_m
 	assert_true(world.hero.restoration.is_empty())
 	world.wait_turn()
 	control.wait_turn()
-	assert_eq(world.hero.health - control.hero.health, 50, "No eleventh healing tick.")
+	assert_eq(world.hero.health - control.hero.health, 61, "No healing after the meal ends.")
 
 
-func test_apple_ends_on_successful_movement_and_caps_health() -> void:
+func test_jerky_ends_on_successful_movement_and_caps_health() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	world.hero.inventory[0] = ItemData.instance(4536, 2)
+	world.hero.inventory[0] = ItemData.instance(117, 2)
 	world.hero.health = world.hero.max_health - 1
 	assert_true(world.consume_item(0))
 	world.wait_turn()

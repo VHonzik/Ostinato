@@ -9,7 +9,7 @@ Edit the sources manually and export the corresponding runtime sheet.
 
 The game uses four sheets under [assets/spritesheets/](../assets/spritesheets/):
 
-- `characters.png`: current classes, trainers, wolves, Deputy Willem, Stalker layers, Earth Elemental and ability effects.
+- `characters.png`: current classes, trainers, Janos, Milly, Marshal McBride, Deputy Willem, wolves, kobolds, Defias Thugs, Garrick, Stalker layers, Earth Elemental and effects.
 - `scroolospritescharacters_nobg.png`: other reference characters and creatures.
 - `scroolospritesenvironment_nobg.png`: reference terrain, chests and corpses.
 - `valley/sprites.png`: remaining contacts, terrain and props.
@@ -27,7 +27,9 @@ uses normal 1.5-second sprite flashes on each wind-up turn and release, selected
 by character effect priority. The countdown and steady cone border preserve the
 warning between turns. Windfury uses the fourth column, second row on landed bonus hits.
 The third column, fifth row supplies poison-trigger art; the sixth column, first row
-supplies the shared quest/aggro exclamation. Character effect priority is defined in
+supplies the shared quest-offer/aggro exclamation; the sixth column, second row supplies
+the ready-hand-in question mark. NPC health/faction pairs can be vertical or horizontal;
+their cells are mapped in GridView. Character effect priority is defined in
 [class mechanics](../docs/class-mechanics.md). Living actors use independent base and faction textures through
 [ActorSpriteLayers](../scripts/world/actor_sprite_layers.gd). Replace pairs using
 the GridView node's `npc_sprites` or `player_sprites` dictionaries, with matching

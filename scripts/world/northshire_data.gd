@@ -42,9 +42,9 @@ const CREATURES: Dictionary = {
 	"80": {
 		"title": "Kobold Laborer",
 		"level": 3,
-		"health": 60,
+		"health": 66,
 		"armor": 65,
-		"minimum": 4,
+		"minimum": 5,
 		"maximum": 6,
 		"power": 0,
 		"interval": 2.0,

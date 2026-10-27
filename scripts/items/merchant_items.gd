@@ -3,15 +3,6 @@ extends RefCounted
 
 ## Compact equipment setups and valley supplies.
 const ITEMS: Dictionary = {
-	"4540": {
-		"title": "Tough Hunk of Bread", "quality": 1, "slot": "",
-		"level": 1, "stack": 20, "buy": 5,
-		"sell": 1, "armor": 0, "two_handed": false,
-		"unique": false, "weapon": false, "shield": false,
-		"minimum": 0, "maximum": 0, "interval": 0.0,
-		"stats": {}, "use": "food", "quest": "",
-		"tradable": true, "restore": 61, "duration": 18,
-	},
 	"2121": {
 		"title": "Reinforced Cloth Armor", "quality": 1, "slot": "armor",
 		"level": 1, "stack": 1, "buy": 200,

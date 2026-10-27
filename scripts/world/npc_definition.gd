@@ -14,7 +14,6 @@ static var CONTACTS: Array[NpcDefinition] = [
 	NpcDefinition.new(900003, {"title": "Janos Hammerknuckle",
 		"service": &"Trader", "sprite": &"trader", "offers_starter_gear": true,
 		"refresh_saved_name": true, "greeting": "Greetings, what can I get you?"}),
-	NpcDefinition.new(198, {"title": "Khelden Bremen"}),
 	NpcDefinition.new(9296, {"title": "Milly Osworth",
 		"sprite": &"milly",
 		"greeting": "A gang of brigands, the Defias, moved into the Northshire Vineyards while I was harvesting!"}),

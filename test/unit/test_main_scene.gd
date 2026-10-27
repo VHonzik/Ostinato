@@ -1778,7 +1778,7 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "buy_list")
 	assert_eq(_game.menu._buttons.size(), 2, "Buying shows only this merchant's catalog and Back.")
-	assert_string_contains(_game.menu._buttons[0].text, "Bread / 0g 0s 5c each")
+	assert_string_contains(_game.menu._buttons[0].text, "Tough Jerky / 0g 0s 5c each")
 	assert_eq(_game.menu._buttons[1].text, "Back (Esc)")
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "buy")
@@ -1792,7 +1792,7 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "buy_list")
-	assert_eq(_game.world.hero.inventory[0], ItemData.instance(4540, 10))
+	assert_eq(_game.world.hero.inventory[0], ItemData.instance(117, 10))
 	assert_eq(_game.world.hero.copper, 50)
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.menu.page, "trade")
@@ -1801,7 +1801,7 @@ func test_merchant_interaction_keeps_identity_through_keyboard_buy_cancel_and_mo
 	await _click_button(_game.menu._buttons[1])
 	assert_eq(_game.menu.page, "sell")
 	var sell := _game_viewport.gui_get_focus_owner() as Button
-	assert_eq(sell.text, "Sell slot 1: Tough Hunk of Bread x10 / 0g 0s 10c total")
+	assert_eq(sell.text, "Sell slot 1: Tough Jerky x10 / 0g 0s 10c total")
 	for frame in range(4):
 		await get_tree().process_frame
 	await _click_button(sell)
@@ -1909,7 +1909,7 @@ func test_consecutive_sales_select_next_sellable_slot_and_wrap_after_the_last() 
 	_game.world.hero.inventory[0] = ItemData.instance(35)
 	_game.world.hero.inventory[1] = ItemData.instance(750)
 	_game.world.hero.inventory[3] = ItemData.instance(117, 20)
-	_game.world.hero.inventory[25] = ItemData.instance(4540, 7)
+	_game.world.hero.inventory[25] = ItemData.instance(117, 7)
 	_game.world.hero.inventory[39] = ItemData.instance(117)
 	var stock := _game.world.vendor_stock.duplicate(true)
 	_game.menu.open_trade(merchant)
@@ -1920,7 +1920,7 @@ func test_consecutive_sales_select_next_sellable_slot_and_wrap_after_the_last() 
 		return button.text.begins_with("Sell slot 4:"))[0] as Button
 	water.grab_focus()
 	var proceeds := 0
-	for entry in [[3, 20, "Tough Jerky"], [25, 7, "Tough Hunk of Bread"],
+	for entry in [[3, 20, "Tough Jerky"], [25, 7, "Tough Jerky"],
 		[39, 1, "Tough Jerky"]]:
 		var focused := _game_viewport.gui_get_focus_owner() as Button
 		assert_string_contains(focused.text, "%s x%d" % [entry[2], int(entry[1])])

@@ -36,12 +36,57 @@ The authoritative overview of implemented classes, abilities, training and effec
   upgraded actives retain their own art. Poison procs use a shared enemy flash.
   `-` does not exclude aura text, combat numbers or other shared UI. These are default mappings; GridView allows actor-art overrides.
 
-Character sprite priority, highest first: melee bump, Fel Breath wind-up, Fel Breath
-release, Mortal Strike, Judgement, Eviscerate, Lava Burst, Evasion, Divine Shield,
-Vanish, aggro marker, Whirlwind, Charge, Battle Shout, Lightning Shield, poison coating,
-Windfury, Consecration, poison trigger, quest marker. Competing flashes age independently;
-an unexpired lower effect appears when the winner ends. Repeating an effect refreshes
-its 1.5-second flash. Vanish selects the translucent class sprite at its priority.
+### Enemy NPC effect sprite priority
+
+Includes neutral creatures. Highest priority first; normal health/faction art appears
+when no effect wins.
+
+| Priority | Effect |
+| --- | --- |
+| 1 | Melee bump |
+| 2 | Fel Breath wind-up |
+| 3 | Fel Breath release |
+| 4 | Mortal Strike |
+| 5 | Judgement |
+| 6 | Eviscerate |
+| 7 | Lava Burst |
+| 8 | Aggro marker |
+| 9 | Whirlwind |
+| 10 | Windfury |
+| 11 | Consecration |
+| 12 | Poison trigger |
+
+### Friendly NPC effect sprite priority
+
+Includes summons. Highest priority first.
+
+| Priority | Effect |
+| --- | --- |
+| 1 | Melee bump |
+| 2 | Fel Breath release |
+| 3 | Consecration |
+| 4 | Ready hand-in marker C(5,1) |
+| 5 | Available quest marker C(5,0) |
+
+### Player effect sprite priority
+
+Highest priority first. Consecration always excludes the player's current tile.
+
+| Priority | Effect |
+| --- | --- |
+| 1 | Melee bump |
+| 2 | Fel Breath release |
+| 3 | Evasion |
+| 4 | Divine Shield |
+| 5 | Vanish |
+| 6 | Charge |
+| 7 | Battle Shout |
+| 8 | Lightning Shield |
+| 9 | Poison coating |
+
+Competing flashes age independently; an unexpired lower effect appears when the winner
+ends. Repeating an effect refreshes its 1.5-second flash. Vanish selects the translucent
+class sprite at its priority. On unoccupied ground, Fel Breath release beats Consecration.
 Health/faction tint, damage numbers, countdowns and cone borders remain independent.
 
 ## Shared mechanics

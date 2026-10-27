@@ -5,7 +5,7 @@ extends RefCounted
 ## Quantity/price are per purchase bundle; stock counts individual items, -1 unlimited.
 const CATALOGS: Dictionary = {
 	"152": {
-		"4540": {"quantity": 1, "price": 5, "stock": -1},
+		"117": {"quantity": 1, "price": 5, "stock": -1},
 	},
 	"190": {
 		"2121": {"quantity": 1, "price": 200, "stock": -1},

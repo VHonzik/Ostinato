@@ -626,7 +626,8 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 		var sprites := view.npc_sprite_layers(actor)
 		if actor.stalker:
 			assert_eq((sprites.base_sprite as AtlasTexture).region, Rect2(64, 0, 16, 16))
-		elif actor.npc_id in [299, 69, 911, 823] or actor.summon_kind == "wolf":
+		elif (actor.npc_id in [299, 69, 911, 823, 9296, 197, 925, 915, 900002, 900003,
+			6, 257, 80, 103, 38] or actor.summon_kind == "wolf"):
 			assert_same((sprites.base_sprite as AtlasTexture).atlas, GridView.ABILITY_CHARACTERS)
 		else:
 			assert_same(sprites.base_sprite, GridView.NPC_BASE_SPRITE, actor.title)
@@ -641,6 +642,37 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 	var warrior := view.player_sprite_layers(&"Warrior").base_sprite as AtlasTexture
 	assert_same(warrior.atlas, GridView.ABILITY_CHARACTERS)
 	assert_eq(warrior.region, Rect2(0, 0, 16, 16), "The new class art becomes its base layer.")
+
+
+func test_ready_hand_in_marker_beats_offers_and_returns_to_offer_after_reward() -> void:
+	var view := RecordingGridView.new()
+	add_child_autofree(view)
+	view.set_process(false)
+	view.world = _session().world
+	var marshal := _marshal(view.world)
+	_beside(view.world, marshal)
+	assert_true(QuestRules.accept(view.world, "valley_camp", marshal))
+	assert_true(QuestRules.available(view.world, "valley_wolves"))
+	view._process(GridView.BLINK_SECONDS)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	for count in range(4):
+		QuestRules.record_kill(view.world, 6)
+	view._draw_actor(marshal)
+	assert_eq(view.character_effect(marshal).family, &"quest_ready")
+	assert_null(view.drawn_base)
+	assert_eq((view.drawn_faction as AtlasTexture).region, Rect2(80, 16, 16, 16))
+	assert_eq(view.drawn_faction_color, view._actor_color(marshal))
+	view._process(GridView.BLINK_SECONDS)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_base, view.npc_sprite_layers(marshal).base_sprite)
+	view._process(GridView.BLINK_SECONDS)
+	assert_true(QuestRules.hand_in(view.world, "valley_camp", marshal))
+	view._draw_actor(marshal)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	marshal.alive = false
+	assert_eq(QuestRules.marker_kind(view.world, marshal), &"")
+	assert_eq(view.world.turn_count, 0)
 
 
 func test_health_changes_reach_npc_and_player_base_layers_without_changing_faction() -> void:

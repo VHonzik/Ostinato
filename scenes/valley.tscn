@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://icmy2d5hkh5" path="res://scripts/world/valley_map.gd" id="1_xecee"]
 [ext_resource type="TileSet" uid="uid://b6crud30fuo85" path="res://assets/tilesets/valley.tres" id="2_l73gk"]
-[ext_resource type="Texture2D" uid="uid://cqgefmtiqtvi" path="res://assets/spritesheets/valley/sprites.png" id="2_m3qr3"]
 [ext_resource type="TileSet" uid="uid://o1licuomi64q" path="res://assets/tilesets/valley_scenery.tres" id="3_je011"]
 [ext_resource type="Texture2D" uid="uid://chuhik31a8lt7" path="res://assets/spritesheets/scroolospritesenvironment_nobg.png" id="3_l73gk"]
 [ext_resource type="Script" uid="uid://bgp77rms2yjf3" path="res://scripts/world/valley_actor_spawn.gd" id="4_je011"]
@@ -11,24 +10,20 @@
 [ext_resource type="Script" uid="uid://hjgyl1ne180y" path="res://scripts/world/valley_region.gd" id="7_2lbax"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_v5sxs"]
-atlas = ExtResource("2_m3qr3")
-region = Rect2(0, 0, 32, 32)
+atlas = ExtResource("6_4fish")
+region = Rect2(128, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8sbk8"]
 atlas = ExtResource("6_4fish")
 region = Rect2(112, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_feil3"]
-atlas = ExtResource("2_m3qr3")
-region = Rect2(32, 0, 32, 32)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_a6xko"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(0, 0, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(128, 80, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wf7xx"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(0, 16, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(128, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_us2ga"]
 atlas = ExtResource("5_8ppb4")
@@ -40,15 +35,15 @@ region = Rect2(112, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_jiitp"]
 atlas = ExtResource("6_4fish")
-region = Rect2(32, 0, 16, 16)
+region = Rect2(80, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_yw54u"]
 atlas = ExtResource("6_4fish")
-region = Rect2(16, 0, 16, 16)
+region = Rect2(144, 0, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_b61dq"]
 atlas = ExtResource("6_4fish")
-region = Rect2(48, 0, 16, 16)
+region = Rect2(144, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_evdjq"]
 atlas = ExtResource("6_4fish")
@@ -59,24 +54,24 @@ atlas = ExtResource("6_4fish")
 region = Rect2(96, 32, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_lua78"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(0, 80, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(64, 64, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_vu43e"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(16, 80, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(96, 64, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_d20pc"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(16, 80, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(128, 64, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ir5nl"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(16, 32, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(96, 80, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_8seh5"]
-atlas = ExtResource("5_8ppb4")
-region = Rect2(80, 32, 16, 16)
+atlas = ExtResource("6_4fish")
+region = Rect2(64, 80, 16, 16)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_wamsj"]
 atlas = ExtResource("3_l73gk")
@@ -117,6 +112,7 @@ tile_set = ExtResource("2_l73gk")
 
 [node name="00_MarshalMcBride" type="Sprite2D" parent="Actors" unique_id=104539478]
 position = Vector2(976, 1680)
+scale = Vector2(2, 2)
 texture = SubResource("AtlasTexture_v5sxs")
 script = ExtResource("4_je011")
 npc_id = 197
@@ -133,20 +129,12 @@ turn_order = 1
 
 [node name="02_JanosHammerknuckle" type="Sprite2D" parent="Actors" unique_id=851951618]
 position = Vector2(912, 1328)
+scale = Vector2(2, 2)
 texture = SubResource("AtlasTexture_feil3")
 script = ExtResource("4_je011")
 npc_id = 900003
 spawn_id = "fixed/900003"
 turn_order = 2
-
-[node name="03_KheldenBremen" type="Sprite2D" parent="Actors" unique_id=1155207355]
-position = Vector2(1040, 1136)
-scale = Vector2(2, 2)
-texture = SubResource("AtlasTexture_a6xko")
-script = ExtResource("4_je011")
-npc_id = 198
-spawn_id = "fixed/198"
-turn_order = 3
 
 [node name="04_MillyOsworth" type="Sprite2D" parent="Actors" unique_id=891043750]
 position = Vector2(1072, 1456)

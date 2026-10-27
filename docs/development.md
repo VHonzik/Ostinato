@@ -85,7 +85,7 @@ loot-bearing corpses hide after 300 turns; the guard's corpse remains.
 ### Saves and settings
 
 Saving requires an action boundary outside combat. Five slots use the `demo` family,
-revision 1; other revisions are incompatible and left untouched. No migration is
+revision 2; other revisions are incompatible and left untouched. No migration is
 provided. Failed writes/loads preserve existing files and the running world.
 
 Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`; global settings are in

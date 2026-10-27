@@ -40,10 +40,23 @@ const STALKER_FACTION_CELL := Vector2i(4, 1)
 const BREATH_WINDUP_CELL := Vector2i(4, 2)
 const BREATH_TILE_CELL := Vector2i(4, 3)
 const EARTH_ELEMENTAL_CELL := Vector2i(3, 4)
-# Health cells in characters.png; each faction layer is directly below its health layer.
-const NPC_LAYER_CELLS: Dictionary[StringName, Vector2i] = {
-	&"wolf": Vector2i(6, 0), &"timber_wolf": Vector2i(6, 2),
-	&"llane": Vector2i(7, 0), &"willem": Vector2i(7, 2),
+# Health and faction cell pairs in characters.png (zero-based).
+const NPC_LAYER_CELLS: Dictionary[StringName, Array] = {
+	&"wolf": [Vector2i(6, 0), Vector2i(6, 1)],
+	&"timber_wolf": [Vector2i(6, 2), Vector2i(6, 3)],
+	&"llane": [Vector2i(7, 0), Vector2i(7, 1)],
+	&"willem": [Vector2i(7, 2), Vector2i(7, 3)],
+	&"milly": [Vector2i(8, 0), Vector2i(8, 1)],
+	&"marshal": [Vector2i(8, 2), Vector2i(8, 3)],
+	&"sammuel": [Vector2i(9, 0), Vector2i(9, 1)],
+	&"jorrick": [Vector2i(5, 2), Vector2i(5, 3)],
+	&"shaman_mentor": [Vector2i(9, 2), Vector2i(9, 3)],
+	&"kobold_miner": [Vector2i(4, 4), Vector2i(5, 4)],
+	&"kobold_worker": [Vector2i(6, 4), Vector2i(7, 4)],
+	&"kobold_foreman": [Vector2i(8, 4), Vector2i(9, 4)],
+	&"garrick": [Vector2i(4, 5), Vector2i(5, 5)],
+	&"bandit": [Vector2i(6, 5), Vector2i(7, 5)],
+	&"trader": [Vector2i(8, 5), Vector2i(9, 5)],
 }
 # Source NPC identity keeps species silhouettes independent of relationship colors.
 const ENEMY_SPRITES: Dictionary[int, Vector2i] = {
@@ -93,11 +106,17 @@ const REFERENCE_ENVIRONMENT: Dictionary[StringName, Vector2i] = {
 }
 
 const BLINK_SECONDS: float = 2.0
-const EFFECT_PRIORITY: Array[StringName] = [
+const ENEMY_EFFECT_PRIORITY: Array[StringName] = [
 	&"melee_bump", &"breath_windup", &"breath_release", &"mortal_strike", &"judgement",
-	&"eviscerate", &"lava_burst", &"evasion", &"divine_shield", &"vanish", &"aggro",
-	&"whirlwind", &"charge", &"battle_shout", &"lightning_shield", &"poison_coating",
-	&"windfury_weapon", &"consecration", &"poison_trigger", &"quest",
+	&"eviscerate", &"lava_burst", &"aggro", &"whirlwind", &"windfury_weapon",
+	&"consecration", &"poison_trigger",
+]
+const FRIENDLY_EFFECT_PRIORITY: Array[StringName] = [
+	&"melee_bump", &"breath_release", &"consecration", &"quest_ready", &"quest",
+]
+const PLAYER_EFFECT_PRIORITY: Array[StringName] = [
+	&"melee_bump", &"breath_release", &"evasion", &"divine_shield", &"vanish",
+	&"charge", &"battle_shout", &"lightning_shield", &"poison_coating",
 ]
 
 ## NPC keys match valley sprite names; summons use earth_elemental or wolf,
@@ -148,6 +167,7 @@ var _valley_regions: Dictionary = {}
 var _blink_elapsed: float = 0.0
 var _blink_alternate_visible: bool = false
 var _quest_marker_sprite: AtlasTexture
+var _quest_ready_sprite: AtlasTexture
 var _player_blink: Dictionary = {}
 var _npc_blinks: Dictionary[GridActor, Dictionary] = {}
 var _consecration_blink: Dictionary = {}
@@ -207,8 +227,8 @@ func npc_sprite_layers(actor: GridActor) -> ActorSpriteLayers:
 		var base: Texture2D = NPC_BASE_SPRITE
 		var faction: Texture2D
 		if NPC_LAYER_CELLS.has(key):
-			base = _ability_sprite(NPC_LAYER_CELLS[key])
-			faction = _ability_sprite(NPC_LAYER_CELLS[key] + Vector2i.DOWN)
+			base = _ability_sprite(NPC_LAYER_CELLS[key][0])
+			faction = _ability_sprite(NPC_LAYER_CELLS[key][1])
 		elif key == &"stalker":
 			base = _ability_sprite(STALKER_BASE_CELL)
 			faction = _ability_sprite(STALKER_FACTION_CELL)
@@ -237,6 +257,7 @@ func _ready() -> void:
 		var entry: Dictionary = catalog.sprites[name]
 		_valley_regions[StringName(name)] = Rect2(entry.x, entry.y, entry.width, entry.height)
 	_quest_marker_sprite = _ability_sprite(Vector2i(5, 0))
+	_quest_ready_sprite = _ability_sprite(Vector2i(5, 1))
 
 
 func _process(delta: float) -> void:
@@ -376,8 +397,10 @@ func _effect_at(tile: Vector2i, actor: GridActor, is_player: bool) -> Dictionary
 	if actor != null:
 		if _aggro_blinks.has(actor):
 			candidates.append({"family": &"aggro"})
-		if _blink_alternate_visible and QuestRules.has_marker(world, actor):
-			candidates.append({"family": &"quest"})
+		if _blink_alternate_visible:
+			var marker := QuestRules.marker_kind(world, actor)
+			if marker != &"":
+				candidates.append({"family": marker})
 	if (tile != world.player_tile and not _consecration_blink.is_empty()
 		and _consecration_blink.tiles.has(tile)):
 		candidates.append({"family": &"consecration", "sprite": _ability_sprite(CONSECRATION_CELL)})
@@ -386,9 +409,14 @@ func _effect_at(tile: Vector2i, actor: GridActor, is_player: bool) -> Dictionary
 		candidates.append({"family": &"breath_release", "sprite": _ability_sprite(BREATH_TILE_CELL),
 			"color": Color(1.0, 0.2, 0.2, 0.55)})
 	var winner: Dictionary = {}
-	var priority := EFFECT_PRIORITY.size()
+	var priorities := ENEMY_EFFECT_PRIORITY
+	if is_player:
+		priorities = PLAYER_EFFECT_PRIORITY
+	elif actor != null and actor.relationship == GridActor.Relationship.FRIENDLY:
+		priorities = FRIENDLY_EFFECT_PRIORITY
+	var priority := priorities.size()
 	for candidate: Dictionary in candidates:
-		var rank := EFFECT_PRIORITY.find(candidate.family)
+		var rank := priorities.find(candidate.family)
 		if rank >= 0 and rank < priority:
 			winner = candidate
 			priority = rank
@@ -568,9 +596,9 @@ func _draw_character(tile: Vector2i, sprites: ActorSpriteLayers, effect: Diction
 	var base := sprites.base_sprite
 	var faction := sprites.faction_sprite
 	var family: StringName = effect.get("family", &"")
-	if family in [&"aggro", &"quest"]:
+	if family in [&"aggro", &"quest", &"quest_ready"]:
 		base = null
-		faction = _quest_marker_sprite
+		faction = _quest_ready_sprite if family == &"quest_ready" else _quest_marker_sprite
 	elif family == &"vanish":
 		tint.a = 0.4
 		faction_tint.a = 0.4

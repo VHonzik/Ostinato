@@ -135,7 +135,7 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	world.player_tile = chest.tile
 	assert_true(world.open_loot(chest))
 	var seeded_loot := chest.loot.duplicate(true)
-	chest.loot = [ItemData.instance(1367), ItemData.instance(4540, 2)]
+	chest.loot = [ItemData.instance(1367), ItemData.instance(117, 2)]
 	var original := chest.loot.duplicate(true)
 	# Filled feet force this equipment into inventory, preserving the capacity check.
 	world.hero.equipment["armor"] = ItemData.instance(1374)
@@ -146,8 +146,8 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	assert_eq(chest.loot, original)
 	world.hero.inventory[0] = {}
 	assert_true(world.loot_item(chest, 0))
-	assert_eq(chest.loot, [ItemData.instance(4540, 2)])
-	world.hero.inventory[1] = ItemData.instance(4540, 19)
+	assert_eq(chest.loot, [ItemData.instance(117, 2)])
+	world.hero.inventory[1] = ItemData.instance(117, 19)
 	assert_false(world.loot_item(chest, 0), "Whole offered stack must fit, with no partial transfer.")
 	assert_eq(world.hero.inventory[1].quantity, 19)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(game))), true)
@@ -157,13 +157,13 @@ func test_partial_collection_full_bags_depletion_save_load_and_loop_reset() -> v
 	game.restore(restored, 619, 1)
 	world = game.world
 	chest = _source(world, "valley/treasure/ridge_chest")
-	assert_eq(chest.loot, [ItemData.instance(4540, 2)])
+	assert_eq(chest.loot, [ItemData.instance(117, 2)])
 	assert_eq(chest.loot_copper, 12)
 	assert_false(world.loot_item(chest, 0))
 	world.hero.inventory[2] = {}
 	assert_true(world.loot_item(chest, 0))
 	assert_eq(world.hero.inventory[1].quantity, 20)
-	assert_eq(world.hero.inventory[2], ItemData.instance(4540))
+	assert_eq(world.hero.inventory[2], ItemData.instance(117))
 	assert_true(chest.corpse_visible, "Copper remains after the last item.")
 	assert_true(world.loot_money(chest))
 	assert_eq(world.hero.copper, 12)
@@ -206,7 +206,7 @@ func test_quest_hand_in_and_abandonment_remove_only_quest_drops_without_rerollin
 		world._check_npc_death(corpse, 0)
 		assert_true(corpse.loot.any(func(item: Dictionary) -> bool: return item.id == 752),
 			"Ready objectives still permit fresh quest drops.")
-		corpse.loot.append(ItemData.instance(4536))
+		corpse.loot.append(ItemData.instance(117))
 		var ordinary := corpse.loot.filter(func(item: Dictionary) -> bool: return item.id != 752)
 		assert_false(ordinary.is_empty(), "Fixture includes ordinary loot to preserve.")
 		var copper := corpse.loot_copper
@@ -255,12 +255,12 @@ func test_new_food_and_equipment_use_existing_rules_and_bags_never_expand_capaci
 	assert_false(world.consume_item(0))
 	assert_eq(world.hero.inventory.size(), 40)
 	world.hero.health = 1
-	world.hero.inventory[1] = ItemData.instance(4536, 2)
+	world.hero.inventory[1] = ItemData.instance(117, 2)
 	assert_true(world.consume_item(1))
 	assert_eq(world.hero.inventory[1].quantity, 1)
-	for count in range(10):
+	for count in range(18):
 		world.wait_turn()
-	assert_gte(world.hero.health, 51)
+	assert_gte(world.hero.health, 62)
 
 
 func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load() -> void:
@@ -273,7 +273,7 @@ func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load
 	world.player_tile = corpse.tile
 	assert_true(world.loot_money(corpse))
 	# Explicit remaining loot exercises persistence independently of changed drop tuning.
-	corpse.loot = [ItemData.instance(4536)]
+	corpse.loot = [ItemData.instance(117)]
 	corpse.corpse_visible = true
 	var experience := world.hero.experience
 	var state := SaveCodec.capture(game)
@@ -294,7 +294,7 @@ func test_unopened_treasure_and_partially_looted_corpse_continue_after_save_load
 	corpse = _source(restored, "valley/vineyard/8")
 	assert_true(corpse.loot_assigned)
 	assert_true(corpse.corpse_visible)
-	assert_eq(corpse.loot, [ItemData.instance(4536)])
+	assert_eq(corpse.loot, [ItemData.instance(117)])
 	assert_eq(corpse.loot_copper, 0)
 	assert_false(restored.loot_money(corpse))
 	assert_true(restored.loot_item(corpse, 0))

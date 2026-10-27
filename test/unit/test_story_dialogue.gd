@@ -649,14 +649,14 @@ func test_first_loop_marshal_mentions_free_gear_until_it_is_received() -> void:
 	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
 
 
-func test_contacts_without_services_log_their_new_greetings() -> void:
+func test_contact_without_services_logs_greeting_without_spending_a_turn() -> void:
 	var session := _session()
 	var menu := _menu(session)
-	var contact := _contact(session.world, 198)
+	var contact := _contact(session.world, 1642)
 	_beside(session.world, contact)
 	menu.open_conversation(contact)
 	assert_false(menu.visible)
-	assert_eq(session.world.messages[-1], contact.title + ": " + NpcDefinition.greeting_for(198))
+	assert_eq(session.world.messages[-1], contact.title + ": " + NpcDefinition.greeting_for(1642))
 	assert_eq(session.world.turn_count, 0)
 
 
@@ -719,7 +719,7 @@ func test_new_conversation_records_one_talk_but_returning_from_a_service_records
 func test_greeting_without_menu_choices_records_only_one_talk() -> void:
 	var session := _session()
 	var world := session.world
-	var contact := _contact(world, 198)
+	var contact := _contact(world, 1642)
 	_beside(world, contact)
 	_talk_quest(world, contact, NpcDefinition.MARSHAL_ID)
 	var menu := _menu(session)
