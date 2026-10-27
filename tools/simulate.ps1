@@ -1,7 +1,7 @@
 #requires -Version 7.0
 [CmdletBinding()]
 param(
-  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block', 'aoe-interactions', 'restless-stalker', 'restless-pulls')]
+  [ValidateSet('warrior', 'warrior-harder', 'paladin', 'rogue', 'rogue-feedback', 'stalker-balance', 'stalker-stats', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'accessories', 'loot', 'loot-rates', 'garrick', 'shield-block', 'aoe-interactions', 'restless-stalker', 'restless-pulls', 'rage')]
   [string]$Scenario = 'warrior',
   [switch]$Smoke,
   [switch]$BaselineOnly,
@@ -17,6 +17,9 @@ $scriptsByScenario = @{
   warrior = 'warrior_identity_sim.gd'; 'warrior-harder' = 'warrior_identity_harder.gd'
   paladin = 'paladin_sim.gd'
   rogue = 'rogue_sim.gd'
+  'rogue-feedback' = 'rogue_feedback_sim.gd'
+  'stalker-balance' = 'stalker_balance_sim.gd'
+  'stalker-stats' = 'stalker_stats_sim.gd'
   'stalker-passives' = 'stalker_passive_sim.gd'
   'stalker-full' = 'stalker_full_sim.gd'
   'stalker-mechanics' = 'stalker_mechanics_sim.gd'
@@ -31,6 +34,7 @@ $scriptsByScenario = @{
   'aoe-interactions' = 'aoe_interactions_sim.gd'
   'restless-stalker' = 'restless_stalker_sim.gd'
   'restless-pulls' = 'restless_pull_sim.gd'
+  rage = 'rage_sim.gd'
 }
 $runRoot = Join-Path $ProjectRoot 'reports/bench'
 $runDirectory = Join-Path $runRoot ("$Scenario/" + (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
@@ -39,12 +43,13 @@ $metadata = $null
 $passed = $false
 try {
   if ($Policy -and !(($Scenario -eq 'stalker-patterns' -and $Policy -eq 'after-breath') -or
-      ($Scenario -eq 'aoe-interactions' -and $Policy -eq 'cooldowns'))) {
-    throw '-Policy supports after-breath for stalker-patterns or cooldowns for aoe-interactions.'
+      ($Scenario -eq 'aoe-interactions' -and $Policy -eq 'cooldowns') -or
+      ($Scenario -eq 'rage' -and $Policy -in @('reserve', 'spend')))) {
+    throw '-Policy supports after-breath for stalker-patterns, cooldowns for aoe-interactions, or reserve/spend for rage scenarios.'
   }
   if ($BaselineOnly -and $Scenario -ne 'stalker-full') { throw '-BaselineOnly is only for stalker-full.' }
-  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns')) { throw '-Confirm is only for tuning scenarios.' }
-  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'aoe-interactions')) { throw '-Shard is only for combat simulations.' }
+  if ($Confirm -and $Scenario -notin @('pull-tuning', 'garrick', 'stalker-mechanics', 'stalker-patterns', 'rogue-feedback', 'stalker-stats', 'rage')) { throw '-Confirm is only for tuning scenarios.' }
+  if ($Shard -ne -1 -and $Scenario -notlike 'warrior*' -and $Scenario -notin @('paladin', 'rogue', 'rogue-feedback', 'stalker-passives', 'stalker-full', 'stalker-mechanics', 'stalker-patterns', 'priorities', 'pulls', 'pull-tuning', 'aoe-interactions', 'rage')) { throw '-Shard is only for combat simulations.' }
   if ($Scenario -eq 'warrior-harder') {
     if (!$Baseline) { throw 'warrior-harder requires -Baseline <warrior run/result.json>.' }
     $baselinePath = [IO.Path]::GetFullPath($Baseline, $ProjectRoot)
@@ -174,6 +179,16 @@ try {
       if ($row.fights.Count -ne $expectedRuns) { throw 'Incomplete Stalker sample.' }
     }
   }
+  if ($Scenario -eq 'rage') {
+    $weaponCount = if ($Shard -eq -1) { 3 } else { 1 }
+    $rageCells = 28
+    if ($data.setup.expected_cells -ne $rageCells * $weaponCount -or $data.rows.Count -ne $data.setup.expected_cells) {
+      throw 'Incomplete rage matrix.'
+    }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete rage sample.' }
+    }
+  }
   if ($Scenario -eq 'priorities') {
     $expectedCells = $data.setup.expected_cells
     if ($expectedCells -ne $(if ($Shard -eq -1) { 420 } else { 140 })) { throw 'Unexpected priority setup size.' }
@@ -204,6 +219,23 @@ try {
     if ($data.rows.Count -ne $expectedCells) { throw 'Incomplete Restless Blades comparison.' }
     foreach ($row in $data.rows) {
       if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Restless Blades sample.' }
+    }
+  }
+  if ($Scenario -eq 'stalker-balance') {
+    if ($data.setup.expected_cells -ne 29 -or $data.rows.Count -ne 29) {
+      throw 'Incomplete Stalker balance matrix.'
+    }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Stalker balance sample.' }
+    }
+  }
+  if ($Scenario -eq 'stalker-stats') {
+    $expectedCells = if ($Confirm) { 39 } else { 105 }
+    if ($data.setup.expected_cells -ne $expectedCells -or $data.rows.Count -ne $expectedCells) {
+      throw 'Incomplete Stalker stats matrix.'
+    }
+    foreach ($row in $data.rows) {
+      if ($row.fights.Count -ne $data.setup.samples) { throw 'Incomplete Stalker stats sample.' }
     }
   }
   if ($Scenario -eq 'pull-tuning') {

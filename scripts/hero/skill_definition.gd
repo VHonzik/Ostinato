@@ -43,6 +43,7 @@ var school: int = 0
 var cooldown_seconds: int = 0
 var delay_turns: int = 0
 var coefficient: float = 0.0
+var combo_chance: float = 0.0
 var dodge_reduction: float = 0.0
 var detail: String = ""
 

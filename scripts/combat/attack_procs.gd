@@ -42,8 +42,14 @@ static func weapon_procs(world: GridWorld, event: AttackEvent) -> void:
 
 
 static func _combo_points(world: GridWorld, event: AttackEvent) -> void:
-	if (event.can_build_combo() and ClassToolkitRules.has(world.hero, &"relentless_assault_1")
-		and not world.combo_event_counted):
+	if (not event.can_build_combo() or world.combo_event_counted
+		or not ClassToolkitRules.has(world.hero, &"relentless_assault_1")):
+		return
+	var qualifies := event.is_combo_ability()
+	var potency := world.hero.find_skill(&"combat_potency_1")
+	if event.is_swing() and potency != null:
+		qualifies = world.combat_random.randf() < potency.combo_chance
+	if qualifies:
 		world.hero.gain_combo_point()
 		world.combo_event_counted = true
 
@@ -51,7 +57,7 @@ static func _combo_points(world: GridWorld, event: AttackEvent) -> void:
 static func _direct_hit_rewards(world: GridWorld, event: AttackEvent) -> void:
 	if not event.can_build_combo() or not event.is_direct():
 		return
-	if (event.critical() and ClassToolkitRules.has(world.hero, &"relentless_assault_1")
+	if (event.is_combo_ability() and event.critical() and ClassToolkitRules.has(world.hero, &"relentless_assault_1")
 		and ClassToolkitRules.has(world.hero, &"seal_fate_1")):
 		world.hero.combo_points = mini(5, world.hero.combo_points + 1)
 	if ClassToolkitRules.has(world.hero, &"bandits_guile_1"):

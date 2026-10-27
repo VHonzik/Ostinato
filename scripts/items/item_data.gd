@@ -12,7 +12,6 @@ const WAR_BANNER_HOTBAR_ID: StringName = &"item_war_banner"
 const POTION_HOTBAR_ID: StringName = &"potion_118"
 const HOTBAR_ITEMS: Dictionary[StringName, int] = {
 	&"food_117": 117, POTION_HOTBAR_ID: 118,
-	&"food_2070": 2070, &"food_4536": 4536, &"food_4540": 4540,
 	WAR_HORN_HOTBAR_ID: WAR_HORN_ID, ANCESTRAL_TOTEM_HOTBAR_ID: ANCESTRAL_TOTEM_ID,
 	WAR_BANNER_HOTBAR_ID: WAR_BANNER_ID,
 }

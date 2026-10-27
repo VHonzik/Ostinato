@@ -99,14 +99,10 @@ class Marshal extends Service:
 		if session.can_select_class():
 			for category: StringName in session.selectable_classes():
 				var title := "I am %s" % String(category).to_lower()
-				if category != &"Warrior" and session.loop_count == 3:
+				if not world.chosen_classes.has(category):
 					title = "I am .... %s" % String(category).to_lower()
 				var choice := Choice.new(title, Action.SELECT_CLASS)
 				choice.category = category
-				var titles: PackedStringArray = []
-				for skill in SkillDefinition.starting_skills(category):
-					titles.append(skill.title)
-				choice.tooltip = "Learn %s for free at the trainer. Gear and learned skills remain." % " + ".join(titles)
 				conversation.choices.append(choice)
 		elif (not world.class_selected and not world.ever_accepted_quest
 			and world.hero.selected_class == &"Warrior" and not world.trainer_referral_received):
@@ -135,6 +131,9 @@ class Trainer extends Service:
 			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.ANCESTRAL_TOTEM))
 		elif session.world.can_receive_war_banner(actor):
 			conversation.choices.append(Choice.new(TRAINER_GIFT_DIALOGUE, Action.WAR_BANNER))
-		var choice := Choice.new("Train", Action.TRAIN)
-		choice.category = actor.service
-		conversation.choices.append(choice)
+		for skill in SkillDefinition.trainer_skills(actor.service):
+			if session.world.hero.find_skill(skill.id) == null:
+				var choice := Choice.new("Train", Action.TRAIN)
+				choice.category = actor.service
+				conversation.choices.append(choice)
+				break

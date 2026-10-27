@@ -22,8 +22,8 @@ Keep both axes at the same scale when adapting the sketch.
 - Trees, walls and vine trellises block movement. Flowers, bushes, decorative rocks
   and grass remain passable; tile custom data defines movement and sight blocking.
 - Preserve routes to contacts, mine, gate and chests when placing terrain details.
-- Give the ten friendly contacts distinctive outlines or props, including Janos,
-  Khelden and the four named class trainers.
+- Give friendly contacts distinctive outlines or props, including Janos and the four
+  named class trainers.
 
 ## Visual direction
 
@@ -40,7 +40,7 @@ feet and distinctive equipment.
 | Group | Art coverage | Visual aim |
 | --- | --- | --- |
 | Player | Warrior, Rogue, Shaman, Paladin | Recognizable weapon, hood, totem and shield silhouettes |
-| Contacts | Marshal, Willem, Janos, Khelden, Milly, guard and four trainers | Distinct roles, class props and equipment |
+| Contacts | Marshal, Willem, Janos, Milly, guard and four trainers | Distinct roles, class props and equipment |
 | Enemies | Young/Timber Wolves, three kobold types, Defias Thug, Garrick, stalker | Readable species and ranks; unmistakable stalker |
 | Remains | Shared corpse art | Lootability communicated by interaction/UI |
 | Ground | Plain outdoors, dirt road, abbey/mine floors, tilled soil | Quiet surfaces beneath actors; no repeating grass field |
@@ -54,7 +54,7 @@ feet and distinctive equipment.
 Living actors have separate base and faction textures. Base tint shows health;
 faction art uses green for friendly, yellow for neutral and red for hostile actors.
 Most NPCs use a corner heart base; Stalker and Earth Elemental have dedicated bases.
-Quest offers/ready hand-ins alternate faction art with an exclamation mark, and
+Quest offers alternate actor art with an exclamation mark, ready hand-ins use a question mark, and
 engaged hostiles blink a red exclamation mark. The player uses class art without a
 faction layer. Appearance and readability need human review.
 

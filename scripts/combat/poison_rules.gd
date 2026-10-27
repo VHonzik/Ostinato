@@ -63,6 +63,7 @@ static func on_hit(world: GridWorld, target: GridActor, off_hand: bool) -> void:
 	if identifier == &"deadly_poison_1":
 		apply_deadly(world, target)
 		return
+	world.npc_ability_hit.emit(target, &"poison_trigger")
 	var value := floori(skill.minimum * ClassToolkitRules.damage_multiplier(world.hero)
 		* MeleeRules.level_damage_multiplier(world.hero.level, target.melee.level))
 	SpellEffects.damage(world, target, value, skill.title)
@@ -72,11 +73,7 @@ static func on_hit(world: GridWorld, target: GridActor, off_hand: bool) -> void:
 		or not world.hero.has_off_hand_weapon()
 		or coating(world.hero, world.turn_count, not off_hand) != &"deadly_poison_1"):
 		return
-	var weapons := ItemData.get_item(world.hero.weapon_id())
-	var speed := float(weapons.off_interval if off_hand else weapons.interval)
-	var other_speed := float(weapons.interval if off_hand else weapons.off_interval)
-	if speed < other_speed:
-		apply_deadly(world, target)
+	apply_deadly(world, target)
 
 
 static func apply_deadly(world: GridWorld, target: GridActor) -> void:
@@ -91,6 +88,7 @@ static func apply_deadly(world: GridWorld, target: GridActor) -> void:
 	effect.stacks = mini(skill.maximum, int(effect.stacks) + 1)
 	effect["until"] = world.turn_count + skill.periodic_duration
 	target.debuffs[skill.id] = effect
+	world.npc_ability_hit.emit(target, &"poison_trigger")
 
 
 static func tick(world: GridWorld, target: GridActor) -> void:

@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://c5v0xs2rsdhnj" path="res://scripts/hero/combo_point_bar.gd" id="5"]
 [ext_resource type="Script" uid="uid://ctinxw3qi0quw" path="res://scripts/gameplay_hud.gd" id="6"]
 [ext_resource type="Script" path="res://scripts/hero/maelstrom_weapon_bar.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/hero/swing_bar.gd" id="8"]
 
 [sub_resource type="Theme" id="Theme_fixture"]
 default_font_size = 18
@@ -230,6 +231,10 @@ mouse_filter = 2
 theme_override_styles/background = SubResource("Style_rage_empty")
 theme_override_styles/fill = SubResource("Style_rage_fill")
 show_percentage = false
+
+[node name="SwingBar" type="Control" parent="HUD"]
+mouse_filter = 2
+script = ExtResource("8")
 
 [node name="HealthBar" type="PanelContainer" parent="HUD" unique_id=1375308320]
 anchors_preset = 7

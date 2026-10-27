@@ -16,7 +16,7 @@ func show_game() -> void:
 
 func hide_game() -> void:
 	for path in ["Top", "Bottom", "PlayerMenu", "Auras", "RageBar", "HealthBar",
-		"ComboPointBar", "MaelstromWeaponBar", "QuestTracker", "Enemy", "ExperienceBar"]:
+		"ComboPointBar", "MaelstromWeaponBar", "QuestTracker", "Enemy", "ExperienceBar", "SwingBar"]:
 		(get_node(path) as Control).hide()
 
 
@@ -58,6 +58,10 @@ func refresh_resources(world: GridWorld, show_resources: bool) -> void:
 	$PlayerMenu.visible = show_resources
 	$Auras.visible = show_resources
 	$RageBar.visible = $Auras.visible
+	$SwingBar.visible = $RageBar.visible
+	$SwingBar.position = $RageBar.position
+	$SwingBar.size = Vector2($RageBar.size.x, 0.0)
+	$SwingBar.refresh(world.hero)
 	$HealthBar.visible = $Auras.visible
 	$HealthBar.modulate.a = 0.8
 	$HealthBar/Fill.max_value = world.hero.max_health

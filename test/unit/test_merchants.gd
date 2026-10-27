@@ -20,7 +20,7 @@ func test_source_catalogs_and_explicit_exclusions() -> void:
 	var game := GameSession.new()
 	game.world = _world()
 	var expected := {
-		152: [4540],
+		152: [117],
 		190: [2121, 70001, 70002, 70003],
 		1213: [85, 2129],
 		78: [2131, 1194, 2139, 2132],
@@ -36,7 +36,7 @@ func test_source_catalogs_and_explicit_exclusions() -> void:
 	assert_true(MerchantData.catalog(11940).is_empty(), "Merissa has no Vanilla vendor catalog.")
 	assert_eq(ItemData.get_item(2121).armor, 90)
 	assert_eq(ItemData.get_item(2132).interval, 3.2)
-	assert_eq(ItemData.get_item(4540).restore, 61)
+	assert_eq(ItemData.get_item(117).restore, 61)
 
 
 func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
@@ -47,27 +47,27 @@ func test_selected_merchant_catalog_and_identity_are_enforced() -> void:
 	_beside(world, danil)
 	assert_false(world.buy_item(danil, 2131, 1), "Danil cannot sell Janos's sword.")
 	assert_false(world.buy_item(janos, 2131, 1), "Another nearby merchant cannot authorize Janos.")
-	assert_true(world.buy_item(danil, 4540, 10))
+	assert_true(world.buy_item(danil, 117, 10))
 	assert_eq(world.hero.inventory[0].quantity, 10)
 	assert_eq(world.hero.copper, 950)
 	var impostor := GridActor.new(danil.tile)
 	impostor.npc_id = 152
 	impostor.spawn_id = danil.spawn_id
 	impostor.service = &"Trader"
-	assert_false(world.buy_item(impostor, 4540, 1))
+	assert_false(world.buy_item(impostor, 117, 1))
 	assert_false(world.sell_item(impostor, 0, 1))
 	danil.alive = false
-	assert_false(world.buy_item(danil, 4540, 1))
+	assert_false(world.buy_item(danil, 117, 1))
 	assert_false(world.sell_item(danil, 0, 1))
 	danil.alive = true
 	danil.relationship = GridActor.Relationship.HOSTILE
-	assert_false(world.buy_item(danil, 4540, 1))
+	assert_false(world.buy_item(danil, 117, 1))
 	danil.relationship = GridActor.Relationship.FRIENDLY
 	assert_true(world.sell_item(danil, 0, 3))
 	assert_eq(world.hero.inventory[0].quantity, 7)
 	assert_eq(world.hero.copper, 953)
 	assert_eq(world.turn_count, 0)
-	assert_eq(world.vendor_stock[danil.spawn_id]["4540"], -1)
+	assert_eq(world.vendor_stock[danil.spawn_id]["117"], -1)
 
 
 func test_quantities_reject_partial_money_and_capacity_without_changing_stock() -> void:
@@ -75,24 +75,24 @@ func test_quantities_reject_partial_money_and_capacity_without_changing_stock() 
 	var danil := _merchant(world, 152)
 	_beside(world, danil)
 	world.hero.copper = 49
-	assert_false(world.buy_item(danil, 4540, 10))
+	assert_false(world.buy_item(danil, 117, 10))
 	assert_eq(world.hero.copper, 49)
 	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	world.hero.copper = 1000
 	for index in range(40):
-		world.hero.inventory[index] = ItemData.instance(4540, 20)
+		world.hero.inventory[index] = ItemData.instance(117, 20)
 	world.hero.inventory[0].quantity = 16
 	var before := world.hero.inventory.duplicate(true)
-	assert_false(world.buy_item(danil, 4540, 5), "Four free units cannot fit five items.")
+	assert_false(world.buy_item(danil, 117, 5), "Four free units cannot fit five items.")
 	assert_eq(world.hero.inventory, before)
 	assert_eq(world.hero.copper, 1000)
 	world.hero.inventory[0].quantity = 15
-	assert_true(world.buy_item(danil, 4540, 5))
+	assert_true(world.buy_item(danil, 117, 5))
 	assert_eq(world.hero.inventory[0].quantity, 20)
 	assert_eq(world.hero.copper, 975)
 	for amount in [-1, 0, 1001]:
-		assert_false(world.buy_item(danil, 4540, amount))
-	assert_eq(world.vendor_stock[danil.spawn_id]["4540"], -1)
+		assert_false(world.buy_item(danil, 117, amount))
+	assert_eq(world.vendor_stock[danil.spawn_id]["117"], -1)
 	assert_eq(world.turn_count, 0)
 
 
@@ -156,10 +156,10 @@ func test_invalid_saved_stock_cannot_change_catalog_or_finite_unlimited_semantic
 		bad.vendor_stock["fixed/900003"]["118"] = value
 		assert_null(SaveCodec.restore(bad, false), str(value))
 	var bad := original.duplicate(true)
-	bad.vendor_stock["fixed/152"]["4540"] = 0
+	bad.vendor_stock["fixed/152"]["117"] = 0
 	assert_null(SaveCodec.restore(bad, false))
 	bad = original.duplicate(true)
-	bad.vendor_stock["fixed/152"].erase("4540")
+	bad.vendor_stock["fixed/152"].erase("117")
 	assert_null(SaveCodec.restore(bad, false))
 	bad = original.duplicate(true)
 	bad.vendor_stock["fixed/152"]["2139"] = -1
@@ -181,11 +181,11 @@ func test_trading_in_combat_is_free_but_pending_actions_reject_it() -> void:
 	var enemy := _merchant(world, 38)
 	enemy.engaged = true
 	assert_true(world.in_combat())
-	assert_true(world.buy_item(merchant, 4540, 5))
+	assert_true(world.buy_item(merchant, 117, 5))
 	assert_true(world.sell_item(merchant, 0, 1))
 	assert_eq(world.turn_count, 0)
 	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
-	assert_false(world.buy_item(merchant, 4540, 1))
+	assert_false(world.buy_item(merchant, 117, 1))
 	assert_false(world.sell_item(merchant, 0, 1))
 	assert_eq(world.hero.inventory[0].quantity, 4)
 	assert_eq(world.hero.copper, 76)
@@ -213,14 +213,14 @@ func test_new_merchant_equipment_and_food_use_existing_item_rules() -> void:
 	assert_eq(world.hero.melee.interval, 3.2)
 	merchant = _merchant(world, 152)
 	_beside(world, merchant)
-	assert_true(world.buy_item(merchant, 4540, 5))
-	var bread_slot := -1
+	assert_true(world.buy_item(merchant, 117, 5))
+	var food_slot := -1
 	for index in range(40):
-		if world.hero.inventory[index].get("id", 0) == 4540:
-			bread_slot = index
+		if world.hero.inventory[index].get("id", 0) == 117:
+			food_slot = index
 	world.hero.health = 1
-	assert_true(world.consume_item(bread_slot))
-	assert_eq(world.hero.inventory[bread_slot].quantity, 4)
+	assert_true(world.consume_item(food_slot))
+	assert_eq(world.hero.inventory[food_slot].quantity, 4)
 	assert_eq(world.hero.restoration.food.total, 61)
 	assert_eq(world.hero.restoration.food.duration, 18)
 
@@ -231,11 +231,11 @@ func test_direct_purchase_units_preserve_prices_and_stack_limits() -> void:
 	_beside(world, danil)
 	world.hero.copper = 155
 	for amount in [1, 10, 20]:
-		assert_true(world.buy_item(danil, 4540, amount))
-	assert_eq(world.hero.inventory[0], ItemData.instance(4540, 20))
-	assert_eq(world.hero.inventory[1], ItemData.instance(4540, 11))
+		assert_true(world.buy_item(danil, 117, amount))
+	assert_eq(world.hero.inventory[0], ItemData.instance(117, 20))
+	assert_eq(world.hero.inventory[1], ItemData.instance(117, 11))
 	assert_eq(world.hero.copper, 0)
-	assert_false(world.buy_item(danil, 4540, 1))
+	assert_false(world.buy_item(danil, 117, 1))
 	assert_eq(world.turn_count, 0)
 	for catalog in MerchantData.CATALOGS.values():
 		for offer in catalog.values():
@@ -250,10 +250,10 @@ func test_sell_all_grey_preserves_equipment_and_non_grey_items_and_cannot_repeat
 	world.hero.inventory[0] = ItemData.instance(7073, 5)
 	world.hero.inventory[1] = ItemData.instance(7073, 2)
 	world.hero.inventory[2] = ItemData.instance(1378) # Grey carried robe.
-	world.hero.inventory[3] = ItemData.instance(4540, 20) # Common food.
+	world.hero.inventory[3] = ItemData.instance(117, 20) # Common food.
 	world.hero.inventory[4] = ItemData.instance(2572) # Green equipment.
 	world.hero.inventory[5] = ItemData.instance(750, 2) # Quest item.
-	world.hero.inventory[6] = ItemData.instance(750, 4) # Conjured food.
+	world.hero.inventory[6] = ItemData.instance(750, 4) # Another quest-item stack.
 	world.hero.inventory[7] = ItemData.instance(2132) # Common equipment.
 	var retained := world.hero.inventory.slice(3).duplicate(true)
 	var equipment := world.hero.equipment.duplicate(true)
@@ -301,7 +301,7 @@ func test_all_item_catalogs_record_source_quality_including_grey_loot_and_starte
 	assert_eq(ItemData.get_item(7073).quality, 0)
 	assert_eq(ItemData.get_item(1378).quality, 0)
 	assert_eq(ItemData.get_item(35).quality, 0)
-	assert_eq(ItemData.get_item(4540).quality, 1)
+	assert_eq(ItemData.get_item(117).quality, 1)
 	assert_eq(ItemData.get_item(2572).quality, 2)
 
 

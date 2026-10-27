@@ -295,23 +295,24 @@ func test_combo_points_require_passive_persist_between_targets_and_cap_without_p
 	world.hero.melee.hit = 100.0
 	world.hero.rage = 100
 	assert_true(world.request_melee(first))
-	assert_eq(world.hero.combo_points, 1, "Main-hand hit builds one point; passive Seal adds none.")
+	assert_eq(world.hero.combo_points, 0, "Untrained main-hand hits and passive Seal grant no points.")
 	world.hero.rage = 100
 	assert_true(world.cast_skill(&"mortal_strike_1", first))
-	assert_eq(world.hero.combo_points, 2)
+	assert_eq(world.hero.combo_points, 1)
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.0
 	assert_true(world.cast_skill(&"whirlwind_1"))
-	assert_eq(world.hero.combo_points, 3, "Area hits share one base point, across targets.")
+	assert_eq(world.hero.combo_points, 1, "Area hits and untrained auto-attacks grant no points.")
 	world.cancel_melee()
 	first.engaged = false
 	second.engaged = false
 	world.wait_turn()
-	assert_eq(world.hero.combo_points, 3, "Points persist outside combat.")
+	assert_eq(world.hero.combo_points, 1, "Points persist outside combat.")
 	for use in range(5):
 		world.hero.rage = 100
-		world.hero.swing.remaining = 0.0
-		assert_true(world.cast_skill(&"whirlwind_1"))
+		world.hero.swing.remaining = 100.0
+		world.hero.cooldowns.clear()
+		assert_true(world.cast_skill(&"mortal_strike_1", second))
 	assert_eq(world.hero.combo_points, HeroState.MAX_COMBO_POINTS)
 
 
@@ -569,6 +570,9 @@ func test_misses_do_not_build_combo_points_and_retained_passive_works_as_warrior
 	world.hero.rage = 100
 	world.hero.swing.remaining = 0.0
 	assert_true(world.cast_skill(&"whirlwind_1"))
+	assert_eq(world.hero.combo_points, 0)
+	world.hero.cooldowns.clear()
+	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_eq(world.hero.combo_points, 1)
 	world.hero.swing.remaining = 100.0
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
@@ -605,7 +609,7 @@ func test_seal_bonus_on_landed_swings_grants_no_extra_rage_xp_or_combo_points() 
 	assert_true(world.request_melee(enemy))
 	assert_lt(enemy.health, enemy.max_health, "Landed swings trigger the Holy bonus.")
 	assert_eq(world.hero.rage, 14, "Only the ordinary swing supplies rage.")
-	assert_eq(world.hero.combo_points, 1, "Only the ordinary main-hand hit supplies a point.")
+	assert_eq(world.hero.combo_points, 0, "Neither untrained auto-attacks nor the Seal bonus supply points.")
 	world.hero.melee.hit = -1000.0
 	var health := enemy.health
 	world.hero.swing.remaining = 0.0

@@ -27,14 +27,20 @@ static func available(world: GridWorld, identifier: String) -> bool:
 
 
 static func has_marker(world: GridWorld, actor: GridActor) -> bool:
+	return marker_kind(world, actor) != &""
+
+
+static func marker_kind(world: GridWorld, actor: GridActor) -> StringName:
 	if not actor.alive or actor.relationship != GridActor.Relationship.FRIENDLY:
-		return false
+		return &""
+	var offer := false
 	for identifier in QuestData.QUESTS:
 		var quest: Dictionary = QuestData.QUESTS[identifier]
-		if (int(quest.giver) == actor.npc_id and available(world, identifier)
-			or int(quest.receiver) == actor.npc_id and ready(world, identifier)):
-			return true
-	return false
+		if int(quest.receiver) == actor.npc_id and ready(world, identifier):
+			return &"quest_ready"
+		if int(quest.giver) == actor.npc_id and available(world, identifier):
+			offer = true
+	return &"quest" if offer else &""
 
 
 static func is_objective(world: GridWorld, actor: GridActor) -> bool:

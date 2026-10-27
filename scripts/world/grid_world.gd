@@ -410,47 +410,64 @@ func wait_turn() -> void:
 
 func cast_skill(identifier: StringName, target: GridActor = null,
 	poison_hands: int = PoisonRules.Hands.BOTH) -> bool:
-	if is_terminal() or pending_melee != null or pending_skill != null:
-		return false
 	var skill := hero.find_skill(identifier)
-	if skill == null:
-		add_message("Cannot cast: that skill is not learned.")
-		return false
-	if skill.effect == SkillDefinition.Effect.KILL_STALKER and _first_living_stalker() == null:
-		add_message("Kill stalker: no living stalker has arrived. No turn spent.")
-		return false
-	if (skill.effect in [SkillDefinition.Effect.MORTAL_STRIKE,
-		SkillDefinition.Effect.EXECUTE, SkillDefinition.Effect.TOOLKIT,
-		SkillDefinition.Effect.JUDGEMENT]
-		and skill.target == SkillDefinition.Target.ENEMY and target == null and in_combat()):
-		target = (committed_enemy() if skill.effect == SkillDefinition.Effect.JUDGEMENT
-			else last_attacked_enemy)
-	if skill.effect == SkillDefinition.Effect.PASSIVE:
-		return false
-	if PoisonRules.is_poison(skill) and (poison_hands not in [1, 2, 3]
-		or hero.weapon_id() == 0
-		or (poison_hands == PoisonRules.Hands.OFF and not hero.has_off_hand_weapon())):
-		add_message("Cannot coat: choose an equipped weapon hand. No turn spent.")
-		return false
-	if skill.available_resource(hero) < skill.cost(hero):
-		add_message("Not enough %s for %s: requires %d, have %d." % [
-			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)])
-		return false
-	if (skill.effect == SkillDefinition.Effect.EXECUTE and target != null and target.alive
-		and not skill.execute_eligible(target) and not hero.buffs.has(&"sudden_death_1")):
-		add_message("Cannot Execute: target must be at or below %d%% health. No turn spent." %
-			skill.execute_health_percent)
-		return false
-	if ((global_cooldown_until > turn_count)
-		or int(hero.cooldowns.get(String(cooldown_family(skill)), 0)) > turn_count
-		or not valid_spell_target(skill, target) or not SpellEffects.can_apply(self, skill, target)):
-		add_message("Cannot cast: invalid target, range, sight, or cooldown.")
-		return false
-	if skill.effect == SkillDefinition.Effect.CHARGE and charge_route(target).is_empty():
-		add_message("Cannot Charge: no reachable empty melee tile.")
+	if (skill != null and skill.target == SkillDefinition.Target.ENEMY
+		and target == null and in_combat()):
+		target = committed_enemy()
+	var failure := cast_failure(skill, target, poison_hands)
+	if failure != "":
+		add_message(failure)
 		return false
 	_begin_cast(skill, target, poison_hands)
 	return true
+
+
+## Read-only validation used by both casting and readiness feedback.
+func cast_failure(skill: SkillDefinition, target: GridActor = null,
+	poison_hands: int = PoisonRules.Hands.BOTH) -> String:
+	if is_terminal() or pending_melee != null or pending_skill != null:
+		return "Cannot cast while another action is pending."
+	if skill == null or hero.find_skill(skill.id) == null:
+		return "Cannot cast: that skill is not learned."
+	if skill.effect == SkillDefinition.Effect.PASSIVE:
+		return "Cannot cast a passive ability."
+	if skill.effect == SkillDefinition.Effect.KILL_STALKER and _first_living_stalker() == null:
+		return "Kill stalker: no living stalker has arrived. No turn spent."
+	if PoisonRules.is_poison(skill) and (poison_hands not in [1, 2, 3]
+		or hero.weapon_id() == 0
+		or (poison_hands == PoisonRules.Hands.OFF and not hero.has_off_hand_weapon())):
+		return "Cannot coat: choose an equipped weapon hand. No turn spent."
+	if skill.available_resource(hero) < skill.cost(hero):
+		return "Not enough %s for %s: requires %d, have %d." % [
+			skill.resource_name(), skill.title, skill.cost(hero), skill.available_resource(hero)]
+	if (skill.effect == SkillDefinition.Effect.EXECUTE and target != null and target.alive
+		and not skill.execute_eligible(target) and not hero.buffs.has(&"sudden_death_1")):
+		return "Cannot Execute: target must be at or below %d%% health. No turn spent." % skill.execute_health_percent
+	if (global_cooldown_until > turn_count
+		or int(hero.cooldowns.get(String(cooldown_family(skill)), 0)) > turn_count
+		or not valid_spell_target(skill, target) or not SpellEffects.can_apply(self, skill, target)):
+		return "Cannot cast: invalid target, range, sight, or cooldown."
+	if skill.effect == SkillDefinition.Effect.CHARGE and charge_route(target).is_empty():
+		return "Cannot Charge: no reachable empty melee tile."
+	return ""
+
+
+func can_offer_cast(skill: SkillDefinition) -> bool:
+	if skill.target == SkillDefinition.Target.ENEMY:
+		var target := committed_enemy()
+		if skill.family != &"lava_burst" and in_combat() and target != null:
+			return cast_failure(skill, target) == ""
+		for candidate in spell_candidates(skill):
+			if cast_failure(skill, candidate) == "":
+				return true
+		return false
+	if cast_failure(skill) == "":
+		return true
+	if skill.target == SkillDefinition.Target.ALLY:
+		for candidate in spell_candidates(skill):
+			if cast_failure(skill, candidate) == "":
+				return true
+	return false
 
 
 func _begin_cast(skill: SkillDefinition, target: GridActor,

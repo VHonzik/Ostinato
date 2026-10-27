@@ -5,12 +5,12 @@ extends RefCounted
 
 const PASSIVES: Dictionary = {
 	"blessing_of_kings_1": ["Blessing of Kings", "Paladin", 70, 2, 0.0, 0, "While Battle Shout is active, also gain +2 Strength, Agility and Stamina. Requires learned Battle Shout; no extra cast or rage. Learning applies immediately to an existing Shout. Expiry removes the bonus; applying or refreshing does not heal.", 2],
-	"slice_and_dice_1": ["Slice and Dice", "Rogue", 10, 30, 0.0, 5, "Eviscerate grants +30% attack speed for 5 turns plus 3 per combo point spent, even on a miss. Refreshes without stacking. No extra rage or action; ordinary ability cooldowns are unchanged.", 1],
+	"slice_and_dice_1": ["Slice and Dice", "Rogue", 10, 30, 0.0, 5, "Eviscerate grants +30% attack speed for 5 turns plus 3 per combo point spent, even on a miss. Refreshes without stacking. No extra rage or action.", 1],
 	"weapon_mastery_1": ["Weapon Mastery", "Warrior", 90, 10, 0.0, 0, "+10 percentage points of weapon and direct Holy/Fire/Nature critical chance. Enemies have -2.5% chance to dodge your weapon attacks, including either hand, physical abilities and bonus weapon strikes (a flat 2.5 percentage-point reduction, minimum 0%). Works in every class once learned; does not prevent misses.", 2],
 	"enrage_1": ["Enrage", "Warrior", 15, 10, 0.3, 10, "Surviving enemy hits that deal damage have a 30% chance to grant +10% physical damage and +5 percentage points of attack critical chance for 10 turns, at any health. At most one roll per world turn. Refreshes without stacking; misses, dodges and immune hits cannot trigger it.", 1],
 	"recklessness_1": ["Death Wish", "Warrior", 45, 20, 0.0, 0, "As health falls, gain physical damage and take more damage: scales smoothly from no bonus at full health to +20% physical damage dealt and +10% damage taken at 25% health. Both bonuses stay capped below 25%. Healing immediately reduces both effects. Applies in every class once learned.", 2],
-	"battle_trance_1": ["Battle Trance", "Warrior", 250, 0, 0.0, 0, "Direct physical, Holy, Fire and Nature active crits make the next rage-costing active free until used. Finishers cannot trigger it.", 4],
-	"sudden_death_1": ["Sudden Death", "Warrior", 405, 0, 0.2, 0, "Landed direct physical active attacks other than Execute have a 20% chance to allow one free Execute at any health until used. Auto-attacks and bonus damage cannot trigger it. The proc Execute spends no extra rage.", 5],
+	"battle_trance_1": ["Battle Trance", "Warrior", 250, 0, 0.0, 0, "Direct physical, Holy, Fire and Nature active crits make your next Mortal Strike, Judgement, Lava Burst or Eviscerate free until used. Other abilities preserve the proc. Finishers cannot trigger it.", 4],
+	"sudden_death_1": ["Sudden Death", "Warrior", 405, 0, 0.2, 0, "Landed direct physical active attacks other than Execute have a 20% chance to allow one Execute at any health until used. It retains the normal 15-30 rage spending and bonus damage from rage above 15. Auto-attacks and bonus damage cannot trigger it.", 5],
 	"victory_rush_1": ["Victory Rush", "Warrior", 285, 10, 0.0, 0, "Enemy kills heal 10% of maximum health, rounded down, at most once every 6 turns across all kill sources. Overhealing also starts this internal cooldown; Restless Blades cannot shorten it. Summons and friendly actors do not qualify.", 4],
 	"shield_block_1": ["Shield Block", "Warrior", 320, 70, 0.3, 0, "While a shield is equipped, each damaging physical hit has a 30% chance to prevent 70% of its remaining damage. Remaining damage rounds up to at least 1 HP. Includes critical hits; no cooldown or per-turn limit. Partial blocks still grant incoming-hit rage and can trigger Enrage and Lightning Shield. Works in every class once learned.", 4],
 	"sweeping_strikes_1": ["Sweeping Strikes", "Warrior", 370, 50, 0.0, 0, "Landed single-target direct physical actives copy 50% of their damage to one other hostile enemy in melee. Whirlwind cannot trigger copies. Copies cannot proc, crit or generate rage/combo points.", 5],
@@ -26,12 +26,12 @@ const PASSIVES: Dictionary = {
 	"heart_of_the_crusader_1": ["Heart of the Crusader", "Paladin", 235, 0, 0.0, 0, "Judgement's landed verdict leaves its target vulnerable until your next landed melee strike or melee ability. That strike adds 25% of its hand's weapon damage as Holy, ignoring armor. Misses, ranged attacks and bonus strikes do not consume it. Does not stack or expire; no extra crits, combo points or attack procs.", 4],
 	"pursuit_of_justice_1": ["Pursuit of Justice", "Paladin", 305, 20, 0.0, 0, "+20% movement credit: periodically move an extra tile in the chosen direction, stopping at obstacles.", 4],
 	"guardians_favor_1": ["Guardian's Favor", "Paladin", 370, 10, 0.0, 1, "Divine Shield cooldown is 10 turns shorter and its duration is 1 turn longer.", 5],
-	"ambidexterity_1": ["Ambidexterity", "Rogue", 60, 25, 0.0, 0, "Raises off-hand weapon damage from 50% to 75% in any class. Dual-wield pairs are always usable; off-hand swings grant no ordinary rage.", 2],
-	"combat_potency_1": ["Combat Potency", "Rogue", 120, 5, 0.2, 0, "Landed ordinary off-hand swings have a 20% chance to grant 5 rage.", 3],
-	"seal_fate_1": ["Seal Fate", "Rogue", 150, 1, 0.0, 0, "Direct active crits grant one additional combo point after Relentless Assault. Finishers and bonus strikes do not qualify.", 3],
+	"ambidexterity_1": ["Ambidexterity", "Rogue", 60, 25, 0.0, 0, "Raises off-hand weapon damage from 50% to 75% in any class. Off-hand swings grant no ordinary rage.", 2],
+	"combat_potency_1": ["Combat Potency", "Rogue", 120, 5, 0.2, 0, "Landed ordinary off-hand swings have a 20% chance to grant 5 rage. With Relentless Assault, landed main-hand auto-attacks have a 30% chance to grant one combo point, sharing its one-base-point-per-turn cap.", 3],
+	"seal_fate_1": ["Seal Fate", "Rogue", 150, 1, 0.0, 0, "Mortal Strike, Execute, Lava Burst and Judgement crits grant one additional combo point with Relentless Assault. Finishers and bonus strikes do not qualify.", 3],
 	"main_gauche_1": ["Main Gauche", "Rogue", 190, 100, 0.15, 0, "Landed main-hand swings have a 15% chance for an off-hand bonus strike. Requires an off-hand weapon; no recursive procs or rage.", 3],
 	"restless_blades_1": ["Restless Blades", "Rogue", 270, 1, 0.0, 0, "Finishers reduce remaining offensive and defensive ability cooldowns by 1 turn per 2 points spent, rounded up.", 4],
-	"catalytic_venom_1": ["Catalytic Venom", "Rogue", 310, 1, 0.0, 0, "While dual wielding, Instant Poison on your faster base-speed weapon also applies one stack of the slower weapon's Deadly Poison. Both coatings must be active. Equal-speed weapons do not catalyze. No extra roll or recursive procs.", 5],
+	"catalytic_venom_1": ["Catalytic Venom", "Rogue", 310, 1, 0.0, 0, "While dual wielding with active Instant and Deadly Poison on opposite hands, each Instant proc also applies one Deadly stack regardless of weapon speeds. No extra roll or recursive procs.", 5],
 	"bandits_guile_1": ["Bandit's Guile", "Rogue", 370, 5, 0.0, 10, "Every 4 landed direct active attacks grant +5% damage, up to 15%, for 10 turns. Misses and finishers do not advance it.", 5],
 	"precision_1": ["Precision", "Rogue", 430, 0, 0.0, 0, "Your weapon and direct Holy/Fire/Nature attacks never miss, even against higher-level enemies. Enemies can still dodge weapon attacks.", 5],
 }
@@ -57,6 +57,7 @@ static func skills() -> Dictionary:
 			"training_copper": row[2], "training_level": row[7], "minimum": row[3], "coefficient": row[4],
 			"duration": row[5], "detail": "Passive: " + row[6],
 			"family": String(identifier).trim_suffix("_1"), "effect": "PASSIVE", "target": "NONE"}
+	result["combat_potency_1"]["combo_chance"] = 0.3
 	result["slice_and_dice_1"].merge({"haste_percent": 30, "duration_per_combo": 3})
 	result["weapon_mastery_1"]["dodge_reduction"] = 2.5
 	result["art_of_war_1"]["critical_damage_percent"] = 225

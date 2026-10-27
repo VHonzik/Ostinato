@@ -62,6 +62,42 @@ func _text(menu: MenuPanel) -> String:
 	return text
 
 
+func test_train_choice_hides_only_after_all_class_training_and_stays_hidden_after_gift() -> void:
+	for identity in [911, 915, 900002, 925]:
+		var session := _session()
+		var world := session.world
+		var trainer := _contact(world, identity)
+		_beside(world, trainer)
+		var menu := _menu(session)
+		menu.open_conversation(trainer)
+		assert_not_null(_button(menu, "Train"), trainer.title)
+		var skills := SkillDefinition.trainer_skills(trainer.service)
+		var missing_passive: SkillDefinition
+		for skill in skills:
+			if skill.effect == SkillDefinition.Effect.PASSIVE:
+				missing_passive = skill
+				break
+		assert_not_null(missing_passive)
+		if missing_passive == null:
+			continue
+		for skill in skills:
+			if skill.id != missing_passive.id:
+				world.hero.learn_skill(skill)
+		menu.open_conversation(trainer)
+		assert_not_null(_button(menu, "Train"), "An unlearned passive keeps training available.")
+		world.hero.learn_skill(missing_passive)
+		menu.open_conversation(trainer)
+		assert_null(_button(menu, "Train"), trainer.title)
+		var gift := _button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE)
+		assert_not_null(gift, "Completed training still offers the gift in any selected class.")
+		if gift == null:
+			continue
+		gift.pressed.emit()
+		assert_null(_button(menu, "Train"), "Claiming the gift does not restore training.")
+		assert_null(_button(menu, NpcConversation.TRAINER_GIFT_DIALOGUE))
+		assert_eq(world.turn_count, 0)
+
+
 func test_warrior_farewell_requires_all_training_and_awards_horn_once() -> void:
 	var session := _session()
 	var world := session.world
@@ -465,6 +501,35 @@ func test_warrior_choice_is_confident_in_every_returning_loop() -> void:
 				assert_true(choice.title.begins_with("I am ...."))
 
 
+func test_class_choice_wording_tracks_each_class_across_saves_and_deaths_without_tooltips() -> void:
+	var session := _session()
+	session.loop_count = 4
+	session.world.class_selected = false
+	var marshal := _contact(session.world, NpcDefinition.MARSHAL_ID)
+	_beside(session.world, marshal)
+	for choice in NpcConversation.build(session, marshal).choices:
+		if choice.action == NpcConversation.Action.SELECT_CLASS:
+			assert_eq(choice.tooltip, "")
+			assert_eq(choice.title, "I am warrior" if choice.category == &"Warrior"
+				else "I am .... %s" % String(choice.category).to_lower())
+	assert_true(session.select_class(&"Paladin", marshal))
+	var restored := SaveCodec.restore(SaveCodec.capture(session), false)
+	assert_not_null(restored)
+	if restored == null:
+		return
+	session.restore(restored, session.seed_value, 4)
+	session.world.hero.health = 0
+	assert_true(session.restart_after_death())
+	marshal = _contact(session.world, NpcDefinition.MARSHAL_ID)
+	_beside(session.world, marshal)
+	for choice in NpcConversation.build(session, marshal).choices:
+		if choice.action == NpcConversation.Action.SELECT_CLASS:
+			assert_eq(choice.tooltip, "")
+			var confident := choice.category in [&"Warrior", &"Paladin"]
+			assert_eq(choice.title, ("I am %s" if confident else "I am .... %s")
+				% String(choice.category).to_lower())
+
+
 func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected() -> void:
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(SaveCodec.capture(_session())))
 	snapshot.erase("starter_gear_received")
@@ -584,14 +649,14 @@ func test_first_loop_marshal_mentions_free_gear_until_it_is_received() -> void:
 	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
 
 
-func test_contacts_without_services_log_their_new_greetings() -> void:
+func test_contact_without_services_logs_greeting_without_spending_a_turn() -> void:
 	var session := _session()
 	var menu := _menu(session)
-	var contact := _contact(session.world, 198)
+	var contact := _contact(session.world, 1642)
 	_beside(session.world, contact)
 	menu.open_conversation(contact)
 	assert_false(menu.visible)
-	assert_eq(session.world.messages[-1], contact.title + ": " + NpcDefinition.greeting_for(198))
+	assert_eq(session.world.messages[-1], contact.title + ": " + NpcDefinition.greeting_for(1642))
 	assert_eq(session.world.turn_count, 0)
 
 
@@ -654,7 +719,7 @@ func test_new_conversation_records_one_talk_but_returning_from_a_service_records
 func test_greeting_without_menu_choices_records_only_one_talk() -> void:
 	var session := _session()
 	var world := session.world
-	var contact := _contact(world, 198)
+	var contact := _contact(world, 1642)
 	_beside(world, contact)
 	_talk_quest(world, contact, NpcDefinition.MARSHAL_ID)
 	var menu := _menu(session)

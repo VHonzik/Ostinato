@@ -1,28 +1,6 @@
 extends GutTest
 
 
-func test_eviscerate_intrinsic_refund_scales_with_spent_points_without_refunding_points() -> void:
-	var generator := RandomNumberGenerator.new()
-	var controlled_seed := -1
-	for seed_value in range(1000):
-		generator.seed = seed_value
-		var roll := generator.randf()
-		if roll > 0.25 and roll < 0.35:
-			controlled_seed = seed_value
-			break
-	assert_ne(controlled_seed, -1)
-	for points in [1, 2, 5]:
-		var world := _world(&"Rogue")
-		_learn(world, [&"eviscerate_1"])
-		world.hero.rage = 10
-		world.hero.combo_points = 0
-		world.combat_random.seed = controlled_seed
-		ClassToolkitRules.finish(world, points, world.hero.find_skill(&"eviscerate_1"))
-		assert_eq(world.hero.rage, 10 if points == 1 else 25,
-			"The same ~30% roll fails at one point, succeeds at two; five guarantees the refund.")
-		assert_eq(world.hero.combo_points, 0)
-
-
 func test_terminal_eviscerate_kill_spends_points_and_rage_without_late_refunds() -> void:
 	var world := _world(&"Rogue")
 	_learn(world, [&"eviscerate_1", &"slice_and_dice_1"])
@@ -34,7 +12,7 @@ func test_terminal_eviscerate_kill_spends_points_and_rage_without_late_refunds()
 	world.hero.rage = 20
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(world.attempt_state, GridWorld.AttemptState.COMPLETED)
-	assert_eq(world.hero.rage, 5, "Victory stops the otherwise guaranteed five-point refund.")
+	assert_eq(world.hero.rage, 5, "A terminal hit still pays the 15-rage cost.")
 	assert_eq(world.hero.combo_points, 0)
 	assert_false(world.hero.buffs.has(&"slice_and_dice_1"))
 
@@ -61,21 +39,6 @@ func test_folded_passives_are_absent_from_training_and_rejected_in_saved_learnin
 		assert_null(SaveCodec.restore(stale_buff, false))
 
 
-func test_five_point_noncritical_eviscerate_leaves_both_wolf_types_alive() -> void:
-	for identity in [299, 69]:
-		var world := _world(&"Rogue")
-		_learn(world, [&"eviscerate_1", &"relentless_assault_1"])
-		var wolf := _enemy(world)
-		var profile: Dictionary = NorthshireData.CREATURES[str(identity)]
-		wolf.max_health = profile.health
-		wolf.health = wolf.max_health
-		wolf.melee.level = profile.level
-		wolf.melee.armor = profile.armor
-		world.hero.combo_points = 5
-		assert_true(world.cast_skill(&"eviscerate_1", wolf))
-		assert_true(wolf.alive)
-		assert_lt(wolf.health, wolf.max_health)
-		assert_gt(wolf.health, 0)
 
 
 func _world(category: StringName = &"Warrior") -> GridWorld:
@@ -275,11 +238,11 @@ func test_main_hand_and_active_points_share_one_turn_even_with_many_due_swings()
 	assert_true(world.cast_skill(&"mortal_strike_1", enemy))
 	assert_eq(world.hero.combo_points, 1, "The active and all due swings share one base point.")
 	world.wait_turn()
-	assert_eq(world.hero.combo_points, 2, "The next turn can gain another main-hand point.")
+	assert_eq(world.hero.combo_points, 1, "Untrained auto-attacks cannot build points.")
 	world.hero.swing.remaining = 100.0
 	world.hero.off_hand_swing.remaining = 0.0
 	world.wait_turn()
-	assert_eq(world.hero.combo_points, 2, "An off-hand-only turn grants no point.")
+	assert_eq(world.hero.combo_points, 1, "An off-hand-only turn grants no point.")
 
 
 func test_battle_trance_accepts_holy_and_fire_active_crits() -> void:
@@ -431,22 +394,25 @@ func test_battle_trance_free_attack_consumes_once_and_rejected_use_keeps_proc() 
 	assert_false(world.hero.buffs.has(&"battle_trance_1"))
 
 
-func test_sudden_death_allows_one_free_execute_at_full_health_and_does_not_spend_extra_rage() -> void:
-	var world := _world()
-	_learn(world, [&"execute_1", &"sudden_death_1"])
-	var enemy := _enemy(world)
-	assert_false(world.cast_skill(&"execute_1", enemy))
-	ClassToolkitRules.apply(world, &"sudden_death_1", {"charges": 1})
-	world.hero.melee.critical = 0
-	world.hero.melee.damage_min = 20
-	world.hero.melee.damage_max = 20
-	world.hero.melee.attack_power = 0
-	world.hero.find_skill(&"sudden_death_1").coefficient = 1
-	assert_true(world.cast_skill(&"execute_1", enemy))
-	assert_eq(enemy.health, 9945)
-	assert_eq(world.hero.rage, 100)
-	assert_false(world.hero.buffs.has(&"sudden_death_1"))
-	assert_false(world.cast_skill(&"execute_1", enemy))
+func test_sudden_death_allows_one_execute_at_full_health_with_normal_spending_and_damage() -> void:
+	for rage in [15, 22, 30, 100]:
+		var world := _world()
+		_learn(world, [&"execute_1", &"sudden_death_1"])
+		var enemy := _enemy(world)
+		assert_false(world.cast_skill(&"execute_1", enemy))
+		ClassToolkitRules.apply(world, &"sudden_death_1", {"charges": 1})
+		world.hero.melee.critical = 0
+		world.hero.melee.damage_min = 20
+		world.hero.melee.damage_max = 20
+		world.hero.melee.attack_power = 0
+		world.hero.rage = rage
+		world.hero.find_skill(&"sudden_death_1").coefficient = 1
+		var spent := mini(rage, 30)
+		assert_true(world.cast_skill(&"execute_1", enemy))
+		assert_eq(enemy.health, 10000 - (55 + (spent - 15) * 2))
+		assert_eq(world.hero.rage, rage - spent)
+		assert_false(world.hero.buffs.has(&"sudden_death_1"))
+		assert_false(world.cast_skill(&"execute_1", enemy))
 
 
 func test_paid_execute_cannot_trigger_sudden_death() -> void:
@@ -550,7 +516,7 @@ func test_whirlwind_does_not_copy_hits_through_sweeping_strikes() -> void:
 	assert_true(world.cast_skill(&"whirlwind_1"))
 	for enemy: GridActor in targets:
 		assert_eq(enemy.health, 9986, "Each enemy takes only its own Whirlwind hit.")
-	assert_eq(world.hero.combo_points, 1)
+	assert_eq(world.hero.combo_points, 0)
 	for message in world.messages:
 		assert_false(message.begins_with("Sweeping Strikes"))
 
@@ -605,7 +571,7 @@ func test_inherent_shield_and_static_shock_consume_charges_without_extra_rage_po
 	ClassToolkitRules.discharge(world, enemy, true)
 	assert_eq(int(world.hero.buffs[&"lightning_shield_1"].charges), 4, "Reactive cooldown still applies.")
 	assert_eq(world.hero.rage, rage)
-	assert_eq(world.hero.combo_points, 1, "Only the primary main-hand hit builds a point.")
+	assert_eq(world.hero.combo_points, 0, "Without Combat Potency, neither primary nor reactive damage builds points.")
 
 
 func test_lava_burst_flat_damage_and_crits_ignore_weapon_and_strength() -> void:
@@ -791,7 +757,7 @@ func test_vengeance_caps_three_stacks_without_extra_combo_points() -> void:
 		AttackProcs.on_attack(world, AttackEvent.new(enemy, null, &"critical", 20))
 	assert_almost_eq(ClassToolkitRules.damage_multiplier(world.hero), 1.09, 0.001)
 	assert_eq(enemy.health, 10000)
-	assert_eq(world.hero.combo_points, 1, "Only the primary hits build one base point per turn.")
+	assert_eq(world.hero.combo_points, 0, "Untrained auto-attacks and Vengeance cannot build points.")
 
 
 func test_pursuit_of_justice_accumulates_extra_grid_steps_and_stops_at_obstacles() -> void:
@@ -864,7 +830,7 @@ func test_combat_potency_and_main_gauche_distinguish_ordinary_from_bonus_offhand
 	assert_eq(world.hero.combo_points, 1, "Off-hand and Main Gauche add no points.")
 
 
-func test_eviscerate_spends_on_miss_grants_haste_then_refunds_once_and_reduces_cooldowns() -> void:
+func test_eviscerate_spends_on_miss_grants_haste_and_reduces_cooldowns() -> void:
 	var world := _world(&"Rogue")
 	_learn(world, [&"slice_and_dice_1", &"eviscerate_1", &"relentless_assault_1", &"restless_blades_1"])
 	var enemy := _enemy(world)
@@ -878,7 +844,7 @@ func test_eviscerate_spends_on_miss_grants_haste_then_refunds_once_and_reduces_c
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_eq(enemy.health, 10000)
 	assert_eq(world.hero.combo_points, 0, "Finishers no longer refund combo points.")
-	assert_eq(world.hero.rage, 20)
+	assert_eq(world.hero.rage, 5)
 	assert_eq(world.hero.cooldowns.charge, 7)
 	assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].haste_percent), 30)
 
@@ -935,15 +901,12 @@ func test_eviscerate_scales_damage_and_passive_haste_duration_with_the_same_spen
 		world.last_attacked_enemy = enemy
 		world.hero.combo_points = points
 		assert_true(world.cast_skill(&"eviscerate_1", enemy))
-		assert_eq(enemy.health, 10000 - 10 - 4 * points)
+		assert_eq(enemy.health, 10000 - 19 * points)
 		assert_eq(world.hero.combo_points, 0)
 		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].until) - world.turn_count,
 			5 + 3 * points)
 		assert_eq(int(world.hero.buffs[&"slice_and_dice_1"].haste_percent), 30)
-		if points == 5:
-			assert_eq(world.hero.rage, 100, "Five points refund the 15 rage spent.")
-		else:
-			assert_true(world.hero.rage in [85, 100], "Pay 15 rage, with at most one 15-rage refund.")
+		assert_eq(world.hero.rage, 85, "Every finisher pays 15 rage without a refund.")
 		assert_eq(world.turn_count, 1)
 
 
@@ -995,7 +958,7 @@ func test_eviscerate_without_slice_and_dice_only_attacks() -> void:
 	world.last_attacked_enemy = enemy
 	world.hero.combo_points = 5
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
-	assert_eq(enemy.health, 9970)
+	assert_eq(enemy.health, 9905)
 	assert_eq(world.hero.combo_points, 0)
 	assert_false(world.hero.buffs.has(&"slice_and_dice_1"))
 
@@ -1013,7 +976,7 @@ func test_eviscerate_kill_prevents_a_due_swing_on_the_dead_target() -> void:
 	assert_true(world.cast_skill(&"eviscerate_1", enemy))
 	assert_false(enemy.alive)
 	assert_eq(world.hero.combo_points, 0, "No ordinary swing builds points after the kill.")
-	assert_eq(world.hero.rage, 48, "The five-point refund offsets the cost; only out-of-combat decay remains.")
+	assert_eq(world.hero.rage, 33, "Pay 15 rage, then ordinary out-of-combat decay.")
 	assert_true(world.hero.buffs.has(&"slice_and_dice_1"))
 	assert_eq(world.turn_count, 1)
 
@@ -1053,7 +1016,7 @@ func test_whirlwind_hits_adjacent_enemies_once_and_counts_only_one_class_use() -
 	assert_eq(blocked.health, 10000)
 	assert_eq(second.relationship, GridActor.Relationship.HOSTILE)
 	assert_true(second.engaged)
-	assert_eq(world.hero.combo_points, 1, "All cleave targets share the base point limit.")
+	assert_eq(world.hero.combo_points, 0, "Whirlwind is not a combo builder.")
 	assert_same(world.last_attacked_enemy, first)
 	assert_same(world.auto_attack_target, first)
 
@@ -1262,7 +1225,7 @@ func test_passive_is_keyboard_focusable_and_inspectable_without_casting_or_assig
 		return
 	passive.grab_focus()
 	assert_same(panel.get_viewport().gui_get_focus_owner(), passive)
-	assert_string_contains(panel._details.text, "allow one free Execute")
+	assert_string_contains(panel._details.text, "allow one Execute at any health")
 	assert_true(panel._assign.disabled)
 	passive.pressed.emit()
 	assert_signal_not_emitted(panel, "cast_requested")

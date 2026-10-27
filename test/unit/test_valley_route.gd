@@ -337,11 +337,11 @@ func test_stalker_uses_the_southwestern_gate_and_survives_save_roundtrip() -> vo
 		return
 	assert_eq(restored.stalker_deadlines, world.stalker_deadlines)
 	assert_eq(restored.actors[-1].spawn_id, world.actors[-1].spawn_id)
-	assert_eq(restored.actors[-1].health, 600)
+	assert_eq(restored.actors[-1].health, world.actors[-1].health)
 	assert_eq(restored.actors[-1].melee.level, 8)
 	assert_eq(restored.actors[-1].melee.armor, 240)
-	assert_eq(restored.actors[-1].melee.damage_min, 14.0)
-	assert_eq(restored.actors[-1].melee.damage_max, 18.0)
+	assert_eq(restored.actors[-1].melee.damage_min, world.actors[-1].melee.damage_min)
+	assert_eq(restored.actors[-1].melee.damage_max, world.actors[-1].melee.damage_max)
 	assert_eq(restored.actors[-1].melee.attack_power, 0)
 	assert_eq(restored.actors[-1].melee.interval, 2.5)
 	world.turn_count = world.stalker_deadlines[1]
@@ -626,12 +626,15 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 		var sprites := view.npc_sprite_layers(actor)
 		if actor.stalker:
 			assert_eq((sprites.base_sprite as AtlasTexture).region, Rect2(64, 0, 16, 16))
+		elif (actor.npc_id in [299, 69, 911, 823, 9296, 197, 925, 915, 900002, 900003,
+			6, 257, 80, 103, 38] or actor.summon_kind == "wolf"):
+			assert_same((sprites.base_sprite as AtlasTexture).atlas, GridView.ABILITY_CHARACTERS)
 		else:
 			assert_same(sprites.base_sprite, GridView.NPC_BASE_SPRITE, actor.title)
 		assert_not_null(sprites.faction_sprite, actor.title)
 	var wolf := view.npc_sprite_layers(_actor(view.world, 299)).faction_sprite as AtlasTexture
-	assert_same(wolf.atlas, GridView.CHARACTERS)
-	assert_eq(wolf.region, Rect2(112, 64, 16, 16), "The current wolf art becomes its faction layer.")
+	assert_same(wolf.atlas, GridView.ABILITY_CHARACTERS)
+	assert_eq(wolf.region, Rect2(96, 16, 16, 16))
 	for category in GridView.CLASS_SPRITES:
 		var sprites := view.player_sprite_layers(category)
 		assert_not_null(sprites.base_sprite, category)
@@ -639,6 +642,37 @@ func test_all_npc_kinds_get_two_layers_and_players_keep_current_art_with_empty_f
 	var warrior := view.player_sprite_layers(&"Warrior").base_sprite as AtlasTexture
 	assert_same(warrior.atlas, GridView.ABILITY_CHARACTERS)
 	assert_eq(warrior.region, Rect2(0, 0, 16, 16), "The new class art becomes its base layer.")
+
+
+func test_ready_hand_in_marker_beats_offers_and_returns_to_offer_after_reward() -> void:
+	var view := RecordingGridView.new()
+	add_child_autofree(view)
+	view.set_process(false)
+	view.world = _session().world
+	var marshal := _marshal(view.world)
+	_beside(view.world, marshal)
+	assert_true(QuestRules.accept(view.world, "valley_camp", marshal))
+	assert_true(QuestRules.available(view.world, "valley_wolves"))
+	view._process(GridView.BLINK_SECONDS)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	for count in range(4):
+		QuestRules.record_kill(view.world, 6)
+	view._draw_actor(marshal)
+	assert_eq(view.character_effect(marshal).family, &"quest_ready")
+	assert_null(view.drawn_base)
+	assert_eq((view.drawn_faction as AtlasTexture).region, Rect2(80, 16, 16, 16))
+	assert_eq(view.drawn_faction_color, view._actor_color(marshal))
+	view._process(GridView.BLINK_SECONDS)
+	view._draw_actor(marshal)
+	assert_same(view.drawn_base, view.npc_sprite_layers(marshal).base_sprite)
+	view._process(GridView.BLINK_SECONDS)
+	assert_true(QuestRules.hand_in(view.world, "valley_camp", marshal))
+	view._draw_actor(marshal)
+	assert_same(view.drawn_faction, view._quest_marker_sprite)
+	marshal.alive = false
+	assert_eq(QuestRules.marker_kind(view.world, marshal), &"")
+	assert_eq(view.world.turn_count, 0)
 
 
 func test_health_changes_reach_npc_and_player_base_layers_without_changing_faction() -> void:
@@ -669,7 +703,7 @@ func test_health_changes_reach_npc_and_player_base_layers_without_changing_facti
 	assert_same(view.drawn_faction, faction)
 
 
-func test_quest_marker_alternates_faction_layer_while_injured_base_stays_visible() -> void:
+func test_quest_marker_replaces_both_layers_then_restores_injured_actor() -> void:
 	var view := RecordingGridView.new()
 	add_child_autofree(view)
 	view.world = _session().world
@@ -682,12 +716,12 @@ func test_quest_marker_alternates_faction_layer_while_injured_base_stays_visible
 	assert_eq(view.drawn_base_color, Color.RED)
 	view._process(2.0)
 	view._draw_actor(marshal)
-	assert_same(view.drawn_base, base)
+	assert_null(view.drawn_base, "The quest marker hides the health sprite too.")
 	assert_same(view.drawn_faction, view._quest_marker_sprite)
-	assert_eq(view.drawn_base_color, Color.RED)
 	assert_eq(view.drawn_faction_color, Color("#9acd95"))
 	view._process(2.0)
 	view._draw_actor(marshal)
+	assert_same(view.drawn_base, base)
 	assert_same(view.drawn_faction, faction)
 	assert_eq(view.drawn_base_color, Color.RED)
 	assert_eq(view.world.turn_count, 0)
@@ -719,14 +753,17 @@ func test_ranged_engage_marker_expires_with_ability_effects_and_keeps_faction_co
 	enemy.relationship = GridActor.Relationship.HOSTILE
 	view.world.actors.append(enemy)
 	view._draw_actor(enemy)
+	var base := view.drawn_base
 	var color := view.drawn_faction_color
 	var faction := view.drawn_faction
 	NpcRules.acquire_hostiles(view.world)
 	view._draw_actor(enemy)
+	assert_null(view.drawn_base, "The aggro marker hides the health sprite too.")
 	assert_same(view.drawn_faction, view._quest_marker_sprite)
 	assert_eq(view.drawn_faction_color, color)
 	view._process(GridView.ABILITY_BLINK_SECONDS)
 	view._draw_actor(enemy)
+	assert_same(view.drawn_base, base)
 	assert_same(view.drawn_faction, faction)
 	assert_eq(view.drawn_faction_color, color)
 	NpcRules.acquire_hostiles(view.world)

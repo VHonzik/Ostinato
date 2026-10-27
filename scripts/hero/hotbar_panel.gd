@@ -81,7 +81,7 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 		elif world.hotbar[index] == ItemData.ANCESTRAL_TOTEM_HOTBAR_ID:
 			skill = ItemData.ancestral_totem_action()
 		button.describe(skill, world.hero)
-		_refresh_highlights(button, world, skill)
+		_refresh_highlights(button, world, skill, can_activate)
 		var key := options.key_label(StringName("hotbar_%d" % (index + 1))).replace("Shift+", "S+")
 		button.text = "%s\n%s" % [key, "—" if skill == null else skill.title.get_slice(" ", 0)]
 		button.disabled = not (can_activate or (editing_enabled and choosing_slot))
@@ -94,7 +94,7 @@ func refresh(world: GridWorld, options: GlobalOptions, can_activate: bool,
 			and skill.available_resource(world.hero) < skill.cost(world.hero))
 		var execute_unavailable := (skill != null and skill.effect == SkillDefinition.Effect.EXECUTE
 			and not world.hero.buffs.has(&"sudden_death_1")
-			and (not world.valid_spell_target(skill, world.last_attacked_enemy) if world.in_combat()
+			and (not world.valid_spell_target(skill, world.committed_enemy()) if world.in_combat()
 				else world.spell_candidates(skill).is_empty()))
 		var sentence_unavailable := (skill != null
 			and skill.effect == SkillDefinition.Effect.JUDGEMENT
@@ -157,7 +157,8 @@ func _drop(position: Vector2, data: Variant, slot: int) -> void:
 		skill_dropped.emit(slot, data.skill_id, data.hero)
 
 
-func _refresh_highlights(button: SkillButton, world: GridWorld, skill: SkillDefinition) -> void:
+func _refresh_highlights(button: SkillButton, world: GridWorld, skill: SkillDefinition,
+	can_activate: bool) -> void:
 	var colors: Array[Color] = []
 	var hints := PackedStringArray()
 	if skill != null:
@@ -168,7 +169,11 @@ func _refresh_highlights(button: SkillButton, world: GridWorld, skill: SkillDefi
 		if critical:
 			colors.append(CRITICAL_COLOR)
 			hints.append("Guaranteed critical on a landed attack.")
-		if skill.rage_cost > 0 and skill.cost(hero) < skill.rage_cost:
+		if skill.family == &"eviscerate" and hero.combo_points == HeroState.MAX_COMBO_POINTS:
+			colors.append(CRITICAL_COLOR)
+			hints.append("Five combo points: full-strength Eviscerate.")
+		if (can_activate and skill.rage_cost > 0 and skill.cost(hero) < skill.rage_cost
+			and world.can_offer_cast(skill)):
 			colors.append(FREE_COST_COLOR)
 			hints.append("Free use ready.")
 		if _maintenance_missing(world, skill):

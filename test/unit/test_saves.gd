@@ -189,7 +189,8 @@ func test_damage_is_preserved_byte_for_byte_and_no_partial_state_is_loaded() -> 
 
 
 func test_unsupported_schema_stays_unchanged() -> void:
-	var unsupported := range(2, 35)
+	var unsupported := range(1, 35)
+	unsupported.erase(SaveStore.REVISION)
 	for revision in unsupported:
 		assert_true(_saves.save_slot(_session, 1, true), _saves.last_error)
 		var record: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(_saves.slot_path(1)))

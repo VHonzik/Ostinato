@@ -9,9 +9,9 @@ Edit the sources manually and export the corresponding runtime sheet.
 
 The game uses four sheets under [assets/spritesheets/](../assets/spritesheets/):
 
-- `characters.png`: current classes, trainers, Stalker layers, Earth Elemental and ability effects.
+- `characters.png`: current classes, trainers, Janos, Milly, Marshal McBride, Deputy Willem, wolves, kobolds, Defias Thugs, Garrick, Stalker layers, Earth Elemental and effects.
 - `scroolospritescharacters_nobg.png`: other reference characters and creatures.
-- `scroolospritesenvironment_nobg.png`: reference terrain, chests, corpses and quest marker.
+- `scroolospritesenvironment_nobg.png`: reference terrain, chests and corpses.
 - `valley/sprites.png`: remaining contacts, terrain and props.
   [sprites.json](../assets/spritesheets/valley/sprites.json) maps names to atlas rectangles.
 
@@ -23,10 +23,14 @@ The SVG under [assets/sprites/dev/](../assets/sprites/dev/) supplies the tempora
 NPC base heart. In `characters.png`, the fifth column holds Stalker health and faction
 layers, Fel Breath wind-up and cone tile art from top to bottom. The fourth column,
 fifth row supplies Earth Elemental's health layer; its faction layer is empty. Fel Breath
-uses normal 1.5-second sprite replacements on each wind-up turn and release, excluding
-the player from the area flash. The countdown and steady cone border preserve the
+uses normal 1.5-second sprite flashes on each wind-up turn and release, selected
+by character effect priority. The countdown and steady cone border preserve the
 warning between turns. Windfury uses the fourth column, second row on landed bonus hits.
-Living actors use independent base and faction textures through
+The third column, fifth row supplies poison-trigger art; the sixth column, first row
+supplies the shared quest-offer/aggro exclamation; the sixth column, second row supplies
+the ready-hand-in question mark. NPC health/faction pairs can be vertical or horizontal;
+their cells are mapped in GridView. Character effect priority is defined in
+[class mechanics](../docs/class-mechanics.md). Living actors use independent base and faction textures through
 [ActorSpriteLayers](../scripts/world/actor_sprite_layers.gd). Replace pairs using
 the GridView node's `npc_sprites` or `player_sprites` dictionaries, with matching
 canvas sizes and positions.

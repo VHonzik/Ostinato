@@ -66,15 +66,6 @@ const ITEMS: Dictionary = {
 		"stats": {}, "use": "", "quest": "",
 		"tradable": true, "weapon_style": "shield_pair",
 	},
-	"2070": {
-		"title": "Darnassian Bleu", "quality": 1, "slot": "",
-		"level": 1, "stack": 20, "buy": 5,
-		"sell": 1, "armor": 0, "two_handed": false,
-		"unique": false, "weapon": false, "shield": false,
-		"minimum": 0, "maximum": 0, "interval": 0.0,
-		"stats": {}, "use": "food", "quest": "",
-		"tradable": true, "restore": 61, "duration": 18,
-	},
 	"2649": {
 		"title": "Flimsy Chain Armor", "quality": 0, "slot": "armor",
 		"level": 1, "stack": 1, "buy": 10,
@@ -111,16 +102,6 @@ const ITEMS: Dictionary = {
 		"stats": {"crit": 1.0, "haste": 3.0}, "use": "", "quest": "",
 		"tradable": true, "weapon_style": "dual_wield", "off_minimum": 3,
 		"off_maximum": 5, "off_interval": 1.6,
-	},
-	"4536": {
-		"title": "Shiny Red Apple", "quality": 1, "slot": "",
-		"level": 1, "stack": 20, "buy": 5,
-		"sell": 1, "armor": 0, "two_handed": false,
-		"unique": false, "weapon": false, "shield": false,
-		"minimum": 0, "maximum": 0, "interval": 0.0,
-		"stats": {}, "use": "food", "quest": "",
-		"tradable": true, "restore": 50, "duration": 10,
-		"note": "Restores 5 HP per turn for 10 turns while standing still; movement or combat ends eating.",
 	},
 	"4766": {
 		"title": "Feral Blade", "quality": 2, "slot": "weapons",

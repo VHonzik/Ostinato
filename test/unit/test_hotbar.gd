@@ -44,9 +44,7 @@ func test_item_assignment_ui_and_save_preserve_custom_and_cleared_shortcuts() ->
 	var menu := MenuPanel.new()
 	menu.session = session
 	add_child_autofree(menu)
-	for item_id in [117, 118, 2070, 4536, 4540]:
-		if item_id not in [117, 118]:
-			assert_true(InventoryRules.receive(world.hero, ItemData.instance(item_id)))
+	for item_id in [117, 118]:
 		var index := -1
 		for slot in range(world.hero.inventory.size()):
 			if world.hero.inventory[slot].get("id", 0) == item_id:
@@ -110,17 +108,17 @@ func test_live_potion_shortcut_heals_and_reports_cooldown_without_extra_use() ->
 	assert_false(world.assign_hotbar(5, ItemData.POTION_HOTBAR_ID))
 
 
-func test_looted_food_shortcut_uses_its_own_stack_and_restoration() -> void:
+func test_food_shortcut_uses_jerky_and_stays_assigned_when_empty() -> void:
 	var world := GridWorld.new(Rect2i(0, 0, 12, 12), Vector2i(5, 5), 97, false)
-	assert_true(InventoryRules.receive(world.hero, ItemData.instance(4536)))
 	assert_true(InventoryRules.receive(world.hero, ItemData.instance(117)))
-	var identifier := ItemData.hotbar_id(4536)
+	assert_true(InventoryRules.receive(world.hero, ItemData.instance(118)))
+	var identifier := ItemData.hotbar_id(117)
 	assert_true(world.assign_hotbar(3, identifier))
 	assert_true(world.consume_hotbar_item(identifier))
-	assert_eq(world.hero.restoration.food.total, 50)
-	assert_eq(world.hero.restoration.food.duration, 10)
+	assert_eq(world.hero.restoration.food.total, 61)
+	assert_eq(world.hero.restoration.food.duration, 18)
 	assert_eq(world.turn_count, 1)
-	assert_false(world.consume_hotbar_item(identifier), "The shortcut never substitutes another food.")
+	assert_false(world.consume_hotbar_item(identifier), "An empty food shortcut cannot use a potion.")
 	assert_eq(world.turn_count, 1)
 	assert_eq(world.hotbar[3], identifier, "An exhausted stack keeps its assignment.")
 
@@ -135,6 +133,10 @@ func test_hotbar_reports_crit_and_free_use_without_spending_procs_and_clears_rea
 	world.hero.learn_skill(SkillDefinition.catalog(&"judgement_1"))
 	world.hero.buffs[&"art_of_war_1"] = {"until": 0, "critical_ready": 1}
 	world.assign_hotbar(1, &"judgement_1")
+	world.hero.learn_skill(SkillDefinition.catalog(&"seal_of_command_1"))
+	var enemy := GridActor.new(Vector2i(6, 5))
+	enemy.relationship = GridActor.Relationship.HOSTILE
+	world.actors.append(enemy)
 	var before := world.hero.buffs.duplicate(true)
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	assert_string_contains(panel.slots[0].tooltip_text, "Guaranteed critical")
@@ -189,6 +191,11 @@ func test_poison_maintenance_accepts_mixed_coatings_and_detects_an_expired_hand(
 	assert_true(world.cast_skill(&"instant_poison_1", null, PoisonRules.Hands.MAIN))
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	assert_string_contains(panel.slots[0].tooltip_text, "Maintenance buff missing")
+	assert_true(world.cast_skill(&"instant_poison_1", null, PoisonRules.Hands.BOTH))
+	panel.refresh(world, GlobalOptions.new(), true, true, false)
+	for slot in [0, 1]:
+		assert_false(panel.slots[slot].tooltip_text.contains("Maintenance buff missing"),
+			"Instant on both hands also satisfies Deadly's maintenance check.")
 	assert_true(world.cast_skill(&"deadly_poison_1", null, PoisonRules.Hands.OFF))
 	panel.refresh(world, GlobalOptions.new(), true, true, false)
 	for slot in [0, 1]:

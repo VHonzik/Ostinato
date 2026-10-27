@@ -56,7 +56,7 @@ func test_crusader_verdict_marks_then_next_landed_melee_adds_holy_damage_once() 
 	AttackProcs.on_attack(world, event)
 	assert_eq(before - enemy.health, 11, "1 physical + 5 Crusader Holy + 5 Seal Holy, ignoring armor.")
 	assert_false(enemy.debuffs.has(&"heart_of_the_crusader_1"))
-	assert_eq(world.hero.combo_points, 1, "The bonus grants no additional points.")
+	assert_eq(world.hero.combo_points, 0, "Untrained swings and the bonus grant no points.")
 	before = enemy.health
 	AttackProcs.on_attack(world, event)
 	assert_eq(before - enemy.health, 5, "Only the normal Seal bonus remains.")

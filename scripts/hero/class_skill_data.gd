@@ -42,15 +42,15 @@ const STARTER_SKILLS: Dictionary = {
 	"eviscerate_1": {
 		"title": "Eviscerate", "class_tab": "Rogue", "training_level": 1,
 		"rage_cost": 15, "cast_seconds": 1.0, "range_tiles": 1,
-		"weapon_multiplier": 0.5, "minimum": 4, "coefficient": 0.2, "rage_generated": 15,
+		"weapon_multiplier": 0.75, "minimum": 4,
 		"family": "eviscerate",
 		"effect": "TOOLKIT", "target": "ENEMY",
-		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for 50% weapon damage plus 4 per point as physical damage. Hit/crit and armor apply; misses still spend points. Learned Slice and Dice adds haste from those spent points, even on a miss. After spending, has a 20% chance per point spent to refund 15 rage (guaranteed at five points), including on a miss. Refunds happen once; no combo points are refunded. Builds no attack points. One turn, no cooldown; weapon timing continues."
+		"detail": "Requires a melee target and at least 1 combo point. Spend all held points for (75% weapon damage + 4) per point as physical damage: 375% + 20 at five points. Hit/crit and armor apply; misses still spend points and rage. Learned Slice and Dice adds haste from those spent points, even on a miss. Builds no attack points. One turn, no cooldown; weapon timing continues."
 	},
 	"relentless_assault_1": {
 		"title": "Relentless Assault", "class_tab": "Rogue", "training_level": 1,
 		"family": "relentless_assault", "effect": "PASSIVE", "target": "NONE",
-		"detail": "Passive: landed direct active attacks and ordinary main-hand hits grant 1 player-held combo point, up to 5, across classes and targets. At most 1 Relentless Assault point per turn. Off-hand hits, procs, buffs and misses grant none. Points reset on death."
+		"detail": "Passive: landed Mortal Strike, Execute, Lava Burst and Judgement grant 1 player-held combo point, up to 5, across classes and targets. At most 1 base point per turn, shared with Combat Potency's main-hand chance. Other attacks, off-hand hits, procs, buffs and misses grant none. Points reset on death."
 	},
 }
 const CLASSES: Array[StringName] = PLAYABLE_CLASSES
@@ -90,7 +90,7 @@ const SKILLS: Dictionary = {
 		"family": "execute", "effect": "EXECUTE", "target": "ENEMY",
 		"weapon_multiplier": 1.5, "minimum": 25, "execute_health_percent": 20,
 		"execute_rage_cap": 30, "execute_damage_per_rage": 2,
-		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 150% weapon damage + 25 + 2 damage per rage above 15. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
+		"detail": "Requires a melee target at or below 20% health and at least 15 rage. Spend up to 30 current rage for 150% weapon damage + 25 + 2 damage per rage above 15. Sudden Death allows any target health with the same rage spending and damage scaling. Preserves Battle Trance. Physical hit and crit rules apply; misses spend rage. One turn, no cooldown; weapon timing continues. A landed attack builds Relentless Assault; no combo points are spent."
 	},
 }
 

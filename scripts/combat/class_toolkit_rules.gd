@@ -134,11 +134,12 @@ static func slice_and_dice(world: GridWorld, points: int) -> void:
 
 
 static func physical_attack(world: GridWorld, target: GridActor, skill: SkillDefinition,
-	flat_bonus: int, build_points: bool = true, commit_target: bool = true) -> void:
+	flat_bonus: int, build_points: bool = true, commit_target: bool = true,
+	weapon_scale: float = 1.0) -> void:
 	if commit_target:
 		world.last_attacked_enemy = target
 	var event := weapon_outcome(world, target, skill, world.hero.melee)
-	var multiplier := skill.weapon_multiplier
+	var multiplier := skill.weapon_multiplier * weapon_scale
 	if skill.family == &"whirlwind" and world.hero.buffs.has(&"wrecking_crew_1"):
 		var wrecking := world.hero.find_skill(&"wrecking_crew_1")
 		if wrecking != null:
@@ -269,7 +270,7 @@ static func discharge(world: GridWorld, target: GridActor, reactive: bool) -> vo
 		world.hero.buffs.erase(&"lightning_shield_1")
 
 
-static func finish(world: GridWorld, points: int, skill: SkillDefinition) -> void:
+static func finish(world: GridWorld, points: int, _skill: SkillDefinition) -> void:
 	if world.is_terminal():
 		return
 	if has(world.hero, &"restless_blades_1"):
@@ -278,8 +279,6 @@ static func finish(world: GridWorld, points: int, skill: SkillDefinition) -> voi
 			if key == "war_horn":
 				continue
 			world.hero.cooldowns[key] = maxi(world.turn_count, int(world.hero.cooldowns[key]) - reduction)
-	if world.combat_random.randf() < skill.coefficient * points:
-		world.hero.gain_rage(skill.rage_generated)
 	world.add_message("Finisher spent %d combo points." % points)
 
 
