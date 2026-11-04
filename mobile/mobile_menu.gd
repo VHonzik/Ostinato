@@ -32,9 +32,9 @@ func _continue() -> void:
 func _new_game(chosen_seed: int) -> void:
 	if not active_game and FileAccess.file_exists(recovery.path()):
 		confirm("Start a new game and replace recovery? Manual save slots are kept.", func() -> void:
-			new_game_requested.emit(chosen_seed)
 			active_game = true
-			close(), open_world_seeds)
+			close()
+			new_game_requested.emit(chosen_seed), open_world_seeds)
 	else:
 		super._new_game(chosen_seed)
 

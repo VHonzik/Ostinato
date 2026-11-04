@@ -38,6 +38,12 @@ Prioritize enjoyable play, readable art/UI, and small playable changes.
   removed-content lists, earlier-version comparisons or proposed dialogue. Keep ability
   and trainer-gift effect details in class-mechanics.md and link to them rather than
   duplicating ability tables. Keep future story/design work in direction/backlog.
+- [docs/items.md](docs/items.md) is the authoritative human-readable reference for all
+  defined items, including definitions unavailable in the playable valley. Read it when
+  changing items and update it alongside additions, removals, names, stats, prices,
+  stacking, trade/use rules or acquisition sources. Keep trainer-gift effect details in
+  class-mechanics.md and quest dialogue/conditions in npc-dialogue.md; link rather than
+  duplicating those references. Keep tables focused on current definitions and behavior.
 - Keep supporting guides focused on setup, workflows and durable direction. Link to
   the authoritative content references instead of repeating their current mechanics,
   dialogue or tuning. Remove stale implementation claims and project-history recaps.

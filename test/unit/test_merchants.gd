@@ -105,7 +105,7 @@ func test_finite_stock_is_per_instance_and_never_refilled_by_waiting_or_selling(
 		actor.npc_id = 900003
 		actor.spawn_id = "merchant/%d" % actor.tile.x
 		world.actors.append(actor)
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	world.hero.copper = 1000
 	assert_true(world.buy_item(first, 118, 3))
 	assert_false(world.buy_item(first, 118, 1))
@@ -315,5 +315,5 @@ func _world() -> GridWorld:
 		actor.service = &"Trader" if MerchantData.CATALOGS.has(str(actor.npc_id)) else &""
 		actor.relationship = GridActor.Relationship.HOSTILE if actor.npc_id == 38 else GridActor.Relationship.FRIENDLY
 		world.actors.append(actor)
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	return world

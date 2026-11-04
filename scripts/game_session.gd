@@ -3,6 +3,7 @@ extends RefCounted
 
 ## Replace the complete attempt; old references cannot affect the new world.
 signal world_changed
+signal loop_started(text: String)
 
 ## Fixed names are the seed strings; keep their spelling stable for repeatable worlds.
 const HARD_WORLD_SEED: String = "solemnly-moonwell"
@@ -27,6 +28,7 @@ func new_game(chosen_seed: int = -1) -> void:
 	fresh.hotbar[1] = &"whirlwind_1"
 	_replace_world(fresh)
 	world.add_message(opening_text(1))
+	loop_started.emit(opening_text(1))
 
 
 func seed_name() -> String:
@@ -62,11 +64,12 @@ func restart_after_death() -> bool:
 	fresh.hotbar_locked = locked
 	_replace_world(fresh)
 	world.add_message(opening_text(loop_count))
+	loop_started.emit(opening_text(loop_count))
 	return true
 
 
 static func opening_text(loop_number: int) -> String:
-	var hint := "Speak to Marshal McBride north of you, outside the abbey."
+	var hint := "Speak to Marshal McBride north of you."
 	if loop_number == 1:
 		return "You arrive in Northshire, weary from the road. " + hint
 	if loop_number == 2:

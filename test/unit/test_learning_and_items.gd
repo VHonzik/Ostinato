@@ -144,7 +144,7 @@ func test_trade_quantity_is_atomic_and_finite_stock_does_not_replenish() -> void
 	trader.npc_id = 900003
 	trader.spawn_id = "fixed/900003"
 	world.actors.append(trader)
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	world.hero.copper = 59
 	assert_false(world.buy_item(trader, 118, 3))
 	assert_eq(world.hero.copper, 59)
@@ -280,11 +280,15 @@ func test_looting_and_buying_auto_equip_vacant_slots_without_spending_turns() ->
 	trader.spawn_id = "fixed/900003"
 	trader.service = &"Trader"
 	world.actors.append(trader)
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	world.hero.equipment.erase("weapons")
 	world.hero.copper = 200
-	assert_true(world.buy_item(trader, 2132, 1))
-	assert_eq(world.hero.equipment.weapons.id, 2132)
+	var weapon_id := 0
+	for key in world.vendor_stock[trader.spawn_id]:
+		if ItemData.get_item(int(key)).weapon:
+			weapon_id = int(key)
+	assert_true(world.buy_item(trader, weapon_id, 1))
+	assert_eq(world.hero.equipment.weapons.id, weapon_id)
 	assert_true(world.hero.inventory.all(func(item: Dictionary) -> bool: return item.is_empty()))
 	assert_eq(world.turn_count, 0)
 

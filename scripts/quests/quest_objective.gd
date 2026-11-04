@@ -1,7 +1,7 @@
 class_name QuestObjective
 extends RefCounted
 
-enum Kind { KILL, LOOT, LOCATION, TALK }
+enum Kind { KILL, LOOT, LOCATION, TALK, TRAIN }
 
 var kind: Kind
 var count: int
@@ -39,6 +39,12 @@ static func talk(identity: int, required: int = 1) -> QuestObjective:
 	return objective
 
 
+static func train(category: StringName) -> QuestObjective:
+	var objective := QuestObjective.new(Kind.TRAIN, 1)
+	objective.location_id = category
+	return objective
+
+
 func progress(hero: HeroState, recorded: int) -> int:
 	if kind != Kind.LOOT:
 		return recorded
@@ -52,7 +58,7 @@ func progress(hero: HeroState, recorded: int) -> int:
 func matches(event_kind: Kind, identity: int, location: StringName) -> bool:
 	if kind != event_kind:
 		return false
-	return location_id == location if kind == Kind.LOCATION else npc_id == identity
+	return location_id == location if kind in [Kind.LOCATION, Kind.TRAIN] else npc_id == identity
 
 
 func label() -> String:
@@ -65,4 +71,6 @@ func label() -> String:
 			return ValleyLandmarks.objective_label(location_id)
 		Kind.TALK:
 			return "Speak with " + NpcDefinition.display_name(npc_id)
+		Kind.TRAIN:
+			return "Train a new %s ability" % String(location_id).to_lower()
 	return ""

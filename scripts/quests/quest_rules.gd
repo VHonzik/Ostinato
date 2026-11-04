@@ -20,6 +20,19 @@ static func available(world: GridWorld, identifier: String) -> bool:
 		return false
 	if quest.category != "" and quest.category != String(world.hero.selected_class):
 		return false
+	if identifier == "valley_fresh_start" and (not world.class_selected
+		or world.hero.selected_class not in ClassSkillData.PLAYABLE_CLASSES):
+		return false
+	if identifier.begins_with("valley_training_"):
+		if not world.class_selected:
+			return false
+		var unlearned := false
+		for skill in SkillDefinition.trainer_skills(StringName(quest.category)):
+			if world.hero.find_skill(skill.id) == null:
+				unlearned = true
+				break
+		if not unlearned:
+			return false
 	for previous in quest.previous:
 		if not world.quests.has(previous) or not world.quests[previous].handed_in:
 			return false
@@ -119,6 +132,16 @@ static func record_location(world: GridWorld, location_id: StringName) -> void:
 	_event(world, QuestObjective.Kind.LOCATION, 0, location_id)
 
 
+static func record_training(world: GridWorld, category: StringName) -> void:
+	_event(world, QuestObjective.Kind.TRAIN, 0, category)
+
+
+static func rewards(world: GridWorld, identifier: String) -> Array:
+	if identifier == "valley_fresh_start":
+		return StarterGear.outfit(world.hero.selected_class)
+	return QuestData.QUESTS[identifier].get("rewards", []).duplicate()
+
+
 static func visit(world: GridWorld) -> void:
 	if world.valley_route:
 		for destination in ValleyLandmarks.EXPLORATION:
@@ -135,16 +158,22 @@ static func hand_in(
 	var quest: Dictionary = QuestData.QUESTS[identifier]
 	if not in_range(world, actor, int(quest.receiver)):
 		return false
+	if identifier == "valley_fresh_start" and (not world.class_selected
+		or world.hero.selected_class not in ClassSkillData.PLAYABLE_CLASSES
+		or not world.trader_in_range(actor)):
+		return false
 	if (not quest.choices.is_empty() and not quest.choices.has(choice)
 		or quest.choices.is_empty() and choice != 0):
 		return false
 	var draft := InventoryDraft.new(world.hero)
 	_remove_items(draft.inventory, identifier)
-	var rewards: Array = quest.get("rewards", []).duplicate()
+	var reward_items := rewards(world, identifier)
 	if choice > 0:
-		rewards.append(choice)
-	for reward in rewards:
-		if not draft.receive(ItemData.instance(int(reward))):
+		reward_items.append(choice)
+	if identifier == "valley_fresh_start":
+		StarterGear.remove_granted(draft)
+	for reward in reward_items:
+		if not draft.receive(ItemData.instance(int(reward), 1, identifier == "valley_fresh_start")):
 			world.add_message("Inventory full. Make room before collecting your reward.")
 			return false
 	draft.commit()
@@ -154,7 +183,7 @@ static func hand_in(
 	var xp := experience(int(quest.xp), int(quest.level), world.hero.level)
 	world.add_message("Handed in %s: %d XP, %s." % [
 		quest.title, xp, InventoryRules.money(int(quest.copper))])
-	for reward in rewards:
+	for reward in reward_items:
 		world.add_message("Received " + String(ItemData.get_item(int(reward)).title) + ".")
 	for level in world.hero.add_experience(xp):
 		world.add_message("Level up! You are now level %d." % level)

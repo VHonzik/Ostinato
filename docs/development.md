@@ -39,6 +39,7 @@ Use the authoritative references for current content and code entry points:
   passives, effects and trainer gifts.
 - [Quests, dialogue and NPCs](npc-dialogue.md): contacts, objectives/rewards, speech,
   encounter profiles, arrivals and Loop state.
+- [Items](items.md): all definitions, stats, supplies, prices and acquisition sources.
 - [Game direction](direction.md): design goals and open gameplay decisions.
 - [Art workflow](../art/README.md) and [art direction](art-plan.md): sources and presentation.
 
@@ -49,7 +50,7 @@ Movement, hotbar and menu bindings can be changed in Options → Keybindings.
 | Action | Default input |
 | --- | --- |
 | Move | WASD + QEZC, arrows or numpad |
-| Wait | Period / numpad 5 |
+| Wait | Space / numpad 5 |
 | Interact | F; bump friendly NPCs; bump a stationary neutral twice to attack |
 | Inventory / spells / quests / character | I / K / J / P |
 | Player menu | M |
@@ -85,7 +86,7 @@ loot-bearing corpses hide after 300 turns; the guard's corpse remains.
 ### Saves and settings
 
 Saving requires an action boundary outside combat. Five slots use the `demo` family,
-revision 2; other revisions are incompatible and left untouched. No migration is
+revision 3; other revisions are incompatible and left untouched. No migration is
 provided. Failed writes/loads preserve existing files and the running world.
 
 Saves live in `%APPDATA%/Godot/app_userdata/Ostinato/saves/`; global settings are in

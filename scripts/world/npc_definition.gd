@@ -12,7 +12,7 @@ static var CONTACTS: Array[NpcDefinition] = [
 	NpcDefinition.new(823, {"title": "Deputy Willem",
 		"sprite": &"willem", "greeting": "A new face is always a pleasant sight, how can I help?"}),
 	NpcDefinition.new(900003, {"title": "Janos Hammerknuckle",
-		"service": &"Trader", "sprite": &"trader", "offers_starter_gear": true,
+		"service": &"Trader", "sprite": &"trader",
 		"refresh_saved_name": true, "greeting": "Greetings, what can I get you?"}),
 	NpcDefinition.new(9296, {"title": "Milly Osworth",
 		"sprite": &"milly",
@@ -22,17 +22,17 @@ static var CONTACTS: Array[NpcDefinition] = [
 		"greeting": "This is the road out of the valley. Stay alert; I heard something beyond the gate."}),
 	NpcDefinition.new(911, {"title": "Llane Beshere",
 		"service": &"Warrior", "sprite": &"llane", "trainer_location": "inside the abbey",
-		"greeting": "Practice your warrior skills. Return when you are ready to learn new tricks."}),
+		"greeting": "Hoi adventurer. I am LLANE!"}),
 	NpcDefinition.new(915, {"title": "Jorik Kerridan",
 		"service": &"Rogue", "sprite": &"jorrick", "trainer_location": "southeast of the abbey",
 		"greeting": "Hello adventurer. Jorik Kerridan, famous rogue at your service."}),
 	NpcDefinition.new(925, {"title": "Brother Sammuel",
 		"service": &"Paladin", "sprite": &"sammuel", "trainer_location": "inside the abbey",
-		"greeting": "Hello adventurer. I am Brother Sammuel, follower of the light."}),
+		"greeting": "Greetings adventurer. I am Brother Sammuel, follower of the light."}),
 	NpcDefinition.new(900002, {"title": "Farseer Lopaa",
 		"service": &"Shaman", "sprite": &"shaman_mentor", "trainer_location": "beside the abbey entrance",
 		"refresh_saved_name": true,
-		"greeting": "Hello adventurer, I am Farseer Lopaa, a storm-chaser."}),
+		"greeting": "Nice to meet you adventurer, I am Farseer Lopaa, a storm-chaser."}),
 ]
 
 var npc_id: int
@@ -45,7 +45,6 @@ var service: StringName
 var sprite: StringName
 var trainer_location: String
 var story_guard: bool
-var offers_starter_gear: bool
 var refresh_saved_name: bool
 
 
@@ -57,7 +56,6 @@ func _init(identity: int, fields: Dictionary) -> void:
 	sprite = fields.get("sprite", &"")
 	trainer_location = fields.get("trainer_location", "")
 	story_guard = fields.get("story_guard", false)
-	offers_starter_gear = fields.get("offers_starter_gear", false)
 	refresh_saved_name = fields.get("refresh_saved_name", false)
 
 
@@ -81,9 +79,7 @@ static func greeting_for(identity: int) -> String:
 static func trainer_referral(category: StringName) -> String:
 	for contact in CONTACTS:
 		if contact.service == category and contact.trainer_location != "":
-			return ("Speak with %s, he always has supplies lying around. "
-				+ "And %s is our own %s if you need some guidance.") % [
-					display_name(JANOS_ID), contact.title, String(category).to_lower()]
+			return "Hmm, if you say so. Go speak with %s if you need some guidance." % contact.title
 	return ""
 
 
@@ -91,9 +87,7 @@ static func first_class_referral(category: StringName) -> String:
 	for contact in CONTACTS:
 		if contact.service == category and contact.trainer_location != "":
 			return ("You don't look like %s... Anyway, go speak with %s, "
-				+ "they will get you started. And check with %s, "
-				+ "they might have some old equipment lying around.") % [
-					category, contact.title, display_name(JANOS_ID)]
+				+ "they will get you started.") % [category, contact.title]
 	return ""
 
 

@@ -6,6 +6,8 @@ const SCENE_PATH: String = "res://scenes/valley.tscn"
 const QUESTS: Array[String] = [
 	"valley_wolves", "valley_patrol", "valley_timber_wolves", "valley_camp",
 	"valley_mine", "valley_vineyard", "valley_explore",
+	"valley_fresh_start", "valley_training_warrior", "valley_training_paladin",
+	"valley_training_rogue", "valley_training_shaman",
 ]
 
 static var BOUNDS: Rect2i:

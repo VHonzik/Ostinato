@@ -102,9 +102,13 @@ func test_janos_sells_common_gear_and_finite_health_supplies() -> void:
 			break
 	world.hero.copper = 1000
 	assert_false(MerchantData.catalog(900003).has("2572"), "Uncommon is reserved for drops.")
-	assert_true(world.buy_item(janos, 85, 1))
+	var weapon_id := 0
+	for key in world.vendor_stock[janos.spawn_id]:
+		if ItemData.get_item(int(key)).weapon:
+			weapon_id = int(key)
+	assert_true(world.buy_item(janos, weapon_id, 1))
 	assert_true(world.equip_item(0))
-	assert_eq(world.hero.equipment.armor.id, 85)
+	assert_eq(world.hero.equipment.weapons.id, weapon_id)
 	assert_almost_eq(world.hero.attack_haste(), 1.03, 0.00001)
 	assert_true(world.buy_item(janos, 118, 3))
 	assert_eq(world.vendor_stock[janos.spawn_id]["118"], 0)

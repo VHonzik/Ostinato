@@ -71,7 +71,6 @@ var stalkers_arrived: int = 0
 var stalker_deadlines: Array[int] = STALKER_DEADLINES.duplicate()
 var class_selected: bool = false
 var chosen_classes: Array[StringName] = [&"Warrior"]
-var starter_gear_received: bool = false
 var war_horn_received: bool = false
 var lucky_charm_received: bool = false
 var ancestral_totem_received: bool = false
@@ -658,6 +657,7 @@ func train(category: StringName, identifier: StringName) -> bool:
 	if not hero.learn_skill(skill):
 		return false
 	hero.copper -= skill.training_copper
+	QuestRules.record_training(self, category)
 	if skill.effect != SkillDefinition.Effect.PASSIVE and not hotbar.has(skill.id):
 		var first_slot := HOTBAR_ROW_SIZE if skill.family in ClassSkillData.MAINTENANCE_FAMILIES else 0
 		var empty_slot := -1
@@ -810,6 +810,8 @@ func interact(actor: GridActor) -> String:
 
 
 func contact_greeting(actor: GridActor) -> String:
+	if actor.summon_kind != &"":
+		return actor.title + ": Hello master."
 	if northshire:
 		return actor.title + ": " + NpcDefinition.greeting_for(actor.npc_id)
 	return ("%s: Welcome. The Legion is invading. The cities are besieged, and the gate is unsafe. " +
@@ -1281,24 +1283,6 @@ func _hide_empty_corpse(source: GridActor) -> void:
 		source.corpse_visible = false
 
 
-func can_receive_starter_gear(merchant: GridActor) -> bool:
-	if merchant == null:
-		return false
-	var contact := NpcDefinition.find(merchant.npc_id)
-	return (contact != null and contact.offers_starter_gear and valley_route
-		and not starter_gear_received and hero.selected_class in ClassSkillData.PLAYABLE_CLASSES
-		and class_selected
-		and QuestRules.in_range(self, merchant, contact.npc_id) and trader_in_range(merchant))
-
-
-func receive_starter_gear(merchant: GridActor) -> bool:
-	if (not can_receive_starter_gear(merchant)
-		or not StarterGear.exchange(hero, hero.selected_class)):
-		return false
-	starter_gear_received = true
-	return true
-
-
 func trader_in_range(merchant: GridActor) -> bool:
 	return (merchant != null and actors.has(merchant) and merchant.alive
 		and merchant.relationship == GridActor.Relationship.FRIENDLY
@@ -1312,7 +1296,7 @@ func buy_item(merchant: GridActor, identifier: int, quantity: int) -> bool:
 		return false
 	var key := str(identifier)
 	var catalog := MerchantData.catalog(merchant.npc_id)
-	if not catalog.has(key):
+	if not catalog.has(key) or not vendor_stock[merchant.spawn_id].has(key):
 		return false
 	var stock: Dictionary = vendor_stock[merchant.spawn_id]
 	var cost := MerchantData.unit_price(merchant.npc_id, identifier) * quantity

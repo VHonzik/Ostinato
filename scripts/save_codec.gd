@@ -54,7 +54,6 @@ static func capture(session: GameSession) -> Dictionary:
 		"debuffs": world.hero.debuffs.duplicate(true),
 		"stalker_deadlines": world.stalker_deadlines.duplicate(),
 		"valley_route": world.valley_route,
-		"starter_gear_received": world.starter_gear_received,
 		"war_horn_received": world.war_horn_received,
 		"lucky_charm_received": world.lucky_charm_received,
 		"ancestral_totem_received": world.ancestral_totem_received,
@@ -162,9 +161,6 @@ static func _restore_world(world: GridWorld, data: Dictionary) -> bool:
 	if not data.get("valley_route", false) is bool:
 		return false
 	world.valley_route = data.get("valley_route", false)
-	if not data.get("starter_gear_received", false) is bool:
-		return false
-	world.starter_gear_received = data.get("starter_gear_received", false)
 	if not data.get("war_horn_received") is bool:
 		return false
 	world.war_horn_received = data.war_horn_received
@@ -416,7 +412,7 @@ static func _restore_effects(world: GridWorld, data: Dictionary) -> bool:
 static func _restore_merchants(world: GridWorld, data: Dictionary) -> bool:
 	if not data.vendor_stock is Dictionary:
 		return false
-	var initial_stock := MerchantData.initial_stock(world.actors)
+	var initial_stock := MerchantData.initial_stock(world.actors, world.seed_value)
 	if data.vendor_stock.size() != initial_stock.size():
 		return false
 	# A merchant instance owns its stock; duplicate identities cannot share a pool.

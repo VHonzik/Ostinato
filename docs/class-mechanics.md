@@ -96,6 +96,8 @@ Warrior at the marshal; from Loop three, choose Warrior, Shaman, Paladin or Rogu
 before accepting quests. Selection locks training to that class until death.
 Trainers are Llane (Warrior), Farseer Lopaa (Shaman), Brother Sammuel (Paladin) and
 Jorik Kerridan (Rogue). Other starter pairs are free level-1 trainer purchases.
+The matching [Training quest](npc-dialogue.md#quests) rewards learning one new active
+or passive after acceptance, once per Loop. [Items](items.md) lists equipment and supplies.
 Later purchases require the listed current-Loop
 level and money, without prerequisite purchases or spending XP. Learned actives and
 passives persist across deaths and work in every class, even below their original

@@ -26,6 +26,7 @@ func before_each() -> void:
 	_game.menu.options = GlobalOptions.new(_directory.path_join("options.json"))
 	_game.menu.saves = SaveStore.new(_directory)
 	_game.start_new_game()
+	_game.menu.close()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_game.set_process(false)
@@ -400,3 +401,25 @@ func test_new_game_from_main_requires_confirmation_before_replacing_recovery() -
 	assert_true(_game.active_game)
 	assert_eq(_game.session.seed_value, seed_value)
 	assert_ne(FileAccess.get_file_as_string(_game.recovery.path()), previous)
+
+
+func test_loop_intro_consumes_touch_before_pad_and_recovery_load_does_not_repeat_it() -> void:
+	_game.start_new_game(619)
+	assert_true(_game.menu.visible)
+	assert_eq(_game.menu.page, "loop_intro")
+	_touch(4)
+	_touch(4, false)
+	assert_false(_game.menu.visible)
+	assert_false(_game._pending_action)
+	_game._process(0.0)
+	assert_eq(_game.world.turn_count, 0)
+	assert_eq(_adapter.pointer, -1)
+	_main.controls.refresh()
+	_touch(4)
+	_touch(4, false)
+	_game._process(0.0)
+	assert_eq(_game.world.turn_count, 1)
+	_game.checkpoint()
+	assert_true(_game.recovery.restore(_game.session))
+	assert_false(_game.menu.visible)
+	assert_eq(_game.world.turn_count, 1)

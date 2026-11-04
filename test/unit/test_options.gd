@@ -107,3 +107,16 @@ func test_shift_binding_persists_and_only_matches_the_second_row() -> void:
 	event.shift_pressed = false
 	assert_false(event.is_action_pressed("hotbar_20", false, true))
 	assert_false(_options.rebind(&"interact", KEY_ENTER | KEY_MASK_SHIFT))
+
+
+func test_wait_defaults_use_space_and_numpad_five_but_saved_period_is_retained() -> void:
+	InputMap.load_from_project_settings()
+	var defaults := GlobalOptions.new(_path)
+	assert_eq(defaults.bindings.wait, [KEY_SPACE, KEY_KP_5])
+	assert_false(KEY_PERIOD in defaults.bindings.wait)
+	assert_true(defaults.rebind(&"wait", KEY_PERIOD))
+	var loaded := GlobalOptions.new(_path)
+	loaded.load_options()
+	assert_eq(loaded.key_label(&"wait"), "Period")
+	assert_eq(loaded.bindings.wait.size(), 1)
+	assert_eq(int(loaded.bindings.wait[0]), KEY_PERIOD)

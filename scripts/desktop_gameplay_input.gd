@@ -35,6 +35,8 @@ func resolve_direction(direction: Vector2i) -> Vector2i:
 
 
 func handle_input(event: InputEvent) -> void:
+	if game.menu.consume_loop_intro_input(event):
+		return
 	if event is InputEventKey and not event.is_pressed():
 		_release_movement_key(event.physical_keycode)
 	if game.active_game and game.world.is_charging():

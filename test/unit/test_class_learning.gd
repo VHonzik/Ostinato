@@ -157,8 +157,7 @@ func test_first_class_referral_survives_saving_and_switching_without_training() 
 	var marshal := _marshal(game)
 	assert_true(game.select_class(&"Shaman", marshal))
 	assert_eq(game.world.messages[-1], "Marshal: You don't look like Shaman... "
-		+ "Anyway, go speak with Farseer Lopaa, they will get you started. "
-		+ "And check with Janos Hammerknuckle, they might have some old equipment lying around.")
+		+ "Anyway, go speak with Farseer Lopaa, they will get you started.")
 	assert_null(game.world.hero.find_skill(&"lightning_shield_1"))
 	var snapshot := SaveCodec.capture(game)
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(snapshot)), false)
@@ -178,9 +177,7 @@ func test_first_class_referral_survives_saving_and_switching_without_training() 
 		else:
 			var trainer := "Farseer Lopaa" if category == &"Shaman" else "Llane Beshere"
 			assert_eq(game.world.messages[-1],
-				("Marshal: Speak with Janos Hammerknuckle, he always has supplies lying around. "
-					+ "And %s is our own %s if you need some guidance.") % [
-						trainer, String(category).to_lower()])
+				"Marshal: Hmm, if you say so. Go speak with %s if you need some guidance." % trainer)
 	assert_eq(snapshot.chosen_classes, ["Warrior", "Shaman"],
 		"Later choices must not mutate a previously captured save.")
 	game.new_game(97)

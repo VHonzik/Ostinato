@@ -55,6 +55,7 @@ func _ready() -> void:
 	menu.fullscreen_changed.connect(_apply_fullscreen)
 	menu.hero_requested.connect(_open_hero_panel)
 	session.world_changed.connect(_adopt_world)
+	session.loop_started.connect(_show_loop_intro)
 	combat_panel.service_requested.connect(_open_service)
 	combat_panel.conversation_requested.connect(menu.open_conversation)
 	combat_panel.loot_requested.connect(menu.open_loot)
@@ -175,6 +176,11 @@ func _adopt_world() -> void:
 	_refresh_chat("")
 	hud.feedback.text = ""
 	refresh_view()
+
+
+func _show_loop_intro(text: String) -> void:
+	stop_movement()
+	menu.open_loop_intro(text)
 
 
 func _return_to_menu() -> void:

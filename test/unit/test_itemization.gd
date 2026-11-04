@@ -59,6 +59,8 @@ func test_quest_route_guarantees_all_common_slots_and_each_weapon_setup() -> voi
 	world.hero._apply_level_stats()
 	world.ever_accepted_quest = true
 	for identifier in ValleyRoute.QUESTS:
+		if identifier == "valley_fresh_start" or identifier.begins_with("valley_training_"):
+			continue # Starter gear and training XP are tested as separate quest transactions.
 		var quest: Dictionary = QuestData.QUESTS[identifier]
 		var counts: Array[int] = []
 		for objective in quest.objectives:

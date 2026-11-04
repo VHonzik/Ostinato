@@ -86,6 +86,28 @@ func _ready() -> void:
 	hide()
 
 
+func open_loop_intro(text: String) -> void:
+	_begin("loop_intro", "Loop %d" % session.loop_count, Callable())
+	_label(text)
+	_label("Press any key or tap to continue.")
+
+
+## Consume the dismissal before GUI controls or gameplay can act on it.
+func consume_loop_intro_input(event: InputEvent) -> bool:
+	if not visible or page != "loop_intro":
+		return false
+	if ((event is InputEventKey and event.pressed and not event.echo)
+		or (event is InputEventMouseButton and event.pressed)
+		or (event is InputEventScreenTouch and event.pressed and not event.canceled)):
+		close()
+	get_viewport().set_input_as_handled()
+	return true
+
+
+func _input(event: InputEvent) -> void:
+	consume_loop_intro_input(event)
+
+
 func open_main() -> void:
 	active_game = false
 	_begin("main", "Ostinato (Demo)", Callable())
@@ -129,7 +151,7 @@ func open_player() -> void:
 	_button("Inventory (" + options.key_label(&"inventory") + ")", open_inventory)
 	_button("Quest log (" + options.key_label(&"quest_log") + ")", open_quest_log)
 	_button("Options / Save / Load", open_options)
-	_label("Move: WASD + QEZC / arrows / numpad. Wait: period / numpad 5. F interacts.")
+	_label("Move: WASD + QEZC / arrows / numpad. Wait: space / numpad 5. F interacts.")
 	_button("Return to game (Esc)", close)
 	_finish()
 
@@ -206,24 +228,6 @@ func open_marshal() -> void:
 	_finish()
 
 
-func _request_spare_gear(actor: GridActor) -> void:
-	if not QuestRules.in_range(session.world, actor, NpcDefinition.JANOS_ID):
-		close()
-		return
-	if session.world.starter_gear_received:
-		_show_conversation(actor)
-		return
-	if not session.world.receive_starter_gear(actor):
-		notice("Cannot exchange gear; make inventory space and try again.",
-			_show_conversation.bind(actor))
-		return
-	_begin("spare_gear", actor.title, _show_conversation.bind(actor))
-	_label("I can find some left overs if you are not picky.")
-	_button("Back (Esc)", _show_conversation.bind(actor))
-	_finish()
-	refreshed.emit()
-
-
 func open_trainer(category: StringName, selected_skill: StringName = &"") -> void:
 	_trainer = category
 	_begin("trainer", "%s training" % category, close)
@@ -231,7 +235,7 @@ func open_trainer(category: StringName, selected_skill: StringName = &"") -> voi
 	if category not in ClassSkillData.PLAYABLE_CLASSES:
 		_label("Training for this class is not available yet.")
 	elif session.world.hero.selected_class != category:
-		_label("Select %s before learning here. Retained skills remain usable." % category)
+		_label("Your are not %s..." % category)
 	else:
 		_label("Level %d / %s. Learning is permanent; starter skills are free." % [
 			session.world.hero.level, InventoryRules.money(session.world.hero.copper)])
@@ -455,7 +459,7 @@ func open_buy(merchant: GridActor) -> void:
 	_merchant = merchant
 	_begin("buy_list", merchant.title + " / Buy / " + InventoryRules.money(session.world.hero.copper),
 		open_trade.bind(merchant))
-	for key in MerchantData.catalog(merchant.npc_id):
+	for key in session.world.vendor_stock[merchant.spawn_id]:
 		var data := ItemData.get_item(int(key))
 		var stock := int(session.world.vendor_stock[merchant.spawn_id][key])
 		var button := _button("Buy %s / %s each / %s" % [data.title,
@@ -703,9 +707,9 @@ func _finish() -> void:
 
 func _new_game(chosen_seed: int) -> void:
 	_discard("Start a new game?", func() -> void:
-		new_game_requested.emit(chosen_seed)
 		active_game = true
-		close())
+		close()
+		new_game_requested.emit(chosen_seed))
 
 
 func _exit() -> void:
@@ -871,8 +875,6 @@ func _conversation_choice(choice: NpcConversation.Choice, actor: GridActor) -> v
 			_select_class(choice.category, actor)
 		NpcConversation.Action.REFERRAL:
 			open_marshal()
-		NpcConversation.Action.SPARE_GEAR:
-			_request_spare_gear(actor)
 		NpcConversation.Action.TRADE:
 			open_trade(actor)
 		NpcConversation.Action.TRAIN:
@@ -938,7 +940,7 @@ func _quest_detail(identifier: String, actor: GridActor) -> void:
 		_quest_list_entry("Choose one:")
 		for item in quest.choices:
 			_quest_reward_name(int(item))
-	for item in quest.get("rewards", []):
+	for item in QuestRules.rewards(world, identifier):
 		_quest_reward_name(int(item))
 	if QuestRules.available(world, identifier) and actor != null:
 		primary = _button("Accept", _transaction.bind(QuestRules.accept.bind(world, identifier, actor),

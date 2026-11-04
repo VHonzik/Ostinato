@@ -374,7 +374,7 @@ func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -
 	world.hero.rage = 23
 	world.hero.copper = 19
 	var stock := world.vendor_stock.duplicate(true)
-	assert_true(world.receive_starter_gear(janos))
+	assert_true(_claim_gear(world, janos))
 	assert_eq(world.hero.equipment.size(), 2)
 	for pair in [["weapons", 2361], ["armor", 2379]]:
 		assert_eq(world.hero.equipment[pair[0]].id, pair[1])
@@ -384,7 +384,7 @@ func test_janos_replaces_travel_clothes_once_without_refill_or_spending_time() -
 	assert_eq([world.hero.health, world.hero.rage, world.hero.copper], [7, 23, 19])
 	assert_eq(world.turn_count, 0)
 	assert_eq(world.vendor_stock, stock)
-	assert_false(world.receive_starter_gear(janos), "Reopening must not replenish free gear.")
+	assert_false(_claim_gear(world, janos), "Reopening must not replenish free gear.")
 	assert_eq(world.hero.inventory[0], ItemData.instance(117, 5))
 
 
@@ -399,13 +399,13 @@ func test_janos_exchange_is_atomic_and_keeps_acquired_two_handed_weapon() -> voi
 		world.hero.inventory[index] = ItemData.instance(35)
 	var equipment := world.hero.equipment.duplicate(true)
 	var inventory := world.hero.inventory.duplicate(true)
-	assert_false(world.receive_starter_gear(janos))
+	assert_false(_claim_gear(world, janos))
 	assert_eq(world.hero.equipment, equipment)
 	assert_eq(world.hero.inventory, inventory)
-	assert_false(world.starter_gear_received)
+	assert_false(_gear_received(world))
 	world.hero.inventory[0] = {}
 	world.hero.inventory[1] = {}
-	assert_true(world.receive_starter_gear(janos))
+	assert_true(_claim_gear(world, janos))
 	assert_eq(world.hero.equipment.weapons, ItemData.instance(35))
 	assert_false(world.hero.equipment.has("off_hand"), "An acquired staff still uses both hands.")
 	assert_eq(world.hero.inventory[0].id, 2361)
@@ -414,41 +414,41 @@ func test_janos_exchange_is_atomic_and_keeps_acquired_two_handed_weapon() -> voi
 func test_janos_requires_living_nearby_trader_matching_class_and_no_pending_action() -> void:
 	var world := _session().world
 	var janos := _contact(world, 900003)
-	assert_false(world.receive_starter_gear(janos), "Cannot claim gear remotely.")
+	assert_false(_claim_gear(world, janos), "Cannot claim gear remotely.")
 	_beside(world, janos)
 	janos.alive = false
-	assert_false(world.receive_starter_gear(janos))
+	assert_false(_claim_gear(world, janos))
 	janos.alive = true
 	world.hero.selected_class = &"Unknown"
-	assert_false(world.receive_starter_gear(janos))
+	assert_false(_claim_gear(world, janos))
 	world.hero.selected_class = &"Warrior"
 	world.pending_skill = SkillDefinition.catalog(&"mortal_strike_1")
-	assert_false(world.receive_starter_gear(janos))
+	assert_false(_claim_gear(world, janos))
 	world.pending_skill = null
 	var impostor := GridActor.new(janos.tile)
 	impostor.npc_id = janos.npc_id
 	impostor.service = janos.service
 	impostor.spawn_id = janos.spawn_id
-	assert_false(world.receive_starter_gear(impostor))
-	assert_true(world.receive_starter_gear(janos))
+	assert_false(_claim_gear(world, impostor))
+	assert_true(_claim_gear(world, janos))
 
 
 func test_gear_grant_survives_save_load_and_resets_after_death() -> void:
 	var session := _session()
 	var janos := _contact(session.world, 900003)
 	_beside(session.world, janos)
-	assert_true(session.world.receive_starter_gear(janos))
+	assert_true(_claim_gear(session.world, janos))
 	var restored := SaveCodec.restore(JSON.parse_string(JSON.stringify(SaveCodec.capture(session))), false)
 	assert_not_null(restored)
 	if restored == null:
 		return
 	session.restore(restored, session.seed_value, session.loop_count)
-	assert_true(restored.starter_gear_received)
-	assert_false(restored.receive_starter_gear(_contact(restored, 900003)))
+	assert_true(_gear_received(restored))
+	assert_false(_claim_gear(restored, _contact(restored, 900003)))
 	assert_eq(restored.hero.equipment.weapons.id, 2361)
 	restored.hero.health = 0
 	assert_true(session.restart_after_death())
-	assert_false(session.world.starter_gear_received)
+	assert_false(_gear_received(session.world))
 	assert_eq(session.world.hero.equipment.weapons.id, 35)
 	assert_eq(session.world.hero.equipment.armor.id, 44)
 	var marshal := _contact(session.world, NpcDefinition.MARSHAL_ID)
@@ -456,7 +456,7 @@ func test_gear_grant_survives_save_load_and_resets_after_death() -> void:
 	assert_true(session.select_class(&"Warrior", marshal))
 	janos = _contact(session.world, 900003)
 	_beside(session.world, janos)
-	assert_true(session.world.receive_starter_gear(janos))
+	assert_true(_claim_gear(session.world, janos))
 
 
 func test_every_class_gets_its_starter_gear_once_in_any_returning_loop() -> void:
@@ -472,12 +472,12 @@ func test_every_class_gets_its_starter_gear_once_in_any_returning_loop() -> void
 		_beside(world, janos)
 		var conversation := NpcConversation.build(session, janos)
 		assert_true(conversation.choices.any(func(choice: NpcConversation.Choice) -> bool:
-			return (choice.action == NpcConversation.Action.SPARE_GEAR
-				and choice.title.contains(String(category).to_lower()))))
-		assert_true(world.receive_starter_gear(janos))
+			return (choice.action == NpcConversation.Action.QUEST
+				and choice.quest_id == "valley_fresh_start")))
+		assert_true(_claim_gear(world, janos))
 		for identifier in StarterGear.outfit(category):
 			assert_eq(world.hero.equipment[ItemData.get_item(identifier).slot].id, identifier)
-		assert_false(world.receive_starter_gear(janos))
+		assert_false(_claim_gear(world, janos))
 		assert_eq(world.hero.copper, 0)
 		assert_eq(world.turn_count, 0)
 
@@ -530,9 +530,8 @@ func test_class_choice_wording_tracks_each_class_across_saves_and_deaths_without
 				% String(choice.category).to_lower())
 
 
-func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected() -> void:
+func test_saved_contact_names_refresh_from_definitions() -> void:
 	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(SaveCodec.capture(_session())))
-	snapshot.erase("starter_gear_received")
 	for actor in snapshot.actors:
 		if int(actor.state.npc_id) == 900003:
 			actor.state.title = "Abbey supply trader"
@@ -541,12 +540,9 @@ func test_saves_without_grant_field_still_load_and_malformed_flags_are_rejected(
 	var restored := SaveCodec.restore(snapshot, false)
 	assert_not_null(restored)
 	if restored != null:
-		assert_false(restored.starter_gear_received)
+		assert_false(_gear_received(restored))
 		assert_eq(_contact(restored, 900003).title, "Janos Hammerknuckle")
 		assert_eq(_contact(restored, 900002).title, "Farseer Lopaa")
-	for invalid in [1, "true", null, []]:
-		snapshot.starter_gear_received = invalid
-		assert_null(SaveCodec.restore(snapshot, false))
 
 
 func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starters() -> void:
@@ -584,8 +580,7 @@ func test_marshal_paladin_choice_confirms_class_and_unlocks_free_trainer_starter
 	_button(menu, "I am .... paladin").pressed.emit()
 	assert_eq(menu.page, "conversation")
 	var reply := "You don't look like Paladin... Anyway, go speak with Brother Sammuel, " \
-		+ "they will get you started. And check with Janos Hammerknuckle, " \
-		+ "they might have some old equipment lying around."
+		+ "they will get you started."
 	assert_string_contains("\n".join(world.messages), reply)
 	assert_string_contains(_text(menu), reply)
 	assert_eq(world.hero.selected_class, &"Paladin")
@@ -617,16 +612,19 @@ func test_janos_conversation_awards_gear_once_and_keeps_trade_available() -> voi
 	var menu := _menu(session)
 	menu.open_conversation(janos)
 	assert_string_contains(_text(menu), "Greetings, what can I get you?")
-	var spare := _button(menu, "Do you have any spare gear for warrior?")
+	var spare := _button(menu, "! Fresh Start")
 	assert_not_null(spare)
 	if spare == null:
 		return
 	spare.pressed.emit()
-	assert_eq(menu.page, "spare_gear")
-	assert_string_contains(_text(menu), "I can find some left overs if you are not picky.")
-	assert_true(world.starter_gear_received)
+	assert_string_contains(_text(menu), "You look like you had rough day my friend.")
+	_button(menu, "Accept").pressed.emit()
+	_button(menu, "? Fresh Start").pressed.emit()
+	assert_string_contains(_text(menu), "This should do nicely!")
+	_button(menu, "Complete").pressed.emit()
+	assert_true(_gear_received(world))
 	menu.open_conversation(janos)
-	assert_null(_button(menu, "Do you have any spare gear for warrior?"))
+	assert_null(_button(menu, "! Fresh Start"))
 	var trade := _button(menu, "Trade")
 	assert_not_null(trade)
 	if trade != null:
@@ -640,11 +638,11 @@ func test_first_loop_marshal_mentions_free_gear_until_it_is_received() -> void:
 	var world := session.world
 	var marshal := _contact(world, NpcDefinition.MARSHAL_ID)
 	_beside(world, marshal)
-	var hint := "Janos Hammerknuckle inside the abbey can give you spare arms and armor for free."
+	var hint := "Speak with Janos Hammerknuckle inside the abbey he can should have some scraps left."
 	assert_true(NpcConversation.build(session, marshal).lines.has(hint))
-	world.starter_gear_received = true
+	world.quests["valley_fresh_start"] = {"handed_in": true, "counts": []}
 	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
-	world.starter_gear_received = false
+	world.quests.erase("valley_fresh_start")
 	session.loop_count = 2
 	assert_false(NpcConversation.build(session, marshal).lines.has(hint))
 
@@ -675,7 +673,7 @@ func test_new_class_contacts_keep_greetings_and_open_only_implemented_training()
 			continue
 		train.pressed.emit()
 		assert_eq(menu.page, "trainer")
-		assert_string_contains(_text(menu), "Select %s before learning here." % contact.service)
+		assert_string_contains(_text(menu), "Your are not %s..." % contact.service)
 		assert_eq(session.world.hero.learned_skills.size(), 2)
 	assert_eq(session.world.turn_count, 0)
 
@@ -697,7 +695,7 @@ func test_building_conversation_choices_does_not_record_talking_or_change_world_
 	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 0)
 
 
-func test_new_conversation_records_one_talk_but_returning_from_a_service_records_none() -> void:
+func test_new_conversation_records_one_talk_but_returning_from_quest_details_records_none() -> void:
 	var session := _session()
 	var world := session.world
 	var janos := _contact(world, NpcDefinition.JANOS_ID)
@@ -706,8 +704,8 @@ func test_new_conversation_records_one_talk_but_returning_from_a_service_records
 	var menu := _menu(session)
 	menu.open_conversation(janos)
 	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 1)
-	_button(menu, "Do you have any spare gear for warrior?").pressed.emit()
-	assert_eq(menu.page, "spare_gear")
+	_button(menu, "! Fresh Start").pressed.emit()
+	assert_eq(menu.page, "quest_detail")
 	menu._back.call()
 	assert_eq(menu.page, "conversation")
 	assert_eq(QuestRules.progress(world, TALK_QUEST, 0), 1)
@@ -735,13 +733,13 @@ func test_conversation_button_from_previous_loop_cannot_grant_gear_in_new_world(
 	_beside(session.world, janos)
 	var menu := _menu(session)
 	menu.open_conversation(janos)
-	var spare := _button(menu, "Do you have any spare gear for warrior?")
+	var spare := _button(menu, "! Fresh Start")
 	session.world.hero.health = 0
 	assert_true(session.restart_after_death())
 	_beside(session.world, _contact(session.world, NpcDefinition.JANOS_ID))
 	spare.pressed.emit()
 	assert_false(menu.visible)
-	assert_false(session.world.starter_gear_received)
+	assert_false(_gear_received(session.world))
 	assert_eq(session.world.hero.equipment.weapons.id, 35)
 	assert_eq(session.world.turn_count, 0)
 
@@ -763,3 +761,14 @@ func test_saved_contact_keeps_actor_stats_when_definition_refreshes_its_display_
 	assert_eq(saved.title, "Janos Hammerknuckle")
 	assert_eq([saved.max_health, saved.health, saved.melee.level], [123, 111, 4])
 	assert_eq([saved.melee.damage_min, saved.melee.damage_max], [24.0, 30.0])
+
+
+func _gear_received(world: GridWorld) -> bool:
+	return world.quests.has("valley_fresh_start") and world.quests["valley_fresh_start"].handed_in
+
+
+func _claim_gear(world: GridWorld, actor: GridActor) -> bool:
+	if not world.quests.has("valley_fresh_start"):
+		if not QuestRules.accept(world, "valley_fresh_start", actor):
+			return false
+	return QuestRules.hand_in(world, "valley_fresh_start", actor)
