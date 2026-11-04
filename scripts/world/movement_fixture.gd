@@ -86,7 +86,7 @@ static func create_world(
 	for x in range(7, 14):
 		for y in range(8, 12):
 			world.indoor_tiles[Vector2i(x, y)] = true
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	return world
 
 

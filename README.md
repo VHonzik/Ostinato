@@ -14,7 +14,7 @@ pwsh -NoProfile -File tools/setup.ps1
 pwsh -NoProfile -File tools/godot.ps1
 ```
 
-Choose New Game. Move with WASD + QEZC, arrows, or numpad; wait with period/numpad 5.
+Choose New Game. Move with WASD + QEZC, arrows, or numpad; wait with Space/numpad 5.
 F interacts, I opens inventory, K spells, J quests, P character and M the player menu.
 Hotbar: 1–6, R, T, G, V; Shift for the upper row. Enter confirms target choices;
 Escape cancels or opens Options; F11 toggles fullscreen.
@@ -28,6 +28,7 @@ with Shaman, Paladin and Rogue available from Loop three.
 - [Setup, current build, and checks](docs/development.md)
 - [Current class mechanics and abilities](docs/class-mechanics.md)
 - [Current quests, dialogue and NPCs](docs/npc-dialogue.md)
+- [Current items and acquisition](docs/items.md)
 - [World art and sprite workflow](art/README.md)
 - [Coding style](docs/coding-style.md)
 - [Working rules](AGENTS.md)

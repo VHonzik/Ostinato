@@ -88,6 +88,7 @@ func test_live_potion_shortcut_heals_and_reports_cooldown_without_extra_use() ->
 	add_child_autofree(game)
 	game.set_process(false)
 	game.start_new_game()
+	game.menu.close()
 	var world := game.world
 	world.stalker_schedule = false
 	world.actors.clear()

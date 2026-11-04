@@ -75,6 +75,7 @@ func test_cooldown_cast_never_opens_target_selection_or_spends_a_turn() -> void:
 	add_child_autofree(game)
 	game.set_process(false)
 	game.start_new_game()
+	game.menu.close()
 	var world := game.world
 	world.hero.learn_skill(SkillDefinition.catalog(&"lava_burst_1"))
 	world.hero.rage = 100

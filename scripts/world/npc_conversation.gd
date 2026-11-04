@@ -1,7 +1,7 @@
 class_name NpcConversation
 extends RefCounted
 
-enum Action { QUEST, SELECT_CLASS, REFERRAL, SPARE_GEAR, TRADE, TRAIN, WAR_HORN, LUCKY_CHARM, ANCESTRAL_TOTEM, WAR_BANNER }
+enum Action { QUEST, SELECT_CLASS, REFERRAL, TRADE, TRAIN, WAR_HORN, LUCKY_CHARM, ANCESTRAL_TOTEM, WAR_BANNER }
 
 const TRAINER_GIFT_DIALOGUE: String = "I have nothing to teach you anymore you have to venture forth. Here is a small something for your journey..."
 
@@ -89,8 +89,9 @@ class Marshal extends Service:
 	func append_choices(conversation: NpcConversation, session: GameSession,
 		_actor: GridActor) -> void:
 		var world := session.world
-		if session.loop_count == 1 and not world.starter_gear_received:
-			conversation.lines.append("Janos Hammerknuckle inside the abbey can give you spare arms and armor for free.")
+		if session.loop_count == 1 and not (world.quests.has("valley_fresh_start")
+			and world.quests["valley_fresh_start"].handed_in):
+			conversation.lines.append("Speak with Janos Hammerknuckle inside the abbey he can should have some scraps left.")
 		if session.loop_count > 1 and (world.class_selected or world.ever_accepted_quest):
 			conversation.lines.append("Advancing %s this Loop. Class choice is locked until death."
 				% world.hero.selected_class)
@@ -111,12 +112,8 @@ class Marshal extends Service:
 
 
 class Trader extends Service:
-	func append_choices(conversation: NpcConversation, session: GameSession,
-		actor: GridActor) -> void:
-		if session.world.can_receive_starter_gear(actor):
-			conversation.choices.append(Choice.new("Do you have any spare gear for %s?" %
-				String(session.world.hero.selected_class).to_lower(),
-				Action.SPARE_GEAR))
+	func append_choices(conversation: NpcConversation, _session: GameSession,
+		_actor: GridActor) -> void:
 		conversation.choices.append(Choice.new("Trade", Action.TRADE))
 
 

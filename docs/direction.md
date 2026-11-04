@@ -1,7 +1,8 @@
 # Game direction
 
 Durable design goals and open decisions. Implemented details live in
-[class mechanics](class-mechanics.md) and [quests, dialogue and NPCs](npc-dialogue.md);
+[class mechanics](class-mechanics.md), [items](items.md) and
+[quests, dialogue and NPCs](npc-dialogue.md);
 current tasks live in [the backlog](backlog.md).
 
 The current project target is a playable demo of the full game. The valley is the
@@ -158,8 +159,8 @@ for encounter difficulty.
   broader damage/healing scaling
   remains open. Slow weapons favor weapon-damage abilities; fast
   weapons favor on-hit effects.
-- Merchants have fixed inventory and prices; quest rewards are fixed. Enemy and chest
-  loot is determined by the world seed and stable spawn identity. Chest placements
+- Merchant prices and quest rewards are fixed. Merchant offer selection and enemy/chest
+  loot are determined by the world seed and stable spawn identity. Chest placements
   are authored in the valley scene. The same seed recreates loot across Loops,
   independently of action order. New Game offers five fixed, named worlds so players
   can learn a world's loot routes and replay or share the same choice. Together the

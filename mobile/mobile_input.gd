@@ -28,6 +28,9 @@ func process_movement(delta: float) -> void:
 
 
 func handle_input(event: InputEvent) -> void:
+	if game.menu.consume_loop_intro_input(event):
+		game.stop_movement()
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed and not event.canceled:
 			_press(event.index, event.position)

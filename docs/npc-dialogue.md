@@ -13,19 +13,22 @@ All contacts are friendly and stationary. Tiles use zero-based `(x, y)` coordina
 | --- | --- | --- | --- | --- |
 | Marshal McBride | 197 | Outside the abbey, north of player spawn; (30, 52) | Class selection; Wolves of the Western Woods; The Northern Camp; Into Echo Ridge | Greeting adventurer, welcome to Northshire Abbey. You look worn out from your travels. |
 | Deputy Willem | 823 | West of the abbey; (24, 45) | Around the Valley | A new face is always a pleasant sight, how can I help? |
-| Janos Hammerknuckle | 900003 | Inside the abbey; (28, 41) | Trade; starter gear for the selected class | Greetings, what can I get you? |
+| Janos Hammerknuckle | 900003 | Inside the abbey; (28, 41) | Trade; starter gear as quest reward for the selected class | Greetings, what can I get you? |
 | Milly Osworth | 9296 | Inside the abbey; (33, 45) | Milly's Vineyard | A gang of brigands, the Defias, moved into the Northshire Vineyards while I was harvesting! |
 | Northshire Guard | 1642 | Road south of the southwestern gate; (12, 68) | Greeting while alive; killed by the first stalker arrival | This is the road out of the valley. Stay alert; I heard something beyond the gate. |
-| Llane Beshere | 911 | Inside the abbey; (28, 45) | Warrior training; War Horn gift | Practice your warrior skills. Return when you are ready to learn new tricks. |
+| Llane Beshere | 911 | Inside the abbey; (28, 45) | Warrior training; War Horn gift | Hoi adventurer. I am LLANE! |
 | Jorik Kerridan | 915 | East of the abbey; (39, 43) | Rogue training; Lucky charm gift | Hello adventurer. Jorik Kerridan, famous rogue at your service. |
-| Brother Sammuel | 925 | Inside the abbey; (30, 37) | Paladin training; Wartorn Banner gift | Hello adventurer. I am Brother Sammuel, follower of the light. |
-| Farseer Lopaa | 900002 | Beside the abbey entrance; (36, 46) | Shaman training; Ancestral totem gift | Hello adventurer, I am Farseer Lopaa, a storm-chaser. |
+| Brother Sammuel | 925 | Inside the abbey; (30, 37) | Paladin training; Wartorn Banner gift | Greetings adventurer. I am Brother Sammuel, follower of the light. |
+| Farseer Lopaa | 900002 | Beside the abbey entrance; (36, 46) | Shaman training; Ancestral totem gift | Nice to meet you adventurer, I am Farseer Lopaa, a storm-chaser. |
 
 ## Quests
 
-Choose a class at the marshal before accepting quests. Every quest below is available
-to every selected class, has no prerequisite quest, and returns to its giver. Item
-rewards are fixed common gear; `c` means copper. XP is the base reward.
+Choose a class at the marshal before accepting quests. Every quest has no prerequisite
+quest and returns to its giver. Training quests require the matching selected class
+and at least one unlearned active or passive, even if its training level is not yet met.
+Other quests are available to every selected class. Item rewards are fixed gear;
+Fresh Start uses the selected class’s [starter outfit](items.md#equipment).
+`c` means copper. XP is the base reward.
 
 | Quest | Giver / receiver | Minimum player level | Quest level | Objectives | XP | Money | Item rewards |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -34,6 +37,11 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | Into Echo Ridge | Marshal McBride | 2 | 3 | Kill 2 Kobold Workers and 1 Kobold Laborer | 1,200 | 100c | Militia Warhammer |
 | Around the Valley | Deputy Willem | 2 | 3 | Visit Echo Ridge Mine, the vineyard and the western wolf woods | 1,100 | 0 | Quick Band |
 | Milly's Vineyard | Milly Osworth | 2 | 4 | Kill 4 Defias Thugs and Garrick Padfoot | 800 | 100c | Militia Hammer and Shield |
+| Warrior Training | Llane Beshere | 1 | 2 | Train one new warrior active or passive after acceptance | 50 | 0 |  |
+| Paladin Training | Brother Sammuel | 1 | 2 | Train one new paladin active or passive after acceptance | 50 | 0 |  |
+| Rogue Training | Jorik Kerridan | 1 | 2 | Train one new rogue active or passive after acceptance | 50 | 0 |  |
+| Shaman Training | Farseer Lopaa | 1 | 2 | Train one new shaman active or passive after acceptance | 50 | 0 | |
+| Fresh Start | Janos Hammerknuckle | 1 | 1 | No objectives, counts as completed | 50 | 0 | Starter class specific gear |
 
 ### Exploration areas
 
@@ -47,17 +55,24 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 
 | Quest | Offer | Accepted, objectives incomplete | Objectives complete, before hand-in |
 | --- | --- | --- | --- |
-| Wolves of the Western Woods | The western woods are overrun with wolves. Thin their numbers so our people can use the paths again. | Are the western paths safer? Watch for the larger timber wolves. | Good work. Our gatherers can venture west again. Take these supplies. |
-| The Northern Camp | Kobolds have settled along the northern road. Clear their camp before they grow bolder. | Have you cleared the kobolds from the northern camp? | That should keep the northern road open. These supplies are yours. |
-| Into Echo Ridge | The kobolds in Echo Ridge are digging deeper. Enter the mine and drive out their workers and laborers. | What news from Echo Ridge? We need those kobolds driven out. | You have bought us some breathing room. Take this weapon; you have earned it. |
-| Around the Valley | I need fresh eyes on the valley. Scout Echo Ridge, the vineyard and the western wolf woods, then report back. | Have you seen all three places? I need the whole picture. | Kobolds, thieves and wolves. Trouble on every side—but now we know where we stand. Thank you. |
-| Milly's Vineyard | Garrick and his thugs have taken my vineyard. Drive them out before there is nothing left to save. | Is Garrick gone? His thugs will stay while he leads them. | My vineyard is mine again! Thank you. Please take this hammer and shield. |
+| Wolves of the Western Woods | The wolves are encroaching the western woods. We need to thin their number. | Are the western paths safer? Watch for the larger timber wolves. | Nicely done. Here, take these supplies. |
+| The Northern Camp | Kobolds are flooding from the north. Clear their camps before they grow bolder. | Have you cleared the kobolds from the northern camp? | That will show them, here is your reward. |
+| Into Echo Ridge | With the camp cleared, the kobolds far north in the Echo Ridge mine are our next target. Enter the mine and drive out their workers and laborers. | What news from Echo Ridge? We need those kobolds driven out. | You have bought us some breathing room. Take this weapon; you have earned it. |
+| Around the Valley | I need fresh eyes on the valley. Scout Echo Ridge to north, the vineyard to south-east and the western woods, then report back. | Have you seen all three places? I need the whole picture. | Kobolds, thieves and wolves. Trouble on every side—but now we know where we stand. Thank you. |
+| Milly's Vineyard | Garrick and his thugs have taken my vineyard. Drive them out so we can harvest grapes. | Is Garrick gone? His thugs will stay while he leads them. | Thank you my dear. Please take this, it was my late husband. |
+| Warrior Training | You seek warrior training? Just speak to me, always happy to help. For the right price of course. | Speak to me if you wish to train, warrior. | Put these new skills to good use and come back anytime. |
+| Paladin Training | You seek paladin training? Just speak to me, always happy to help. For the right price of course. | Speak to me if you wish to train, paladin. | Put these new skills to good use and come back anytime. |
+| Rogue Training | You seek rogue training? Just speak to me, always happy to help. For the right price of course. | Speak to me if you wish to train, rogue. | Put these new skills to good use and come back anytime. |
+| Shaman Training | You seek shaman training? Just speak to me, always happy to help. For the right price of course. | Speak to me if you wish to train, shaman. | Put these new skills to good use and come back anytime. |
+| Fresh Start | You look like you had rough day my friend. Give me a second, I can find something suitable for you. | *Nothing, this quests is always completed* | This should do nicely! |
 
 ### Quest rules and presentation
 
 | State / action | Current behavior |
 | --- | --- |
 | Acceptance | Requires the minimum current-Loop player level and the nearby living giver. Accepting sets objective counts to zero and immediately checks the player's current exploration region. |
+| Training credit | Once per class per Loop. Only learning a new matching active or passive after acceptance advances the objective. Existing abilities and failed training do not count. Learning the final ability keeps an accepted quest ready for hand-in. Abandoning removes its credit; reaccepting requires another unlearned ability. |
+| Fresh Start | Once per Loop. Accepting is immediately ready; Complete grants 50 base XP and the selected class’s starter outfit. Exchanges starter-marked items while preserving acquired equipment; insufficient room leaves inventory, equipment, XP and quest hand-in unchanged. |
 | Kill credit | Only accepted, unhanded quests advance. Earlier kills do not count; counts stop at each objective's requirement. |
 | Exploration credit | Only accepted quests advance. Visiting before acceptance does not bank credit; accepting while inside a required region credits that region. |
 | Available quest | A yellow `!` precedes its title. The detail screen separates the offer from indented objectives and rewards with a divider. Gear appears above Accept as quality-colored names; hover or keyboard focus shows details. Accept / Cancel choices appear at the giver. Reward choices are selected at hand-in. |
@@ -82,16 +97,16 @@ rewards are fixed common gear; `c` means copper. XP is the base reward.
 | Returning from a service | Refreshes choices without recording another talk interaction. |
 | Empty quest log | “No active quests. Speak to Marshal McBride outside the abbey.” This is interface guidance. |
 | Enemies | No conversation or authored spoken dialogue. Encounter announcements are system log text. |
-| Friendly summons | Use the shared “Hello adventurer.” greeting when interacted with; no unique dialogue or services. |
+| Friendly summons | Use the shared “Hello master.” greeting when interacted with; no unique dialogue or services. |
 
 ### Marshal: class selection
 
 | Loop / condition | Player choice / interface text | Result |
 | --- | --- | --- |
-| New Game | Warrior is selected | Starts knowing Mortal Strike and Whirlwind; quests and services are available. |
-| Loop 1, before receiving starter gear | Janos Hammerknuckle inside the abbey can give you spare arms and armor for free. | Appears alongside the marshal's greeting and choices. |
-| Loop 2, before choosing | I am warrior | Selects Warrior and unlocks quests/services. |
-| Loop 3 onward, class never selected | I am .... {class} | Selecting this class unlocks quests/services and permanently changes only its choice wording. |
+| New Game | Warrior is selected | Starts knowing Mortal Strike and Whirlwind; quests and services are available including Warrior Training. |
+| Loop 1, before receiving starter gear | Speak with Janos Hammerknuckle inside the abbey he can should have some scraps left. | Appears alongside the marshal's greeting and choices. |
+| Loop 2, before choosing | I am warrior | Selects Warrior and unlocks quests/services including Warrior Training. |
+| Loop 3 onward, class never selected | I am .... {class} | Selecting this class unlocks quests/services including class Training quest and permanently changes only its choice wording. |
 | Returning Loop, class previously selected | I am {class} | Selects this class and unlocks quests/services. Warrior counts as selected at New Game. |
 | Class-choice tooltips | None | Choices display their dialogue text only. |
 | Class-choice focus | Previous class is focused | Selection is available outside combat before any quest acceptance. |
@@ -105,18 +120,16 @@ is the matching trainer in the contact table. Warrior counts as chosen at New Ga
 
 | Condition | Marshal reply |
 | --- | --- |
-| First selection of Shaman, Paladin or Rogue | You don't look like {Class}... Anyway, go speak with {Trainer}, they will get you started. And check with Janos Hammerknuckle, they might have some old equipment lying around. |
-| Class selected before | Speak with Janos Hammerknuckle, he always has supplies lying around. And {Trainer} is our own {class} if you need some guidance. |
+| First selection of Shaman, Paladin or Rogue | You don't look like {Class}... Anyway, go speak with {Trainer}, they will get you started. |
+| Class selected before | Hmm, if you say so. Go speak with {Trainer} if you need some guidance. |
 
 ### Service choices
 
 | NPC / service | Choice or response | Availability / result |
 | --- | --- | --- |
-| Janos: spare gear | Do you have any spare gear for {class}? | Once per Loop after class selection. Exchanges starter-marked gear for the chosen class's outfit, preserving acquired gear. Fails without claiming the grant if inventory space is insufficient. |
-| Janos: gear response | I can find some left overs if you are not picky. | Appears after a successful gear grant. |
-| Janos: shop | Trade | Opens buy/sell controls with stock and prices; no further authored speech. Tough Jerky is the sole edible food, shared by starting supplies, drops and shop stock; it costs 5c each, sells for 1c, stacks to 20 and restores 61 HP over 18 turns while stationary and out of combat. Janos stocks unlimited jerky and 3 Minor Healing Potions per Loop. |
+| Janos: shop | Trade | Opens buy/sell controls with prices and five seeded offers: one weapon, food, potions and two distinct nonweapon extras. [Item reference](items.md#janos) lists pools, prices, quantities and supply effects. |
 | All four trainers | Train | Offered while at least one active or passive in that trainer's class catalog remains unlearned. Opens that catalog. Only the selected class can be learned; starters are free, later skills require current-Loop level and money. Learning persists across death and works in every class. |
-| Trainer for another class | Select {Class} before learning here. Retained skills remain usable. | Status text in that trainer's menu. |
+| Trainer for another class | Your are not {Class}... | Status text in that trainer's menu. |
 | Trainer: completed class training | I have nothing to teach you anymore you have to venture forth. Here is a small something for your journey... | The farewell is both a choice and the logged response to claiming the trainer's gift. Requires every active and passive in that trainer's catalog, a class chosen this Loop, and being outside combat. Available once per trainer per Loop in any selected class; full bags preserve the offer. |
 
 | Trainer | Farewell gift | Effect reference |
@@ -126,9 +139,12 @@ is the matching trainer in the contact table. Warrior counts as chosen at New Ga
 | Brother Sammuel | Wartorn Banner | [Paladin gift](class-mechanics.md#trainer-gift-wartorn-banner) |
 | Jorik Kerridan | Lucky charm | [Rogue gift](class-mechanics.md#trainer-gift-lucky-charm) |
 
-### Loop opening log
+### Loop opening screen
 
-Each line below ends with: “Speak to Marshal McBride north of you, outside the abbey.”
+A modal popup appears at New Game and after each death reset, with the text also kept
+in the log. A fresh key press, mouse-button press or touch dismisses it without
+triggering gameplay. Loading an existing Loop does not show it again.
+Each line below ends with: “Speak to Marshal McBride north of you.”
 These are player narration, separate from NPC speech.
 
 | Loop | Opening text before the shared hint |
@@ -190,12 +206,13 @@ and chests. The HARD suffix is display-only.
 
 | Content | Saved mid-Loop | On death |
 | --- | --- | --- |
-| World seed | Numeric seed; the player menu resolves the five fixed New Game choices to their names, and displays unlisted seeds numerically | Keeps the chosen seed; enemy and chest loot repeats by spawn identity |
+| World seed | Numeric seed; the player menu resolves the five fixed New Game choices to their names, and displays unlisted seeds numerically | Keeps the chosen seed; enemy/chest loot and Janos’s offer selection repeat by spawn identity |
 | Quest route | Accepted quests, counts, hand-ins and quest-acceptance lock | Clears; quests can be taken in the fresh world |
 | Class selection | Selected class, selection lock and classes previously chosen | Requires a fresh selection; remembers the previous class for focus and chosen classes for referral wording |
 | NPC population | Living/dead actors, combat state, loot and wandering deadlines; fixed contacts except the guard follow valley scene positions on load | Rebuilds contacts and enemies from the scene |
 | Gate scene | Arrival count, deadlines, guard state and stalkers, including pending breath | Restarts schedule and restores guard |
-| Service grants | Granted items, Janos's starter-gear claim and each trainer's gift claim | Clears claims and items; learned abilities remain |
+| Vendor stock | Seeded offer IDs and remaining quantities | Same selection; quantities replenish |
+| Service grants | Granted items and each trainer’s gift claim; Fresh Start’s claim is its quest hand-in | Clears claims and items; learned abilities remain |
 
 Android also keeps a separate recovery save at completed action boundaries outside
 combat, including the fresh world after death. Continue restores that safe snapshot,

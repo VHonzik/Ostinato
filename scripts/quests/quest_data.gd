@@ -3,15 +3,49 @@ extends RefCounted
 
 ## Offer, unfinished and completed dialogue for the playable valley quests.
 const DIALOGUE: Dictionary = {
-	"valley_wolves": ["The western woods are overrun with wolves. Thin their numbers so our people can use the paths again.", "Are the western paths safer? Watch for the larger timber wolves.", "Good work. Our gatherers can venture west again. Take these supplies."],
-	"valley_camp": ["Kobolds have settled along the northern road. Clear their camp before they grow bolder.", "Have you cleared the kobolds from the northern camp?", "That should keep the northern road open. These supplies are yours."],
-	"valley_mine": ["The kobolds in Echo Ridge are digging deeper. Enter the mine and drive out their workers and laborers.", "What news from Echo Ridge? We need those kobolds driven out.", "You have bought us some breathing room. Take this weapon; you have earned it."],
-	"valley_vineyard": ["Garrick and his thugs have taken my vineyard. Drive them out before there is nothing left to save.", "Is Garrick gone? His thugs will stay while he leads them.", "My vineyard is mine again! Thank you. Please take this hammer and shield."],
-	"valley_explore": ["I need fresh eyes on the valley. Scout Echo Ridge, the vineyard and the western wolf woods, then report back.", "Have you seen all three places? I need the whole picture.", "Kobolds, thieves and wolves. Trouble on every side—but now we know where we stand. Thank you."],
+	"valley_training_shaman": ["You seek shaman training? Just speak to me, always happy to help. For the right price of course.","Speak to me if you wish to train, shaman.","Put these new skills to good use and come back anytime."],
+	"valley_training_rogue": ["You seek rogue training? Just speak to me, always happy to help. For the right price of course.","Speak to me if you wish to train, rogue.","Put these new skills to good use and come back anytime."],
+	"valley_training_paladin": ["You seek paladin training? Just speak to me, always happy to help. For the right price of course.","Speak to me if you wish to train, paladin.","Put these new skills to good use and come back anytime."],
+	"valley_training_warrior": ["You seek warrior training? Just speak to me, always happy to help. For the right price of course.","Speak to me if you wish to train, warrior.","Put these new skills to good use and come back anytime."],
+	"valley_fresh_start": ["You look like you had rough day my friend. Give me a second, I can find something suitable for you.","","This should do nicely!"],
+	"valley_wolves": ["The wolves are encroaching the western woods. We need to thin their number.","Are the western paths safer? Watch for the larger timber wolves.","Nicely done. Here, take these supplies."],
+	"valley_camp": ["Kobolds are flooding from the north. Clear their camps before they grow bolder.","Have you cleared the kobolds from the northern camp?","That will show them, here is your reward."],
+	"valley_mine": ["With the camp cleared, the kobolds far north in the Echo Ridge mine are our next target. Enter the mine and drive out their workers and laborers.","What news from Echo Ridge? We need those kobolds driven out.","You have bought us some breathing room. Take this weapon; you have earned it."],
+	"valley_vineyard": ["Garrick and his thugs have taken my vineyard. Drive them out so we can harvest grapes.","Is Garrick gone? His thugs will stay while he leads them.","Thank you my dear. Please take this, it was my late husband."],
+	"valley_explore": ["I need fresh eyes on the valley. Scout Echo Ridge to north, the vineyard to south-east and the western woods, then report back.","Have you seen all three places? I need the whole picture.","Kobolds, thieves and wolves. Trouble on every side—but now we know where we stand. Thank you."],
 }
 
 ## Valley objectives and fixed common gear rewards; historical fixture quests below.
 static var QUESTS: Dictionary = {
+	"valley_training_warrior": {
+		"title": "Warrior Training", "level": 2, "minimum": 1, "previous": [],
+		"giver": 911, "receiver": 911, "category": "Warrior",
+		"objectives": [QuestObjective.train(&"Warrior")],
+		"xp": 50, "copper": 0, "rewards": [], "choices": [], "source_item": 0,
+	},
+	"valley_training_paladin": {
+		"title": "Paladin Training", "level": 2, "minimum": 1, "previous": [],
+		"giver": 925, "receiver": 925, "category": "Paladin",
+		"objectives": [QuestObjective.train(&"Paladin")],
+		"xp": 50, "copper": 0, "rewards": [], "choices": [], "source_item": 0,
+	},
+	"valley_training_rogue": {
+		"title": "Rogue Training", "level": 2, "minimum": 1, "previous": [],
+		"giver": 915, "receiver": 915, "category": "Rogue",
+		"objectives": [QuestObjective.train(&"Rogue")],
+		"xp": 50, "copper": 0, "rewards": [], "choices": [], "source_item": 0,
+	},
+	"valley_training_shaman": {
+		"title": "Shaman Training", "level": 2, "minimum": 1, "previous": [],
+		"giver": 900002, "receiver": 900002, "category": "Shaman",
+		"objectives": [QuestObjective.train(&"Shaman")],
+		"xp": 50, "copper": 0, "rewards": [], "choices": [], "source_item": 0,
+	},
+	"valley_fresh_start": {
+		"title": "Fresh Start", "level": 1, "minimum": 1, "previous": [],
+		"giver": 900003, "receiver": 900003, "category": "",
+		"objectives": [], "xp": 50, "copper": 0, "rewards": [], "choices": [], "source_item": 0,
+	},
 	"valley_wolves": {
 		"title": "Wolves of the Western Woods", "level": 2, "minimum": 1, "previous": [],
 		"giver": 197, "receiver": 197, "category": "",

@@ -48,13 +48,24 @@ static func unit_price(npc_id: int, identifier: int) -> int:
 	return int(offer.price) / int(offer.quantity)
 
 
-static func initial_stock(actors: Array[GridActor]) -> Dictionary:
+static func initial_stock(actors: Array[GridActor], seed_value: int) -> Dictionary:
 	var result: Dictionary = {}
 	for actor in actors:
 		if actor.service != &"Trader" or catalog(actor.npc_id).is_empty():
 			continue
 		var stock: Dictionary = {}
-		for key in catalog(actor.npc_id):
+		var keys: Array = catalog(actor.npc_id).keys()
+		if actor.npc_id == NpcDefinition.JANOS_ID:
+			var generator := RandomNumberGenerator.new()
+			generator.seed = (str(seed_value) + ":" + actor.spawn_id + ":merchant_stock").hash()
+			var weapons: Array[String] = ["2129", "2132", "2139"]
+			var extras: Array[String] = ["85", "70001", "70002", "70003"]
+			keys = [weapons[generator.randi_range(0, weapons.size() - 1)], "117", "118"]
+			for index in range(2):
+				var selected := generator.randi_range(0, extras.size() - 1)
+				keys.append(extras[selected])
+				extras.remove_at(selected)
+		for key in keys:
 			stock[key] = int(catalog(actor.npc_id)[key].stock)
 		result[actor.spawn_id] = stock
 	return result

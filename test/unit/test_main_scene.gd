@@ -25,6 +25,7 @@ func before_each() -> void:
 	InputMap.load_from_project_settings()
 	_game.menu.options = GlobalOptions.new(_options_path)
 	_game.start_new_game()
+	_game.menu.close()
 	_game.world.hero.rage = 100
 	_game.world.hero.learn_skill(SkillDefinition.catalog(&"battle_shout_1"))
 	await get_tree().process_frame
@@ -250,10 +251,13 @@ func test_combo_bar_unlocks_with_retained_passive_and_fades_when_points_are_spen
 	assert_gt(bar.modulate.a, empty_alpha)
 	_game.world.hero.health = 0
 	_game.refresh_view()
+	assert_false(bar.visible, "The Loop introduction hides gameplay bars.")
+	_game.menu.close()
 	assert_true(bar.visible, "Death retains the learned passive.")
 	assert_eq(_game.world.hero.combo_points, 0)
 	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
 	_game.start_new_game()
+	_game.menu.close()
 	assert_false(bar.visible, "A fresh game clears the Rogue unlock.")
 
 
@@ -302,11 +306,14 @@ func test_maelstrom_bar_unlocks_fades_after_spending_and_follows_hud_visibility(
 	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
 	_game.world.hero.health = 0
 	_game.refresh_view()
+	assert_false(bar.visible, "The Loop introduction hides gameplay bars.")
+	_game.menu.close()
 	assert_true(bar.visible, "Death retains the passive, with empty stacks.")
 	assert_almost_eq(bar.modulate.a, empty_alpha, 0.001)
 	_game._return_to_menu()
 	assert_false(bar.visible)
 	_game.start_new_game()
+	_game.menu.close()
 	assert_false(bar.visible)
 
 
@@ -319,6 +326,7 @@ func test_camera_follows_movement_and_remains_centered_at_all_map_edges() -> voi
 		_game.refresh_view()
 		_assert_camera_centered()
 	_game.reset_fixture()
+	_game.menu.close()
 	_assert_camera_centered()
 
 
@@ -377,7 +385,7 @@ func test_simultaneous_arrow_pairs_make_one_diagonal_turn() -> void:
 		assert_eq(_game.world.turn_count, 1)
 
 func test_both_wait_keys_advance_exactly_one_turn_and_top_row_does_not_move() -> void:
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 1)
 	await _tap_key(KEY_KP_5)
 	assert_eq(_game.world.turn_count, 2)
@@ -388,7 +396,7 @@ func test_both_wait_keys_advance_exactly_one_turn_and_top_row_does_not_move() ->
 
 
 func test_key_echo_does_not_advance_time() -> void:
-	_send_key(KEY_PERIOD, true, true)
+	_send_key(KEY_SPACE, true, true)
 	await get_tree().process_frame
 	assert_eq(_game.world.turn_count, 0)
 
@@ -445,6 +453,7 @@ func test_menu_focus_and_world_replacement_cancel_held_movement() -> void:
 	_send_key(KEY_D, true)
 	_game._process(0.0)
 	_game.start_new_game()
+	_game.menu.close()
 	_game._process(3.0)
 	assert_eq(_game.world.turn_count, 0)
 	_send_key(KEY_D, false)
@@ -460,11 +469,11 @@ func test_rebound_movement_repeats_but_held_wait_does_not() -> void:
 	_game._process(2.0)
 	assert_eq(_game.world.player_tile, Vector2i(22, 14))
 	_send_key(KEY_H, false)
-	_send_key(KEY_PERIOD, true)
+	_send_key(KEY_SPACE, true)
 	_game._process(0.0)
 	_game._process(10.0)
 	assert_eq(_game.world.turn_count, 3)
-	_send_key(KEY_PERIOD, false)
+	_send_key(KEY_SPACE, false)
 
 
 func _prepare_held_movement() -> void:
@@ -477,11 +486,11 @@ func test_focused_hud_controls_suppress_gameplay_until_escape() -> void:
 	var button := _game.get_node("HUD/PlayerMenu/Buttons/PlayerMenu") as Button
 	button.grab_focus()
 	await _tap_key(KEY_S)
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 0)
 	await _tap_key(KEY_ESCAPE)
 	assert_null(_game_viewport.gui_get_focus_owner())
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 1)
 
 
@@ -493,12 +502,13 @@ func test_player_menu_cancels_queued_movement_and_reset_restores_start() -> void
 	_send_key(KEY_M, false)
 	assert_eq(_game.menu.page, "player")
 	assert_eq(_game.world.turn_count, 0)
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 0)
 	await _tap_key(KEY_ESCAPE)
 	_game.world.movement_credit = 0.5
 	_game.world.wait_turn()
 	_game.reset_fixture()
+	_game.menu.close()
 	assert_eq(_game.world.movement_credit, 0.0)
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.player_tile, ValleyRoute.SPAWN)
@@ -559,7 +569,7 @@ func test_character_and_spell_book_keyboard_flow_casts_and_levels() -> void:
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.hero_panel.visible)
 	assert_null(_game_viewport.gui_get_focus_owner())
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 2)
 
 
@@ -574,7 +584,7 @@ func test_opening_panel_cancels_queued_movement_and_modal_focus_cannot_escape() 
 	for index in range(12):
 		await _tap_key(KEY_TAB)
 		assert_true(_game.hero_panel.is_ancestor_of(_game_viewport.gui_get_focus_owner()))
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	await _tap_key(KEY_KP_5)
 	await _tap_key(KEY_Q)
 	await _tap_key(KEY_C)
@@ -594,6 +604,7 @@ func test_mouse_buttons_open_panels_and_reset_clears_hero_and_chat() -> void:
 	assert_eq(_game.world.hero.level, 2)
 	_game.hero_panel.close()
 	_game.reset_fixture()
+	_game.menu.close()
 	assert_eq([_game.world.hero.level, _game.world.hero.experience], [1, 0])
 	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.world.messages.size(), 1)
@@ -647,7 +658,7 @@ func test_interaction_keyboard_preselection_wrap_and_cancel_are_free() -> void:
 	assert_same(_game.combat_panel.selected, south)
 	await _tap_key(KEY_S)
 	assert_same(_game.combat_panel.selected, north, "Directional edge wraps.")
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	await _tap_key(KEY_K)
 	for index in range(8):
 		await _tap_key(KEY_TAB)
@@ -693,7 +704,7 @@ func test_melee_automatically_waits_until_one_swing_and_gives_npcs_every_turn() 
 	assert_false(_game.combat_panel.visible, "A lone hostile needs no selector or confirmation.")
 	assert_eq(_game.world.turn_count, 1)
 	assert_same(_game.world.pending_melee, actor)
-	for key in [KEY_S, KEY_PERIOD, KEY_ENTER, KEY_K, KEY_TAB]:
+	for key in [KEY_S, KEY_SPACE, KEY_ENTER, KEY_K, KEY_TAB]:
 		await _tap_key(key)
 	assert_eq(_game.world.turn_count, 1, "Other keys cannot advance the pending action.")
 	_game._process(Gameplay.MELEE_BOUNDARY_SECONDS / 2.0)
@@ -718,7 +729,7 @@ func test_melee_bumps_block_keyboard_mouse_actions_and_held_movement_until_finis
 	assert_true(_game.grid_view.is_melee_bumping())
 	var tile := _game.world.player_tile
 	var turn := _game.world.turn_count
-	for key in [KEY_PERIOD, KEY_K, KEY_I, KEY_M, KEY_1]:
+	for key in [KEY_SPACE, KEY_K, KEY_I, KEY_M, KEY_1]:
 		await _tap_key(key)
 	_send_key(KEY_S, true)
 	_game._hotbar_slot_pressed(0)
@@ -735,7 +746,7 @@ func test_melee_bumps_block_keyboard_mouse_actions_and_held_movement_until_finis
 	_game._process(1.0)
 	assert_eq(_game.world.turn_count, turn, "Blocked keys must not queue a later action.")
 	_send_key(KEY_S, false)
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	_game._process(0.0)
 	assert_eq(_game.world.turn_count, turn + 1)
 
@@ -778,6 +789,7 @@ func test_pending_melee_stops_on_invalid_target_reset_and_death() -> void:
 	await _tap_key(KEY_F)
 	assert_not_null(_game.world.pending_melee)
 	_game.reset_fixture()
+	_game.menu.close()
 	_game._process(10.0)
 	assert_eq(_game.world.turn_count, 0, "Reset cannot leave a delayed attack running.")
 	actor = _prepare_melee(GridActor.Relationship.HOSTILE)
@@ -828,7 +840,7 @@ func test_friendly_interaction_and_empty_corpse_cleanup_skip_attack_dialogue() -
 	assert_eq(_game.world.turn_count, 0)
 
 
-func test_death_restarts_loop_and_restores_gameplay_without_a_reset_prompt() -> void:
+func test_death_restarts_loop_and_consumes_intro_dismissal_before_waiting() -> void:
 	_game.world.hero.add_experience(400)
 	_game.world.cast_skill(&"death_1")
 	var ended := _game.world
@@ -844,7 +856,10 @@ func test_death_restarts_loop_and_restores_gameplay_without_a_reset_prompt() -> 
 	assert_true(status.is_visible_in_tree())
 	assert_string_contains(status.text, "HP 51/51")
 	assert_string_contains(status.text, "Rage")
-	await _tap_key(KEY_PERIOD)
+	assert_eq(_game.menu.page, "loop_intro")
+	await _tap_key(KEY_SPACE)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 1)
 
 
@@ -950,15 +965,21 @@ func test_main_menu_keyboard_starts_game_and_menu_actions_never_spend_time() -> 
 	await _tap_key(KEY_S)
 	await _tap_key(KEY_ENTER)
 	assert_true(_game.active_game)
+	assert_eq(_game.menu.page, "loop_intro")
+	await _tap_key(KEY_SPACE)
+	assert_eq(_game.world.turn_count, 0)
 	assert_false(_game.menu.visible)
 	assert_eq(_game.session.seed_name(), GameSession.WORLD_SEEDS[1])
 	assert_eq(_game.session.loop_count, 1)
 	assert_eq(_game.world.turn_count, 0)
 	await _tap_key(KEY_ESCAPE)
 	assert_eq(_game.menu.page, "options")
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
+	assert_eq(_game.menu.page, "slots")
 	await _tap_key(KEY_F)
 	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_ESCAPE)
+	assert_eq(_game.menu.page, "options")
 	await _tap_key(KEY_ESCAPE)
 	assert_false(_game.menu.visible)
 
@@ -1044,6 +1065,9 @@ func test_warrior_trainer_visit_unlocks_passive_without_advancing_time() -> void
 	_game.refresh_view()
 	await _tap_key(KEY_F)
 	assert_eq(_game.menu.page, "conversation")
+	for button in _game.menu._buttons:
+		if button.text == "Train":
+			button.grab_focus()
 	await _tap_key(KEY_ENTER)
 	assert_eq(_game.menu.page, "trainer")
 	var passive: Button
@@ -1098,6 +1122,7 @@ func test_lone_neutral_mortal_strike_casts_directly_from_all_eight_adjacent_tile
 	_game.set_process(false)
 	for direction in GridWorld.DIRECTIONS:
 		_game.session.new_game(11)
+		_game.menu.close()
 		_game.world.blocked_tiles.clear()
 		_game.world.sight_blockers.clear()
 		_game.world.actors.clear()
@@ -1250,7 +1275,7 @@ func test_trader_keyboard_quantity_purchase_never_moves_player_or_advances_time(
 	assert_eq(_game.menu.page, "buy")
 	assert_true(_game.menu._buttons[0].text.begins_with("Buy 1 /"))
 	await _tap_key(KEY_ENTER)
-	assert_eq(_game.world.hero.inventory[0].id, 85)
+	assert_true(_game.world.vendor_stock[_test_merchant(900003).spawn_id].has(str(_game.world.hero.inventory[0].id)))
 	assert_eq(_game.world.hero.copper, 0)
 	assert_eq(_game.world.player_tile, _test_merchant(900003).tile + Vector2i.DOWN)
 	assert_eq(_game.world.turn_count, 0)
@@ -1281,9 +1306,11 @@ func test_spell_book_remembers_each_class_selection_across_close_and_loop() -> v
 	_game.hero_panel.close()
 	_game.world.cast_skill(&"death_1")
 	_game.refresh_view()
+	_game.menu.close()
 	await _tap_key(KEY_K)
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Battle Shout")
 	_game.start_new_game()
+	_game.menu.close()
 	await _tap_key(KEY_K)
 	assert_string_contains((_game_viewport.gui_get_focus_owner() as Button).text, "Mortal Strike")
 
@@ -1529,7 +1556,7 @@ func test_completion_load_returns_to_saved_game_and_clears_queued_input() -> voi
 	assert_ne(_game.world, ended)
 	assert_false(_game._pending_action)
 	assert_eq(_game.world.turn_count, 0)
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_eq(_game.world.turn_count, 1)
 	assert_eq(ended.turn_count, ValleyRoute.STALKER_DEADLINES[0] + 1)
 	for file in DirAccess.get_files_at(directory):
@@ -1560,6 +1587,7 @@ func test_simultaneous_player_and_boss_death_resets_loop_without_completion() ->
 func test_development_kill_last_stalker_completes_from_keyboard_and_mouse() -> void:
 	for use_mouse in [false, true]:
 		_game.start_new_game()
+		_game.menu.close()
 		for boundary in range(ValleyRoute.STALKER_DEADLINES[0]):
 			_game.world.wait_turn()
 		assert_true(_game.world.stalkers_arrived > 0)
@@ -1691,6 +1719,7 @@ func test_hotbar_drop_validates_skill_lock_and_world() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_game.start_new_game()
+	_game.menu.close()
 	assert_false(bar._can_drop(Vector2.ZERO, data, 0), "A drag from an abandoned world is invalid.")
 	assert_eq(_game.world.hotbar, [
 		&"mortal_strike_1", &"whirlwind_1", &"", &"", &"", &"", &"", &"", &"", &"",
@@ -1832,7 +1861,7 @@ func test_every_merchant_catalog_and_full_bag_remain_keyboard_accessible() -> vo
 		for open_page in [_game.menu.open_buy.bind(merchant), _game.menu.open_sell.bind(merchant)]:
 			open_page.call()
 			assert_same(_game.menu._merchant, merchant)
-			var expected := MerchantData.catalog(npc_id).size() + 1 if (
+			var expected: int = _game.world.vendor_stock[merchant.spawn_id].size() + 1 if (
 				_game.menu.page == "buy_list") else 42
 			assert_eq(_game.menu._buttons.size(), expected)
 			for button in _game.menu._buttons:
@@ -1984,6 +2013,7 @@ func test_direct_sell_revalidates_merchant_range_and_rejects_buttons_from_replac
 	var stale := _game_viewport.gui_get_focus_owner() as Button
 	var previous := _game.world
 	_game.start_new_game()
+	_game.menu.close()
 	stale.pressed.emit()
 	assert_eq(previous.hero.inventory[0], ItemData.instance(117, 7))
 	assert_eq(previous.hero.copper, 0)
@@ -2033,7 +2063,10 @@ func test_new_game_launches_the_valley_with_the_hard_worlds_original_seed() -> v
 	_game.menu._buttons[hard_index].pressed.emit()
 	await get_tree().process_frame
 	assert_true(_game.active_game)
-	assert_false(_game.menu.visible)
+	assert_true(_game.menu.visible)
+	assert_eq(_game.menu.page, "loop_intro")
+	await _tap_key(KEY_SPACE)
+	assert_eq(_game.world.turn_count, 0)
 	assert_eq(_game.session.seed_value, GameSession.HARD_WORLD_SEED.hash())
 	assert_eq(_game.session.seed_name(), GameSession.HARD_WORLD_SEED)
 	assert_true(_game.world.valley_route)
@@ -2108,7 +2141,7 @@ func _test_merchant(identity: int) -> GridActor:
 	merchant.spawn_id = "test/merchant/%d" % identity
 	merchant.service = &"Trader"
 	_game.world.actors.append(merchant)
-	_game.world.vendor_stock.merge(MerchantData.initial_stock([merchant]))
+	_game.world.vendor_stock.merge(MerchantData.initial_stock([merchant], _game.world.seed_value))
 	return merchant
 
 
@@ -2129,7 +2162,7 @@ func test_food_shortcut_displays_eating_healing_and_stops_on_movement() -> void:
 		return
 	assert_string_contains(eating.tooltip_text, "HP next turn")
 	assert_string_contains((eating.get_node("Healing") as Label).text, "+")
-	await _tap_key(KEY_PERIOD)
+	await _tap_key(KEY_SPACE)
 	assert_gt(int(world.hero.restoration.food.delivered), 0)
 	await _tap_key(KEY_S)
 	assert_true(world.hero.restoration.is_empty())
@@ -2217,3 +2250,30 @@ func test_sentence_hotkey_casts_on_engaged_enemy_without_opening_target_picker()
 	assert_false(_game.combat_panel.visible)
 	assert_true(enemy.debuffs.has(&"judgement_1"))
 	assert_eq(enemy.health, 10000)
+
+
+func test_loop_intro_consumes_fresh_keys_mouse_and_load_does_not_repeat_it() -> void:
+	_game.start_new_game(619)
+	assert_eq(_game.menu.page, "loop_intro")
+	assert_true(_game.menu.visible)
+	assert_eq(_game.world.turn_count, 0)
+	_send_key(KEY_SPACE, true, true)
+	assert_true(_game.menu.visible, "Echoes cannot dismiss the introduction.")
+	await _tap_key(KEY_SPACE)
+	assert_false(_game.menu.visible)
+	assert_eq(_game.world.turn_count, 0)
+	await _tap_key(KEY_SPACE)
+	assert_eq(_game.world.turn_count, 1)
+	var restored := SaveCodec.restore(SaveCodec.capture(_game.session), false)
+	assert_not_null(restored)
+	_game.session.restore(restored, _game.session.seed_value, 1)
+	assert_false(_game.menu.visible, "Loading the current Loop does not repeat narration.")
+	_game.start_new_game(619)
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	click.position = Vector2(1, 1)
+	_game_viewport.push_input(click)
+	assert_false(_game.menu.visible)
+	assert_eq(_game.world.turn_count, 0)
+	assert_false(_game._pending_action)

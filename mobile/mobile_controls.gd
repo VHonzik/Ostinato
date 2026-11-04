@@ -84,6 +84,9 @@ func _announce(message: String) -> void:
 func _input(event: InputEvent) -> void:
 	if game.suspended:
 		return
+	if game.menu.consume_loop_intro_input(event):
+		game.stop_movement()
+		return
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		back()
 		get_viewport().set_input_as_handled()

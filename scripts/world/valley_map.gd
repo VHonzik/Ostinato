@@ -17,7 +17,7 @@ func create_world(seed_value: int, development_build: bool) -> GridWorld:
 	world.hotbar[GridWorld.HOTBAR_SIZE - 1] = GridWorld.FOOD_HOTBAR_ID
 	apply_terrain(world)
 	populate(world)
-	world.vendor_stock = MerchantData.initial_stock(world.actors)
+	world.vendor_stock = MerchantData.initial_stock(world.actors, world.seed_value)
 	return world
 
 
